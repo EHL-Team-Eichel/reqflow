@@ -1,0 +1,30 @@
+# deps / build
+node_modules/
+.next/
+out/
+dist/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# secrets — never commit, never hand to delegated agents
+.env
+.env.*
+!.env.example
+
+# BMW-provided data is confidential: keep it local
+data/raw/*
+!data/raw/.gitkeep
+data/uploads/*
+!data/uploads/.gitkeep
+data/*.db
+data/*.db-*
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Claude Code local settings
+.claude/settings.local.json
