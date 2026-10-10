@@ -1,0 +1,7 @@
+<task-notification>
+<task-id>bugz46et2</task-id>
+<tool-use-id>toolu_015Jspxm62nD41LJhZv3evpr</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-alexanderkluge-Documents-EHL-Final-BMW/7ed1bddf-016c-4d96-af06-e20cca95f599/tasks/bugz46et2.output</output-file>
+<status>failed</status>
+<summary>Background command "Start ReqFlow Electron app in dev mode" failed with exit code 143</summary>
+</task-notification>
