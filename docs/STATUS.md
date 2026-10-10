@@ -220,6 +220,15 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 **Log**
 
+- 2026-10-11: Side windows now have front, rear-door and fixed quarter panes separated
+  by the existing B-pillar and a new slanted quarter-glass frame on both sides. Frames are
+  part of the body surface, with existing selectable ids retained. Added three regressions;
+  typecheck and 424 tests pass (25 skipped). Reviewed side smoke screenshot: quarter pane
+  clearly separated. Smoke still retains the same 12 unrelated menu assertions.
+
+- 2026-10-11: OpenCode claimed side-window split: add the missing rear-door/quarter-glass
+  divider on both sides, retaining the existing B-pillars, rear frame and selectable part ids.
+
 - 2026-10-11: Rear-window support restored after rendering the 21:27 build (`f71a8f9`)
   for comparison. Rear glazing now tapers inside mirrored C-pillars and stops before a
   painted lower frame, rather than extending onto the taller STL-guided rear deck. Current

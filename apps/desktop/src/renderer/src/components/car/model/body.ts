@@ -452,12 +452,17 @@ const windowFront = (y: number) => 0.8 - (y - 1.0) * 1.82 - 0.13;
 const windowRear = (y: number) =>
   y < 1.12 ? lerp(-1.48, -1.66, smoothstep(1.05, 1.12, y)) : -1.66 + (y - 1.12) * 1.08;
 const inBPillar = (x: number) => x > -0.31 && x < -0.19;
+// The rear door's moving glass ends before the small fixed quarter pane.
+// Lean its frame forward with the C-pillar rather than drawing a floating line.
+const inQuarterWindowFrame = (x: number, y: number) =>
+  Math.abs(x - (-1.3 + (y - 1.06) * 0.4)) < 0.028;
 
 function inSideWindow(q: Quad): boolean {
   return (
     q.x < windowFront(q.y) &&
     q.x > windowRear(q.y) &&
     !inBPillar(q.x) &&
+    !inQuarterWindowFrame(q.x, q.y) &&
     q.seg <= 6 &&
     q.glass > 0.08
   );
@@ -501,7 +506,7 @@ export function bodyPanel(q: Quad): string | null {
   // Below the window line: the cowl in front of the windscreen, the deck behind the rear window.
   if (q.y < belt + 0.02) return "body";
   if (sideGlass && inSideWindow(q)) return "side_windows:glass";
-  if (sideGlass && inBPillar(q.x)) return "roof:dark";
+  if (sideGlass && (inBPillar(q.x) || inQuarterWindowFrame(q.x, q.y))) return "roof:dark";
   if (q.seg >= 7 && az < 0.6) {
     if (q.x > 0.02) return "windshield:glass";
     // The taller reference deck no longer closes the rear glass at the belt line.
