@@ -366,11 +366,15 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 ## WS7 — AI blocks: AI Filter, AI Splitter, Add to Car
 
-**Status:** in progress (Add to Car and AI Splitter done; AI Filter open) · **Owner:** Claude Code (Add to Car), OpenCode (AI Splitter) · **Branch:** `main`, `ws7-ai-splitter`
+**Status:** in progress (Mastra raw splitter and transparent review) · **Owner:** Claude Code (Add to Car), OpenCode (AI Splitter) · **Branch:** `main`, `ws7-mastra-splitter`
 **Depends on:** nothing for tasks 1–2; WS8 for the splitter's priority mode.
 
 **Tasks**
 
+- [ ] Mastra raw-data analysis: customer-demand bands (2–10), car parts and custom instructions.
+- [ ] Research JSON import alongside existing Excel/SQLite; preserve original provenance.
+- [ ] Persist explainable score/routing reports and show review charts with evidence drill-down.
+- [ ] Verify the integrated slice and push `ws7-mastra-splitter` separately for team review.
 - [x] `packages/llm`: `createLlmClient(settings.llm, { apiKey })` with an `anthropic` provider (use the
       `claude-api` skill) and a deterministic `mock`; `generateObject` validates with Zod; tests use the mock.
 - [ ] AI Filter: keep items matching the criterion, extract findings with verbatim-excerpt
@@ -387,6 +391,12 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 **Log**
 
+- 2026-10-11: Human requested implementation of the planned Mastra raw splitter, multi-dataset input,
+  configurable priority-band granularity, JSON/SQL/Excel compatibility and transparent HIL graphics.
+  Pulled latest main into the isolated worktree and started `ws7-mastra-splitter`; parallel work will
+  reuse the existing injected LlmClient/settings/key entry. Original checkout has an active team
+  merge and is left to its owner. Core/engine/UI additions are the focused integration authorized
+  by the human. This branch will be pushed separately, not merged automatically.
 - 2026-10-11: Closed the two Add to Car gaps in the shared architecture: `CarService` in
   `packages/engine/src/block.ts` now takes `add(requirements, evidence)` and an optional
   `nextSeq(scope)`; the desktop handlers store sources, cited records, findings and themes with the
