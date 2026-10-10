@@ -136,6 +136,46 @@ export async function runSmoke(
     screens.push({ name, file });
   };
 
+  // Every fresh window asks for the Mastra key, including when a saved key exists.
+  await delay(300);
+  check(
+    (await count('[data-testid="openai-startup"]')) === 1,
+    "startup: OpenAI key prompt missing",
+  );
+  check(
+    await js<boolean>(
+      `document.querySelector('[data-testid="openai-startup-key"]')?.type === 'password'`,
+    ),
+    "startup: key input must be masked",
+  );
+  await delay(400);
+  await shot("openai-startup");
+  await type('[data-testid="openai-startup-key"]', ["synthetic-startup-test-key"]);
+  check(await click('[data-testid="openai-startup-save"]'), "startup: key save missing");
+  await delay(300);
+  check(
+    (await count('[data-testid="openai-startup"]')) === 0,
+    "startup: prompt did not dismiss after save",
+  );
+  const reloaded = new Promise<void>((resolve) => wc.once("did-finish-load", () => resolve()));
+  wc.reload();
+  await reloaded;
+  await delay(300);
+  check(
+    (await count('[data-testid="openai-startup"]')) === 1,
+    "startup: prompt must return on next launch",
+  );
+  check(
+    await js<boolean>(`document.querySelector('[data-testid="openai-startup-key"]')?.value === ''`),
+    "startup: saved key must never be prefilled",
+  );
+  await shot("openai-startup-configured");
+  check(
+    await click('[data-testid="openai-startup-existing"]'),
+    "startup: configured-key continuation missing",
+  );
+  await js(`window.reqflowBridge.invoke("reqflow:settings.setSecret", "openai_api_key", null)`);
+
   // IPC bridge, end to end: one built method must succeed, an unbuilt one must fail loudly.
   const info = await js<{ ok?: boolean }>(`window.reqflowBridge.invoke("reqflow:app.info")`);
   check(info?.ok === true, `app.info failed: ${JSON.stringify(info)}`);

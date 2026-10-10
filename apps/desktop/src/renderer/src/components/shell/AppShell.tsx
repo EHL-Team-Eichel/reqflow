@@ -3,6 +3,7 @@ import { Outlet, useNavigate } from "react-router";
 import { settingsStore } from "@/lib/settings";
 import { useApplyTheme } from "@/lib/theme";
 import { BottomNav, TABS } from "./BottomNav";
+import { OpenAiStartup } from "./OpenAiStartup";
 
 export function AppShell() {
   useApplyTheme();
@@ -31,6 +32,7 @@ export function AppShell() {
         <Outlet />
       </main>
       <BottomNav />
+      <OpenAiStartup />
     </div>
   );
 }
