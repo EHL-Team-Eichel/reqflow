@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4KMWRK0Z5V4D4GVXSB0HPP9",
   "strategy": "manual-commit",
   "branch": "ws6-research",
-  "checkpoints_count": 9,
+  "checkpoints_count": 10,
   "files_touched": [
     ".gitignore",
     ".prettierignore",
@@ -30,6 +30,8 @@
     "apps/desktop/tsconfig.web.json",
     "docs/STATUS.md",
     "docs/research/README.md",
+    "docs/research/http.md",
+    "docs/research/runtime.md",
     "docs/research/verification.md",
     "package-lock.json",
     "package.json",
@@ -107,6 +109,13 @@
       "compact_transcript": "/7/transcript.jsonl",
       "content_hash": "/7/content_hash.txt",
       "prompt": "/7/prompt.txt"
+    },
+    {
+      "metadata": "/8/metadata.json",
+      "transcript": "/8/full.jsonl",
+      "compact_transcript": "/8/transcript.jsonl",
+      "content_hash": "/8/content_hash.txt",
+      "prompt": "/8/prompt.txt"
     }
   ],
   "token_usage": {
