@@ -1,5 +1,6 @@
 import {
   validateGraph,
+  walkBlocks,
   type ProductScope,
   type ReqflowApi,
   type WorkflowGraph,
@@ -15,11 +16,23 @@ interface RunState {
   error: string | null;
   start(graph: WorkflowGraph, scope: ProductScope): Promise<void>;
   cancel(): Promise<void>;
+  resume(runId: string, blockId: string, confirmed: boolean): Promise<void>;
   subscribe(): () => void;
 }
 
 const active = (run: WorkflowRun | null) =>
   run !== null && ["queued", "running", "waiting_for_review"].includes(run.status);
+
+export function pausedHil(run: WorkflowRun | null) {
+  if (run?.status !== "waiting_for_review") return null;
+  return (
+    [...walkBlocks(run.graph)].find(
+      ({ block }) =>
+        block.kind === "hil" &&
+        run.blockRuns.some((br) => br.blockId === block.id && br.status === "waiting_for_review"),
+    ) ?? null
+  );
+}
 
 const staleActiveUpdate = (current: WorkflowRun | null, next: WorkflowRun) =>
   current?.id === next.id && !active(current) && active(next);
@@ -74,6 +87,40 @@ export function createRunStore(api: RunApi) {
       } catch (err) {
         set({ error: err instanceof Error ? err.message : String(err) });
       } finally {
+        set({ busy: false });
+      }
+    },
+    async resume(runId, blockId, confirmed) {
+      if (get().busy) return;
+      const run = get().run;
+      const gate = pausedHil(run);
+      if (!confirmed || run?.id !== runId || gate?.block.id !== blockId) {
+        set({ error: "Review and confirm the current paused HIL step before continuing." });
+        return;
+      }
+      if (gate.block.params.approvals !== 1) {
+        set({
+          error:
+            "This gate requires multiple reviewers. Multiple review confirmations are not supported yet.",
+        });
+        return;
+      }
+      set({ busy: true, error: null });
+      const updates = new Map<string, WorkflowRun>();
+      const unsubscribe = api.runs.onUpdate((next) => {
+        if (next.id !== runId || staleActiveUpdate(get().run, next)) return;
+        updates.set(next.id, next);
+        // Once execution starts, let the human cancel long-running downstream work.
+        set({ run: next, busy: next.status !== "running" });
+      });
+      try {
+        const resumed = await api.runs.resume(runId);
+        const latest = updates.get(runId) ?? resumed;
+        if (get().run?.id === runId && !staleActiveUpdate(get().run, latest)) set({ run: latest });
+      } catch (err) {
+        set({ error: err instanceof Error ? err.message : String(err) });
+      } finally {
+        unsubscribe();
         set({ busy: false });
       }
     },

@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
-import { graphAt, traceLineage, type WorkflowBlock, type WorkflowGraph } from "@reqflow/core";
+import {
+  graphAt,
+  traceLineage,
+  walkBlocks,
+  type WorkflowBlock,
+  type WorkflowGraph,
+  type WorkflowRun,
+} from "@reqflow/core";
+import { useStore } from "zustand";
 import { useDataflow, dataflowStore } from "../store";
 import { BlockIcon } from "../BlockIcon";
 import { GROUP_STYLE } from "../groups";
@@ -9,6 +17,8 @@ import { TableIcon, XIcon } from "@/components/ui/icons";
 import { LineageChart } from "./LineageChart";
 import { DataPanel } from "./DataPanel";
 import { cx } from "@/lib/cx";
+import { runStore } from "../run-session";
+import { pausedHil } from "../run-store";
 
 const REVIEWER_LABELS: Record<string, string> = {
   pm: "Product manager",
@@ -19,15 +29,26 @@ const REVIEWER_LABELS: Record<string, string> = {
 /** The HIL review report: lineage flow chart + the data at each step. Opened by double-click. */
 export function HilReport() {
   const report = useDataflow((s) => s.report);
-  const root = useDataflow((s) => s.root);
+  const editorRoot = useDataflow((s) => s.root);
+  const currentRun = useStore(runStore, (s) => s.run);
+  const snapshotStep = useMemo(
+    () =>
+      currentRun && report
+        ? [...walkBlocks(currentRun.graph)].find(({ block }) => block.id === report.blockId)
+        : undefined,
+    [currentRun, report],
+  );
+  const run = snapshotStep ? currentRun : null;
+  const root = run?.graph ?? editorRoot;
+  const path = snapshotStep?.path ?? report?.path ?? [];
   const block = useMemo(() => {
     if (!report) return null;
     try {
-      return graphAt(root, report.path).blocks.find((b) => b.id === report.blockId) ?? null;
+      return graphAt(root, path).blocks.find((b) => b.id === report.blockId) ?? null;
     } catch {
       return null; // its workplace was deleted
     }
-  }, [root, report]);
+  }, [root, path, report]);
 
   useEffect(() => {
     if (report && !block) dataflowStore.getState().closeReport();
@@ -35,21 +56,35 @@ export function HilReport() {
 
   if (!report || !block) return null;
   // Keyed by block: selection and sample toggle start fresh for every report.
-  return <ReportDialog key={block.id} root={root} path={report.path} block={block} />;
+  return (
+    <ReportDialog
+      key={`${run?.id ?? "preview"}:${block.id}`}
+      root={root}
+      path={path}
+      block={block}
+      run={run}
+    />
+  );
 }
 
 function ReportDialog({
   root,
   path,
   block,
+  run,
 }: {
   root: WorkflowGraph;
   path: string[];
   block: WorkflowBlock;
+  run: WorkflowRun | null;
 }) {
   const lineage = useMemo(() => traceLineage(root, path, block.id), [root, path, block.id]);
   const [selectedStepId, setSelectedStepId] = useState(block.id);
   const [showSample, setShowSample] = useState(false);
+  const [reviewReady, setReviewReady] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
+  const busy = useStore(runStore, (s) => s.busy);
+  const error = useStore(runStore, (s) => s.error);
   const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => cardRef.current?.focus(), []);
@@ -73,6 +108,7 @@ function ReportDialog({
     REVIEWER_LABELS[String(block.params.reviewer)] ?? String(block.params.reviewer);
   const approvalsNeeded = Number(block.params.approvals);
   const mayEdit = block.params.allowEdits === true;
+  const waitingHere = pausedHil(run)?.block.id === block.id;
 
   return (
     <div
@@ -183,6 +219,8 @@ function ReportDialog({
             <DataPanel
               key={currentStep.block.id}
               root={root}
+              run={run}
+              onReviewReady={setReviewReady}
               step={currentStep}
               isTarget={currentStep.block.id === lineage.targetId}
               showSample={showSample}
@@ -190,6 +228,54 @@ function ReportDialog({
             />
           </div>
         </div>
+        {waitingHere && run && (
+          <div
+            className="flex flex-wrap items-center gap-4 border-t border-line bg-panel p-4"
+            data-testid="hil-review-actions"
+          >
+            <div className="min-w-0 flex-1 text-sm">
+              {approvalsNeeded !== 1 ? (
+                <p role="alert" className="text-warn">
+                  This gate needs multiple reviewers. The current review UI supports one reviewer;
+                  this gate cannot be continued here.
+                </p>
+              ) : (
+                <label className="flex items-start gap-3 text-ink">
+                  <input
+                    type="checkbox"
+                    data-testid="hil-review-confirm"
+                    className="mt-1 accent-brand"
+                    checked={confirmed}
+                    disabled={!reviewReady || busy}
+                    onChange={(e) => setConfirmed(e.target.checked)}
+                  />
+                  <span>
+                    I have reviewed the saved data and authorize continuing this flow. This does not
+                    approve or reject any requirements.
+                  </span>
+                </label>
+              )}
+              {!reviewReady && (
+                <p className="mt-1 text-xs text-muted">
+                  Open “Data at this point” and wait for the saved run data before continuing.
+                </p>
+              )}
+              {error && (
+                <p role="alert" className="mt-1 text-danger">
+                  {error}
+                </p>
+              )}
+            </div>
+            <Button
+              variant="primary"
+              data-testid="hil-review-continue"
+              disabled={busy || !reviewReady || !confirmed || approvalsNeeded !== 1}
+              onClick={() => void runStore.getState().resume(run.id, block.id, confirmed)}
+            >
+              {busy ? "Continuing…" : "Continue flow"}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

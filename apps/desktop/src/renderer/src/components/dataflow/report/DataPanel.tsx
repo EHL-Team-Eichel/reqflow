@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { type LineageStep, type WorkflowGraph } from "@reqflow/core";
+import { type LineageStep, type WorkflowGraph, type WorkflowRun } from "@reqflow/core";
 import { Button } from "@/components/ui/Button";
 import { TableIcon } from "@/components/ui/icons";
 import { TextInput } from "@/components/ui/controls";
@@ -8,6 +8,7 @@ import { type PreviewState } from "../usePreview";
 import { api } from "@/lib/api";
 import { useSettings } from "@/lib/settings";
 import { previewReportInputs, reportPreviewInputs } from "./preview";
+import { loadRunData } from "./run-data";
 import {
   SourcesTable,
   RecordsTable,
@@ -19,6 +20,8 @@ import { cx } from "@/lib/cx";
 
 interface Props {
   root: WorkflowGraph;
+  run?: WorkflowRun | null;
+  onReviewReady?: (ready: boolean) => void;
   step: LineageStep;
   isTarget: boolean;
   showSample: boolean;
@@ -28,30 +31,51 @@ interface Props {
 const TABS = ["Requirements", "Themes", "Findings", "Records", "Sources"] as const;
 type Tab = (typeof TABS)[number];
 
-export function DataPanel({ root, step, isTarget, showSample, onShowSample }: Props) {
+export function DataPanel({
+  root,
+  run,
+  step,
+  isTarget,
+  showSample,
+  onShowSample,
+  onReviewReady,
+}: Props) {
   const [filter, setFilter] = useState("");
   const [activeTab, setActiveTab] = useState<Tab | null>(null);
 
   const scope = useSettings((s) => s.settings.defaultScope);
-  const inputs = useMemo(() => reportPreviewInputs(root, step), [root, step]);
+  const inputs = useMemo(
+    () => (run ? null : reportPreviewInputs(root, step)),
+    [root, step, run?.id],
+  );
+  const request = useMemo(
+    () => ({ inputs, run, step }),
+    [inputs, run?.id, step.block.id, step.path.join("/")],
+  );
   const [result, setResult] = useState<{
-    inputs: typeof inputs;
+    request: typeof request;
     scope: typeof scope;
     state: PreviewState;
   } | null>(null);
-  const previewable = inputs !== null;
+  const previewable = !!run || inputs !== null;
   useEffect(() => {
-    if (!inputs) return;
+    if (!request.run && !request.inputs) return;
     let cancelled = false;
-    setResult({ inputs, scope, state: { status: "loading" } });
-    void previewReportInputs(inputs, scope, api.blocks.preview).then(
+    setResult({ request, scope, state: { status: "loading" } });
+    const read = request.run
+      ? loadRunData(request.run, request.step, api.runs.blockOutput).then((data) => ({
+          data,
+          logs: [],
+        }))
+      : previewReportInputs(request.inputs!, scope, api.blocks.preview);
+    void read.then(
       ({ data, logs }) => {
-        if (!cancelled) setResult({ inputs, scope, state: { status: "ready", data, logs } });
+        if (!cancelled) setResult({ request, scope, state: { status: "ready", data, logs } });
       },
       (err: unknown) => {
         if (!cancelled)
           setResult({
-            inputs,
+            request,
             scope,
             state: {
               status: "error",
@@ -64,11 +88,15 @@ export function DataPanel({ root, step, isTarget, showSample, onShowSample }: Pr
     return () => {
       cancelled = true;
     };
-  }, [inputs, scope]);
+  }, [request, scope]);
   // Hide old results immediately, before the effect reloads changed inputs or scope.
   const state: PreviewState =
-    result?.inputs === inputs && result.scope === scope ? result.state : { status: "idle" };
+    result?.request === request && result.scope === scope ? result.state : { status: "idle" };
   const real = state.status === "ready" ? state.data : null;
+  useEffect(() => {
+    onReviewReady?.(!!run && isTarget && state.status === "ready");
+    return () => onReviewReady?.(false);
+  }, [run?.id, isTarget, state.status, onReviewReady]);
 
   // Real data wins. The synthetic sample is only for steps whose data needs a run.
   const data = useMemo(() => {
@@ -153,9 +181,11 @@ export function DataPanel({ root, step, isTarget, showSample, onShowSample }: Pr
 
       {real ? (
         <div data-testid="data-real" className="bg-brand-soft px-4 py-2 text-xs text-brand">
-          {step.block.kind === "hil"
-            ? "Preview of connected source inputs, read just now. This flow has not run; no review or approval has been recorded."
-            : `Read from the block's ${step.block.params.source === "database" ? "database" : "file"} just now: its own output, not a run.`}
+          {run
+            ? "Saved data from this run. Reviewing or continuing the flow does not approve its requirements."
+            : step.block.kind === "hil"
+              ? "Preview of connected source inputs, read just now. This flow has not run; no review or approval has been recorded."
+              : `Read from the block's ${step.block.params.source === "database" ? "database" : "file"} just now: its own output, not a run.`}
         </div>
       ) : (
         <div className="flex items-center justify-between bg-warn-soft px-4 py-2 text-xs text-warn">
