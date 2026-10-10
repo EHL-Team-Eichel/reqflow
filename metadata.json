@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4KMWRK0Z5V4D4GVXSB0HPP9",
   "strategy": "manual-commit",
   "branch": "ws6-research",
-  "checkpoints_count": 23,
+  "checkpoints_count": 29,
   "files_touched": [
     ".gitignore",
     ".prettierignore",
@@ -39,6 +39,7 @@
     "docs/research/mastra.md",
     "docs/research/runtime.md",
     "docs/research/settings.md",
+    "docs/research/social-providers.md",
     "docs/research/verification.md",
     "package-lock.json",
     "package.json",
@@ -48,6 +49,8 @@
     "packages/blocks/src/research/agents.ts",
     "packages/blocks/src/research/data-budget.test.ts",
     "packages/blocks/src/research/data-budget.ts",
+    "packages/blocks/src/research/documents/local.test.ts",
+    "packages/blocks/src/research/documents/local.ts",
     "packages/blocks/src/research/documents/xlsx-worker.ts",
     "packages/blocks/src/research/export.test.ts",
     "packages/blocks/src/research/export.ts",
@@ -57,6 +60,25 @@
     "packages/blocks/src/research/index.ts",
     "packages/blocks/src/research/mastra.test.ts",
     "packages/blocks/src/research/mastra.ts",
+    "packages/blocks/src/research/provider.ts",
+    "packages/blocks/src/research/providers/apify.test.ts",
+    "packages/blocks/src/research/providers/apify.ts",
+    "packages/blocks/src/research/providers/documents.test.ts",
+    "packages/blocks/src/research/providers/documents.ts",
+    "packages/blocks/src/research/providers/eurostat.test.ts",
+    "packages/blocks/src/research/providers/eurostat.ts",
+    "packages/blocks/src/research/providers/firecrawl.test.ts",
+    "packages/blocks/src/research/providers/firecrawl.ts",
+    "packages/blocks/src/research/providers/openalex.test.ts",
+    "packages/blocks/src/research/providers/openalex.ts",
+    "packages/blocks/src/research/providers/reddit.test.ts",
+    "packages/blocks/src/research/providers/reddit.ts",
+    "packages/blocks/src/research/providers/tavily.test.ts",
+    "packages/blocks/src/research/providers/tavily.ts",
+    "packages/blocks/src/research/providers/x.test.ts",
+    "packages/blocks/src/research/providers/x.ts",
+    "packages/blocks/src/research/providers/youtube.test.ts",
+    "packages/blocks/src/research/providers/youtube.ts",
     "packages/blocks/src/research/raw.test.ts",
     "packages/blocks/src/research/raw.ts",
     "packages/blocks/src/research/runtime.test.ts",
@@ -67,10 +89,14 @@
     "packages/core/src/index.ts",
     "packages/core/src/ipc.ts",
     "packages/core/src/research.test.ts",
+    "packages/core/src/research.ts",
+    "packages/core/src/secrets.ts",
     "packages/core/src/services.ts",
     "packages/core/src/settings.ts",
     "packages/core/src/source.ts",
     "packages/engine/src/block.ts",
+    "packages/engine/src/executor.test.ts",
+    "packages/engine/src/executor.ts",
     "packages/engine/src/index.ts"
   ],
   "sessions": [
@@ -213,13 +239,20 @@
       "compact_transcript": "/19/transcript.jsonl",
       "content_hash": "/19/content_hash.txt",
       "prompt": "/19/prompt.txt"
+    },
+    {
+      "metadata": "/20/metadata.json",
+      "transcript": "/20/full.jsonl",
+      "compact_transcript": "/20/transcript.jsonl",
+      "content_hash": "/20/content_hash.txt",
+      "prompt": "/20/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 618,
-    "cache_creation_tokens": 1274272,
-    "cache_read_tokens": 17998485,
-    "output_tokens": 98331,
-    "api_call_count": 206
+    "input_tokens": 891,
+    "cache_creation_tokens": 1614033,
+    "cache_read_tokens": 23203210,
+    "output_tokens": 128167,
+    "api_call_count": 297
   }
 }
