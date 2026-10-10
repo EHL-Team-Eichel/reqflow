@@ -257,7 +257,7 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 ## WS7 — AI blocks: AI Filter, AI Splitter, Add to Car
 
-**Status:** in progress (Add to Car first) · **Owner:** Claude Code (splitter session) · **Branch:** `main`
+**Status:** in progress (Add to Car done, LLM blocks next) · **Owner:** Claude Code (splitter session) · **Branch:** `main`
 **Depends on:** nothing for tasks 1–2; WS8 for the splitter's priority mode.
 
 **Tasks**
@@ -268,13 +268,38 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
       verification, log every excluded item with a reason.
 - [ ] AI Splitter: route each item to exactly one branch (`out-<i>`); "priority" uses WS8's scoring,
       "category" / "sentiment" / "custom" use the LLM.
-- [ ] Add to Car: cluster and derive requirements (IDs via `formatRequirementId`, targets, evidence level
+- [x] Add to Car: cluster and derive requirements (IDs via `formatRequirementId`, targets, evidence level
       A–D, Kano class, assumptions, uncertainties, conflicts), priority from the input port, hand them to `ctx.car.add`.
 - [ ] `answerChallenge(...)` for the Car tab's challenge flow.
 - [ ] End-to-end offline test: fixture records → AI Filter → AI Splitter → Add to Car with `mock`.
+- [ ] Add to Car: optional LLM wording pass for titles/descriptions (keep the deterministic draft as fallback).
+- [ ] Add to Car: sales-volume weighting of themes once WS8's `customer_impact` factor exists.
 
 **Log**
 
+- 2026-10-10 night: **Add to Car built** (`packages/blocks/src/add-to-car/`), deterministic, no LLM:
+  - `taxonomy.ts`: 30 components (Seats, Displays/iDrive, Range & charging, …) × 13 aspects + "Overall" (Noise,
+    Reliability, Ease of use, Comfort, …), each mapped to a core `RequirementCategory`; pricing and
+    dealer topics are out of scope. BMW's VFC level 2/3 names map by rule (all names in the F70/G60/G70
+    exports are covered); English and some German keywords for untagged text.
+  - `splitter.ts`: clauses are exact substrings of the comment (verbatim excerpts); BMW's tags first
+    (the combined "level2 : level3" column survives the Raw block's row merge), keyword rules per clause
+    otherwise, an aspect-only clause inherits the previous clause's component.
+  - `derive.ts`: findings per theme × polarity (complaint / unmet need / praise, max 20 excerpts, all
+    comments counted), one requirement per theme with ≥ 2 complaints/requests; praise on the same theme
+    = `conflictingFindingIds`; evidence level, Kano, assumptions and uncertainties by documented rules;
+    priority from the input's ranking name (Must/Should/Could/Won't, else position); `mergeDuplicates`
+    keeps the best ranking. Tables of figures (studies, sales) are skipped and reported.
+  - Real data (local `data/raw/`): F70 2,128 comments → 86 % placed by BMW's classification, 5 % by
+    rules, 9 % unplaced; G60/G70 4,000 each, similar. ~100 ms per export.
+  - Verify: `npm run check` (the "BMW … → Add to Car" suites run when `data/raw/` has the exports),
+    `npm run smoke`. Tests use the real exports, not invented data.
+- Contract change requests for WS0/WS1:
+  - `ctx.car.add` takes only requirements, so the findings Add to Car derives are recorded in full in
+    the audit trail (`finding.extracted` / `finding.excluded`, `changes[0].after`). Proposal:
+    `car.add(requirements, evidence: { findings, themes })` so the Car page can show them directly.
+  - Requirement numbers start at 001 per run. `seq` must never be reused per scope, so the block needs
+    the next free number: `car.nextSeq(scope)` or `car.add` assigns ids.
 - 2026-10-10 night: Claimed WS7, starting with Add to Car: a deterministic theme splitter
   (component › aspect × polarity, BMW VFC tags first, keyword rules on clauses for untagged text)
   that turns feedback into findings, themes and requirements without an LLM.
