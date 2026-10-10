@@ -298,8 +298,10 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
   - `ctx.car.add` takes only requirements, so the findings Add to Car derives are recorded in full in
     the audit trail (`finding.extracted` / `finding.excluded`, `changes[0].after`). Proposal:
     `car.add(requirements, evidence: { findings, themes })` so the Car page can show them directly.
-  - Requirement numbers start at 001 per run. `seq` must never be reused per scope, so the block needs
-    the next free number: `car.nextSeq(scope)` or `car.add` assigns ids.
+  - **Urgent now that runs work:** requirement numbers start at 001 per run, and `saveVersion` upserts
+    on `(id, version)`, so a second run overwrites version 1 of the first run's requirements. `seq` must
+    never be reused per scope: the block needs the next free number (`car.nextSeq(scope)`), or
+    `car.add` assigns the ids.
 - 2026-10-10 night: Claimed WS7, starting with Add to Car: a deterministic theme splitter
   (component › aspect × polarity, BMW VFC tags first, keyword rules on clauses for untagged text)
   that turns feedback into findings, themes and requirements without an LLM.
