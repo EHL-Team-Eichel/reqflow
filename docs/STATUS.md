@@ -244,6 +244,19 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
   UI smoke (PASS, 32 screenshots), and an isolated native Electron probe selecting all 34
   new parts with zero requirements. Reviewed motor/driver-seat selection and detailed trunk.
 
+- 2026-10-10: Idle car orbit complete: slow, frame-rate-independent rotation on opening and
+  after 30 seconds without app-wide input. Held drags block it; camera presets remain usable,
+  resizing does not reset the orbit, reduced motion disables it, and listeners clean up on unmount.
+  Isolated verification: typecheck, 340 tests passed (25 skipped), smoke PASS (32 screenshots),
+  light/dark visuals and native opening/input/real-30-second/reduced-motion probe passed.
+  Integrated verification: typecheck and 398 tests pass (25 skipped); smoke captures 32 screens
+  but retains the 12 documented collapsed-menu point assertion failures from the concurrent slice.
+  Commit only this slice; concurrent component/menu/model edits remain untouched.
+
+- 2026-10-10: OpenCode claimed idle car orbit: rotate on opening and after 30 seconds of
+  app-wide inactivity; stop on input, preserve camera presets and respect reduced motion.
+  Verify this focused slice in isolation; preserve concurrent car/menu edits.
+
 - 2026-10-10: Exterior-visibility slice complete: internal meshes/points are hidden and unpickable
   in Exterior, outside points appear only on unobstructed surfaces and follow visible sides when
   orbiting, and Interior restores all parts. Added 14 regressions. Human approved the narrow

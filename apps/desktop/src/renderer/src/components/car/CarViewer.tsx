@@ -5,6 +5,7 @@ import { cx } from "@/lib/cx";
 import { label } from "./classify";
 import { partTag } from "./partTags";
 import { markerPresentation } from "./markerMenu";
+import { trackIdleOrbit } from "./idleOrbit";
 import { buildCar, type CarPiece } from "./model/buildCar";
 import { G60 } from "./model/body";
 import {
@@ -94,7 +95,10 @@ export function CarViewer(props: Props) {
     controls.minDistance = 2.2;
     controls.maxDistance = 16;
     controls.maxPolarAngle = Math.PI * 0.495;
+    controls.autoRotateSpeed = 0.8;
     controls.update();
+    const idleOrbit = trackIdleOrbit(window);
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
     const car = buildCar();
     scene.add(car.root);
@@ -334,8 +338,12 @@ export function CarViewer(props: Props) {
     // Render loop: only draws when something changed.
     const v = new THREE.Vector3();
     let frame = 0;
+    let lastFrame = performance.now();
     const loop = () => {
       frame = requestAnimationFrame(loop);
+      const now = performance.now();
+      const delta = Math.min((now - lastFrame) / 1000, 0.1);
+      lastFrame = now;
       if (flight) {
         const t = Math.min(1, (performance.now() - flight.t0) / 650);
         const e = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
@@ -344,7 +352,10 @@ export function CarViewer(props: Props) {
         if (t >= 1) flight = null;
         dirty = true;
       }
-      if (controls.update()) {
+      controls.autoRotate = !flight && !reducedMotion.matches && idleOrbit.shouldRotate();
+      host.dataset.autoRotating = String(controls.autoRotate);
+      if (controls.autoRotate) activePreset = null;
+      if (controls.update(delta)) {
         dirty = true;
         needsPick = true;
       }
@@ -390,6 +401,7 @@ export function CarViewer(props: Props) {
 
     return () => {
       cancelAnimationFrame(frame);
+      idleOrbit.dispose();
       ro.disconnect();
       onTheme.disconnect();
       el.removeEventListener("pointermove", onMove);
