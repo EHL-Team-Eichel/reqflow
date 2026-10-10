@@ -2,10 +2,71 @@ import { boundaryBlockId, createBlock, graphAt, validateGraph } from "@reqflow/c
 import { describe, expect, it } from "vitest";
 import { toFlowEdges, toFlowNodes } from "./flow";
 import { breadcrumbOf, createDataflowStore, selectInspectedBlock, selectWorkplace } from "./store";
+import { FEEDBACK_TEMPLATES } from "./templates";
 
 const at = { x: 0, y: 0 };
 
 describe("dataflow store", () => {
+  it("loads a full template and resets the old workplace, report, selection and measurements", () => {
+    const store = createDataflowStore();
+    const custom = store.getState().addBlock("custom", at);
+    store.getState().openInner(custom);
+    const hil = store.getState().addBlock("hil", at);
+    store.getState().openReport(hil);
+    store
+      .getState()
+      .applyNodeChanges([{ type: "dimensions", id: hil, dimensions: { width: 200, height: 90 } }]);
+    expect(store.getState().loadTemplate(FEEDBACK_TEMPLATES[0]!)).toBe(true);
+    const state = store.getState();
+    expect(state).toMatchObject({
+      name: FEEDBACK_TEMPLATES[0]!.name,
+      path: [],
+      report: null,
+      selectedBlockIds: [],
+      selectedEdgeIds: [],
+      measured: {},
+    });
+    expect(state.root.blocks.map((b) => b.kind)).toEqual(["raw", "hil", "add_to_car"]);
+    expect(validateGraph(state.root)).toEqual([]);
+    expect(state.notice).toMatchObject({ tone: "info", message: /Configure the data sources/ });
+  });
+
+  it("retains the current canvas when a template is invalid and uses fresh ids on every load", () => {
+    const store = createDataflowStore();
+    store.getState().addBlock("raw", at);
+    const original = store.getState().root;
+    const bad = structuredClone(FEEDBACK_TEMPLATES[0]!);
+    bad.graph.edges[0]!.source = "missing";
+    expect(store.getState().loadTemplate(bad)).toBe(false);
+    expect(store.getState().root).toBe(original);
+    expect(store.getState().name).toBe("Data Flow");
+    expect(store.getState().notice?.tone).toBe("error");
+    expect(store.getState().loadTemplate(FEEDBACK_TEMPLATES[0]!)).toBe(true);
+    const ids = store.getState().root.blocks.map((b) => b.id);
+    expect(store.getState().loadTemplate(FEEDBACK_TEMPLATES[0]!)).toBe(true);
+    expect(store.getState().root.blocks.every((b) => !ids.includes(b.id))).toBe(true);
+  });
+
+  it("checks run replacement after validation, without losing the canvas on a blocked or invalid load", () => {
+    const store = createDataflowStore();
+    store.getState().addBlock("raw", at);
+    const original = store.getState().root;
+    let calls = 0;
+    const blocked = () => {
+      calls++;
+      return false;
+    };
+    const bad = structuredClone(FEEDBACK_TEMPLATES[0]!);
+    bad.graph.edges[0]!.source = "missing";
+    expect(store.getState().loadTemplate(bad, blocked)).toBe(false);
+    expect(calls).toBe(0);
+    expect(store.getState().loadTemplate(FEEDBACK_TEMPLATES[0]!, blocked)).toBe(false);
+    expect(calls).toBe(1);
+    expect(store.getState().root).toBe(original);
+    expect(store.getState().notice?.message).toMatch(/Finish or cancel/);
+    expect(store.getState().loadTemplate(FEEDBACK_TEMPLATES[0]!, () => true)).toBe(true);
+  });
+
   it("adds blocks with unique labels and selects the new one", () => {
     const store = createDataflowStore();
     const a = store.getState().addBlock("raw", at);
