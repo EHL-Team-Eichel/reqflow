@@ -292,7 +292,7 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 ## WS7 — AI blocks: AI Filter, AI Splitter, Add to Car
 
-**Status:** in progress (Add to Car done, LLM blocks next) · **Owner:** Claude Code (splitter session) · **Branch:** `main`
+**Status:** in progress (Add to Car done, AI Splitter in progress) · **Owner:** Claude Code (Add to Car), OpenCode (AI Splitter) · **Branch:** `main`, `ws7-ai-splitter`
 **Depends on:** nothing for tasks 1–2; WS8 for the splitter's priority mode.
 
 **Tasks**
@@ -312,6 +312,10 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 **Log**
 
+- 2026-10-10: OpenCode claimed the AI Splitter slice on `ws7-ai-splitter`, in an isolated worktree
+  based on latest `origin/main` (`cea8a29`). Human authorized the focused shared-contract/UI/engine
+  changes required for 1 input, 2–10 outputs and an inner workplace. Implement routing and offline
+  verification without changing the existing Add to Car implementation. WS8 scoring is still open.
 - 2026-10-10 night: **Add to Car built** (`packages/blocks/src/add-to-car/`), deterministic, no LLM:
   - `taxonomy.ts`: 30 components (Seats, Displays/iDrive, Range & charging, …) × 13 aspects + "Overall" (Noise,
     Reliability, Ease of use, Comfort, …), each mapped to a core `RequirementCategory`; pricing and
