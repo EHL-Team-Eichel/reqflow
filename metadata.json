@@ -1,0 +1,48 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4KVSGR6FPMP3G9AMJPNTYEY",
+  "strategy": "manual-commit",
+  "branch": "ws7-add-to-car-agents",
+  "checkpoints_count": 5,
+  "files_touched": [
+    "apps/desktop/src/main/handlers.ts",
+    "apps/desktop/src/main/preview.ts",
+    "apps/desktop/src/main/secrets.ts",
+    "apps/desktop/src/main/settings-storage.ts",
+    "apps/desktop/src/main/workflow-storage.ts",
+    "apps/desktop/src/renderer/src/components/settings/sections/AiSection.tsx",
+    "apps/desktop/src/renderer/src/lib/settings-store.test.ts",
+    "packages/blocks/src/add-to-car/add-to-car.test.ts",
+    "packages/blocks/src/add-to-car/add-to-car.ts",
+    "packages/blocks/src/templates/bmw-default.ts",
+    "packages/core/src/blocks.ts",
+    "packages/core/src/fixtures/sample-f70-eu.ts",
+    "packages/core/src/graph.test.ts",
+    "packages/core/src/graph.ts",
+    "packages/core/src/ids.ts",
+    "packages/core/src/index.ts",
+    "packages/core/src/ipc.ts",
+    "packages/core/src/reasoning.ts",
+    "packages/core/src/requirement.ts",
+    "packages/core/src/services.ts",
+    "packages/core/src/settings.ts",
+    "packages/engine/src/block.ts",
+    "packages/engine/src/executor.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 822,
+    "cache_creation_tokens": 1157660,
+    "cache_read_tokens": 125759090,
+    "output_tokens": 699165,
+    "api_call_count": 410
+  }
+}

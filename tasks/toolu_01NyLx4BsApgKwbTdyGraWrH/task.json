@@ -1,0 +1,15 @@
+{
+  "tool_use_id": "toolu_01NyLx4BsApgKwbTdyGraWrH",
+  "agent_id": "acee5a05d7431f43f",
+  "subagent_type": "claude-code-guide",
+  "task_description": "Current Claude API params lookup",
+  "token_usage": {
+    "input_tokens": 92,
+    "cache_creation_tokens": 156839,
+    "cache_read_tokens": 4541003,
+    "output_tokens": 368,
+    "api_call_count": 46
+  },
+  "started_at": "2026-10-10T23:25:58.585943+02:00",
+  "completed_at": "2026-10-10T23:32:03.048675+02:00"
+}
