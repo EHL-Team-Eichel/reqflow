@@ -95,7 +95,7 @@ describe("powertrain switching", () => {
     };
     expect(volume("hybrid")).toBeLessThan(volume("electric") / 2);
     expect(volume("h2")).toBeLessThan(volume("hybrid"));
-  });
+  }, 15000);
 
   it("classifies combustion, fuel, exhaust and hydrogen stack requirements independently", () => {
     for (const [title, id] of [

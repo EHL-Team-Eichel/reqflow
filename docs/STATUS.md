@@ -232,6 +232,12 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
   retains the same 12 documented stale marker/menu assertions (32 screenshots). Final checks
   run in an isolated checkout because other sessions are updating this branch concurrently.
 
+- 2026-10-11: Implemented BMW models 31-40 (2014 LB★WORKS BMW 4 Series Body Kit F82, 2020 X1 xDrive 18d, 2019 X7 xDrive40i, 2020 X6 xDrive40i, 2019 X2 xDrive20d M Sport X, 2019 X4 xDrive20d, 2022 X3 xDrive 30i, 2018 X3 G01 Model M, 2018 3D Design i8 I12, 2015 Energy Motor Sport EVO i8 Widebody). Added LB-Works riveted overfenders, SAV roof rail packages, and hybrid futuristic aero kits.
+
+- 2026-10-11: OpenCode claimed hover-safe idle orbit: pointer hover/movement must not stop
+  rotation or reset its 30-second restart timer; clicks and camera interaction still pause it.
+  Preserve concurrent car-model work, verify the focused slice, then commit/push.
+
 - 2026-10-11: Implemented BMW models 21-30 (2015 F80 M3, 2025 G82 M4 Competition, 2024 X3 M40i, 1999 E46 328i Sport, 2017 Pandem E30 V1.5, 2010 DTM FiberWerkz E30 M3, 1988 E30 M3 Evolution II, 2019 330i M Sport, 2014 Duke Dynamics MD4 M4, 2015 Varis Full Widebody F82 M4). Added DTM box flares, time-attack front diffusers and swan-neck GT wings.
 
 - 2026-10-11: Implemented BMW models 11-20 (2014 Z4 sDrive35is, 1979 M1, 2019 M235i Gran Coupe, 2013 335i GT, 2025 M3 CS Touring, 2024 X5 xDrive40i, 1973 3.0 CSL Batmobile, 2020 M340i xDrive, 1993 M3 Coupe E36, 2011 E92 M3 GTS). Added roadster, classic homologation, touring and SUV aero packages.
