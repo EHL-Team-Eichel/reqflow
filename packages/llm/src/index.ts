@@ -6,7 +6,18 @@ import {
 } from "@reqflow/core";
 import { z } from "zod";
 import { anthropicSchema } from "./anthropic-schema";
+import { cancellable, Request } from "./client-request";
+import { createMastraProvider, type MastraLlmClientOptions } from "./mastra";
 import { mockObject } from "./mock";
+
+export type {
+  MastraAgent,
+  MastraAgentConfig,
+  MastraAgentFactory,
+  MastraGenerateOptions,
+  MastraGenerateResult,
+  MastraLlmClientOptions,
+} from "./mastra";
 
 export interface LlmClientOptions {
   /** Supplied by the main process secret store, never read from the environment. */
@@ -15,33 +26,21 @@ export interface LlmClientOptions {
   fetch?: typeof globalThis.fetch;
 }
 
-const Request = z.object({
-  prompt: z.string().min(1),
-  system: z.string().optional(),
-  tier: z.enum(["default", "fast"]).optional(),
-});
 const Message = z.object({
   model: z.string().min(1),
   stop_reason: z.literal("end_turn"),
   content: z.array(z.object({ type: z.literal("text"), text: z.string() })).min(1),
 });
 
-/** Race even injected transports that ignore AbortSignal; always remove the listener. */
-async function cancellable<T>(work: () => Promise<T>, signal?: AbortSignal): Promise<T> {
-  signal?.throwIfAborted();
-  if (!signal) return work();
-  let listener: () => void = () => {};
-  const aborted = new Promise<never>((_, reject) => {
-    listener = () => reject(signal.reason);
-    signal.addEventListener("abort", listener, { once: true });
-  });
-  try {
-    const value = await Promise.race([work(), aborted]);
-    signal.throwIfAborted();
-    return value;
-  } finally {
-    signal.removeEventListener("abort", listener);
-  }
+/** Stateless standalone Mastra provider. Construction validates config but makes no model calls. */
+export function createMastraLlmClient(
+  settings: AppSettings["llm"],
+  options: MastraLlmClientOptions = {},
+): LlmClient {
+  const config = Settings.shape.llm.parse(settings);
+  return config.provider === "mock"
+    ? createLlmClient(config, options)
+    : createMastraProvider(config, options);
 }
 
 /** Minimal Messages API client. No retries, secret discovery, SDK, or live calls at construction. */

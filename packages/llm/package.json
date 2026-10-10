@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit -p ."
   },
   "dependencies": {
+    "@mastra/core": "^1.75.0",
     "@reqflow/core": "*",
     "zod": "^4.6.5"
   }
