@@ -123,7 +123,7 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 ## WS2 — Data Flow editor UI
 
-**Status:** review · **Owner:** OpenCode (Start button session) · **Branch:** `ws2-start-flow`
+**Status:** open · **Owner:** — · **Branch:** —
 **Depends on:** WS1 for save/load and runs. Tasks 1–3 can start now.
 
 **Tasks**
@@ -150,7 +150,9 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 **Log**
 
-- 2026-10-10: Explicit **Start** button replaces Save & run, with a play icon, full-root/inner-flow
+- 2026-10-10: Start-button slice complete and verified on `ws2-start-flow`, PR #10. WS2 released for
+  its remaining checklist (per-node status/counts, save/load/autosave, run outputs and human review/resume).
+  Explicit **Start** button replaces Save & run, with a play icon, full-root/inner-flow
   explanation, disabled empty/starting/running/HIL states and visible progress labels. Kept existing
   IPC execution, cancellation and human-review pause. Stale active fetches/events no longer regress
   terminal run status; recovered live updates clear catch-up errors. Added 15 regression cases.
