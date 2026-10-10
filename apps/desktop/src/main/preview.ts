@@ -7,7 +7,7 @@ import {
   type FileStore,
 } from "@reqflow/core";
 import type { BlockPreview } from "@reqflow/core/ipc";
-import type { BlockContext, BlockRegistry } from "@reqflow/engine";
+import { NO_AGENT_SERVICES, type BlockContext, type BlockRegistry } from "@reqflow/engine";
 import { z } from "zod";
 import { ReqflowError } from "./dispatch";
 
@@ -39,6 +39,12 @@ export async function previewBlock(
       `${spec.label} takes inputs, so its data only exists inside a run`,
     );
   }
+  if (kind === "research") {
+    throw new ReqflowError(
+      "not_implemented",
+      "Research collection is unavailable in preview; run the flow to apply access gates, budgets and provenance persistence.",
+    );
+  }
   if (!registry.has(kind)) {
     throw new ReqflowError("not_implemented", `The ${spec.label} block isn't built yet`);
   }
@@ -50,6 +56,7 @@ export async function previewBlock(
     scope,
     settings: { ...DEFAULT_SETTINGS, defaultScope: scope },
     llm: { generateObject: unavailable("AI"), generateText: unavailable("AI") },
+    agents: NO_AGENT_SERVICES, // only blocks without inputs are previewed; none of them use agents
     audit: {
       record: async (e) => ({
         ...e,

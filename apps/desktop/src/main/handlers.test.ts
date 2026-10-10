@@ -13,10 +13,27 @@ import {
   type WorkflowRun,
 } from "@reqflow/core";
 import { fixtureRecords, fixtureSources } from "@reqflow/core/fixtures";
-import { createDatabase, createFileStore, seedFixtures } from "@reqflow/db";
+import {
+  createDatabase,
+  createFileStore,
+  seedFixtures,
+  SqliteReasoningRepository,
+} from "@reqflow/db";
 import { BlockRegistry, defineBlock } from "@reqflow/engine";
 import { createHandlers } from "./handlers";
-import { SecretsStore } from "./secrets";
+import { SecretsStore, type SecureStorage } from "./secrets";
+
+// Synthetic boundary double: no Electron, host environment credentials, or plaintext fallback.
+const secureStorage: SecureStorage = {
+  isEncryptionAvailable: () => true,
+  encryptString: (value) => Buffer.from(`synthetic-cipher:${value.split("").reverse().join("")}`),
+  decryptString: (value) => {
+    const text = value.toString();
+    if (!text.startsWith("synthetic-cipher:")) throw new Error("Invalid synthetic ciphertext");
+    return text.slice("synthetic-cipher:".length).split("").reverse().join("");
+  },
+};
+const syntheticSecrets = (dir: string) => new SecretsStore(dir, { secureStorage, environment: {} });
 
 /** BMW's real export, present only locally in data/raw/ (gitignored). */
 const BMW_FEEDBACK = join(import.meta.dirname, "../../../../data/raw/F70_feedback_hackathon.xlsx");
@@ -50,7 +67,7 @@ async function runFeedbackToCar(handlers: Handlers, uploadsDir: string, path: st
   const initial = await handlers.runs.start(workflow.id);
   let run = await handlers.runs.get(initial.id);
   const deadline = Date.now() + 30_000;
-  while (run.status === "running" && Date.now() < deadline) {
+  while (["queued", "running"].includes(run.status) && Date.now() < deadline) {
     await new Promise((resolve) => setTimeout(resolve, 50));
     run = await handlers.runs.get(initial.id);
   }
@@ -74,7 +91,7 @@ describe("handlers (All IPC methods against SQLite and stores)", () => {
 
   const setup = (registry?: BlockRegistry) => {
     const pushedRuns: WorkflowRun[] = [];
-    const secretsStore = new SecretsStore(tempDir);
+    const secretsStore = syntheticSecrets(tempDir);
     const files = createFileStore(join(tempDir, "uploads"));
     const handlers = createHandlers({
       dataDir: tempDir,
@@ -125,6 +142,51 @@ describe("handlers (All IPC methods against SQLite and stores)", () => {
 
     const afterClear = await handlers.settings.setSecret("anthropic_api_key", null);
     expect(afterClear.anthropic_api_key.configured).toBe(false);
+
+    // setup:<id> secret deletion
+    const setupsInitial = await handlers.settings.get();
+    const settingsWithSetups = await handlers.settings.save({
+      ...setupsInitial,
+      agents: {
+        ...setupsInitial.agents,
+        setups: [
+          {
+            id: "test-1",
+            provider: "anthropic",
+            baseUrl: "",
+            model: "claude-3-5-sonnet-latest",
+            fastModel: "claude-haiku",
+            name: "T1",
+            effort: "low",
+            temperature: 0,
+            maxParallel: 5,
+          },
+          {
+            id: "test-2",
+            provider: "openai",
+            baseUrl: "",
+            model: "gpt-4o",
+            fastModel: "gpt-4o-mini",
+            name: "T2",
+            effort: "low",
+            temperature: 0,
+            maxParallel: 5,
+          },
+        ],
+      },
+    });
+    await handlers.settings.setSecret("setup:test-1", "key1");
+    await handlers.settings.setSecret("setup:test-2", "key2");
+
+    // Remove test-2
+    await handlers.settings.save({
+      ...settingsWithSetups,
+      agents: { ...settingsWithSetups.agents, setups: [settingsWithSetups.agents.setups[0]!] },
+    });
+
+    const finalSecrets = await handlers.settings.secrets();
+    expect(finalSecrets.setups?.["test-1"]?.configured).toBe(true);
+    expect(finalSecrets.setups?.["test-2"]).toBeUndefined();
   });
 
   it("handles workflows CRUD with validation", async () => {
@@ -187,7 +249,7 @@ describe("handlers (All IPC methods against SQLite and stores)", () => {
     const initial = await handlers.runs.start(workflow.id);
     let run = await handlers.runs.get(initial.id);
     const deadline = Date.now() + 2000;
-    while (run.status === "running" && Date.now() < deadline) {
+    while (["queued", "running"].includes(run.status) && Date.now() < deadline) {
       await new Promise((resolve) => setTimeout(resolve, 10));
       run = await handlers.runs.get(initial.id);
     }
@@ -213,30 +275,39 @@ describe("handlers (All IPC methods against SQLite and stores)", () => {
       const { handlers } = setup();
       const uploads = join(tempDir, "uploads");
 
+      // BMW data: assertions compare booleans and counts only, so a failure can't print a value.
       await runFeedbackToCar(handlers, uploads, BMW_FEEDBACK);
       const first = await handlers.requirements.list();
-      expect(first.length).toBeGreaterThan(20);
+      expect(first.length).toBeGreaterThan(0);
+      expect(first.length).toBeLessThanOrEqual(20); // the block's default limit
       expect(first.every((r) => r.priority === "must" && r.status === "proposed")).toBe(true);
+      expect(first.every((r) => r.confidence !== undefined && r.inputRank === 1)).toBe(true);
       const seq = (id: string) => Number(id.split("-").at(-1));
       expect(Math.min(...first.map((r) => seq(r.id)))).toBe(1);
       const detail = await handlers.requirements.get(first[0]!.id);
       expect(detail.findings.length).toBeGreaterThan(0);
       expect(detail.records.length).toBeGreaterThan(0);
-      expect(detail.sources.map((s) => s.kind)).toContain("customer_feedback");
-      for (const f of detail.findings) {
-        for (const e of f.evidence) {
-          expect(detail.records.find((r) => r.id === e.recordId)?.text).toContain(e.excerpt);
-        }
-      }
+      expect(detail.sources.some((s) => s.kind === "customer_feedback")).toBe(true);
+      const verbatim = detail.findings.every((f) =>
+        f.evidence.every(
+          (e) => detail.records.find((r) => r.id === e.recordId)?.text.includes(e.excerpt) ?? false,
+        ),
+      );
+      expect(verbatim).toBe(true);
+      const trace = await handlers.reasoning.forRequirement(first[0]!.id);
+      expect(trace !== null && trace.offline && trace.requirements.length === first.length).toBe(
+        true,
+      );
 
       // A second run continues the numbering instead of overwriting the first run's ids.
       await runFeedbackToCar(handlers, uploads, BMW_FEEDBACK);
       const all = await handlers.requirements.list();
       expect(all.length).toBe(2 * first.length);
       expect(new Set(all.map((r) => r.id)).size).toBe(all.length);
-      expect((await handlers.requirements.get(first[0]!.id)).requirement).toEqual(
-        detail.requirement,
-      );
+      const unchanged =
+        JSON.stringify((await handlers.requirements.get(first[0]!.id)).requirement) ===
+        JSON.stringify(detail.requirement);
+      expect(unchanged).toBe(true);
     },
     60_000,
   );
@@ -323,6 +394,7 @@ describe("handlers (All IPC methods against SQLite and stores)", () => {
     const testHandlers = createHandlers({
       dataDir: tempDir,
       dbPath,
+      secretsStore: syntheticSecrets(tempDir),
       files: createFileStore(join(tempDir, "uploads")),
       registry: customRegistry,
       pushRunUpdate: (r) => pushedRuns.push(r),
@@ -387,6 +459,7 @@ describe("handlers (All IPC methods against SQLite and stores)", () => {
     const handlers = createHandlers({
       dataDir: tempDir,
       dbPath,
+      secretsStore: syntheticSecrets(tempDir),
       files,
       appInfo: () => ({
         version: "0.1.0",
@@ -455,5 +528,70 @@ describe("handlers (All IPC methods against SQLite and stores)", () => {
     expect(Math.min(...after.map((r) => seq(r.id)))).toBe(
       Math.max(...before.map((r) => seq(r.id))) + 1,
     );
+  });
+
+  it("handles reasoning traces: null when empty, returns saved trace via handlers", async () => {
+    const { handlers, secretsStore } = setup();
+
+    expect(await handlers.reasoning.forRun("run_1", "car")).toBeNull();
+    expect(await handlers.reasoning.latest("wf_1", "car")).toBeNull();
+    expect(await handlers.reasoning.forRequirement("REQ-F70-EU-001")).toBeNull();
+
+    const db = createDatabase(tempDir + "/test.db");
+    const repo = new SqliteReasoningRepository(db);
+
+    db.exec("PRAGMA foreign_keys = OFF;");
+
+    const trace = {
+      id: "rsn_1",
+      runId: "run_1",
+      blockId: "car",
+      createdAt: "2026-01-01T10:00:00.000Z",
+      scope: { vehicleLine: "1", derivative: "5", vehicleCode: "F", market: "EU", horizonYears: 5 },
+      inputs: [],
+      steps: [],
+      requirements: [
+        {
+          requirementId: "REQ-F70-EU-001",
+          title: "Syn",
+          theme: "Syn",
+          ranks: [1],
+          evidence: [],
+          thoughts: [],
+          verdict: "accepted" as const,
+          issues: [],
+          confidence: {
+            value: 0.8,
+            level: "high" as const,
+            signals: [{ key: "test", label: "Test", value: 1, weight: 1, by: "test" }],
+            method: "m",
+          },
+          contextUsed: [],
+        },
+      ],
+      heldBack: [],
+      totals: { calls: 0, inputTokens: 0, outputTokens: 0, durationMs: 5 },
+      offline: true,
+    };
+
+    await repo.save(trace);
+
+    const forRun = await handlers.reasoning.forRun("run_1", "car");
+    expect(forRun?.id).toBe("rsn_1");
+
+    // wait, latest joins with runs table, so we need a run
+    db.prepare(
+      `INSERT OR REPLACE INTO runs (id, workflow_id, workflow_version, status, scope, graph, started_by, started_at, block_runs) VALUES (?, ?, 1, 'completed', '{}', '{}', '{}', ?, '[]')`,
+    ).run("run_1", "wf_1", "2026-01-01T00:00:00.000Z");
+
+    const latest = await handlers.reasoning.latest("wf_1", "car");
+    expect(latest?.id).toBe("rsn_1");
+
+    const forReq = await handlers.reasoning.forRequirement("REQ-F70-EU-001");
+    expect(forReq?.id).toBe("rsn_1");
+
+    await expect(handlers.reasoning.forRun("invalid", "car")).rejects.toThrow();
+
+    db.close();
   });
 });

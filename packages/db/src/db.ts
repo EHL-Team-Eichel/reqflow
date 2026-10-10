@@ -99,6 +99,21 @@ export function initSchema(db: DatabaseSync): void {
       outputs TEXT NOT NULL,
       PRIMARY KEY (run_id, block_id)
     );
+
+    CREATE TABLE IF NOT EXISTS reasoning_traces (
+      id TEXT PRIMARY KEY,
+      run_id TEXT NOT NULL,
+      block_id TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      json TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_reasoning_run ON reasoning_traces (run_id, block_id);
+
+    CREATE TABLE IF NOT EXISTS reasoning_requirements (
+      requirement_id TEXT NOT NULL,
+      trace_id TEXT NOT NULL,
+      PRIMARY KEY (requirement_id, trace_id)
+    );
   `);
 
   try {

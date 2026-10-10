@@ -3,7 +3,7 @@
   "productName": "ReqFlow",
   "version": "0.1.0",
   "private": true,
-  "description": "ReqFlow — customer requirements workbench (desktop app)",
+  "description": "ReqFlow \u2014 customer requirements workbench (desktop app)",
   "author": "EHL Team Eichel",
   "main": "./out/main/index.js",
   "scripts": {
@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "smoke": "electron-vite build && electron . --smoke=out/smoke",
     "package": "electron-vite build && electron-builder --publish never",
-    "package:dir": "electron-vite build && electron-builder --dir --publish never"
+    "package:dir": "electron-vite build && electron-builder --dir --publish never",
+    "eval:f70": "electron-vite build && electron . --eval-f70=../../data/raw/eval"
   },
   "devDependencies": {
     "@reqflow/blocks": "*",
@@ -30,6 +31,7 @@
     "electron": "44.7.0",
     "electron-builder": "^26.15.3",
     "electron-vite": "^5.0.0",
+    "exceljs": "^4.4.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-router": "^8.4.0",

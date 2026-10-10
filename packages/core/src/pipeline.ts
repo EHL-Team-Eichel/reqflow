@@ -11,13 +11,15 @@ export const DATA_KEYS = ["sources", "records", "findings", "themes", "requireme
 export const DataKey = z.enum(DATA_KEYS);
 export type DataKey = z.infer<typeof DataKey>;
 
-export const PipelineData = z.object({
-  sources: z.array(Source),
-  records: z.array(SourceRecord),
-  findings: z.array(Finding),
-  themes: z.array(Theme),
-  requirements: z.array(Requirement),
-});
+export const PipelineData = z
+  .object({
+    sources: z.array(Source),
+    records: z.array(SourceRecord),
+    findings: z.array(Finding),
+    themes: z.array(Theme),
+    requirements: z.array(Requirement),
+  })
+  .passthrough();
 export type PipelineData = z.infer<typeof PipelineData>;
 
 export function emptyPipelineData(): PipelineData {
@@ -37,6 +39,7 @@ function mergeById<T extends { id: string }>(lists: T[][]): T[] {
  */
 export function mergePipelineData(...parts: PipelineData[]): PipelineData {
   return {
+    ...Object.assign({}, ...parts),
     sources: mergeById(parts.map((p) => p.sources)),
     records: mergeById(parts.map((p) => p.records)),
     findings: mergeById(parts.map((p) => p.findings)),

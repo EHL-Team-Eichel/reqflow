@@ -93,3 +93,36 @@ export function ReportIcon(props: IconProps) {
     </Icon>
   );
 }
+
+/** A lightbulb: the agents' thought process. */
+export function ThoughtIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M9 18h6M10 21h4" />
+      <path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1 2V16h5.2v-.2c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z" />
+    </Icon>
+  );
+}
+export function ChevronDownIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M6 9l6 6 6-6" />
+    </Icon>
+  );
+}
+
+export function ChevronRightIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M9 18l6-6-6-6" />
+    </Icon>
+  );
+}
+
+export function DownloadIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
+    </Icon>
+  );
+}

@@ -5,6 +5,7 @@ import { cx } from "@/lib/cx";
 import { label } from "./classify";
 import { buildCar, type CarPiece } from "./model/buildCar";
 import { G60 } from "./model/body";
+import { ExteriorFlight, type CarView } from "./model/exteriorFlight";
 import {
   applyState,
   createOutlineMaterial,
@@ -16,7 +17,7 @@ import {
   type SketchPalette,
 } from "./model/sketch";
 
-export type CarView = "exterior" | "interior";
+export type { CarView } from "./model/exteriorFlight";
 export type CameraPreset = "front" | "side" | "rear" | "top";
 
 const PRESETS: Record<
@@ -28,8 +29,6 @@ const PRESETS: Record<
   rear: { position: [-5.2, 2.3, -4.6], target: [0, 0.68, 0] },
   top: { position: [0.01, 8.4, -0.4], target: [0, 0.5, 0] },
 };
-
-const UNGHOSTED_KINDS = new Set(["tyre", "rim", "metal", "accent"]);
 
 interface Props {
   /** Requirements per part id (only parts with ≥ 1 are badged and tinted). */
@@ -52,7 +51,11 @@ export function CarViewer(props: Props) {
   const badgeRefs = useRef(new Map<string, HTMLButtonElement>());
   const propsRef = useRef(props);
   propsRef.current = props;
-  const apiRef = useRef<{ restyle: () => void; moveTo: (p: CameraPreset) => void } | null>(null);
+  const apiRef = useRef<{
+    restyle: () => void;
+    moveTo: (p: CameraPreset) => void;
+    setView: (view: CarView) => void;
+  } | null>(null);
   const [hovered, setHovered] = useState<string | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
   const [anchors, setAnchors] = useState<ReadonlyMap<string, THREE.Vector3>>(new Map());
@@ -113,6 +116,9 @@ export function CarViewer(props: Props) {
       }
       return target.addScaledVector(direction, distance * 1.12);
     };
+
+    const viewFlight = new ExteriorFlight(car, propsRef.current.view);
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
     let palette: SketchPalette = readPalette();
     const outline = createOutlineMaterial(palette.ink, 1.4);
@@ -175,13 +181,17 @@ export function CarViewer(props: Props) {
 
     let hoveredPart: string | null = null;
     let dirty = true;
+    let needsPick = false;
 
     const restyle = () => {
-      const { counts, selected, view } = propsRef.current;
+      const { counts, selected } = propsRef.current;
       scene.background = palette.background;
       outline.uniforms.color!.value.copy(palette.ink);
       sketchMat.color.copy(palette.ink);
-      sketchMat.opacity = view === "interior" ? 0.08 : 0.35;
+      // These continuous character lines span several panels. Hide them as panels separate.
+      sketchMat.opacity = 0.35 * (1 - THREE.MathUtils.smoothstep(viewFlight.progress, 0, 0.25));
+      host.dataset.viewProgress = viewFlight.progress.toFixed(3);
+      host.dataset.viewAnimating = String(viewFlight.active);
       pickable.length = 0;
       for (const piece of car.pieces) {
         const state: PartState =
@@ -192,15 +202,23 @@ export function CarViewer(props: Props) {
               : piece.partId && (counts.get(piece.partId) ?? 0) > 0
                 ? "hasRequirements"
                 : "idle";
-        const ghost =
-          view === "interior" && piece.layer === "exterior" && !UNGHOSTED_KINDS.has(piece.kind);
-        const canPick = applyState(piece, styles.get(piece)!, state, ghost, palette);
+        const visibility = viewFlight.pieces.get(piece)?.opacity ?? 1;
+        const canPick = applyState(piece, styles.get(piece)!, state, visibility, palette);
         const hull = outlines.get(piece);
-        if (hull) hull.visible = !ghost;
-        if (canPick) pickable.push(piece.mesh);
+        if (hull) hull.visible = visibility === 1;
+        if (canPick && (piece.layer === "interior" || viewFlight.progress === 0))
+          pickable.push(piece.mesh);
       }
       dirty = true;
     };
+
+    const setView = (view: CarView) => {
+      viewFlight.setView(view, performance.now(), reducedMotion.matches);
+      needsPick = true;
+      restyle();
+    };
+    const onMotionPreference = () => setView(propsRef.current.view);
+    reducedMotion.addEventListener("change", onMotionPreference);
 
     const onTheme = new MutationObserver(() => {
       palette = readPalette();
@@ -236,14 +254,13 @@ export function CarViewer(props: Props) {
       activePreset = null;
     };
     controls.addEventListener("start", onOrbitStart);
-    apiRef.current = { restyle, moveTo };
+    apiRef.current = { restyle, moveTo, setView };
 
     // Picking.
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
     let pointerInside = false;
     let pointerPx = { x: 0, y: 0 };
-    let needsPick = false;
     const pick = (): string | null => {
       raycaster.setFromCamera(pointer, camera);
       const hit = raycaster.intersectObjects(pickable, false)[0];
@@ -310,6 +327,10 @@ export function CarViewer(props: Props) {
     let frame = 0;
     const loop = () => {
       frame = requestAnimationFrame(loop);
+      if (viewFlight.update(performance.now())) {
+        restyle();
+        needsPick = true;
+      }
       if (flight) {
         const t = Math.min(1, (performance.now() - flight.t0) / 650);
         const e = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
@@ -342,9 +363,16 @@ export function CarViewer(props: Props) {
       for (const [partId, badge] of badgeRefs.current) {
         const anchor = car.anchors.get(partId);
         if (!anchor) continue;
-        v.copy(anchor).project(camera);
-        const visible = v.z > -1 && v.z < 1 && Math.abs(v.x) < 1.05 && Math.abs(v.y) < 1.05;
+        const partFlight = viewFlight.badges.get(partId);
+        v.copy(anchor);
+        if (partFlight) v.addScaledVector(partFlight.offset, partFlight.amount);
+        v.project(camera);
+        const opacity = partFlight?.opacity ?? 1;
+        const visible =
+          opacity > 0 && v.z > -1 && v.z < 1 && Math.abs(v.x) < 1.05 && Math.abs(v.y) < 1.05;
         badge.style.visibility = visible ? "visible" : "hidden";
+        badge.style.opacity = String(opacity);
+        badge.style.pointerEvents = partFlight && viewFlight.progress > 0 ? "none" : "auto";
         badge.style.transform = `translate(${((v.x + 1) / 2) * w}px, ${((1 - v.y) / 2) * h}px) translate(-50%, -50%)`;
       }
     };
@@ -354,6 +382,7 @@ export function CarViewer(props: Props) {
       cancelAnimationFrame(frame);
       ro.disconnect();
       onTheme.disconnect();
+      reducedMotion.removeEventListener("change", onMotionPreference);
       el.removeEventListener("pointermove", onMove);
       el.removeEventListener("pointerleave", onLeave);
       el.removeEventListener("pointerdown", onDown);
@@ -377,10 +406,14 @@ export function CarViewer(props: Props) {
     };
   }, []);
 
-  // React to selection, counts and view changes without rebuilding the scene.
+  // React to selection and counts without rebuilding the scene or restarting a flight.
   useEffect(() => {
     apiRef.current?.restyle();
-  }, [props.counts, props.selected, props.view]);
+  }, [props.counts, props.selected]);
+
+  useEffect(() => {
+    apiRef.current?.setView(props.view);
+  }, [props.view]);
 
   useEffect(() => {
     apiRef.current?.moveTo(props.preset);

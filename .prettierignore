@@ -7,3 +7,9 @@ package-lock.json
 # managed by Entire (session tracking) — do not reformat
 .entire/
 .claude/settings.json
+.opencode/plugins/entire.ts
+
+# Untracked pre-existing user snapshots are not part of the application source.
+**/* 2.ts
+**/* 2.tsx
+**/* 2.md

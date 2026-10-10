@@ -128,7 +128,7 @@ export async function routePriority(
       );
       for (const factor of ScoreFactor.options)
         ctx.log(
-          `${entry.id}: ${factor}=${values[factor]}/5, weight=${scoring.weights[factor]}; ${requirement.score.factors[factor].note}`,
+          `${entry.id}: ${factor}=${values[factor]}/5, weight=${scoring.weights[factor]}; evidence notes retained upstream, not logged.`,
         );
     } else pending.push(entry);
   }
@@ -179,7 +179,7 @@ export async function routePriority(
       );
       for (const factor of ScoreFactor.options)
         ctx.log(
-          `${entry.id}: ${factor}=${values[factor]}/5, weight=${scoring.weights[factor]}; ${score.factors[factor].note}`,
+          `${entry.id}: ${factor}=${values[factor]}/5, weight=${scoring.weights[factor]}; validated provisional evidence/assumption note omitted from logs.`,
         );
     }
     completed += batch.length;

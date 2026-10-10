@@ -46,9 +46,10 @@ function build(): WorkflowGraph {
   add("hil", "review-must", "PM review: must", 3, 1);
   add("hil", "review-should", "PM review: should", 3, 2);
   add("add_to_car", "car", "Add to Car", 4, 2);
+  params("car", { contexts: ["sales_volumes"] });
 
-  for (const src of ["feedback", "study", "equipment", "sales", "web"])
-    wire(src, "out", "scope", "in");
+  for (const src of ["feedback", "study", "equipment", "web"]) wire(src, "out", "scope", "in");
+  wire("sales", "out", "car", "ctx-0"); // background for the agents, not requirements themselves
   wire("scope", "out", "rank", "in");
   wire("rank", "out-0", "review-must", "in");
   wire("rank", "out-1", "review-should", "in");

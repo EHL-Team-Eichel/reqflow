@@ -6,18 +6,29 @@
  *
  * Type-only imports keep this module free of runtime deps, so the sandboxed preload can import it.
  */
-import type { ApiError, RequirementDecision, RequirementEdit } from "./api";
+import type { ApiError, RequirementDecision, RequirementEdit, HilReportRequest } from "./api";
 import type { Actor, AuditAction, AuditEntityType, AuditEvent } from "./audit";
 import type { PaletteBlockKind } from "./blocks";
 import type { RequirementCategory } from "./category";
 import type { Finding } from "./finding";
 import type { PipelineData } from "./pipeline";
 import type { DecisionStatus, EvidenceLevel, Requirement } from "./requirement";
+import type { ReasoningTrace } from "./reasoning";
 import type { Priority } from "./scoring";
 import type { ProductScope } from "./scope";
 import type { Settings } from "./settings";
 import type { Source, SourceRecord } from "./source";
+import type { SplitterReview } from "./splitter-report";
 import type { Workflow, WorkflowRun, WorkflowTemplate } from "./workflow";
+import type {
+  ResearchProviderId,
+  ResearchProviderConfig,
+  ResearchProviderStatus,
+  ResearchDataset,
+  ResearchAgentDefinition,
+} from "./research";
+import type { SecretName } from "./secrets";
+export type { SecretName } from "./secrets";
 
 export interface AppInfo {
   version: string;
@@ -80,12 +91,27 @@ export interface AuditFilter {
 
 export type ExportFormat = "json" | "csv" | "md";
 
-/** API keys never cross into the renderer; it only learns whether one is configured. */
-export type SecretName = "anthropic_api_key" | "tavily_api_key";
-export type SecretStatus = Record<
-  SecretName,
-  { configured: boolean; source: "keychain" | "env" | null }
->;
+/**
+ * API keys never cross into the renderer; it only learns whether one is configured.
+ * `setup:<id>` is the key of an API setup (Settings → AI → API setups).
+ */
+export type FixedSecretName = SecretName;
+export type SetupSecretName = `setup:${string}`;
+export type AnySecretName = SecretName | SetupSecretName;
+export const SETUP_SECRET_PATTERN = /^setup:[a-z0-9][a-z0-9-]{0,39}$/;
+export interface SecretState {
+  configured: boolean;
+  source: "keychain" | "env" | null;
+}
+export type SecretStatus = Record<SecretName, SecretState> & {
+  /** Per API setup id. Setups without a stored key are listed as not configured. */
+  setups?: Record<string, SecretState>;
+};
+
+/** `settings.testSetup`: one tiny request through an API setup, to check the key and model. */
+export type SetupTestResult =
+  | { ok: true; model: string; ms: number; message: string }
+  | { ok: false; ms: number; message: string };
 
 export interface ReqflowApi {
   app: { info(): Promise<AppInfo> };
@@ -110,6 +136,8 @@ export interface ReqflowApi {
     list(workflowId?: string): Promise<WorkflowRun[]>;
     /** What one block emitted, per output port id. */
     blockOutput(runId: string, blockId: string): Promise<Record<string, PipelineData>>;
+    /** Human routing correction, before an editable HIL gate continues. */
+    reviewSplitter(runId: string, blockId: string, review: SplitterReview): Promise<WorkflowRun>;
     resume(runId: string): Promise<WorkflowRun>;
     cancel(runId: string): Promise<WorkflowRun>;
     /** Pushed by main on every status/progress change. Returns an unsubscribe function. */
@@ -127,16 +155,42 @@ export interface ReqflowApi {
     reset(): Promise<{ removed: number }>;
   };
   audit: { list(filter?: AuditFilter): Promise<AuditEvent[]> };
+  research: {
+    agents(): Promise<ResearchAgentDefinition[]>;
+    providers(): Promise<ResearchProviderStatus[]>;
+    configure(
+      id: ResearchProviderId,
+      config: ResearchProviderConfig,
+    ): Promise<ResearchProviderStatus>;
+    test(id: ResearchProviderId): Promise<ResearchProviderStatus>;
+    dataset(runId: string): Promise<ResearchDataset>;
+  };
   settings: {
     get(): Promise<Settings>;
     save(settings: Settings): Promise<Settings>;
     secrets(): Promise<SecretStatus>;
     /** Stores the key encrypted with the OS keychain (Electron safeStorage); null deletes it. */
-    setSecret(name: SecretName, value: string | null): Promise<SecretStatus>;
+    setSecret(name: SecretName | SetupSecretName, value: string | null): Promise<SecretStatus>;
+    /** Sends one tiny request through a saved API setup. Never throws for API errors. */
+    testSetup(setupId: string): Promise<SetupTestResult>;
+  };
+  /** The Add to Car agents' thought process (see reasoning.ts). null = no agent run recorded. */
+  reasoning: {
+    forRun(runId: string, blockId: string): Promise<ReasoningTrace | null>;
+    /** The latest run of this workflow in which the block ran its agents. */
+    latest(workflowId: string, blockId: string): Promise<ReasoningTrace | null>;
+    /** The trace that proposed this requirement (older requirements have none). */
+    forRequirement(requirementId: string): Promise<ReasoningTrace | null>;
   };
   exports: {
     /** Opens the native save dialog and writes the requirement list. null = cancelled. */
     requirements(opts: { runId?: string; format: ExportFormat }): Promise<{ path: string } | null>;
+    research(opts: {
+      runId: string;
+      format: "json" | "xlsx" | "csv";
+    }): Promise<{ path: string } | null>;
+    /** Exports selected points only. Opens a native PDF save dialog; null means cancelled. No review/decision changes. */
+    hilReport(request: HilReportRequest): Promise<{ path: string } | null>;
   };
 }
 
@@ -156,11 +210,13 @@ export const IPC_INVOKE_METHODS = {
   blocks: ["preview"],
   workflows: ["list", "get", "save", "remove"],
   files: ["import"],
-  runs: ["start", "get", "list", "blockOutput", "resume", "cancel"],
+  runs: ["start", "get", "list", "blockOutput", "reviewSplitter", "resume", "cancel"],
   requirements: ["list", "get", "edit", "decide", "reset"],
   audit: ["list"],
-  settings: ["get", "save", "secrets", "setSecret"],
-  exports: ["requirements"],
+  research: ["agents", "providers", "configure", "test", "dataset"],
+  settings: ["get", "save", "secrets", "setSecret", "testSetup"],
+  reasoning: ["forRun", "latest", "forRequirement"],
+  exports: ["requirements", "research", "hilReport"],
 } as const satisfies { [N in keyof ReqflowApi]: readonly InvokeKeys<ReqflowApi[N]>[] };
 
 // Compile-time guard: adding a method to ReqflowApi without listing it above is a type error.

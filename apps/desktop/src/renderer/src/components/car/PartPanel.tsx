@@ -31,6 +31,7 @@ interface Props {
   total: number;
   emptyHint: string;
   onSelect: (partId: string | null) => void;
+  onWhy: (id: string) => void;
 }
 
 /** Right-hand side of the Car tab: the selected part and its requirements, or the part index. */
@@ -102,7 +103,7 @@ function PartRow(props: {
   );
 }
 
-function PartDetail({ partId, byPart, emptyHint, onSelect }: Props & { partId: string }) {
+function PartDetail({ partId, byPart, emptyHint, onSelect, onWhy }: Props & { partId: string }) {
   const part = PARTS_BY_ID.get(partId);
   const items = byPart.get(partId) ?? [];
   return (
@@ -137,20 +138,41 @@ function PartDetail({ partId, byPart, emptyHint, onSelect }: Props & { partId: s
             <span className="text-xs">{emptyHint}</span>
           </p>
         ) : (
-          items.map((item) => <RequirementCard key={item.requirement.id} item={item} />)
+          items.map((item) => (
+            <RequirementCard key={item.requirement.id} item={item} onWhy={onWhy} />
+          ))
         )}
       </div>
     </div>
   );
 }
 
-function RequirementCard({ item }: { item: ClassifiedRequirement }) {
+function RequirementCard({
+  item,
+  onWhy,
+}: {
+  item: ClassifiedRequirement;
+  onWhy: (id: string) => void;
+}) {
   const { requirement: r, assignment: a } = item;
   return (
     <article className="rounded-lg border border-line bg-panel p-3" data-testid="car-requirement">
       <div className="flex items-center gap-2 text-xs text-muted">
         <span className="font-mono">{r.id}</span>
-        <span className="ml-auto">{STATUS_LABELS[r.status] ?? r.status}</span>
+        <span className="ml-auto flex items-center gap-2">
+          {r.confidence && (
+            <button
+              type="button"
+              data-testid="car-requirement-why"
+              onClick={() => onWhy(r.id)}
+              title="How the agents came to this requirement"
+              className="rounded px-1.5 py-0.5 text-xs font-medium text-brand hover:bg-brand-soft"
+            >
+              Why?
+            </button>
+          )}
+          <span>{STATUS_LABELS[r.status] ?? r.status}</span>
+        </span>
       </div>
       <h4 className="mt-1 text-sm font-medium text-ink">{r.title}</h4>
       <p className="mt-1 text-sm text-muted">{r.description}</p>
@@ -165,6 +187,29 @@ function RequirementCard({ item }: { item: ClassifiedRequirement }) {
           Evidence {r.evidenceLevel}
         </Chip>
         <Chip>{CATEGORY_LABELS[r.category]}</Chip>
+        {r.inputRank && <Chip>from {r.inputRank}. Priority</Chip>}
+        {r.confidence &&
+          (() => {
+            const lv = r.confidence.level;
+            const bgClass =
+              lv === "high"
+                ? "bg-ok/10 text-ok"
+                : lv === "medium"
+                  ? "bg-warn/10 text-warn"
+                  : "bg-danger/10 text-danger";
+            const title = r.confidence.signals
+              .map((s) => `${s.label}: ${Math.round(s.value * 100)} %`)
+              .join("\n");
+            return (
+              <span
+                data-testid="car-requirement-confidence"
+                title={title}
+                className={cx("rounded-full border border-transparent px-2 py-0.5", bgClass)}
+              >
+                Confidence {Math.round(r.confidence.value * 100)} %
+              </span>
+            );
+          })()}
       </div>
       {r.targets.length > 0 && (
         <ul className="mt-2 space-y-0.5 text-xs text-muted">

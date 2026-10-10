@@ -1,4 +1,13 @@
-import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdtempSync,
+  readdirSync,
+  realpathSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+  mkdirSync,
+  symlinkSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
@@ -42,5 +51,92 @@ describe("file store", () => {
     await expect(store.remove(info.id)).resolves.toBeUndefined(); // already gone: fine
     await expect(store.remove("../removal")).rejects.toThrow(/not a valid file id/);
     expect(readFileSync(original, "utf8")).toBe("x\n1\n"); // the original is untouched
+  });
+});
+
+describe("trusted main-only document paths", () => {
+  it("copies legacy uploads even in the same directory; retries/removal never touch originals", async () => {
+    const dir = join(root, "legacy-originals");
+    mkdirSync(dir);
+    const store = createFileStore(dir);
+    const original = join(dir, "file_legacy.txt");
+    writeFileSync(original, "synthetic legacy");
+    const info = {
+      id: "file_legacy",
+      name: "legacy.txt",
+      mimeType: "text/plain",
+      sizeBytes: Buffer.byteLength("synthetic legacy"),
+      importedAt: "2026-10-10T00:00:00.000Z",
+    };
+    await Promise.all([
+      store.importLegacyFile(original, info),
+      store.importLegacyFile(original, info),
+    ]);
+    const copy = (await store.resolvePath(info.id)).path;
+    expect(copy).not.toBe(realpathSync(original));
+    expect(readdirSync(dir)).toHaveLength(3); // original, exactly one copy, one metadata
+    writeFileSync(original, "changed original");
+    await store.importLegacyFile(original, info); // existing authoritative import wins
+    expect(Buffer.from((await store.get(info.id)).bytes).toString()).toBe("synthetic legacy");
+    await store.remove(info.id);
+    expect(readdirSync(dir)).toEqual(["file_legacy.txt"]);
+    expect(readFileSync(original, "utf8")).toBe("changed original");
+  });
+  it("rejects legacy/document symlinks and corrupt metadata without overwriting originals", async () => {
+    const dir = join(root, "legacy-security");
+    mkdirSync(dir);
+    const store = createFileStore(dir);
+    const original = join(root, "security-original.txt");
+    writeFileSync(original, "synthetic");
+    const info = {
+      id: "file_security",
+      name: "legacy.txt",
+      mimeType: "text/plain",
+      sizeBytes: 9,
+      importedAt: "2026-10-10T00:00:00.000Z",
+    };
+    symlinkSync(original, join(dir, "file_security.txt"));
+    await expect(store.importLegacyFile(join(dir, "file_security.txt"), info)).rejects.toThrow(
+      /unsafe/i,
+    );
+    writeFileSync(join(dir, `${info.id}.json`), "corrupt metadata");
+    await expect(store.importLegacyFile(original, info)).rejects.toThrow(/metadata/i);
+    expect(readFileSync(join(dir, `${info.id}.json`), "utf8")).toBe("corrupt metadata");
+    const imported = await store.importFile(original);
+    rmSync(join(dir, `${imported.id}.txt`));
+    symlinkSync(original, join(dir, `${imported.id}.txt`));
+    await expect(store.resolvePath(imported.id)).rejects.toThrow(/unsafe/i);
+    expect(readFileSync(original, "utf8")).toBe("synthetic");
+  });
+  it("resolves TXT/PDF/DOCX/PPTX while preserving CSV/XLSX MIME metadata", async () => {
+    const store = createFileStore(join(root, "documents"));
+    for (const [ext, mimeType] of [
+      ["txt", "text/plain"],
+      ["pdf", "application/pdf"],
+      ["docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
+      ["pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation"],
+      ["xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"],
+    ]) {
+      const path = join(root, `synthetic.${ext}`);
+      writeFileSync(path, "synthetic original");
+      const info = await store.importFile(path);
+      const resolved = await store.resolvePath(info.id);
+      expect(resolved.name).toBe(info.name);
+      expect(resolved.path).toBe(realpathSync(join(root, "documents", `${info.id}.${ext}`)));
+      expect(info.mimeType).toBe(mimeType);
+    }
+  });
+  it("rejects metadata traversal and identifiers before returning any trusted path", async () => {
+    const dir = join(root, "unsafe-documents");
+    const store = createFileStore(dir);
+    const path = join(root, "unsafe.txt");
+    writeFileSync(path, "synthetic");
+    const info = await store.importFile(path);
+    writeFileSync(
+      join(dir, `${info.id}.json`),
+      JSON.stringify({ ...info, stored: "../unsafe.txt" }),
+    );
+    await expect(store.resolvePath(info.id)).rejects.toThrow(/metadata/i);
+    await expect(store.resolvePath("file_../../unsafe")).rejects.toThrow(/file id/i);
   });
 });

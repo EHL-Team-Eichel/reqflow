@@ -5,7 +5,7 @@ import type { CarPiece, PieceKind } from "./buildCar";
  * The sketch look: a pen drawing, not a rendering. Every surface is filled with the page colour
  * (so it hides the lines behind it) and drawn with ink: silhouettes, panel lines and creases.
  * No paint, no shading. Glass masks the cabin in exterior view; the interior view
- * reveals all cabin parts through the ghosted body. Volumes have no fill.
+ * reveals all cabin parts after the exterior pieces fly away. Volumes have no fill.
  * Colours come from the app's CSS tokens, so it follows light and dark mode.
  */
 
@@ -66,12 +66,12 @@ export function createPieceStyle(piece: CarPiece, p: SketchPalette): PieceStyle 
   return { fill, lines };
 }
 
-/** Applies the part state and view mode to one piece. Returns whether it can be clicked. */
+/** Applies part highlighting and flight opacity. Returns whether it can be clicked. */
 export function applyState(
   piece: CarPiece,
   style: PieceStyle,
   state: PartState,
-  ghost: boolean,
+  visibility: number,
   p: SketchPalette,
 ): boolean {
   const base = style.fill.userData.base as { opacity: number };
@@ -86,10 +86,8 @@ export function applyState(
   }
   let lineOpacity = piece.layer === "interior" ? 0.55 : 0.75;
   if (active) lineOpacity = 1;
-  if (ghost) {
-    opacity = state === "selected" ? 0.15 : 0;
-    lineOpacity = active ? 0.8 : 0.14;
-  }
+  opacity *= visibility;
+  lineOpacity *= visibility;
   style.fill.color.copy(color);
   style.fill.opacity = opacity;
   const transparent = opacity < 1;
@@ -100,7 +98,7 @@ export function applyState(
   style.fill.depthWrite = opacity >= 1;
   style.lines.color.copy(active ? p.brand : p.ink);
   style.lines.opacity = piece.kind === "liner" ? 0 : lineOpacity;
-  return !ghost && piece.partId !== null;
+  return visibility === 1 && piece.mesh.visible && piece.partId !== null;
 }
 
 /** Ink silhouette: back faces pushed out by a constant number of pixels. */

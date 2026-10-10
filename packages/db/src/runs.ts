@@ -1,5 +1,6 @@
-import { type PipelineData, WorkflowRun } from "@reqflow/core";
+import { type AuditEventInput, PipelineData, WorkflowRun } from "@reqflow/core";
 import type { DatabaseSync } from "node:sqlite";
+import { SqliteAuditLogger } from "./audit";
 
 export class SqliteRunRepository {
   constructor(private readonly db: DatabaseSync) {}
@@ -158,5 +159,34 @@ export class SqliteRunRepository {
     const row = stmt.get(runId, blockId) as { outputs: string } | undefined;
     if (!row) return null;
     return JSON.parse(row.outputs) as Record<string, PipelineData>;
+  }
+
+  /** Output, versioned report and human audit event become visible together or not at all. */
+  async saveSplitterReview(
+    run: WorkflowRun,
+    blockId: string,
+    outputs: Record<string, PipelineData>,
+    event: AuditEventInput,
+  ): Promise<void> {
+    const validated = WorkflowRun.parse(run);
+    for (const output of Object.values(outputs)) PipelineData.parse(output);
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      this.db
+        .prepare("UPDATE runs SET block_runs = ? WHERE id = ? AND status = 'waiting_for_review'")
+        .run(JSON.stringify(validated.blockRuns), run.id);
+      if (Number(this.db.prepare("SELECT changes() AS n").get()?.n) !== 1)
+        throw new Error("Routing correction requires a persisted paused run.");
+      this.db
+        .prepare(
+          "INSERT INTO block_outputs (run_id, block_id, outputs) VALUES (?, ?, ?) ON CONFLICT(run_id, block_id) DO UPDATE SET outputs = excluded.outputs",
+        )
+        .run(run.id, blockId, JSON.stringify(outputs));
+      new SqliteAuditLogger(this.db).recordSync(event);
+      this.db.exec("COMMIT");
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      throw error;
+    }
   }
 }

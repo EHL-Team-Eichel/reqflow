@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  addToCarInputs,
   BLOCK_SPECS,
   blockPorts,
   defaultBlockParams,
   isParamVisible,
+  migrateBlockParams,
   PALETTE_BLOCK_KINDS,
   parseBlockParams,
 } from "./blocks";
@@ -14,6 +16,7 @@ import {
   createBlock,
   emptyGraph,
   graphAt,
+  migrateGraph,
   moveBlock,
   nextBlockLabel,
   removeBlocks,
@@ -48,10 +51,11 @@ describe("block specs", () => {
     expect(ports("research").outputs).toHaveLength(1);
     expect(ports("hil")).toMatchObject({ inputs: [{ id: "in" }], outputs: [{ id: "out" }] });
     expect(ports("ai_splitter").outputs.map((p) => p.id)).toEqual(["out-0", "out-1", "out-2"]);
-    expect(ports("add_to_car").inputs.map((p) => p.label)).toEqual([
-      "Must have",
-      "Should have",
-      "Could have",
+    expect(ports("add_to_car").inputs).toEqual([
+      { id: "in-0", label: "1. Priority" },
+      { id: "in-1", label: "2. Priority" },
+      { id: "in-2", label: "3. Priority" },
+      { id: "ctx-0", label: "Context 1 · Auto" },
     ]);
     expect(ports("add_to_car").outputs).toHaveLength(0);
     expect(BLOCK_SPECS.custom.params).toHaveLength(0);
@@ -294,5 +298,86 @@ describe("graph operations", () => {
     ).toMatch(/only sit inside/);
     expect(validateGraph({ blocks: "nope" })).not.toEqual([]);
     expect(validateGraph(emptyGraph())).toEqual([]);
+  });
+});
+
+describe("Add to Car inputs", () => {
+  const params = (patch: Record<string, unknown>) => ({
+    ...defaultBlockParams("add_to_car"),
+    ...patch,
+  });
+
+  it("names priority inputs 1. Priority … n. Priority, then the context inputs", () => {
+    const { priorities, contexts } = addToCarInputs(
+      params({ priorities: 5, contexts: ["sales_volumes", "auto"] }),
+    );
+    expect(priorities.map((p) => [p.port, p.rank, p.label])).toEqual([
+      ["in-0", 1, "1. Priority"],
+      ["in-1", 2, "2. Priority"],
+      ["in-2", 3, "3. Priority"],
+      ["in-3", 4, "4. Priority"],
+      ["in-4", 5, "5. Priority"],
+    ]);
+    expect(contexts).toEqual([
+      { port: "ctx-0", index: 0, mode: "sales_volumes", label: "Context 1 · Sales volumes" },
+      { port: "ctx-1", index: 1, mode: "auto", label: "Context 2 · Auto" },
+    ]);
+  });
+
+  it("accepts only known context modes and 1–10 priority inputs", () => {
+    expect(() => parseBlockParams("add_to_car", params({ contexts: ["weather"] }))).toThrow();
+    expect(() => parseBlockParams("add_to_car", params({ priorities: 0 }))).toThrow();
+    expect(() => parseBlockParams("add_to_car", params({ priorities: 11 }))).toThrow();
+    expect(() => parseBlockParams("add_to_car", params({ contexts: [] }))).not.toThrow();
+  });
+
+  it("removing a context input drops only the connections on that port", () => {
+    let g = emptyGraph();
+    g = { ...g, blocks: [createBlock("raw", { id: "r", position: { x: 0, y: 0 } })] };
+    g = {
+      ...g,
+      blocks: [...g.blocks, createBlock("add_to_car", { id: "c", position: { x: 1, y: 0 } })],
+    };
+    g = connect(g, { source: "r", sourcePort: "out", target: "c", targetPort: "in-0" });
+    g = connect(g, { source: "r", sourcePort: "out", target: "c", targetPort: "ctx-0" });
+    const { graph, removedEdges } = setBlockParams(g, "c", params({ contexts: [] }));
+    expect(removedEdges.map((e) => e.targetPort)).toEqual(["ctx-0"]);
+    expect(graph.edges.map((e) => e.targetPort)).toEqual(["in-0"]);
+  });
+
+  it("migrates named rankings from older builds onto the same input ports", () => {
+    const legacy = {
+      rankings: ["Must have", "Should have"],
+      vehicle: "5 Series",
+      market: "global",
+      mergeDuplicates: true,
+    };
+    const migrated = migrateBlockParams("add_to_car", legacy);
+    expect(migrated).toEqual({
+      priorities: 2,
+      contexts: [],
+      maxRequirements: 20,
+      vehicle: "5 Series",
+      market: "global",
+    });
+    expect(() => parseBlockParams("add_to_car", migrated)).not.toThrow();
+    expect(migrateBlockParams("hil", { reviewer: "pm" })).toEqual({ reviewer: "pm" });
+
+    const graph = {
+      blocks: [
+        {
+          id: "car",
+          kind: "add_to_car" as const,
+          label: "Car",
+          position: { x: 0, y: 0 },
+          params: legacy,
+        },
+      ],
+      edges: [],
+    };
+    const fixed = migrateGraph(graph);
+    expect(fixed.blocks[0]!.params).toEqual(migrated);
+    expect(validateGraph(fixed)).toEqual([]);
+    expect(migrateGraph(fixed)).toBe(fixed); // already current: unchanged object
   });
 });

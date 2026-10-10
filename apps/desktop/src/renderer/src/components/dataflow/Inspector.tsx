@@ -6,9 +6,10 @@ import {
   type PaletteBlockKind,
   type WorkflowBlock,
 } from "@reqflow/core";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
-import { ValidatedTextInput } from "@/components/ui/controls";
+import { NumberInput, Select, ValidatedTextInput } from "@/components/ui/controls";
+import { Field } from "@/components/ui/Field";
 import { XIcon } from "@/components/ui/icons";
 import { settingsStore } from "@/lib/settings";
 import { BlockIcon } from "./BlockIcon";
@@ -16,8 +17,10 @@ import { confirmDelete } from "./confirm-delete";
 import { GROUP_STYLE } from "./groups";
 import { ParamField } from "./ParamField";
 import { RawPreview } from "./RawPreview";
+import { ResearchConfiguration } from "./ResearchConfiguration";
 import { canPreview } from "./usePreview";
 import { dataflowStore, selectInspectedBlock, useDataflow } from "./store";
+import { SPLITTER_MODE_HELP, splitterBranches } from "./report/splitter-view";
 
 /** Side panel for the selected block: name, ports, inner workplace, parameters, delete. */
 export function Inspector() {
@@ -60,7 +63,14 @@ function BlockInspector({ block, kind }: { block: WorkflowBlock; kind: PaletteBl
   const style = GROUP_STYLE[spec.group];
   const ports = blockPorts(block);
   const innerCount = block.inner?.blocks.filter((b) => !isBoundaryBlockKind(b.kind)).length ?? 0;
-  const params = spec.params.filter((p) => isParamVisible(p, block.params));
+  const params = spec.params.filter(
+    (p) =>
+      isParamVisible(p, block.params) &&
+      // Research owns its validated scope and canonical agent controls. Keep every budget generic.
+      (kind !== "research" || !["agents", "scopeJson", "sources"].includes(p.key)),
+  );
+  const researchQuestion =
+    kind === "research" ? params.find((p) => p.key === "question") : undefined;
   const portList = (list: { label: string }[]) =>
     list.length ? list.map((p) => p.label).join(", ") : "none";
 
@@ -104,6 +114,16 @@ function BlockInspector({ block, kind }: { block: WorkflowBlock; kind: PaletteBl
     >
       <div className="flex flex-col gap-5">
         <p className="text-sm text-muted">{spec.description}</p>
+        {block.kind === "add_to_car" && (
+          <>
+            <Button
+              data-testid="inspector-open-reasoning"
+              onClick={() => dataflowStore.getState().openReasoning(block.id)}
+            >
+              Open thought process
+            </Button>
+          </>
+        )}
         <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
           <dt className="font-medium text-ink">Inputs</dt>
           <dd className="text-muted">{portList(ports.inputs)}</dd>
@@ -120,11 +140,19 @@ function BlockInspector({ block, kind }: { block: WorkflowBlock; kind: PaletteBl
           </Button>
         )}
         {block.kind === "ai_splitter" && (
-          <p className="text-xs text-muted">
-            The empty workplace uses AI routing. Add connections or blocks inside to define your own
-            routing instead. Priority mode uses named Must / Should / Could / Won’t branches; use
-            category, sentiment or a custom instruction for other labels.
-          </p>
+          <div className="flex flex-col gap-3">
+            <Button
+              data-testid="inspector-open-splitter-report"
+              variant="primary"
+              onClick={() => dataflowStore.getState().openReport(block.id)}
+            >
+              Open scores & routing report
+            </Button>
+            <p className="text-xs text-muted">
+              Inspect saved classifications, score components and exact evidence. Double-click opens
+              the inner workplace; an empty workplace uses AI routing.
+            </p>
+          </div>
         )}
         {block.kind === "hil" && (
           <Button
@@ -136,17 +164,100 @@ function BlockInspector({ block, kind }: { block: WorkflowBlock; kind: PaletteBl
         )}
         <section className="flex flex-col gap-4">
           <h3 className="text-xs font-semibold tracking-wide text-muted uppercase">Parameters</h3>
+          {researchQuestion && <ParamField block={block} spec={researchQuestion} />}
+          {kind === "research" && <ResearchConfiguration block={block} />}
           {spec.params.length === 0 ? (
             <p className="text-sm text-muted">
               No parameters. Build this block's logic in its workplace.
             </p>
           ) : (
-            params.map((p) => <ParamField key={p.key} block={block} spec={p} />)
+            <>
+              {block.kind === "ai_splitter" && <SplitterControls block={block} />}
+              {params
+                .filter(
+                  (p) =>
+                    p !== researchQuestion && (block.kind !== "ai_splitter" || p.key !== "splitBy"),
+                )
+                .map((p) => (
+                  <ParamField
+                    key={p.key}
+                    block={block}
+                    spec={
+                      kind === "research" && p.key === "market"
+                        ? {
+                            ...p,
+                            label: "Fallback market (legacy)",
+                            help: "Used only when the Research scope has no Markets override. The scope form writes only scopeJson.",
+                          }
+                        : p
+                    }
+                  />
+                ))}
+            </>
           )}
         </section>
         {canPreview(block) && <RawPreview block={block} />}
       </div>
     </Shell>
+  );
+}
+
+function SplitterControls({ block }: { block: WorkflowBlock }) {
+  const [error, setError] = useState<string | null>(null);
+  const mode = String(block.params.splitBy);
+  const branches = block.params.branches as string[];
+  const modeSpec = BLOCK_SPECS.ai_splitter.params.find((param) => param.key === "splitBy");
+  const help = SPLITTER_MODE_HELP[mode as keyof typeof SPLITTER_MODE_HELP];
+  const update = (nextMode: string, count: number) => {
+    try {
+      const generated = splitterBranches(nextMode, count);
+      const regenerate =
+        nextMode === "customer_priority" || nextMode === "car_parts" || nextMode === "custom";
+      setError(
+        dataflowStore.getState().setParams(block.id, {
+          ...block.params,
+          splitBy: nextMode,
+          branches: regenerate
+            ? generated
+            : Array.from({ length: count }, (_, i) => branches[i] ?? generated[i]!),
+        }),
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  };
+  return (
+    <div className="flex flex-col gap-4">
+      <Field label="Split by" help={help}>
+        {(id) =>
+          modeSpec?.type === "select" && (
+            <Select
+              id={id}
+              value={mode}
+              options={modeSpec.options}
+              onChange={(next) => update(next, branches.length)}
+            />
+          )
+        }
+      </Field>
+      <Field
+        label="Output count (2–10)"
+        error={error}
+        help="One output per branch. Changing the count regenerates preset labels; removed outputs lose their connections. The saved run is unchanged."
+      >
+        {(id) => (
+          <NumberInput
+            id={id}
+            value={branches.length}
+            min={2}
+            max={10}
+            step={1}
+            unit="outputs"
+            onChange={(count) => update(mode, count)}
+          />
+        )}
+      </Field>
+    </div>
   );
 }
 

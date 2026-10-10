@@ -42,7 +42,7 @@ describe("traceLineage", () => {
     const distance = Object.fromEntries(lineage.steps.map((s) => [s.block.id, s.distance]));
     expect(distance).toEqual({ hil: 0, split: 1, filter: 2, raw: 3, web: 3 });
     const branch = lineage.links.find((l) => l.source === "split")!;
-    expect(branch).toMatchObject({ target: "hil", sourceLabel: "Must have" });
+    expect(branch).toMatchObject({ target: "hil", sourceLabel: "High" });
     expect(lineage.links).toHaveLength(4);
   });
 

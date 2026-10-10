@@ -113,6 +113,7 @@ export function ParamField({ block, spec }: { block: WorkflowBlock; spec: ParamS
             minItems={spec.minItems}
             maxItems={spec.maxItems}
             itemPlaceholder={spec.itemPlaceholder}
+            itemOptions={spec.itemOptions}
           />
         );
       case "file": {

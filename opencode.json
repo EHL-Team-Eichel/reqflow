@@ -1,0 +1,81 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "small_model": "google/gemini-3.8-flash",
+  "instructions": ["docs/AGENT_ROUTING.md"],
+  "agent": {
+    "explore": {
+      "model": "google/gemini-3.8-flash",
+      "variant": "low"
+    },
+    "general": {
+      "model": "google/gemini-3.8-flash",
+      "variant": "medium"
+    },
+    "technical-writer": {
+      "model": "google/gemini-3.8-flash",
+      "variant": "low"
+    },
+    "test-writer": {
+      "model": "google/gemini-3.8-flash",
+      "variant": "medium"
+    },
+    "fullstack-developer": {
+      "model": "google/gemini-3.8-flash",
+      "variant": "high"
+    },
+    "debugger": {
+      "model": "google/gemini-3.8-flash",
+      "variant": "high"
+    },
+    "code-reviewer": {
+      "model": "google/gemini-3.8-flash",
+      "variant": "medium"
+    },
+    "security-auditor": {
+      "model": "google/gemini-3.8-flash",
+      "variant": "high"
+    },
+    "gemini-low": {
+      "description": "Established-cause follow-ups or routine checks using the operator's Gemini access.",
+      "mode": "all",
+      "model": "google/gemini-3.8-flash",
+      "variant": "low",
+      "prompt": "Follow AGENTS.md and the assigned scope. Complete the bounded task using existing patterns, verify focused acceptance, and report concise evidence. Do not delegate further.",
+      "permission": {
+        "task": "deny"
+      }
+    },
+    "gemini-medium": {
+      "description": "Medium-complexity implementation, test work or focused review with understood contracts.",
+      "mode": "all",
+      "model": "google/gemini-3.8-flash",
+      "variant": "medium",
+      "prompt": "Follow AGENTS.md and the assigned scope. Trace the existing contracts, preserve surrounding behavior, verify meaningful edge cases, and report concise findings and blockers. Do not delegate further.",
+      "permission": {
+        "task": "deny"
+      }
+    },
+    "gemini-high": {
+      "description": "Deeper bounded investigation or review without broad integration or adversarial-security ownership.",
+      "mode": "all",
+      "model": "google/gemini-3.8-flash",
+      "variant": "high",
+      "prompt": "Follow AGENTS.md and the assigned scope. Investigate evidence and interacting constraints within the bounded task, verify acceptance, and report concise findings and blockers. Do not delegate further.",
+      "permission": {
+        "task": "deny"
+      }
+    },
+    "title": {
+      "model": "google/gemini-3.8-flash",
+      "variant": "low"
+    },
+    "summary": {
+      "model": "google/gemini-3.8-flash",
+      "variant": "low"
+    },
+    "compaction": {
+      "model": "google/gemini-3.8-flash",
+      "variant": "medium"
+    }
+  }
+}

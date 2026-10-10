@@ -17,7 +17,12 @@ import { aiSplitterBlock } from "./ai-splitter";
 import { aiSplitterImplementations } from "./index";
 import { Assignments, Scores } from "./protocol";
 
-const defaults = defaultBlockParams("ai_splitter");
+// These tests cover the saved legacy mode, not the new raw customer-priority default.
+const defaults = {
+  ...defaultBlockParams("ai_splitter"),
+  splitBy: "priority",
+  branches: ["Must have", "Should have", "Could have"],
+};
 function context(llm = createLlmClient(DEFAULT_SETTINGS.llm), controller = new AbortController()) {
   const log = vi.fn();
   const progress = vi.fn();
@@ -189,7 +194,7 @@ describe("AI Splitter", () => {
     expect(aiSplitterImplementations).toEqual([aiSplitterBlock]);
   });
 
-  it.each(["category", "sentiment", "custom"] as const)(
+  it.each(["category", "sentiment"] as const)(
     "routes %s with one validated assignment per primary item and stable input order",
     async (splitBy) => {
       const input = records(["first", "second", "third"]);
@@ -218,7 +223,7 @@ describe("AI Splitter", () => {
       expect(out["out-1"]!.records.map((r) => r.id)).toEqual(["rec_1"]);
       for (const envelope of Object.values(out))
         expect(PipelineData.safeParse(envelope).success).toBe(true);
-      expect(c.log.mock.calls.flat().join(" ")).toContain("same group");
+      expect(c.log.mock.calls.flat().join(" ")).not.toContain("same group");
       const request = vi.mocked(llm.generateObject).mock.calls[0]![0];
       expect(request).toMatchObject({ tier: "default", signal: c.controller.signal });
       expect(request.system).toMatch(/untrusted/i);
@@ -484,7 +489,7 @@ describe("AI Splitter", () => {
     expect(input.requirements[0]!.score).toEqual(fixtureRequirements[0]!.score);
   });
 
-  it("scores missing factors provisionally in code and logs every evidence/assumption note", async () => {
+  it("scores missing factors provisionally in code without logging evidence/assumption contents", async () => {
     const factors = Object.fromEntries(
       ScoreFactor.options.map((f) => [
         f,
@@ -500,7 +505,7 @@ describe("AI Splitter", () => {
     expect(logs).toMatch(/WS8.*unavailable/i);
     expect(logs).toMatch(/provisional.*20/i);
     expect(logs).toMatch(/wont.*fallback/i);
-    expect(logs).toContain("Assumption: unmeasured synthetic estimate");
+    expect(logs).not.toContain("Assumption: unmeasured synthetic estimate");
     expect(c.audit.record).not.toHaveBeenCalled();
   });
 
@@ -633,7 +638,16 @@ describe("AI Splitter", () => {
     ]);
     const customOut = outputs(
       await aiSplitterBlock.run(
-        { in: records(["Seats", "Screens"]) },
+        {
+          in: {
+            ...emptyPipelineData(),
+            requirements: ["Seats", "Screens"].map((title, i) => ({
+              ...fixtureRequirements[i]!,
+              title,
+              description: title,
+            })),
+          },
+        },
         {
           ...defaults,
           splitBy: "custom",
@@ -643,7 +657,7 @@ describe("AI Splitter", () => {
         context().ctx,
       ),
     );
-    expect(Object.values(customOut).map((data) => data.records[0]!.text)).toEqual([
+    expect(Object.values(customOut).map((data) => data.requirements[0]!.title)).toEqual([
       "Seats",
       "Screens",
     ]);

@@ -265,4 +265,32 @@ describe("dataflow store", () => {
     expect(store.getState().notice?.message).toMatch(/no longer exists/);
     expect(store.getState().path).toEqual([custom]);
   });
+
+  it("opens and closes an Add to Car block's thought process, and closes it on navigation", () => {
+    const store = createDataflowStore();
+    const custom = store.getState().addBlock("custom", at);
+    store.getState().openInner(custom);
+    const car = store.getState().addBlock("add_to_car", at);
+    const hil = store.getState().addBlock("hil", at);
+    store.getState().goTo(0);
+
+    store.getState().openReasoning(car); // found inside the inner workplace too
+    expect(store.getState().reasoning).toEqual({ blockId: car });
+    store.getState().closeReasoning();
+    expect(store.getState().reasoning).toBeNull();
+
+    store.getState().openReasoning(hil);
+    expect(store.getState().reasoning).toBeNull();
+    expect(store.getState().notice?.message).toMatch(/has no thought process/);
+    store.getState().openReasoning("missing");
+    expect(store.getState().reasoning).toBeNull();
+
+    store.getState().openReasoning(car);
+    store.getState().revealBlock([custom], hil);
+    expect(store.getState().reasoning).toBeNull();
+
+    store.getState().openReasoning(car);
+    expect(store.getState().loadTemplate(FEEDBACK_TEMPLATES[0]!)).toBe(true);
+    expect(store.getState().reasoning).toBeNull();
+  });
 });

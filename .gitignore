@@ -4,6 +4,7 @@ node_modules/
 out/
 dist/
 coverage/
+.vitest/
 *.tsbuildinfo
 next-env.d.ts
 

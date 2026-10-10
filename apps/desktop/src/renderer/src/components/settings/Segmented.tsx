@@ -1,4 +1,4 @@
-import { cx } from "@/lib/cx";
+import { cx } from "../../lib/cx";
 
 export function Segmented<T extends string>(props: {
   options: readonly { value: T; label: string }[];

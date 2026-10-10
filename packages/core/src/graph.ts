@@ -4,6 +4,7 @@ import {
   blockPorts,
   defaultBlockParams,
   isBoundaryBlockKind,
+  migrateBlockParams,
   parseBlockParams,
   type BlockParams,
   type BlockPorts,
@@ -22,6 +23,24 @@ export interface Connection {
   sourcePort: string;
   target: string;
   targetPort: string;
+}
+
+/** All reachable consumers, used by execution and read-only human-review availability checks. */
+export function getDownstreamBlockIds(graph: WorkflowGraph, blockId: string): Set<string> {
+  const downstream = new Set<string>();
+  const adj = new Map<string, string[]>();
+  for (const block of graph.blocks) adj.set(block.id, []);
+  for (const edge of graph.edges) adj.get(edge.source)?.push(edge.target);
+  const queue = [blockId];
+  while (queue.length) {
+    for (const next of adj.get(queue.shift()!) ?? []) {
+      if (!downstream.has(next)) {
+        downstream.add(next);
+        queue.push(next);
+      }
+    }
+  }
+  return downstream;
 }
 
 export type ConnectionCheck = { ok: true } | { ok: false; reason: string };
@@ -107,6 +126,19 @@ export function withSplitterWorkplaces<T extends WorkflowGraph>(graph: T): T {
     if (inner === block.inner) return block;
     changed = true;
     return { ...block, inner };
+  });
+  return changed ? { ...graph, blocks } : graph;
+}
+
+/** Brings blocks saved by older builds up to date (`migrateBlockParams`), inner workplaces included. */
+export function migrateGraph<T extends WorkflowGraph>(graph: T): T {
+  let changed = false;
+  const blocks = graph.blocks.map((block) => {
+    const params = migrateBlockParams(block.kind, block.params);
+    const inner = block.inner ? migrateGraph(block.inner) : undefined;
+    if (params === block.params && inner === block.inner) return block;
+    changed = true;
+    return { ...block, params, ...(inner ? { inner } : {}) };
   });
   return changed ? { ...graph, blocks } : graph;
 }

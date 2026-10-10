@@ -1,4 +1,5 @@
 import {
+  AuditEvent,
   Finding,
   Requirement,
   type RequirementDetail,
@@ -6,8 +7,17 @@ import {
   Source,
   SourceRecord,
   type PipelineData,
+  type AuditEventInput,
+  newId,
 } from "@reqflow/core";
 import type { DatabaseSync } from "node:sqlite";
+
+export class RequirementConflictError extends Error {
+  constructor() {
+    super("Requirement changed or was removed; reload before applying this change.");
+    this.name = "RequirementConflictError";
+  }
+}
 
 export class SqliteRequirementRepository {
   constructor(private readonly db: DatabaseSync) {}
@@ -126,12 +136,37 @@ export class SqliteRequirementRepository {
    */
   async removeAll(): Promise<Requirement[]> {
     const removed = await this.list();
-    if (removed.length === 0) return [];
-    const placeholders = removed.map(() => "?").join(", ");
-    this.db
-      .prepare(`DELETE FROM requirements WHERE id IN (${placeholders})`)
-      .run(...removed.map((r) => r.id));
-    return removed;
+    return this.transaction(() => this.removeChecked(removed));
+  }
+
+  /** Synchronous CAS + audit. No facade promises or external work inside the transaction. */
+  removeAllWithAudit(expected: Requirement[], events: AuditEventInput[]): Requirement[] {
+    for (const req of expected) {
+      Requirement.parse(req);
+      if (
+        !events.some(
+          (event) =>
+            event.entityType === "requirement" &&
+            event.entityId === req.id &&
+            event.action === "requirement.deleted",
+        )
+      )
+        throw new Error("Requirement deletion requires an audit event");
+    }
+    return this.transaction(() => {
+      const removed = this.removeChecked(expected);
+      for (const event of events) this.insertAudit(event);
+      return removed;
+    });
+  }
+
+  private removeChecked(expected: Requirement[]): Requirement[] {
+    const stmt = this.db.prepare(`DELETE FROM requirements WHERE id = ? AND
+      (SELECT MAX(version) FROM requirements WHERE id = ?) = ?`);
+    for (const req of expected) {
+      if (!stmt.run(req.id, req.id, req.version).changes) throw new RequirementConflictError();
+    }
+    return expected;
   }
 
   /**
@@ -154,26 +189,51 @@ export class SqliteRequirementRepository {
     return seqs.length ? Math.max(...seqs) : 0;
   }
 
-  async saveVersion(req: Requirement): Promise<Requirement> {
+  async saveVersion(
+    req: Requirement,
+    expectedCurrentVersion: number | null = req.version === 1 ? null : req.version - 1,
+  ): Promise<Requirement> {
+    return this.insertVersion(req, expectedCurrentVersion);
+  }
+
+  /** Keeps async saveVersion callers compatible while providing a non-yielding IPC write seam. */
+  saveVersionWithAudit(
+    req: Requirement,
+    expectedCurrentVersion: number | null,
+    events: AuditEventInput[],
+  ): Requirement {
+    if (
+      !events.length ||
+      events.some((event) => event.entityType !== "requirement" || event.entityId !== req.id)
+    )
+      throw new Error("Requirement mutation requires matching audit events");
+    return this.transaction(() => {
+      const saved = this.insertVersion(req, expectedCurrentVersion);
+      for (const event of events) this.insertAudit(event);
+      return saved;
+    });
+  }
+
+  private insertVersion(req: Requirement, expectedCurrentVersion: number | null): Requirement {
     const validated = Requirement.parse(req);
+    if (
+      (expectedCurrentVersion !== null &&
+        (!Number.isSafeInteger(expectedCurrentVersion) || expectedCurrentVersion < 1)) ||
+      validated.version !== (expectedCurrentVersion ?? 0) + 1
+    )
+      throw new RequirementConflictError();
     const json = JSON.stringify(validated);
 
     const stmt = this.db.prepare(`
       INSERT INTO requirements (
         id, version, title, category, status, priority, evidence_level, run_id, json, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(id, version) DO UPDATE SET
-        title = excluded.title,
-        category = excluded.category,
-        status = excluded.status,
-        priority = excluded.priority,
-        evidence_level = excluded.evidence_level,
-        run_id = excluded.run_id,
-        json = excluded.json,
-        updated_at = excluded.updated_at
+      ) SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+      WHERE (SELECT MAX(version) FROM requirements WHERE id = ?) IS ?
+        AND NOT EXISTS (SELECT 1 FROM audit_events WHERE entity_type = 'requirement'
+          AND entity_id = ? AND action = 'requirement.deleted')
     `);
 
-    stmt.run(
+    const result = stmt.run(
       validated.id,
       validated.version,
       validated.title,
@@ -185,47 +245,95 @@ export class SqliteRequirementRepository {
       json,
       validated.createdAt,
       validated.updatedAt,
+      validated.id,
+      expectedCurrentVersion,
+      validated.id,
     );
-
+    if (!result.changes) throw new RequirementConflictError();
     return validated;
   }
 
+  private transaction<T>(write: () => T): T {
+    this.db.exec("SAVEPOINT requirement_mutation");
+    try {
+      const result = write();
+      this.db.exec("RELEASE requirement_mutation");
+      return result;
+    } catch (error) {
+      this.db.exec("ROLLBACK TO requirement_mutation; RELEASE requirement_mutation");
+      throw error;
+    }
+  }
+
+  private insertAudit(input: AuditEventInput): void {
+    // Same append-only table/shape as SqliteAuditLogger; deliberately synchronous
+    // rather than calling its async facade inside the requirement transaction.
+    const event = AuditEvent.parse({
+      ...input,
+      id: newId("aud"),
+      at: new Date().toISOString(),
+      changes: input.changes ?? [],
+    });
+    this.db
+      .prepare(
+        `INSERT INTO audit_events
+      (id, at, action, entity_type, entity_id, actor, changes, rationale, run_id, block_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(
+        event.id,
+        event.at,
+        event.action,
+        event.entityType,
+        event.entityId,
+        JSON.stringify(event.actor),
+        JSON.stringify(event.changes),
+        event.rationale ?? null,
+        event.runId ?? null,
+        event.blockId ?? null,
+      );
+  }
+
   async savePipelineData(data: PipelineData, runId?: string): Promise<void> {
-    for (const src of data.sources) {
-      const stmt = this.db.prepare(`
+    // Publishing evidence and new requirements must also be all-or-nothing on a
+    // version collision. The synchronous body cannot interleave human decisions.
+    this.transaction(() => {
+      for (const src of data.sources) {
+        const stmt = this.db.prepare(`
         INSERT INTO sources (id, run_id, json) VALUES (?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET json = excluded.json, run_id = excluded.run_id
       `);
-      stmt.run(src.id, runId ?? null, JSON.stringify(src));
-    }
+        stmt.run(src.id, runId ?? null, JSON.stringify(src));
+      }
 
-    for (const rec of data.records) {
-      const stmt = this.db.prepare(`
+      for (const rec of data.records) {
+        const stmt = this.db.prepare(`
         INSERT INTO records (id, source_id, run_id, json) VALUES (?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET json = excluded.json, run_id = excluded.run_id
       `);
-      stmt.run(rec.id, rec.sourceId, runId ?? null, JSON.stringify(rec));
-    }
+        stmt.run(rec.id, rec.sourceId, runId ?? null, JSON.stringify(rec));
+      }
 
-    for (const fnd of data.findings) {
-      const stmt = this.db.prepare(`
+      for (const fnd of data.findings) {
+        const stmt = this.db.prepare(`
         INSERT INTO findings (id, run_id, json) VALUES (?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET json = excluded.json, run_id = excluded.run_id
       `);
-      stmt.run(fnd.id, runId ?? null, JSON.stringify(fnd));
-    }
+        stmt.run(fnd.id, runId ?? null, JSON.stringify(fnd));
+      }
 
-    for (const thm of data.themes) {
-      const stmt = this.db.prepare(`
+      for (const thm of data.themes) {
+        const stmt = this.db.prepare(`
         INSERT INTO themes (id, run_id, json) VALUES (?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET json = excluded.json, run_id = excluded.run_id
       `);
-      stmt.run(thm.id, runId ?? null, JSON.stringify(thm));
-    }
+        stmt.run(thm.id, runId ?? null, JSON.stringify(thm));
+      }
 
-    for (const req of data.requirements) {
-      const withRun = runId && !req.runId ? { ...req, runId } : req;
-      await this.saveVersion(withRun);
-    }
+      for (const req of data.requirements) {
+        const withRun = runId && !req.runId ? { ...req, runId } : req;
+        this.insertVersion(withRun, withRun.version === 1 ? null : withRun.version - 1);
+      }
+    });
   }
 }

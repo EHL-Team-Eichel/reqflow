@@ -1,8 +1,11 @@
+import { inspect } from "node:util";
 import { RequirementDecision } from "@reqflow/core";
 import type { ReqflowHandlers } from "@reqflow/core/ipc";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { dispatch, ReqflowError } from "./dispatch";
 
+const syntheticCredential = "synthetic-private-provider-credential";
+const syntheticProviderDetails = "synthetic-private-provider-response";
 const handlers = {
   app: {
     info: async () => ({ version: "0.1.0", platform: "test", dataDir: "/tmp", isPackaged: false }),
@@ -17,10 +20,19 @@ const handlers = {
   },
   workflows: {
     get: async () => {
-      throw new Error("db locked");
+      throw Object.assign(new Error(`db locked; provider credential ${syntheticCredential}`), {
+        details: {
+          authorization: `Bearer ${syntheticCredential}`,
+          response: syntheticProviderDetails,
+        },
+      });
     },
   },
 } as unknown as ReqflowHandlers;
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe("main-process IPC dispatch", () => {
   it("wraps return values as ok results", async () => {
@@ -42,14 +54,28 @@ describe("main-process IPC dispatch", () => {
     expect(bad).toMatchObject({ ok: false, error: { code: "invalid_input" } });
   });
 
-  it("reports unexpected errors as internal and unknown methods explicitly", async () => {
+  it("sanitizes unexpected errors without leaking provider credentials or details to IPC or console", async () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
-    await expect(dispatch(handlers, "workflows", "get", ["wf_1"])).resolves.toMatchObject({
+
+    const response = await dispatch(handlers, "workflows", "get", ["wf_1"]);
+
+    expect(response).toMatchObject({
       ok: false,
-      error: { code: "internal", message: "db locked" },
+      error: { code: "internal", message: expect.stringMatching(/internal/i) },
     });
+    expect(response).not.toHaveProperty("error.details");
     expect(spy).toHaveBeenCalled();
-    spy.mockRestore();
+    for (const output of [
+      inspect(response, { depth: null }),
+      inspect(spy.mock.calls, { depth: null }),
+    ]) {
+      expect(output).not.toContain("db locked");
+      expect(output).not.toContain(syntheticCredential);
+      expect(output).not.toContain(syntheticProviderDetails);
+    }
+  });
+
+  it("reports unknown methods explicitly", async () => {
     await expect(dispatch(handlers, "nope", "missing", [])).resolves.toMatchObject({
       ok: false,
       error: { code: "unknown_method" },

@@ -25,11 +25,13 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
   HIL, Add to Car), drag or click onto the workplace, connect ports (invalid connections and loops are
   refused with a reason), inspector with placeholder parameters, splitter branches and Add to Car
   rankings become ports, Custom/Research/AI Filter open into inner workplaces (breadcrumb back),
-  delete with confirmation. The flow lives in memory: **not saved yet** and **nothing runs yet**.
+  delete with confirmation. Templates load full workflows; Start saves the graph and runs it with
+  live status/logs, cancellation and explicit human-review pauses. Editor autosave/load UI remains open.
 - **HIL block (finalized):** double-click opens the review report: a flow chart of how the data was
   collected (lineage across inner workplaces) and a table icon on every step to see the data there
-  (a Raw step's own data, a HIL's connected Raw inputs, or the saved run; no demo data). Runtime logic (pause until reviewed, then pass on) is built and
-  tested; it runs once the executor exists.
+  (a Raw step's own data, a HIL's connected Raw inputs, or the saved run; no demo data). Single-reviewer
+  gates pause execution until explicit review/continue. Selected-point PDF export is a format check,
+  not an approval; upstream splitter reports expose evidence and audited human routing corrections.
 - **Raw block (built, WS5):** reads `.xlsx` (any sheet), CSV (`,` `;` tab, UTF-8 or Windows-1252, German
   number formats) and read-only SQLite queries into one source + one record per row, with
   deterministic usage findings from take rates and sales volumes. "Choose file…" opens the native
@@ -38,14 +40,19 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
   (feedback, customer studies, sales volumes; see the WS5 log for their shapes) when they're in
   `data/raw/`; the PDF option list is refused for now.
 - **Car:** 3D car with every requirement from Add to Car placed on a part (WS3); **Reset** removes
-  all requirements (audited, ids never reused). No demo data: the car is empty until a flow runs.
+  all requirements (audited, ids never reused). Agent-generated requirements expose confidence and
+  the recorded thought process. Exterior/interior transitions are reversible. No demo data: the car
+  is empty until a flow runs. Later Car model-switcher/compact-card branches are not integrated.
 - **Settings:** App, Global parameters, AI & research, Collaboration, About. Changes are validated and
-  apply live (theme, grid, minimap). **Not saved to disk yet** (`settings.save` is WS1).
+  apply live (theme, grid, minimap) and persist. Default AI supports Anthropic/OpenAI/Google/mock;
+  agent roles can use separate API setups. Research APIs expose configuration, approval and tests.
+  Credentials stay in the main process and require OS-backed encryption, never plaintext fallback.
 - **Contract:** domain schemas, block specs (`core/src/blocks.ts`), graph rules (`core/src/graph.ts`),
   IPC API, scoring formula, synthetic F70 EU fixtures, block registry, default template.
-  Built block implementations: Raw, HIL. **No executor or database exists yet**, so flows don't run.
-  Built IPC methods: `app.info`, `templates.list`, `blocks.preview`, `files.import`; every other
-  method answers `not_implemented`.
+  Built blocks: Raw, Research, HIL, AI Splitter and Add to Car agents. Shared execution kernel and
+  SQLite persist runs, outputs, requirements, reasoning, research provenance and audits. Research
+  imports original local documents and has configured network adapters; native smoke runs offline.
+  AI Filter and remaining demo/review UI tasks are still open; live-provider verification is separate.
 - Repo is public, and Entire is enabled (checkpoints are pushed with every `git push`).
 
 ## Open questions for the humans
@@ -59,7 +66,7 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 ## WS0 — Lead / integrator
 
-**Status:** in progress · **Owner:** Claude Code (setup session) · **Branch:** `main`
+**Status:** review (requested integration verified locally) · **Owner:** OpenCode (continuing Claude integration) · **Branch:** `integrate/2026-10-11`
 
 **Tasks**
 
@@ -67,9 +74,12 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 - [ ] Apply contract-change requests from the sections below (`packages/core`, block params and ports).
 - [ ] Integration: run `BMW_DEFAULT_TEMPLATE` end to end with the `mock` LLM, then with Claude and the real data.
 - [ ] Demo script and rehearsal (PRODUCT.md → Demo scenario); keep PRODUCT.md and this file current.
+- [x] Complete the interrupted 2026-10-11 branch integration, preserving merge history and the human-authorized Car cutoff; verify with synthetic tests and native smoke.
 
 **Log**
 
+- 2026-10-11: Integrated Add to Car agents, Mastra splitter, Research/AI providers (including its Research ancestor), sampled HIL PDF, and `ws3-car-view-animation`. Existing WS1/WS2/older splitter branch tips are already ancestors. Excluded later Alex branches: `codex/car-model-refinements`, `ws3-compact-requirements`, `ws3-compact-requirements-entire`, `ws3-exterior-session-log`, `ws4-car-models`. Superseded parallel engine/judging experiments remain excluded: `ws1-blocks`, `ws1-engine`, `quick-ai-results`, `integrate-mastra-judge`. Resolved shared executor, secrets, provider, report and IPC conflicts without dropping human routing correction or agent setups. Native smoke now clears the actual preceding scenario canvas and queues its synthetic document. `npm run check` and `npm run smoke` passed; 51 screenshots and sample PDFs inspected. No live provider calls, real credentials or BMW files used. Local merge history only; not pushed. Windows/Linux and real-provider evaluation remain unverified.
+- 2026-10-11: Continuing the unfinished integration worktree. Preserve merged Add to Car agents and Mastra splitter, finish Research/AI providers, then merge HIL PDF and Car changes through `ws3-car-view-animation` only. Later Alex Car branches are explicitly excluded; obsolete engine/judging experiments are not reintroduced over their replacements. Synthetic-only verification, no credentials or BMW data inspected.
 - 2026-10-10 night: **Removed all demo data from the app** and added **Reset** on the Car page
   (branch `ws0-remove-demo-data`). The database is no longer seeded; on start, `removeDemoData`
   (`packages/db/src/demo-data.ts`) deletes rows earlier builds seeded (exact fixture ids and the demo
@@ -94,6 +104,35 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
   building blocks (ADR 0003): `@reqflow/nodes` → `@reqflow/blocks`, `nodes.catalog` removed,
   `runs.nodeOutput` → `runs.blockOutput`. Verify: `npm run check && npm run smoke`.
 - 2026-10-10: Repo scaffolded, switched from web to Electron desktop app, made the repo public, enabled Entire.
+
+### Local Entire / OpenCode setup
+
+- **Status:** done.
+- **Branch:** `ws0-entire-opencode`.
+- **Scope:** developer setup requested by the human; local commits only.
+- **What works:** dependencies installed with Node 24.21.0 / npm 11.19.0;
+  Entire 0.11.4 enabled for OpenCode 1.18.35, preserving the existing Claude Code
+  hooks. A fresh synthetic OpenCode shell session was captured and its transcript
+  exported locally. A plain Git setup commit generated checkpoint
+  `01M4K9XV8X9GP2RCJZRQRC2Q62`, its `Entire-Checkpoint:` trailer, and a local
+  checkpoint ref containing both raw and normalized synthetic transcripts.
+  `npm run check` passes (all workspace typechecks, 46 tests across 11 files, and
+  Prettier).
+- **Integration:** rebased onto `origin/main` at `b1dae4f`; the team's status
+  sections and both checkpoint trailers are preserved. `entire doctor` confirms
+  healthy Git and agent hooks with no stuck sessions.
+- **Configuration:** `.opencode/plugins/entire.ts` is generated by Entire and
+  excluded from Prettier. Git hooks and `.entire/settings.local.json` are local;
+  telemetry and automatic checkpoint pushing are disabled. The tracked
+  `git-refs` checkpoint backend is preserved.
+- **Verify:** run `entire status --detailed`, `entire agent list`, and
+  `npm run check`. Restart OpenCode from the repository before working, with
+  `entire` available on its inherited `PATH`. After a plain `git commit`, inspect
+  `git log -1 --format=%B` for `Entire-Checkpoint:` and run
+  `git for-each-ref refs/entire/checkpoints` to inspect local checkpoint refs.
+- **Next:** restart OpenCode from the repository to use the installed plugin in
+  new development sessions.
+- **Open questions:** none.
 
 ## WS1 — Engine, persistence & main process
 
@@ -133,7 +172,7 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 ## WS2 — Data Flow editor UI
 
-**Status:** open · **Owner:** — · **Branch:** —
+**Status:** review · **Owner:** OpenCode (HIL sampled PDF report) · **Branch:** `feature/hil-sample-pdf-report`
 **Depends on:** WS1 for save/load and runs. Tasks 1–3 can start now.
 
 **Tasks**
@@ -160,9 +199,12 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 - [x] Explicit Start button for the full workflow, including inner workplaces; prevent duplicate runs
       and preserve HIL pauses (PR #10, verified on merged main).
 - [x] Continue single-reviewer HIL gates after explicit review of saved run inputs; reset confirmation per run/gate and preserve Start controls (PR #12).
+- [ ] Merge sampled HIL PDF export and decision-brief report (implemented and verified on `feature/hil-sample-pdf-report`; not yet merged).
 
 **Log**
 
+- 2026-10-11: Sampled PDF export implemented in isolated `EHL-hil-report` worktree. HIL → choose step → Format-check PDF: defaults first 3 per dataset, editable checkboxes, maximum 15 total, first 50 candidates shown; native PDF save via validated `exports.hilReport`. Preserves original selected record text/fields and finding excerpts; includes scope/provenance, counts/omissions, routed/nested lineage, priority/score/targets, evidence gaps/conflicts and optional report-only PM action notes. No requirement decisions, resume or reviewer signatures added. Human authorized core IPC/main/shared-icon integration. Research mapping and future persisted-review proposals: `docs/hil-report-design.md`. Verified `npm run typecheck && npm test` (280 passed, 25 skipped), desktop smoke (native sample + rich management PDFs, 35 screenshots), changed-file Prettier and `git diff --check`; inspected PDFs and light/dark/minimum viewport screenshots. No dependencies or real BMW data used. Changes remain uncommitted/unpushed for review; other WS2 tasks remain open.
+- 2026-10-11: Claimed the HIL sampled-PDF report slice in an isolated worktree from main. Human authorized the narrow core IPC/main-process changes needed for native PDF export. Preserve existing review/resume semantics, export only explicitly selected data points, and distinguish format validation from complete evidence review. Use synthetic data only for verification; leave concurrent Add-to-Car work untouched.
 - 2026-10-10: Blocks/Templates switch and full-workflow setups merged in PR #15. Integrated current Car refinements unchanged and reverified: `npm run check` (277 passed, 10 skipped), `npm run smoke` (29 screenshots), and native synthetic template loading/replacement plus both connected workflows, explicit PM review, Car publication, and light/dark/minimum-window screenshots. Requested slice complete; WS2 released. Use Templates → Use template, configure inputs, then Start; BMW's full setup remains an explicitly labelled blueprint until its Research/AI Filter prerequisites land.
 - 2026-10-10: Blocks/Templates sidebar implemented. Two connected setups (Feedback to requirements: Raw → HIL → Car/Should; Prioritized feedback: Raw → priority Splitter → three PM gates → Car rankings) plus `templates.list()`'s BMW successor blueprint, labelled as requiring Research/AI Filter support. Loading validates/clones the full graph with fresh canonical boundary/edge ids, resets inner navigation/selection/report/measurements and old run/workflow identity, preserves the template name on save, confirms replacement, and blocks active/paused runs. Added 15 regressions. `npm run check`: 273 passed, 10 skipped; `npm run smoke`: 29 screenshots. Native synthetic probe verified view switching, replacement accept/cancel, nested-to-root loading, shared BMW graph, no auto-run, blocked replacement at HIL, named workflow saves, proposed-only Car publication, and prioritized execution with the offline mock. Light/dark and 1024×640 screenshots inspected: `workflow-template*` in `apps/desktop/out/smoke/`.
 - Request for WS1/WS0: add sidebar switching, template confirmation and configured template execution to the shared smoke runner. Next: save/load/autosave and undo/redo remain separate tasks. No core, main, engine, block or dependency changes.
@@ -208,6 +250,8 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 ## WS3 — Car tab: requirements review & audit UI
 
 **Status:** in progress (car model refinement complete; requirements review pending) · **Owner:** Codex (BMW styling and geometry fixes) · **Branch:** `codex/car-model-refinements`
+**Animation slice:** review (implemented and verified) · **Owner:** OpenCode · **Branch:** `ws3-car-view-animation` (isolated worktree)
+**Windscreen slice:** review (implemented and verified) · **Owner:** OpenCode · **Branch:** `ws3-car-view-animation`
 **Depends on:** nothing to start: build on `@reqflow/core/fixtures` (5 requirements, findings, sources,
 audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 serves them.
 
@@ -232,6 +276,14 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - [ ] PM override of the auto-classified part (needs a contract field + audit event, WS0).
 
 **Log**
+
+- 2026-10-10: Widened the front glass into a tapered M5-inspired outline, roughly 1.7 m across the base and 1.3 m at the roof, with bowed corners and slender, continuous A-pillars. Shifted the side-window front edge slightly forwards and constrained front-glazing edge relaxation to preserve station/ring order, preventing narrow-panel folds without changing the rear-edge smoothing. Kept all car parts, body proportions, interior and reversible flight. Added 7 regressions for width/taper, front coverage, rounded lower corners, pillar separation, symmetry, connected glazing and non-folded triangles. Verified `npm run typecheck && npm test` (266 passed, 25 skipped), `npm run smoke` (PASS, 29 screenshots), changed-file Prettier and `git diff --check`; reviewed front-quarter/top, light/dark and interior screenshots. The isolated native animation probe also passed outward/return, interrupted reversal, badge tracking, cabin selection and live reduced motion (8 screenshots). Source changes are limited to `model/body.ts`, its colocated tests and this WS3 handoff; ready for integration alongside the concurrent model refinements.
+
+- 2026-10-10: Claimed wider, M5-inspired front glazing with slimmer A-pillars. Replace the narrow fixed-width windscreen mask with a tapered, rounded outline spanning more of the front cabin surface; preserve the current body silhouette, interior, parts and reversible flight. The latest concurrent shape branch retains the same front-glass classification, so keep this patch focused and independently integrable rather than overwriting its model changes.
+
+- 2026-10-10: Implemented an 850 ms reversible exterior flight: all exterior meshes (including wheels and wheel-well masks) separate outward, fade away to expose the assembled cabin, and retrace their exact paths back. Rapid toggles reverse without jumps; badges follow/fade with their pieces, departed pieces cannot intercept canvas picks, and reduced motion snaps to the endpoint (including live preference changes). No car geometry, core contracts or main-process files changed. Added 12 colocated regressions. Verified `npm run typecheck && npm test` (259 passed, 25 real-data tests skipped), `npm run smoke` (29 screenshots), changed-file Prettier and `git diff --check`. An isolated synthetic native UI probe also passed outward/return, mid-flight reversal, badge behavior, cabin selection, dark theme and live reduced motion (8 additional screenshots); inspected assembled, departing, returning and interior screenshots in `apps/desktop/out/smoke/`. Requested slice complete; branch ready for integration with concurrent shape work. WS1/WS0 follow-up: add transition-progress, rapid-reversal and reduced-motion checks to shared `main/smoke.ts`.
+
+- 2026-10-10: Claimed the requested reversible exterior/interior animation in an isolated worktree to preserve concurrent car-shape work. Exterior pieces fly away to reveal the assembled cabin and return along the same paths; preserve all catalog parts, picking, theme styling and camera controls. Scope: WS3 car renderer, colocated tests and this section. User requested commit and push after verification.
 
 - 2026-10-10: Shortened the bonnet/nose by 0.33 m and rounded the front plan-view corners at
   the user’s request. The front axle, chassis components, wheel wells, projected front details,
@@ -348,29 +400,49 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 ## WS6 — Research block
 
-**Status:** open · **Owner:** — · **Branch:** —
-**Depends on:** WS1 wires the providers into `ctx.web`; everything below can start now.
+**Status:** done — multi-provider/customization integration verified and published · **Owner:** OpenCode (Jonas) · **Branch:** `ws6-ai-providers`
+**Integration:** typed `ctx.research` collector, main-process provider/secret runtime, existing workflow executor and native GUI. Shared/main/UI changes authorized by the human for this slice.
 
 **Tasks**
 
-- [ ] `WebSearch` providers in `packages/blocks/src/research/`: `anthropic_web_search` and `tavily`,
-      as factories that take the key as an argument (never read env vars).
-- [ ] Query builder from the block's params and the scope (competitors in the segment, owner and press
-      reviews, market and technology trends for the horizon).
-- [ ] Fetch pages and extract clean text into `SourceRecord`s; `Source` with kind, publisher, date and
-      reliability (document the rule).
-- [ ] Respect allowed / blocked domains and `maxResults`, de-duplicate by URL, log failures.
-- [ ] Recorded fixtures so `npm test` runs offline (no live network in tests).
+- [x] Thirteen raw-only agents with real Mastra query-planner instances and explicit paid-planning opt-in; configurable vehicle/generation/market/language/date scope.
+- [x] Firecrawl originals and optional Tavily alternative; YouTube, Reddit OAuth, X recent/archive, fixed approved Apify actors, OpenAlex, Eurostat and local documents. No automatic paid fallback; legacy Claude web search reports unsupported.
+- [x] Verbatim records, tables, explicit metadata, unknown attribution and linked provenance; no inferred reliability, classifications, requirements or human decisions.
+- [x] Authoritative domain policies, unique-result/shared-request budgets, retry/cancel/partial preservation, deduplication and shared BMW document cache.
+- [x] Research APIs & Zugänge Settings, main-only encrypted secrets, typed IPC, persistence/audit, workflow run controls and JSON/XLSX/CSV exports with formula/overflow/Unicode protection.
+- [x] Offline synthetic tests, independent code/security review corrections, root checks, native and packaged macOS smoke, screenshot inspection and research documentation.
+- [x] Integrate latest main services, persistence, executor, Car and HIL/template UI with Research.
+- [x] OpenAI Responses and Google Gemini APIs for app LLM and opt-in Mastra query planning; OS-encrypted credentials and remembered custom provider models.
+- [x] Social-media platform dropdown and editable Research scope using canonical existing parameters.
+- [x] Offline integration/regression tests, independent review corrections, native/packaged smoke and documentation.
+- [x] Publish the verified merge on the separate branch with its Entire checkpoint and verify remote refs.
 
 **Log**
 
+- 2026-10-11: Published the history-preserving merge as `648e092` on `origin/ws6-ai-providers`; both parents (`434a881`, upstream `9228fb3`) are retained. Verified the remote source hash and hook-generated Entire checkpoint `01M4M0K9ZAFGTS3VXFCA8S4NJA` ref/hash, including completed Gemini review/documentation transcripts. Closed only known completed delegates from this slice, preserving other workstreams and the active parent session. No force-push, private/generated artifacts or pre-existing user snapshots were published. Next: authorized live API/account validation and other-platform/Docling verification; implementation and native synthetic gates are complete.
+- 2026-10-11: Completed the multi-provider/customization integration against `main@9228fb3`, retaining the authoritative SQLite/main stores, one execution kernel, Car, HIL, splitter, templates, lineage and Raw behavior. Independent review exposed active access-revocation, concurrent requirement-version and mutation/audit atomicity issues; all three were corrected and independently re-reviewed as closed. Root `npm run check` passes 71 files / 1,625 tests, with 25 private-data tests skipped. Native smoke passes 36 screenshots / 85 Research checks; unsigned macOS arm64 packaged smoke passes 36 / 86, including the actual ASAR-unpacked Worker. Package inventory excludes generated logs, smoke data, credentials and originals. Fresh audit remains 12 moderate / zero high or critical. App APIs remain untested live; no real keys or BMW originals read. Coding subagents now resolve exclusively to Gemini 3.8 Flash with task-appropriate low/medium/high reasoning, including installed role overrides; restart interactive OpenCode to load that config. See [verification](research/verification.md) and [routing](AGENT_ROUTING.md). Publication uses plain Git and Entire hooks; user snapshots remain untouched.
+- 2026-10-10: Human requested latest upstream, OpenAI/Google API support and greater customization (social-media dropdown), published on a separate branch. Created `ws6-ai-providers` from verified Research; pulled `origin/main` at `9228fb3` with history-preserving merge. Resolving overlapping upstream main/runtime/executor/UI implementations without replacing their new behavior. Google means Gemini LLM; shared provider/secret/model-profile contracts extended for this requested slice. User snapshots and Entire hooks preserved; no live keys/paid provider calls authorized.
+- 2026-10-10: Pulled/rebased latest main (b1dae4f). Human expanded WS6 to the 13 raw-only research agents,
+  Research API Settings, secure secrets, workflow integration and JSON/XLSX export, and authorized the
+  necessary shared-contract/main/UI changes ("mach einfach"). Shared schemas and adapter contracts defined
+  before parallel implementation. Existing untracked `* 2.*` files are user work and remain untouched.
+  No live provider tests or confidential-data access authorized. Next: provider adapters and integration.
+- 2026-10-10: Completed parallel provider/UI/executor/planner slices and parent integration. Fixed independent review findings, including concurrent state races, secret reload, Off/domain/budget enforcement, paid-actor cleanup and XLSX/JSON resource amplification. `npm run typecheck`, `npm test` (36 files / 991 tests), `npm run check`, `npm run smoke` pass. Native and unsigned packaged macOS arm64 smoke each pass 17 screenshots / 69 research checks, including real ASAR-unpacked Worker import and JSON/XLSX/CSV export with zero provider calls. `npm audit`: 12 moderate, zero high/critical; remaining advisory chains documented. No real keys/BMW data/Docling conversion or Windows/Linux native execution verified. No commits made; user duplicates and Entire hooks preserved. See [research README](research/README.md) and [verification](research/verification.md). Next: authorized live credentials/budgets/permissions, optional local Docling provisioning, other-platform verification and downstream workstreams.
+- 2026-10-10: Human requested Git/Entire publication. Enabled automatic checkpoint pushing in project and local Entire settings; existing Git, Claude Code and OpenCode hooks pass `entire doctor`. Current Research session is attached to `ws6-research`. Pre-commit `npm run check` passes again (991 tests); publication uses plain Git and its automatic checkpoint trailer.
+- 2026-10-10: Fixed the human-reported `npm run dev` load error: Vite had eagerly resolved `ws`'s optional native addons. Narrowly externalized `bufferutil` and `utf-8-validate` to retain their guarded JavaScript fallbacks. Actual dev UI/IPC pass; `npm run check` passes 37 files / 992 tests. Rebuilt native and packaged smoke both pass 17 screenshots / 69 checks; actual dev/production/ASAR WebSocket helpers pass 64/65-byte and UTF-8 fallback probes with addon opt-out flags unset. Restart an already-running dev process to load the corrected build configuration.
+- 2026-10-10: Published Research and the dev-start fix as `4113dca` on `origin/ws6-research`. Verified the remote commit and Entire checkpoint `01M4KMWRK0Z5V4D4GVXSB0HPP9`, including this OpenCode session and transcript. Automatic checkpoint pushing is enabled in project/local settings; Git, Claude Code and OpenCode hooks pass doctor. Closed 23 completed Research subagent sessions and cleaned only their ignored Vitest-report carry-forward; other workstream sessions remain intact. When correcting an unpublished commit message, preserve its existing hook-generated checkpoint trailer: Entire 0.11.4 can generate a replacement trailer without a ref on a message-only amend. Concurrent main work has advanced substantially; integration must reconcile WS1 services/executor and WS2 run/HIL controls with this slice, retaining both implementations' behavior. User snapshots, generated artifacts and local secret/config files were not published.
+
 ## WS7 — AI blocks: AI Filter, AI Splitter, Add to Car
 
-**Status:** in progress (Add to Car and AI Splitter done; AI Filter open) · **Owner:** Claude Code (Add to Car), OpenCode (AI Splitter) · **Branch:** `main`, `ws7-ai-splitter`
-**Depends on:** nothing for tasks 1–2; WS8 for the splitter's priority mode.
+**Status:** in progress (Add to Car agents, Mastra raw splitter and transparent review done; AI Filter open) · **Owner:** Claude Code (Add to Car), OpenCode (AI Splitter) · **Branch:** `main` (both merged 2026-10-11)
+**Depends on:** nothing for Add to Car and raw-data analysis; WS8 for the legacy requirement-factor scorer integration.
 
 **Tasks**
 
+- [x] Mastra raw-data analysis: customer-demand bands (2–10), car parts and custom instructions.
+- [x] Research JSON import alongside existing Excel/SQLite; preserve original provenance.
+- [x] Persist explainable score/routing reports and show review charts with evidence drill-down.
+- [x] Verify the integrated slice and push `ws7-mastra-splitter` separately for team review.
 - [x] `packages/llm`: `createLlmClient(settings.llm, { apiKey })` with an `anthropic` provider (use the
       `claude-api` skill) and a deterministic `mock`; `generateObject` validates with Zod; tests use the mock.
 - [ ] AI Filter: keep items matching the criterion, extract findings with verbatim-excerpt
@@ -380,13 +452,66 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - [ ] AI Splitter: replace provisional missing-factor judgement with WS8's scorer when available.
 - [x] Add to Car: cluster and derive requirements (IDs via `formatRequirementId`, targets, evidence level
       A–D, Kano class, assumptions, uncertainties, conflicts), priority from the input port, hand them to `ctx.car.add`.
+- [x] Add to Car as an agent system (branch `ws7-add-to-car-agents`): inputs 1. Priority … n. Priority and
+      context inputs (Auto / Sales volumes); analysts → synthesizer → architect ⇄ critic → judge; confidence
+      score per requirement; thought-process view (block, inspector, Car → Why?); API setups per agent role
+      in Settings (Claude, OpenAI, Gemini, OpenAI-compatible, TypeSafe Jev, offline mock); `npm run eval:f70`.
+- [ ] Run `npm run eval:f70` with a real API setup (needs a key in Settings → AI) and tune prompts and
+      batch sizes on the numbers it prints; then merge `ws7-add-to-car-agents` into `main`.
+- [ ] TypeSafe Jev: built from its public docs and tested with recorded answers only (no access key yet);
+      check one live call.
 - [ ] `answerChallenge(...)` for the Car tab's challenge flow.
 - [ ] End-to-end offline test: fixture records → AI Filter → AI Splitter → Add to Car with `mock`.
-- [ ] Add to Car: optional LLM wording pass for titles/descriptions (keep the deterministic draft as fallback).
-- [ ] Add to Car: sales-volume weighting of themes once WS8's `customer_impact` factor exists.
 
 **Log**
 
+- 2026-10-11: **Add to Car rebuilt as an agent system** on `ws7-add-to-car-agents` (the rule-based
+  derive/splitter/taxonomy are gone). Contracts: `Requirement.confidence` + `inputRank`,
+  `ReasoningTrace` (`core/reasoning.ts`), `Settings.agents` (API setups + role assignment),
+  `DecisionClient`/`AgentServices` on the block context, IPC `reasoning.*` and `settings.testSetup`.
+  Add to Car params are now `priorities`, `contexts`, `maxRequirements`, `vehicle`, `market`; older
+  flows migrate on load. Providers in `packages/llm` (Claude with adaptive thinking — the 5.x models
+  reject `temperature` while thinking, so the old client's `temperature: 0.2` would have failed —,
+  Chat Completions, Jev, LLM judge; retries, limiter, provider errors never echoed). Traces stored in
+  `reasoning_traces`. Verified: `npm run check` (338 tests) and `npm run smoke` (37 screenshots,
+  incl. a run started from the editor through a HIL review into the block's thought process).
+  `npm run eval:f70` ran offline on BMW's F70 files (2,128 comments in 58 batches, 100 % verbatim
+  excerpts; numbers only, details in `data/raw/eval/`). **Not yet done:** a run with a real model
+  (no API key on this machine) and a live Jev call.
+- 2026-10-11: Mastra raw splitter and transparent review completed on `ws7-mastra-splitter`, based on
+  `origin/main` `9228fb3` (fetched again before handoff; unchanged). Several Raw/Research outputs merge
+  into its single input. JSON, SQLite and synthetic Excel integration tests cover all three raw modes.
+  Implementation commits through `9e7ad81` are pushed to `origin/ws7-mastra-splitter` for team review.
+  Analysis uses the injected `LlmClient`; the default main-process Anthropic adapter uses a standalone
+  Mastra Agent, existing model settings and secret-store key. Offline mock is clearly labelled.
+  - Discovery batches → global need consolidation → fixed grouping → evidence-linked assignments.
+    Original records route exactly once; secondary needs, context and provenance remain inspectable.
+    Customer demand uses code-calculated 70% relative frequency + 30% expressed impact, with 2–10
+    fixed-width bands. Missing impact gives a NULL score; context is not a vote. Reimports add no vote
+    or impact weight, while independent identical comments remain independent. Customer count is unknown.
+  - Versioned reports persist with the historical BlockRun. Splitter/HIL show decomposed ranking bars,
+    support/opposition/unclear balance, a source-by-need matrix and exact evidence/locator drill-down.
+    A human can correct item output routes at a directly connected editable paused HIL, before any
+    downstream consumer runs. Required rationale, optimistic version and audit are saved atomically
+    with the output snapshot; resume consumes corrected outputs. Original AI explanations, calculated
+    scores and requirement decisions stay intact. A forced final audit-insert failure proves rollback
+    of report/output writes, unchanged in-memory state and safe retry.
+  - Verification: `npm run check` passed (all workspace typechecks, 482 tests passed, 25 unavailable
+    real-data tests skipped, Prettier); `npm run smoke` passed on macOS with 36 screenshots. Inspected
+    `splitter-demand-ranking`, `splitter-source-heatmap`, `splitter-human-routing-correction`,
+    `splitter-original-evidence`, `hil-splitter-review`. Actual editor → SQLite Raw → splitter → HIL
+    smoke verifies persisted human correction, audit and resumed data. Recorded fake HTTP exercises
+    the real Mastra Agent transport; no live provider or confidential-data calls were made.
+  - Next: team reviews this separate branch, integrates its focused core/engine/main/UI additions,
+    and verifies a configured live LLM. WS8 requirement scoring and AI Filter remain the existing open
+    work. Oversized records/catalogs fail explicitly; this slice does not silently truncate them.
+    The original checkout and its active team merge were preserved.
+- 2026-10-11: Human requested implementation of the planned Mastra raw splitter, multi-dataset input,
+  configurable priority-band granularity, JSON/SQL/Excel compatibility and transparent HIL graphics.
+  Pulled latest main into the isolated worktree and started `ws7-mastra-splitter`; parallel work will
+  reuse the existing injected LlmClient/settings/key entry. Original checkout has an active team
+  merge and is left to its owner. Core/engine/UI additions are the focused integration authorized
+  by the human. This branch will be pushed separately, not merged automatically.
 - 2026-10-11: Closed the two Add to Car gaps in the shared architecture: `CarService` in
   `packages/engine/src/block.ts` now takes `add(requirements, evidence)` and an optional
   `nextSeq(scope)`; the desktop handlers store sources, cited records, findings and themes with the

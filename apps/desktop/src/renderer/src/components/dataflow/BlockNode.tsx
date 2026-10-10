@@ -5,7 +5,7 @@ import { BlockIcon } from "./BlockIcon";
 import { GROUP_STYLE } from "./groups";
 import { dataflowStore } from "./store";
 import { isBoundaryBlockKind, isPaletteBlockKind, type ParamSpec } from "@reqflow/core";
-import { ExpandIcon, ReportIcon } from "@/components/ui/icons";
+import { ExpandIcon, ReportIcon, ThoughtIcon } from "@/components/ui/icons";
 import { useSettings } from "@/lib/settings";
 import { cx } from "@/lib/cx";
 import { summarizeParams } from "./summary";
@@ -63,12 +63,27 @@ export const BlockNode = memo(function BlockNode({ data, selected }: NodeProps<B
         </div>
 
         <div className="flex shrink-0 items-center gap-1">
-          {block.kind === "hil" && (
+          {block.kind === "add_to_car" && (
+            <button
+              type="button"
+              data-testid="block-reasoning"
+              className="nodrag shrink-0 rounded-md p-1 text-muted hover:bg-panel-2 hover:text-ink"
+              aria-label={`Open the thought process of ${block.label}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                dataflowStore.getState().openReasoning(block.id);
+              }}
+            >
+              <ThoughtIcon className="size-4" />
+            </button>
+          )}
+
+          {(block.kind === "hil" || block.kind === "ai_splitter") && (
             <button
               type="button"
               data-testid="block-report"
               className="nodrag shrink-0 rounded-md p-1 text-muted hover:bg-panel-2 hover:text-ink"
-              aria-label={`Open the review report of ${block.label}`}
+              aria-label={`Open the ${block.kind === "ai_splitter" ? "scores and routing" : "review"} report of ${block.label}`}
               onClick={(e) => {
                 e.stopPropagation();
                 dataflowStore.getState().openReport(block.id);
@@ -108,38 +123,55 @@ export const BlockNode = memo(function BlockNode({ data, selected }: NodeProps<B
             const input = ports.inputs[i];
             const output = ports.outputs[i];
 
-            return (
-              <div
-                key={i}
-                className="relative flex h-7 w-full items-center justify-between px-3 text-xs text-ink"
-              >
-                {input ? (
-                  <>
-                    <Handle
-                      type="target"
-                      position={Position.Left}
-                      id={input.id}
-                      className={cx("!size-2.5 !border-2 !bg-panel", style.border, "-ml-px")}
-                    />
-                    <span className="truncate pr-2">{input.label}</span>
-                  </>
-                ) : (
-                  <span />
-                )}
+            const isContext = input?.id.startsWith("ctx-");
+            const isFirstContext = isContext && !ports.inputs[i - 1]?.id.startsWith("ctx-");
 
-                {output ? (
-                  <>
-                    <span className="truncate pl-2 text-right">{output.label}</span>
-                    <Handle
-                      type="source"
-                      position={Position.Right}
-                      id={output.id}
-                      className={cx("!size-2.5 !border-2 !bg-panel", style.border, "-mr-px")}
-                    />
-                  </>
-                ) : (
-                  <span />
+            return (
+              <div key={i} className="flex flex-col">
+                {isFirstContext && (
+                  <div className="mt-2 mb-1 flex items-center gap-2 px-3">
+                    <div className="h-px flex-1 bg-line" />
+                    <span className="text-[10px] font-semibold tracking-wider text-muted uppercase">
+                      Context
+                    </span>
+                    <div className="h-px flex-1 bg-line" />
+                  </div>
                 )}
+                <div className="relative flex h-7 w-full items-center justify-between px-3 text-xs text-ink">
+                  {input ? (
+                    <>
+                      <Handle
+                        type="target"
+                        position={Position.Left}
+                        id={input.id}
+                        className={cx(
+                          "!size-2.5 !bg-panel",
+                          isContext
+                            ? "!border !border-dashed !border-muted !bg-panel-2"
+                            : cx("!border-2", style.border),
+                          "-ml-px",
+                        )}
+                      />
+                      <span className="truncate pr-2">{input.label}</span>
+                    </>
+                  ) : (
+                    <span />
+                  )}
+
+                  {output ? (
+                    <>
+                      <span className="truncate pl-2 text-right">{output.label}</span>
+                      <Handle
+                        type="source"
+                        position={Position.Right}
+                        id={output.id}
+                        className={cx("!size-2.5 !border-2 !bg-panel", style.border, "-mr-px")}
+                      />
+                    </>
+                  ) : (
+                    <span />
+                  )}
+                </div>
               </div>
             );
           })}

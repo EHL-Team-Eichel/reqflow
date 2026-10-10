@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { createBlockRegistry } from "@reqflow/blocks";
 import { DEFAULT_SETTINGS, defaultBlockParams } from "@reqflow/core";
 import { createFileStore } from "@reqflow/db";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
 import { ReqflowError } from "./dispatch";
 import { previewBlock } from "./preview";
 
@@ -25,6 +25,25 @@ const code = async (p: Promise<unknown>) => {
 };
 
 describe("blocks.preview", () => {
+  it("does not invoke Research collection or paid query planning during preview", async () => {
+    const run = vi.spyOn(registry.get("research"), "run");
+    try {
+      await expect(
+        previewBlock(registry, files, {
+          kind: "research",
+          params: { ...defaultBlockParams("research"), queryPlanning: true },
+          scope,
+        }),
+      ).rejects.toMatchObject({
+        code: "not_implemented",
+        message: expect.stringMatching(/run the flow/i),
+      });
+      expect(run).not.toHaveBeenCalled();
+    } finally {
+      run.mockRestore();
+    }
+  });
+
   it("runs the Raw block on an imported file", async () => {
     const info = await files.importFile(join(SAMPLES, "equipment_take_rates.csv"));
     const params = {

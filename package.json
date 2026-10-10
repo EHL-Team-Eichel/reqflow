@@ -2,7 +2,7 @@
   "name": "reqflow",
   "private": true,
   "type": "module",
-  "description": "AI-assisted customer-requirements workbench for BMW product managers — desktop app for Windows, macOS and Linux (hackathon prototype).",
+  "description": "AI-assisted customer-requirements workbench for BMW product managers \u2014 desktop app for Windows, macOS and Linux (hackathon prototype).",
   "workspaces": [
     "packages/*",
     "apps/*"
@@ -14,6 +14,7 @@
     "dev": "npm run dev -w @reqflow/desktop",
     "build": "npm run build -w @reqflow/desktop",
     "smoke": "npm run smoke -w @reqflow/desktop",
+    "eval:f70": "npm run eval:f70 -w @reqflow/desktop",
     "package": "npm run package -w @reqflow/desktop",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "vitest run",
@@ -34,5 +35,10 @@
     "esbuild@0.25.12": true,
     "esbuild@0.28.2": true,
     "fsevents@2.3.3": true
+  },
+  "overrides": {
+    "exceljs": {
+      "uuid": "^11.1.1"
+    }
   }
 }

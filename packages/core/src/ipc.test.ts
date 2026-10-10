@@ -6,6 +6,7 @@ describe("IPC contract", () => {
     const count = Object.values(IPC_INVOKE_METHODS).reduce((n, ms) => n + ms.length, 0);
     expect(IPC_INVOKE_CHANNELS.size).toBe(count);
     expect(IPC_INVOKE_CHANNELS.has(ipcChannel("requirements", "decide"))).toBe(true);
+    expect(IPC_INVOKE_CHANNELS.has(ipcChannel("exports", "hilReport"))).toBe(true);
     for (const ch of IPC_INVOKE_CHANNELS) expect(ch).toMatch(/^reqflow:[a-z]+\.[A-Za-z]+$/);
   });
 });
