@@ -1,4 +1,6 @@
 import { join } from "node:path";
+import type { WorkflowRun } from "@reqflow/core";
+import { IPC_EVENTS } from "@reqflow/core/ipc";
 import { createFileStore } from "@reqflow/db";
 import { app, BrowserWindow, dialog, shell, type IpcMainInvokeEvent } from "electron";
 import { createHandlers } from "./handlers";
@@ -75,9 +77,19 @@ void app.whenReady().then(() => {
   loadDevEnv();
   const dir = dataDir(smokeDir ? join(smokeDir, "data") : null);
   const files = createFileStore(uploadsDir(dir));
+  const pushRunUpdate = (run: WorkflowRun) => {
+    for (const win of BrowserWindow.getAllWindows()) {
+      if (!win.isDestroyed()) {
+        win.webContents.send(IPC_EVENTS.runUpdate, run);
+      }
+    }
+  };
+
   registerIpc(
     createHandlers({
       files,
+      dataDir: dir,
+      pushRunUpdate,
       pickFile: async () => {
         const options: Electron.OpenDialogOptions = {
           title: "Choose an Excel or CSV file",

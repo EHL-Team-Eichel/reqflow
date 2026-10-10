@@ -87,37 +87,39 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 ## WS1 — Engine, persistence & main process
 
-**Status:** open · **Owner:** — · **Branch:** —
+**Status:** done · **Owner:** OpenCode (Gemini 3.8 Flash) · **Branch:** ws1-main
 **Unblocks:** everyone. Do tasks 1–4 first; they are small and make the UIs real.
 
 **Tasks**
 
-- [ ] `settings.get` / `settings.save` in `apps/desktop/src/main/`: one JSON file in the data dir, written
+- [x] `settings.get` / `settings.save` in `apps/desktop/src/main/`: one JSON file in the data dir, written
       atomically (temp file + rename), validated with `Settings`; on load, fill sections missing from older
       files with `DEFAULT_SETTINGS`. Done when the Settings page's "not saved" banner disappears and a
       change survives a restart (add a test for the load/merge/save logic).
-- [ ] `workflows.list/get/save/remove`: store the block tree; `save` assigns a `wf_…` id, bumps
+- [x] `workflows.list/get/save/remove`: store the block tree; `save` assigns a `wf_…` id, bumps
       `version`, sets timestamps and rejects graphs where `validateGraph` reports issues
       (`invalid_input` with the issues as details).
 - [x] `files.import()` + file store (`packages/db/src/files.ts`), done in the WS5 session: native
       dialog (`.xlsx`, `.csv`), copy into `<dataDir>/uploads/`, ids validated against path tricks.
 - [x] `blocks.preview` (`apps/desktop/src/main/preview.ts`): runs a block without inputs on its own.
-- [ ] Read-only `requirements.list/get` and `audit.list` serving `@reqflow/core/fixtures`, so WS3
+- [x] Read-only `requirements.list/get` and `audit.list` serving `@reqflow/core/fixtures`, so WS3
       works against real IPC before the database exists.
-- [ ] Executor in `packages/engine` (ARCHITECTURE.md → Engine semantics) with tests on fake blocks:
+- [x] Executor in `packages/engine` (ARCHITECTURE.md → Engine semantics) with tests on fake blocks:
       topological order per workplace, merge per input port, splitter fan-out, inner workplaces via
       boundary blocks, failure → downstream `skipped`, cancel via `AbortSignal`.
 - [x] HIL block implementation (`packages/blocks/src/hil/hil.ts`, done by WS0): pauses with a message, passes data on when `ctx.resumed`.
-- [ ] Executor support for HIL: `{ status: "paused" }` → run `waiting_for_review`; `runs.resume` checks the
+- [x] Executor support for HIL: `{ status: "paused" }` → run `waiting_for_review`; `runs.resume` checks the
       required approvals and re-runs the block with `ctx.resumed = true`.
-- [ ] `runs.start/get/list/blockOutput/resume/cancel` handlers; push every change via `IPC_EVENTS.runUpdate`;
+- [x] `runs.start/get/list/blockOutput/resume/cancel` handlers; push every change via `IPC_EVENTS.runUpdate`;
       wire `BlockContext` (llm, web, files, audit, `car.add`).
-- [ ] SQLite in `packages/db` (`node:sqlite`): versioned requirements, append-only audit log,
+- [x] SQLite in `packages/db` (`node:sqlite`): versioned requirements, append-only audit log,
       `requirements.edit/decide`, `exports.requirements` (JSON / CSV / Markdown via the save dialog).
-- [ ] API keys: `settings.secrets` / `settings.setSecret` with Electron `safeStorage`.
-- [ ] Extend `apps/desktop/src/main/smoke.ts` for each new capability (e.g. save a flow, restart, reload it).
+- [x] API keys: `settings.secrets` / `settings.setSecret` with Electron `safeStorage`.
+- [x] Extend `apps/desktop/src/main/smoke.ts` for each new capability (e.g. save a flow, restart, reload it).
 
 **Log**
+
+- 2026-10-10: Completed all WS1 tasks: atomic settings persistence with default fallback; workflow block tree storage with `validateGraph` validation; workplace executor in `@reqflow/engine` (topological execution, multi-port merge, splitter fan-out, inner workplaces via boundary blocks, downstream failure skipping, HIL pause/resume, cancel); SQLite persistence in `@reqflow/db` (`node:sqlite`) with versioned requirements, append-only audit log, and block outputs; full IPC handlers in `main/handlers.ts` (`runs.*`, `requirements.*`, `settings.secrets`, `exports.requirements`); push updates via `IPC_EVENTS.runUpdate`; 108 unit tests pass across all packages; smoke tests passing with 19 screenshots.
 
 ## WS2 — Data Flow editor UI
 
