@@ -38,11 +38,16 @@ export interface LlmUsage {
 }
 
 export interface LlmClient {
-  /** Structured output. MUST validate against `schema` and throw on invalid output — never return partial data. */
+  /**
+   * Structured output. MUST validate against `schema` and throw on invalid output — never return
+   * partial data. `thinking`: the provider's own summary of its reasoning, when it gives one.
+   */
   generateObject<T>(
     req: LlmObjectRequest<T>,
-  ): Promise<{ object: T; model: string; usage?: LlmUsage }>;
-  generateText(req: LlmTextRequest): Promise<{ text: string; model: string; usage?: LlmUsage }>;
+  ): Promise<{ object: T; model: string; usage?: LlmUsage; thinking?: string }>;
+  generateText(
+    req: LlmTextRequest,
+  ): Promise<{ text: string; model: string; usage?: LlmUsage; thinking?: string }>;
 }
 
 /**
