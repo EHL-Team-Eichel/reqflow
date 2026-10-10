@@ -259,15 +259,19 @@ export function ChipSelect(
   );
 }
 
-/** An editable list of names (e.g. splitter branches). Emits only lists that are valid. */
+/**
+ * An editable list of names (e.g. splitter branches). Emits only lists that are valid. With
+ * `itemOptions`, every entry is picked from those options (e.g. Add to Car context modes).
+ */
 export function ListEditor(
   props: Base<readonly string[]> & {
     minItems: number;
     maxItems: number;
     itemPlaceholder?: string;
+    itemOptions?: readonly { value: string; label: string }[];
   },
 ) {
-  const { value, onChange, minItems, maxItems } = props;
+  const { value, onChange, minItems, maxItems, itemOptions } = props;
   const [draft, setDraft] = useState<string[]>([...value]);
   const [error, setError] = useState<string | null>(null);
   // Follow outside changes, but keep the draft while it already means this value (trailing spaces).
@@ -286,37 +290,58 @@ export function ListEditor(
     setError(null);
     onChange(next.map((item) => item.trim()));
   };
+  const newItem = () =>
+    itemOptions?.[0]?.value ?? `${props.itemPlaceholder ?? "Entry"} ${draft.length + 1}`;
 
   return (
     <div id={props.id} className="flex flex-col gap-1.5">
-      {draft.map((item, i) => (
-        <div key={i} className="flex items-center gap-1.5">
-          <span className="w-5 text-right text-xs tabular-nums text-muted">{i + 1}</span>
-          <input
-            value={item}
-            disabled={props.disabled}
-            placeholder={props.itemPlaceholder}
-            aria-label={`${props.itemPlaceholder ?? "Entry"} ${i + 1}`}
-            onChange={(e) => update(draft.map((d, j) => (j === i ? e.target.value : d)))}
-            className={cx(INPUT, "h-8")}
-          />
-          <button
-            type="button"
-            aria-label={`Remove entry ${i + 1}`}
-            disabled={props.disabled || draft.length <= minItems}
-            onClick={() => update(draft.filter((_, j) => j !== i))}
-            className="grid size-8 shrink-0 place-items-center rounded-lg text-muted hover:bg-panel-2 hover:text-danger disabled:pointer-events-none disabled:opacity-30"
-          >
-            ×
-          </button>
-        </div>
-      ))}
+      {draft.length === 0 && <p className="px-1 text-xs text-muted">None yet</p>}
+      {draft.map((item, i) => {
+        const label = `${props.itemPlaceholder ?? "Entry"} ${i + 1}`;
+        const set = (text: string) => update(draft.map((d, j) => (j === i ? text : d)));
+        return (
+          <div key={i} className="flex items-center gap-1.5">
+            <span className="w-5 text-right text-xs tabular-nums text-muted">{i + 1}</span>
+            {itemOptions ? (
+              <select
+                value={item}
+                disabled={props.disabled}
+                aria-label={label}
+                onChange={(e) => set(e.target.value)}
+                className={cx(INPUT, "h-8 cursor-pointer pr-8")}
+              >
+                {itemOptions.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                value={item}
+                disabled={props.disabled}
+                placeholder={props.itemPlaceholder}
+                aria-label={label}
+                onChange={(e) => set(e.target.value)}
+                className={cx(INPUT, "h-8")}
+              />
+            )}
+            <button
+              type="button"
+              aria-label={`Remove entry ${i + 1}`}
+              disabled={props.disabled || draft.length <= minItems}
+              onClick={() => update(draft.filter((_, j) => j !== i))}
+              className="grid size-8 shrink-0 place-items-center rounded-lg text-muted hover:bg-panel-2 hover:text-danger disabled:pointer-events-none disabled:opacity-30"
+            >
+              ×
+            </button>
+          </div>
+        );
+      })}
       <button
         type="button"
         disabled={props.disabled || draft.length >= maxItems}
-        onClick={() =>
-          update([...draft, `${props.itemPlaceholder ?? "Entry"} ${draft.length + 1}`])
-        }
+        onClick={() => update([...draft, newItem()])}
         className="self-start rounded-lg px-2 py-1 text-xs font-medium text-brand hover:bg-brand-soft disabled:opacity-40"
       >
         + Add

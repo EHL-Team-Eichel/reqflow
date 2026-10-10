@@ -648,6 +648,54 @@ export async function runSmoke(
   check(await click('[data-testid="car-view-exterior"]'), "car: no exterior view");
   await delay(300);
 
+  // New Reasoning view checks
+  check(await click('[data-testid^="car-part-"]'), "car: select a part for reasoning");
+  await delay(300);
+  check(
+    (await count('[data-testid="car-requirement-confidence"]')) >= 1,
+    "car: requirement should have confidence chip",
+  );
+  await shot("car-confidence");
+
+  check(await click('[data-testid="car-requirement-why"]'), "car: no why button");
+  for (let i = 0; i < 20 && (await count('[data-testid="reasoning-view"]')) === 0; i++)
+    await delay(100);
+  check((await count('[data-testid="reasoning-view"]')) >= 1, "car: reasoning view didn't open");
+  await delay(100);
+  await shot("reasoning-requirement");
+
+  check(await click('[aria-label="Close thought process"]'), "car: no reasoning close button");
+  await delay(300);
+
+  // Data Flow block reasoning
+  await go("/dataflow");
+  for (let i = 0; i < 40 && (await count('[data-testid^="block-"]')) === 0; i++) await delay(100);
+  check(await click('[data-testid="block-reasoning"]'), "dataflow: no block-reasoning button");
+  for (let i = 0; i < 20 && (await count('[data-testid="reasoning-view"]')) === 0; i++)
+    await delay(100);
+  check(
+    (await count('[data-testid="reasoning-view"]')) >= 1,
+    "dataflow: block reasoning view didn't open",
+  );
+  await delay(100);
+  await shot("reasoning-block");
+  check(await click('[aria-label="Close thought process"]'), "dataflow: no reasoning close button");
+  await delay(300);
+
+  // Settings -> AI API setups
+  await go("/settings");
+  check(await click('[data-testid="settings-section-ai"]'), "settings: no AI section");
+  await delay(300);
+  check(await click('[data-testid="settings-add-setup"]'), "settings: no add setup button");
+  await delay(200);
+  await shot("settings-api-setups");
+  check(await click('[data-testid^="settings-delete-setup-"]'), "settings: no delete setup button");
+  await delay(200);
+
+  // Go back to car for reset
+  await go("/car");
+  await delay(600);
+
   // Reset: asks in place, removes every requirement, and the car is empty afterwards.
   check(await click('[data-testid="car-reset"]'), "car: no reset button");
   await delay(200);

@@ -29,7 +29,7 @@ function feedbackSetup(prioritized: boolean): WorkflowTemplate {
     label: "Proposed car requirements",
     position: { x: prioritized ? 1020 : 680, y: 150 },
   });
-  const rankings = prioritized ? ["Must have", "Should have", "Could have"] : ["Feedback"];
+  const rankings = prioritized ? ["1. Priority", "2. Priority", "3. Priority"] : ["Feedback"];
   const reviews = rankings.map((ranking, i) => {
     const review = createBlock("hil", {
       id: `review-${i}`,
@@ -58,7 +58,7 @@ function feedbackSetup(prioritized: boolean): WorkflowTemplate {
     graph = setBlockParams(graph, splitter.id, {
       ...splitter.params,
       splitBy: "priority",
-      branches: ["Must have", "Should have", "Could have"],
+      branches: ["1. Priority", "2. Priority", "3. Priority"],
     }).graph;
   if (prioritized)
     graph = connect(graph, {
@@ -74,7 +74,7 @@ function feedbackSetup(prioritized: boolean): WorkflowTemplate {
       target: review.id,
       targetPort: "in",
     });
-    // Unranked feedback starts conservatively as "Should have" until the PM changes its routing.
+    // Unranked feedback starts conservatively on "2. Priority" until the PM changes its routing.
     graph = connect(graph, {
       source: review.id,
       sourcePort: "out",
@@ -85,8 +85,8 @@ function feedbackSetup(prioritized: boolean): WorkflowTemplate {
   return {
     name: prioritized ? "Prioritized feedback" : "Feedback to requirements",
     description: prioritized
-      ? "Import feedback, rank customer signals into Must / Should / Could, review each nonempty branch, and draft proposed car requirements. Requires an AI provider or the offline mock in Settings."
-      : "Import customer feedback, review its source records with the PM, and draft proposed car requirements. Proposals start as Should have; change the ranking input to adjust this.",
+      ? "Import feedback, rank customer signals into Must / Should / Could (1., 2. and 3. Priority), review each nonempty branch, and draft proposed car requirements. Requires an AI provider or the offline mock in Settings."
+      : "Import customer feedback, review its source records with the PM, and draft proposed car requirements. Feedback arrives on 2. Priority; connect it to another priority input to change this.",
     graph,
   };
 }
