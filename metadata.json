@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4M0K9ZAFGTS3VXFCA8S4NJA",
   "strategy": "manual-commit",
   "branch": "ws6-ai-providers",
-  "checkpoints_count": 2,
+  "checkpoints_count": 3,
   "files_touched": [
     ".gitattributes",
     ".gitignore",
@@ -169,13 +169,20 @@
       "compact_transcript": "/1/transcript.jsonl",
       "content_hash": "/1/content_hash.txt",
       "prompt": "/1/prompt.txt"
+    },
+    {
+      "metadata": "/2/metadata.json",
+      "transcript": "/2/full.jsonl",
+      "compact_transcript": "/2/transcript.jsonl",
+      "content_hash": "/2/content_hash.txt",
+      "prompt": "/2/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 225221,
+    "input_tokens": 545821,
     "cache_creation_tokens": 0,
-    "cache_read_tokens": 2164421,
-    "output_tokens": 6675,
-    "api_call_count": 55
+    "cache_read_tokens": 6532721,
+    "output_tokens": 17238,
+    "api_call_count": 133
   }
 }
