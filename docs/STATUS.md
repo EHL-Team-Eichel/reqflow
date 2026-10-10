@@ -147,12 +147,37 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 - [ ] Polish: "Tidy up" auto-layout, multi-select actions, minimap colours per block group.
 - [x] Fix direct Raw → HIL report input preview (merged in PR #4 and verified).
 - [x] Save and execute the current flow so Add to Car publishes proposed requirements; expose status, block logs and cancellation (PR #8).
+- [x] Explicit Start button for the full workflow, including inner workplaces; prevent duplicate runs
+      and preserve HIL pauses (PR #10, verified on merged main).
 
 **Log**
 
+- 2026-10-10: Human authorized integration with the concurrent Start-button slice. Preserved Start/play icon, its full-workflow and safety-state labels, all existing tests/logs, and stale-active-update protection; extended that protection to resume events/replies with another regression. Backend Add to Car evidence storage and non-reused ids were also integrated unchanged from main. Reverified: `npm run check` passed (258 passed, 10 skipped), `npm run smoke` passed (29 screenshots), and native sequential-HIL review passed again with a proposed requirement visible on the Car. Ready to merge PR #12.
 - 2026-10-10: HIL review/resume implemented and verified. Waiting runs expose Review paused step; reports use the frozen run graph and persisted per-port outputs, including merged HIL inputs. Continue flow needs loaded target data plus an explicit checkbox and calls existing `runs.resume` for that exact run/gate only. Confirmation resets per run/gate; errors remain visible; resumed work can be cancelled. Added 13 regressions: `npm run check` passed (240 passed, 10 skipped); `npm run smoke` passed (29 screenshots). Native synthetic Raw → HIL → HIL → Add to Car probe confirmed each gate separately, kept original review data after source mutation, checked two pause/resume audit events and proposed-only publication, and found the requirement on a Car card. Screenshots inspected: `hil-review-gate-{1,2}.png`, `hil-resumed-car.png` under `apps/desktop/out/smoke/`.
 - Remaining HIL limits for WS1/WS0: multiple required reviewers are explicitly blocked in this UI (no fake extra approvals); reviewer identity/role enforcement and per-review rationale require backend review records. The existing engine logs pause/resume events, but this UI does not claim those are separate reviewer-signature records. Resuming after app restart still depends on WS1's in-memory paused-state recovery. Request shared smoke coverage for the human checkbox → resume → Car path. No core, main, engine or block files changed.
 - 2026-10-10: Fixing HIL getting stuck: expose the paused gate's run-snapshot report, load persisted input data (not re-read files or samples), and require explicit human review before existing `runs.resume`. Single-reviewer gates supported; do not bypass multi-reviewer gates or set requirement decision statuses. Scope: WS2 renderer/report and synthetic tests only.
+- 2026-10-10: Start-button slice merged in PR #10 (`5663120`) and reverified on integrated main:
+  `npm run check` (228 passed, 24 skipped), `npm run smoke` (29 screenshots). WS2 released for
+  its remaining checklist (per-node status/counts, save/load/autosave, run outputs and human review/resume).
+  Explicit **Start** button replaces Save & run, with a play icon, full-root/inner-flow
+  explanation, disabled empty/starting/running/HIL states and visible progress labels. Kept existing
+  IPC execution, cancellation and human-review pause. Stale active fetches/events no longer regress
+  terminal run status; recovered live updates clear catch-up errors. Added 15 regression cases.
+  Verify: `npm run check` (228 passed, 24 real-data tests skipped) and `npm run smoke` (29 screenshots;
+  light/dark Start inspected). A synthetic-only isolated native button probe passed Raw → Custom
+  (boundary passthrough) → Add to Car while inside Custom: one run after a double click, the complete
+  root snapshot, all blocks succeeded, one proposed requirement. Raw → HIL → Add to Car paused without
+  publishing, blocked restart, then cancelled. Tab catch-up also passed. Inspected
+  `apps/desktop/out/smoke/start-{inner-completed,hil-paused,cancelled}.png`.
+  WS1/WS0 request: promote these actual Start-button scenarios into the shared `main/smoke.ts` runner;
+  its current run checks bypass the renderer button. No main/core/product changes required.
+  Setup note for WS0: generated `.opencode/plugins/entire.ts` was formatted to pass the repo gate;
+  Entire's hash check now warns hooks are out of date, though the hook logic is unchanged. Add this
+  managed file to the root formatting ignore list before regenerating it with `entire enable --force`.
+- 2026-10-10: Human activated a focused Start-button slice. Latest main already has Save & run;
+  make full-workflow execution explicit with a Start button and verify its safety states and native
+  execution. Working in an isolated worktree; the original checkout's documentation edits are untouched.
+  Scope: WS2 renderer paths and this section only, plus the required generated Entire hook.
 - 2026-10-10: OpenCode's execution/publication fix merged in PR #8. Reverified integrated main after the concurrent AI Splitter/LLM updates: `npm run check` passed (227 passed, 10 skipped), `npm run smoke` passed (29 screenshots), and the isolated native Raw → Add to Car → Car-card probe passed again. Requested slice complete; WS2 released for remaining tasks (per-node status/counts, save/load/autosave, report run outputs, review/resume).
 - 2026-10-10: Add to Car publication fixed and verified. Data Flow now has Save & run, snapshots the full graph/scope, starts via IPC, displays live run status and block logs, cancels explicitly, and catches up after switching tabs. Added 8 run-state tests and a schema-valid creation-audit regression. `npm run check`: 158 passed, 10 skipped; `npm run smoke`: 26 screenshots. Native synthetic Raw SQLite → Add to Car probe stored one proposed requirement and verified its actual id/title on a Car card; screenshots inspected in `apps/desktop/out/smoke/add-to-car-{run,overview}.png`.
 - Remaining WS1/WS7 risks: the existing requirement-id reuse/upsert issue can overwrite earlier requirements on another run (see WS7's existing request). HIL resume still needs human-review enforcement and UI wiring; this slice deliberately does not auto-resume or approve anything. Request WS1/WS0 add a synthetic Raw → Add to Car run/Car-card assertion to the shared smoke runner. No WS3 or core files changed.
@@ -322,6 +347,14 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 **Log**
 
+- 2026-10-11: Closed the two Add to Car gaps in the shared architecture: `CarService` in
+  `packages/engine/src/block.ts` now takes `add(requirements, evidence)` and an optional
+  `nextSeq(scope)`; the desktop handlers store sources, cited records, findings and themes with the
+  requirements and continue numbering after the highest existing id (seeded demo ids are kept).
+  Verified in the app's own handlers on BMW's real F70 export (`handlers.test.ts`, runs only with
+  `data/raw/`): Raw → Add to Car run completes, 101 requirements, the detail view has findings,
+  verbatim records and sources, a second run adds new ids and changes nothing old.
+  `npm run check` and `npm run smoke` pass.
 - 2026-10-10: **AI Splitter built** at the existing `ai_splitter` entry point (human requested replacing
   the previous splitter). One input, 2–10 named outputs, priority/category/sentiment/custom modes,
   exact-once primary routing and linked evidence/conflicts retained. No human decisions or requirements
@@ -360,14 +393,7 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
     rules, 9 % unplaced; G60/G70 4,000 each, similar. ~100 ms per export.
   - Verify: `npm run check` (the "BMW … → Add to Car" suites run when `data/raw/` has the exports),
     `npm run smoke`. Tests use the real exports, not invented data.
-- Contract change requests for WS0/WS1:
-  - `ctx.car.add` takes only requirements, so the findings Add to Car derives are recorded in full in
-    the audit trail (`finding.extracted` / `finding.excluded`, `changes[0].after`). Proposal:
-    `car.add(requirements, evidence: { findings, themes })` so the Car page can show them directly.
-  - **Urgent now that runs work:** requirement numbers start at 001 per run, and `saveVersion` upserts
-    on `(id, version)`, so a second run overwrites version 1 of the first run's requirements. `seq` must
-    never be reused per scope: the block needs the next free number (`car.nextSeq(scope)`), or
-    `car.add` assigns the ids.
+- Contract requests for WS0/WS1: **resolved** (see the log entry above them).
 - 2026-10-10 night: Claimed WS7, starting with Add to Car: a deterministic theme splitter
   (component › aspect × polarity, BMW VFC tags first, keyword rules on clauses for untagged text)
   that turns feedback into findings, themes and requirements without an LLM.

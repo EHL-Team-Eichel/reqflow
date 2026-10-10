@@ -102,8 +102,11 @@ export const addToCarBlock = defineBlock({
     ctx.signal.throwIfAborted();
     ctx.progress(0.1, "Sorting feedback into themes");
 
+    const scope = scopeFor(params, ctx.scope);
+    const firstSeq = (await ctx.car.nextSeq?.(scope)) ?? 1;
     const derived = deriveRequirements(ranked, {
-      scope: scopeFor(params, ctx.scope),
+      scope,
+      firstSeq,
       runId: ctx.runId,
       now: new Date().toISOString(),
       mergeDuplicates: params.mergeDuplicates,
@@ -112,7 +115,7 @@ export const addToCarBlock = defineBlock({
     ctx.signal.throwIfAborted();
     ctx.progress(0.6, "Recording findings");
 
-    // Findings live only in the audit trail until the Car page stores them (contract request in STATUS.md).
+    // Every created finding and requirement is also audited in full.
     // "$" marks a whole newly created entity; audit paths cannot be empty.
     const base = { actor: ADD_TO_CAR_ACTOR, runId: ctx.runId, blockId: ctx.blockId };
     for (const f of derived.findings) {
@@ -146,7 +149,24 @@ export const addToCarBlock = defineBlock({
       });
     }
     ctx.progress(0.9, "Adding requirements to the car");
-    await ctx.car.add(derived.requirements);
+    // Store the evidence with the requirements so the Car page can show quotes and sources.
+    const cited = new Set(
+      [...derived.findings, ...derived.excluded].flatMap((f) => f.evidence.map((e) => e.recordId)),
+    );
+    const all = ranked.map((r) => r.data);
+    await ctx.car.add(derived.requirements, {
+      sources: [...new Map(all.flatMap((d) => d.sources).map((s) => [s.id, s])).values()],
+      records: [
+        ...new Map(
+          all
+            .flatMap((d) => d.records)
+            .filter((r) => cited.has(r.id))
+            .map((r) => [r.id, r]),
+        ).values(),
+      ],
+      findings: [...derived.findings, ...derived.excluded, ...all.flatMap((d) => d.findings)],
+      themes: derived.themes,
+    });
 
     const byPriority = BY_POSITION.map(
       (p) => [p, derived.requirements.filter((r) => r.priority === p).length] as const,

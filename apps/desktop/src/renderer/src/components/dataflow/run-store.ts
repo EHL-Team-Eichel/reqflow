@@ -34,6 +34,9 @@ export function pausedHil(run: WorkflowRun | null) {
   );
 }
 
+const staleActiveUpdate = (current: WorkflowRun | null, next: WorkflowRun) =>
+  current?.id === next.id && !active(current) && active(next);
+
 /** Kept outside the page so changing tabs does not lose the current run or saved workflow id. */
 export function createRunStore(api: RunApi) {
   return createStore<RunState>()((set, get) => ({
@@ -105,14 +108,15 @@ export function createRunStore(api: RunApi) {
       set({ busy: true, error: null });
       const updates = new Map<string, WorkflowRun>();
       const unsubscribe = api.runs.onUpdate((next) => {
-        if (next.id !== runId) return;
+        if (next.id !== runId || staleActiveUpdate(get().run, next)) return;
         updates.set(next.id, next);
         // Once execution starts, let the human cancel long-running downstream work.
-        if (next.status === "running") set({ run: next, busy: false });
+        set({ run: next, busy: next.status !== "running" });
       });
       try {
         const resumed = await api.runs.resume(runId);
-        if (get().run?.id === runId) set({ run: updates.get(runId) ?? resumed });
+        const latest = updates.get(runId) ?? resumed;
+        if (get().run?.id === runId && !staleActiveUpdate(get().run, latest)) set({ run: latest });
       } catch (err) {
         set({ error: err instanceof Error ? err.message : String(err) });
       } finally {
@@ -124,9 +128,9 @@ export function createRunStore(api: RunApi) {
       let disposed = false;
       let receivedUpdate = false;
       const unsubscribe = api.runs.onUpdate((run) => {
-        if (get().run?.id === run.id) {
+        if (get().run?.id === run.id && !staleActiveUpdate(get().run, run)) {
           receivedUpdate = true;
-          set({ run });
+          set({ run, error: null });
         }
       });
       // Catch up when the page remounts after a run finished while the Car tab was open.
@@ -134,7 +138,13 @@ export function createRunStore(api: RunApi) {
       if (current) {
         void api.runs.get(current.id).then(
           (run) => {
-            if (!disposed && !receivedUpdate && get().run?.id === run.id) set({ run });
+            if (
+              !disposed &&
+              !receivedUpdate &&
+              get().run?.id === run.id &&
+              !staleActiveUpdate(get().run, run)
+            )
+              set({ run, error: null });
           },
           (err: unknown) => {
             if (!disposed && !receivedUpdate && get().run?.id === current.id)

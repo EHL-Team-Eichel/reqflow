@@ -140,11 +140,19 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
       files: deps.files,
       web: deps.web ?? null,
       car: {
-        async add(requirements) {
+        async add(requirements, evidence) {
           await reqRepo.savePipelineData({
             ...emptyPipelineData(),
+            ...evidence,
             requirements,
           });
+        },
+        async nextSeq(scope) {
+          const prefix = `REQ-${scope.vehicleCode}-${scope.market}-`;
+          const used = (await reqRepo.list())
+            .filter((r) => r.id.startsWith(prefix))
+            .map((r) => Number(r.id.slice(prefix.length)));
+          return used.length ? Math.max(...used) + 1 : 1;
         },
       },
     },

@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -17,6 +17,9 @@ import { createFileStore } from "@reqflow/db";
 import { BlockRegistry, defineBlock } from "@reqflow/engine";
 import { createHandlers } from "./handlers";
 import { SecretsStore } from "./secrets";
+
+/** BMW's real export, present only locally in data/raw/ (gitignored). */
+const BMW_FEEDBACK = join(import.meta.dirname, "../../../../data/raw/F70_feedback_hackathon.xlsx");
 
 describe("handlers (All IPC methods against SQLite and stores)", () => {
   let tempDir: string;
@@ -165,6 +168,75 @@ describe("handlers (All IPC methods against SQLite and stores)", () => {
         .logs.some((log) => /model mock:default/.test(log.message)),
     ).toBe(true);
   });
+
+  it.skipIf(!existsSync(BMW_FEEDBACK))(
+    "runs Raw → Add to Car on BMW's real F70 feedback: requirements with evidence, numbering continues",
+    async () => {
+      const { handlers } = setup();
+      const file = await createFileStore(join(tempDir, "uploads")).importFile(BMW_FEEDBACK);
+      const raw = createBlock("raw", { id: "raw", position: { x: 0, y: 0 } });
+      const car = createBlock("add_to_car", { id: "car", position: { x: 300, y: 0 } });
+      let graph = setBlockParams({ blocks: [raw, car], edges: [] }, "raw", {
+        ...raw.params,
+        dataset: "customer_feedback",
+        file: { fileId: file.id, name: file.name },
+      }).graph;
+      graph = connect(graph, {
+        source: "raw",
+        sourcePort: "out",
+        target: "car",
+        targetPort: "in-0",
+      });
+      const workflow = await handlers.workflows.save({
+        ...graph,
+        name: "F70 feedback to car",
+        scope: DEFAULT_SETTINGS.defaultScope,
+      });
+      const runOnce = async () => {
+        const initial = await handlers.runs.start(workflow.id);
+        let run = await handlers.runs.get(initial.id);
+        const deadline = Date.now() + 30_000;
+        while (run.status === "running" && Date.now() < deadline) {
+          await new Promise((resolve) => setTimeout(resolve, 50));
+          run = await handlers.runs.get(initial.id);
+        }
+        expect(run.error).toBeUndefined();
+        expect(run.status).toBe("completed");
+        return run;
+      };
+
+      const seeded = await handlers.requirements.list(); // the app seeds demo requirements
+      await runOnce();
+      const first = (await handlers.requirements.list()).filter(
+        (r) => !seeded.some((x) => x.id === r.id),
+      );
+      expect(first.length).toBeGreaterThan(20);
+      expect(first.every((r) => r.priority === "must" && r.status === "proposed")).toBe(true);
+      // Numbering continues after the seeded ids instead of overwriting them.
+      const seq = (id: string) => Number(id.split("-").at(-1));
+      expect(Math.min(...first.map((r) => seq(r.id)))).toBe(
+        Math.max(...seeded.map((r) => seq(r.id))) + 1,
+      );
+      const detail = await handlers.requirements.get(first[0]!.id);
+      expect(detail.findings.length).toBeGreaterThan(0);
+      expect(detail.records.length).toBeGreaterThan(0);
+      expect(detail.sources.map((s) => s.kind)).toContain("customer_feedback");
+      for (const f of detail.findings) {
+        for (const e of f.evidence) {
+          expect(detail.records.find((r) => r.id === e.recordId)?.text).toContain(e.excerpt);
+        }
+      }
+
+      await runOnce();
+      const all = await handlers.requirements.list();
+      expect(all.length).toBe(seeded.length + 2 * first.length);
+      expect(new Set(all.map((r) => r.id)).size).toBe(all.length);
+      expect((await handlers.requirements.get(first[0]!.id)).requirement).toEqual(
+        detail.requirement,
+      );
+    },
+    60_000,
+  );
 
   it("handles requirements listing, detail view, editing, decisions, and audit trail", async () => {
     const { handlers } = setup();
