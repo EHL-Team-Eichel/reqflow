@@ -1,0 +1,39 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4KZ0C5YKW945XV3AJHD0QN8",
+  "session_id": "ses_ed82df501ffezfw15VutYcR1OP",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-10T22:30:21.482591Z",
+  "branch": "ws7-add-to-car-agents",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "apps/desktop/src/main/eval-f70.ts",
+    "packages/llm/src/openai.ts",
+    "packages/llm/src/providers.test.ts"
+  ],
+  "agent": "OpenCode",
+  "model": "",
+  "turn_id": "d1381be832d2",
+  "checkpoint_transcript_start": 8,
+  "transcript_lines_at_start": 8,
+  "compact_transcript_start": 8,
+  "token_usage": {
+    "input_tokens": 2500,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 251881,
+    "output_tokens": 1086,
+    "api_call_count": 3
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-10T22:30:21.46061Z",
+    "agent_lines": 0,
+    "agent_removed": 0,
+    "human_added": 11,
+    "human_modified": 6,
+    "human_removed": 0,
+    "total_committed": 11,
+    "total_lines_changed": 17,
+    "agent_percentage": 0,
+    "metric_version": 2
+  }
+}

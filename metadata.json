@@ -3,8 +3,12 @@
   "checkpoint_id": "01M4KZ0C5YKW945XV3AJHD0QN8",
   "strategy": "manual-commit",
   "branch": "ws7-add-to-car-agents",
-  "checkpoints_count": 2,
-  "files_touched": null,
+  "checkpoints_count": 3,
+  "files_touched": [
+    "apps/desktop/src/main/eval-f70.ts",
+    "packages/llm/src/openai.ts",
+    "packages/llm/src/providers.test.ts"
+  ],
   "sessions": [
     {
       "metadata": "/0/metadata.json",
@@ -12,13 +16,20 @@
       "compact_transcript": "/0/transcript.jsonl",
       "content_hash": "/0/content_hash.txt",
       "prompt": "/0/prompt.txt"
+    },
+    {
+      "metadata": "/1/metadata.json",
+      "transcript": "/1/full.jsonl",
+      "compact_transcript": "/1/transcript.jsonl",
+      "content_hash": "/1/content_hash.txt",
+      "prompt": ""
     }
   ],
   "token_usage": {
-    "input_tokens": 1438,
+    "input_tokens": 3938,
     "cache_creation_tokens": 2108338,
-    "cache_read_tokens": 240287982,
-    "output_tokens": 1165442,
-    "api_call_count": 719
+    "cache_read_tokens": 240539863,
+    "output_tokens": 1166528,
+    "api_call_count": 722
   }
 }
