@@ -1,5 +1,7 @@
 import { join } from "node:path";
 import { app, BrowserWindow, shell, type IpcMainInvokeEvent } from "electron";
+import type { WorkflowRun } from "@reqflow/core";
+import { IPC_EVENTS } from "@reqflow/core/ipc";
 import { createHandlers } from "./handlers";
 import { registerIpc } from "./ipc";
 import { dataDir, loadDevEnv } from "./paths";
@@ -65,8 +67,18 @@ app.on("window-all-closed", () => {
 void app.whenReady().then(() => {
   loadDevEnv();
   const dir = dataDir(smokeDir ? join(smokeDir, "data") : null);
+  const pushRunUpdate = (run: WorkflowRun) => {
+    for (const win of BrowserWindow.getAllWindows()) {
+      if (!win.isDestroyed()) {
+        win.webContents.send(IPC_EVENTS.runUpdate, run);
+      }
+    }
+  };
+
   registerIpc(
     createHandlers({
+      dataDir: dir,
+      pushRunUpdate,
       appInfo: () => ({
         version: app.getVersion(),
         platform: process.platform,

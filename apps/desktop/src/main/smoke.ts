@@ -34,12 +34,16 @@ export async function runSmoke(win: BrowserWindow, outDir: string): Promise<numb
 
   if (wc.isLoading()) await new Promise<void>((r) => wc.once("did-finish-load", () => r()));
 
-  // IPC bridge, end to end: one built method must succeed, an unbuilt one must fail loudly.
+  // IPC bridge, end to end: one built method must succeed, an error call must return a structured error.
   const info = await wc.executeJavaScript(`window.reqflowBridge.invoke("reqflow:app.info")`);
   if (!info?.ok) errors.push(`app.info failed: ${JSON.stringify(info)}`);
-  const unbuilt = await wc.executeJavaScript(`window.reqflowBridge.invoke("reqflow:audit.list")`);
-  if (unbuilt?.ok !== false || !unbuilt.error?.code) {
-    errors.push(`audit.list should return a structured error, got ${JSON.stringify(unbuilt)}`);
+  const missing = await wc.executeJavaScript(
+    `window.reqflowBridge.invoke("reqflow:workflows.get", "wf_nonexistent")`,
+  );
+  if (missing?.ok !== false || !missing.error?.code) {
+    errors.push(
+      `workflows.get(missing) should return a structured error, got ${JSON.stringify(missing)}`,
+    );
   }
   const blocked = await wc.executeJavaScript(
     `window.reqflowBridge.invoke("not-a-channel").then(() => "allowed", () => "blocked")`,
