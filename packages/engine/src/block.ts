@@ -1,4 +1,5 @@
 import type {
+  AgentServices,
   AuditLogger,
   BlockParams,
   FileStore,
@@ -6,6 +7,7 @@ import type {
   PaletteBlockKind,
   PipelineData,
   ProductScope,
+  ReasoningTrace,
   Requirement,
   Settings,
   WebSearch,
@@ -21,6 +23,8 @@ export interface CarService {
   add(requirements: Requirement[], evidence?: CarEvidence): Promise<void>;
   /** Next unused requirement number for the scope (ids are never reused). Absent = start at 1. */
   nextSeq?(scope: ProductScope): Promise<number>;
+  /** Keeps the agents' thought process for the "thought process" view. Absent = not kept. */
+  saveReasoning?(trace: ReasoningTrace): Promise<void>;
 }
 
 /** Everything a block may touch while running. Blocks must not import DB, env or Electron code. */
@@ -30,6 +34,8 @@ export interface BlockContext {
   scope: ProductScope; // the run's scope; params set to "From Settings" resolve to it
   settings: Settings; // snapshot taken when the run started
   llm: LlmClient;
+  /** Per-role models for the Add to Car agents (Settings → AI → Agents). */
+  agents: AgentServices;
   audit: AuditLogger; // record what the block created or changed, actor { type: "ai", component: <kind> }
   files: FileStore;
   web: WebSearch | null; // null when Settings.research.provider === "off"

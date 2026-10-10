@@ -9,6 +9,7 @@ import {
   withSplitterWorkplaces,
   WorkflowRun,
   type Actor,
+  type AgentServices,
   type AuditLogger,
   type BlockParams,
   type BlockRun,
@@ -48,6 +49,8 @@ export interface WorkflowExecutorOptions {
   registry: BlockRegistry;
   services: {
     llm: LlmClient | ((settings: Settings) => Promise<LlmClient>);
+    /** Absent: blocks that need agents (Add to Car) fail with a clear message. */
+    agents?: AgentServices | ((settings: Settings) => AgentServices);
     audit: AuditLogger;
     files: FileStore;
     web: WebSearch | null;
@@ -56,6 +59,16 @@ export interface WorkflowExecutorOptions {
   outputStore?: BlockOutputStore;
   onUpdate?: (run: WorkflowRun) => void;
 }
+
+/** Stand-in when the app wires no agent services: every use fails with a readable error. */
+export const NO_AGENT_SERVICES: AgentServices = {
+  writer: async () => {
+    throw new EngineError("AI agents aren't set up in this build, so Add to Car can't run.");
+  },
+  judge: async () => {
+    throw new EngineError("AI agents aren't set up in this build, so Add to Car can't run.");
+  },
+};
 
 export function topologicalSortBlocks(graph: WorkflowGraph): WorkflowBlock[] {
   const blockMap = new Map<string, WorkflowBlock>(graph.blocks.map((b) => [b.id, b]));
@@ -363,6 +376,7 @@ export class WorkflowExecutor {
       this.emitUpdate(run);
 
       const llmService = this.options.services.llm;
+      const agentService = this.options.services.agents ?? NO_AGENT_SERVICES;
       const ctx: BlockContext = {
         runId: run.id,
         blockId: block.id,
@@ -376,6 +390,7 @@ export class WorkflowExecutor {
                 generateText: async (request) => (await llmService(settings)).generateText(request),
               }
             : llmService,
+        agents: typeof agentService === "function" ? agentService(settings) : agentService,
         audit: this.options.services.audit,
         files: this.options.services.files,
         web: this.options.services.web,

@@ -74,13 +74,17 @@ export type ParamSpec = ParamBase &
     | { type: "select"; default: string; options: readonly SelectOption[] }
     | { type: "multiselect"; default: readonly string[]; options: readonly SelectOption[] }
     | { type: "toggle"; default: boolean }
-    /** An editable list of labels. Used where each entry becomes a port (splitter, add to car). */
+    /**
+     * An editable list. Each entry becomes a port (splitter branches, Add to Car context inputs).
+     * With `itemOptions`, every entry is one of those values (a select per entry, not free text).
+     */
     | {
         type: "list";
         default: readonly string[];
         minItems: number;
         maxItems: number;
         itemPlaceholder?: string;
+        itemOptions?: readonly SelectOption[];
       }
     | { type: "file"; accept: readonly string[] } // value: FileRef | null
   );
@@ -115,6 +119,69 @@ function listPorts(params: BlockParams, key: string, prefix: "in" | "out"): Port
   const items = params[key];
   if (!Array.isArray(items)) return [];
   return items.map((label, i) => ({ id: `${prefix}-${i}`, label: String(label) }));
+}
+
+/** Add to Car: how a context input is read. "auto" lets the agents work out what the data is. */
+export const ContextMode = z.enum(["auto", "sales_volumes"]);
+export type ContextMode = z.infer<typeof ContextMode>;
+export const CONTEXT_MODE_LABELS: Record<ContextMode, string> = {
+  auto: "Auto",
+  sales_volumes: "Sales volumes",
+};
+const CONTEXT_MODE_OPTIONS: readonly SelectOption[] = ContextMode.options.map((value) => ({
+  value,
+  label: CONTEXT_MODE_LABELS[value],
+}));
+export const MAX_PRIORITY_INPUTS = 10;
+export const MAX_CONTEXT_INPUTS = 5;
+
+/** "1. Priority" is the most important input. Ports `in-0`, `in-1`, … keep older flows wired. */
+export function priorityPortLabel(rank: number): string {
+  return `${rank}. Priority`;
+}
+export function contextPortLabel(index: number, mode: ContextMode): string {
+  return `Context ${index + 1} · ${CONTEXT_MODE_LABELS[mode]}`;
+}
+
+export interface PriorityInput {
+  port: string; // "in-0"
+  rank: number; // 1 = most important
+  label: string; // "1. Priority"
+}
+export interface ContextInput {
+  port: string; // "ctx-0"
+  index: number;
+  mode: ContextMode;
+  label: string; // "Context 1 · Sales volumes"
+}
+
+/** The inputs of an Add to Car block, from its params. Invalid entries are skipped, not guessed. */
+export function addToCarInputs(params: BlockParams): {
+  priorities: PriorityInput[];
+  contexts: ContextInput[];
+} {
+  const n = Number(params.priorities);
+  const count = Number.isInteger(n) ? Math.max(1, Math.min(MAX_PRIORITY_INPUTS, n)) : 3;
+  const priorities = Array.from({ length: count }, (_, i) => ({
+    port: `in-${i}`,
+    rank: i + 1,
+    label: priorityPortLabel(i + 1),
+  }));
+  const modes = Array.isArray(params.contexts) ? params.contexts : [];
+  const contexts = modes.flatMap((value, index) => {
+    const mode = ContextMode.safeParse(value);
+    return mode.success
+      ? [
+          {
+            port: `ctx-${index}`,
+            index,
+            mode: mode.data,
+            label: contextPortLabel(index, mode.data),
+          },
+        ]
+      : [];
+  });
+  return { priorities, contexts };
 }
 
 export const BLOCK_SPECS: { readonly [K in PaletteBlockKind]: BlockSpec & { kind: K } } = {
@@ -364,18 +431,38 @@ export const BLOCK_SPECS: { readonly [K in PaletteBlockKind]: BlockSpec & { kind
     kind: "add_to_car",
     label: "Add to Car",
     description:
-      "Adds what arrives to the car's requirements. The input an item arrives on sets its ranking.",
+      "AI agents turn what arrives into requirements for the next car. 1. Priority matters most; context inputs give background.",
     group: "output",
     hasInnerWorkplace: false,
     params: [
       {
-        key: "rankings",
-        label: "Rankings (one input each)",
+        key: "priorities",
+        label: "Priority inputs",
+        type: "number",
+        default: 3,
+        min: 1,
+        max: MAX_PRIORITY_INPUTS,
+        help: "One input per priority. 1. Priority is the most important: the input an item arrives on sets its ranking.",
+      },
+      {
+        key: "contexts",
+        label: "Context inputs",
         type: "list",
-        default: ["Must have", "Should have", "Could have"],
-        minItems: 1,
-        maxItems: 6,
-        itemPlaceholder: "Ranking name",
+        default: ["auto"],
+        minItems: 0,
+        maxItems: MAX_CONTEXT_INPUTS,
+        itemPlaceholder: "Context",
+        itemOptions: CONTEXT_MODE_OPTIONS,
+        help: "Background the agents use but don't turn into requirements. Auto: the agents work out what the data is.",
+      },
+      {
+        key: "maxRequirements",
+        label: "Max. requirements",
+        type: "number",
+        default: 20,
+        min: 1,
+        max: 60,
+        help: "Per run. The strongest themes become requirements; the rest are listed as held back.",
       },
       {
         key: "vehicle",
@@ -401,9 +488,17 @@ export const BLOCK_SPECS: { readonly [K in PaletteBlockKind]: BlockSpec & { kind
           { value: "US", label: "United States" },
         ],
       },
-      { key: "mergeDuplicates", label: "Merge duplicates", type: "toggle", default: true },
     ],
-    ports: (params) => ({ inputs: listPorts(params, "rankings", "in"), outputs: [] }),
+    ports: (params) => {
+      const { priorities, contexts } = addToCarInputs(params);
+      return {
+        inputs: [
+          ...priorities.map(({ port, label }) => ({ id: port, label })),
+          ...contexts.map(({ port, label }) => ({ id: port, label })),
+        ],
+        outputs: [],
+      };
+    },
   },
 };
 
@@ -431,7 +526,11 @@ function paramSchema(spec: ParamSpec): z.ZodType {
       return z.boolean();
     case "list":
       return z
-        .array(z.string().trim().min(1, "Entries can't be empty").max(60))
+        .array(
+          spec.itemOptions
+            ? z.enum(spec.itemOptions.map((o) => o.value) as [string, ...string[]])
+            : z.string().trim().min(1, "Entries can't be empty").max(60),
+        )
         .min(spec.minItems)
         .max(spec.maxItems);
     case "file":
@@ -462,6 +561,23 @@ export function defaultBlockParams(kind: PaletteBlockKind): BlockParams {
       p.type === "file" ? null : Array.isArray(p.default) ? [...p.default] : p.default,
     ]),
   );
+}
+
+/**
+ * Params saved by older builds, brought up to date so they validate. Only Add to Car changed: its
+ * named rankings ("Must have", …) became numbered priority inputs on the same ports (`in-0`, …),
+ * and context inputs were added. Anything else is returned unchanged, so validation still reports it.
+ */
+export function migrateBlockParams(kind: BlockKind, params: BlockParams): BlockParams {
+  if (kind !== "add_to_car" || !("rankings" in params)) return params;
+  const { rankings, mergeDuplicates: _merged, ...rest } = params;
+  const count = Array.isArray(rankings) ? rankings.length : 3;
+  return {
+    ...defaultBlockParams("add_to_car"),
+    ...rest,
+    priorities: Math.max(1, Math.min(MAX_PRIORITY_INPUTS, count)),
+    contexts: [], // older flows had no context inputs: keep their wiring exactly as it was
+  };
 }
 
 /** Throws a ZodError naming the bad field. */

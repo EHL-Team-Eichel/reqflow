@@ -4,6 +4,7 @@ import {
   blockPorts,
   defaultBlockParams,
   isBoundaryBlockKind,
+  migrateBlockParams,
   parseBlockParams,
   type BlockParams,
   type BlockPorts,
@@ -107,6 +108,19 @@ export function withSplitterWorkplaces<T extends WorkflowGraph>(graph: T): T {
     if (inner === block.inner) return block;
     changed = true;
     return { ...block, inner };
+  });
+  return changed ? { ...graph, blocks } : graph;
+}
+
+/** Brings blocks saved by older builds up to date (`migrateBlockParams`), inner workplaces included. */
+export function migrateGraph<T extends WorkflowGraph>(graph: T): T {
+  let changed = false;
+  const blocks = graph.blocks.map((block) => {
+    const params = migrateBlockParams(block.kind, block.params);
+    const inner = block.inner ? migrateGraph(block.inner) : undefined;
+    if (params === block.params && inner === block.inner) return block;
+    changed = true;
+    return { ...block, params, ...(inner ? { inner } : {}) };
   });
   return changed ? { ...graph, blocks } : graph;
 }

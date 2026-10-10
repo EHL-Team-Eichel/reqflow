@@ -1,4 +1,5 @@
 import {
+  addToCarInputs,
   emptyPipelineData,
   parseBlockParams,
   type Priority,
@@ -9,10 +10,11 @@ import { ADD_TO_CAR_ACTOR, deriveRequirements, type DeriveStats, type RankedInpu
 
 /** Mirrors BLOCK_SPECS.add_to_car.params (validated by parseBlockParams before use). */
 interface AddToCarParams {
-  rankings: string[];
+  priorities: number;
+  contexts: string[];
+  maxRequirements: number;
   vehicle: string; // "global" = from Settings
   market: string;
-  mergeDuplicates: boolean;
 }
 
 const BY_POSITION: Priority[] = ["must", "should", "could", "wont"];
@@ -89,10 +91,10 @@ export const addToCarBlock = defineBlock({
   kind: "add_to_car",
   async run(inputs, rawParams, ctx: BlockContext) {
     const params = parseBlockParams("add_to_car", rawParams) as unknown as AddToCarParams;
-    const ranked: RankedInput[] = params.rankings.map((ranking, i) => ({
-      ranking,
-      priority: priorityForRanking(ranking, i),
-      data: inputs[`in-${i}`] ?? emptyPipelineData(),
+    const ranked: RankedInput[] = addToCarInputs(params as never).priorities.map((p, i) => ({
+      ranking: p.label,
+      priority: priorityForRanking(p.label, i),
+      data: inputs[p.port] ?? emptyPipelineData(),
     }));
     const arrived = ranked.reduce((n, r) => n + r.data.records.length + r.data.findings.length, 0);
     if (arrived === 0) {
@@ -109,7 +111,7 @@ export const addToCarBlock = defineBlock({
       firstSeq,
       runId: ctx.runId,
       now: new Date().toISOString(),
-      mergeDuplicates: params.mergeDuplicates,
+      mergeDuplicates: true,
     });
     for (const line of report(derived.stats)) ctx.log(line);
     ctx.signal.throwIfAborted();

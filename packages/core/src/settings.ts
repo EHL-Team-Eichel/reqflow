@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { AGENT_ROLES, AgentRole } from "./reasoning";
 import { ProductScope } from "./scope";
 import { PriorityThresholds, ScoreWeights } from "./scoring";
 
@@ -32,6 +33,136 @@ export type TeamMember = z.infer<typeof TeamMember>;
 /** Where shared workflows and decisions live: only this machine, a shared folder, or a Git repo. */
 export const SharingMode = z.enum(["local", "shared_folder", "git"]);
 export type SharingMode = z.infer<typeof SharingMode>;
+
+/**
+ * An API the Add to Car agents can use (Settings → AI → API setups). Its key is a secret named
+ * `setup:<id>` in the OS keychain, never part of the settings.
+ * - anthropic: Claude Messages API · openai / gemini / openai_compatible: Chat Completions API
+ *   (OpenRouter, Azure, Ollama, LM Studio, … via base URL) · jev: TypeSafe's decision model,
+ *   judge only · mock: offline, no AI.
+ */
+export const ApiProvider = z.enum([
+  "anthropic",
+  "openai",
+  "gemini",
+  "openai_compatible",
+  "jev",
+  "mock",
+]);
+export type ApiProvider = z.infer<typeof ApiProvider>;
+
+export const API_PROVIDER_INFO: Record<
+  ApiProvider,
+  {
+    label: string;
+    baseUrl: string; // default endpoint; "" = must be entered
+    needsKey: boolean;
+    /** Can write (every agent role). Jev only answers the judge's typed questions. */
+    writes: boolean;
+  }
+> = {
+  anthropic: {
+    label: "Anthropic Claude",
+    baseUrl: "https://api.anthropic.com",
+    needsKey: true,
+    writes: true,
+  },
+  openai: { label: "OpenAI", baseUrl: "https://api.openai.com/v1", needsKey: true, writes: true },
+  gemini: {
+    label: "Google Gemini",
+    baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
+    needsKey: true,
+    writes: true,
+  },
+  openai_compatible: {
+    label: "OpenAI-compatible (OpenRouter, Azure, Ollama, …)",
+    baseUrl: "",
+    needsKey: false,
+    writes: true,
+  },
+  jev: {
+    label: "TypeSafe Jev (judge only)",
+    baseUrl: "https://api.typesafe.ai/v1",
+    needsKey: true,
+    writes: false,
+  },
+  mock: { label: "Mock (offline, no AI)", baseUrl: "", needsKey: false, writes: true },
+};
+
+/** How hard reasoning models think before answering (extended thinking / reasoning effort). */
+export const ReasoningEffort = z.enum(["off", "low", "medium", "high"]);
+export type ReasoningEffort = z.infer<typeof ReasoningEffort>;
+
+export const ApiSetup = z
+  .object({
+    id: z.string().regex(/^[a-z0-9][a-z0-9-]{0,39}$/, "Use lowercase letters, digits and dashes"),
+    name: z.string().trim().min(1, "Give the setup a name").max(60),
+    provider: ApiProvider,
+    baseUrl: z
+      .string()
+      .trim()
+      .max(300)
+      .refine(
+        (v) => v === "" || /^https?:\/\/\S+$/.test(v),
+        "Enter an http(s) URL or leave it empty",
+      ),
+    model: z.string().trim().max(120), // quality model: synthesis, drafting, critique
+    fastModel: z.string().trim().max(120), // bulk model: reading every item; "" = the quality model
+    effort: ReasoningEffort,
+    temperature: z.number().min(0).max(1),
+    maxParallel: z.number().int().min(1).max(16), // concurrent calls; lower it on rate limits
+  })
+  .refine((s) => s.provider === "mock" || s.model.length > 0, {
+    path: ["model"],
+    message: "Enter the model to use",
+  })
+  .refine((s) => s.provider !== "openai_compatible" || s.baseUrl.length > 0, {
+    path: ["baseUrl"],
+    message: "OpenAI-compatible setups need a base URL",
+  });
+export type ApiSetup = z.infer<typeof ApiSetup>;
+
+/** "default" = the provider and models above (Settings → AI); otherwise an ApiSetup id. */
+export const DEFAULT_SETUP = "default";
+
+export const AgentSettings = z
+  .object({
+    setups: z
+      .array(ApiSetup)
+      .max(12)
+      .refine((xs) => new Set(xs.map((x) => x.id)).size === xs.length, "Setup ids must be unique")
+      .refine(
+        (xs) => new Set(xs.map((x) => x.name.toLowerCase())).size === xs.length,
+        "Two setups have the same name",
+      ),
+    roles: z.object(
+      Object.fromEntries(AGENT_ROLES.map((r) => [r, z.string().min(1)])) as Record<
+        AgentRole,
+        z.ZodString
+      >,
+    ),
+  })
+  .superRefine((agents, ctx) => {
+    for (const role of AGENT_ROLES) {
+      const id = agents.roles[role];
+      if (id === DEFAULT_SETUP) continue;
+      const setup = agents.setups.find((s) => s.id === id);
+      if (!setup) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["roles", role],
+          message: "That API setup no longer exists",
+        });
+      } else if (role !== "judge" && !API_PROVIDER_INFO[setup.provider].writes) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["roles", role],
+          message: `${API_PROVIDER_INFO[setup.provider].label} can only be the judge`,
+        });
+      }
+    }
+  });
+export type AgentSettings = z.infer<typeof AgentSettings>;
 
 /**
  * Everything the Settings page edits. API keys are NOT settings — they are stored encrypted in the
@@ -69,6 +200,8 @@ export const Settings = z.object({
       role: z.string().min(1),
     }),
   }),
+  /** API setups for the Add to Car agents, and which one each agent role uses. */
+  agents: AgentSettings,
   /** The global vehicle and market. Blocks set to "From Settings" use these. */
   defaultScope: ProductScope,
   collaboration: z.object({
@@ -119,6 +252,17 @@ export const DEFAULT_SETTINGS: Settings = {
   },
   review: {
     reviewer: { userId: "pm-demo", name: "Demo PM", role: "Product Manager" },
+  },
+  agents: {
+    setups: [],
+    roles: {
+      context: DEFAULT_SETUP,
+      analyst: DEFAULT_SETUP,
+      synthesizer: DEFAULT_SETUP,
+      architect: DEFAULT_SETUP,
+      critic: DEFAULT_SETUP,
+      judge: DEFAULT_SETUP,
+    },
   },
   defaultScope: {
     vehicleLine: "1 Series",

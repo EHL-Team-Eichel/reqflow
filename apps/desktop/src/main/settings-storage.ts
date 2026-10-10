@@ -1,6 +1,13 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { DEFAULT_SETTINGS, Settings } from "@reqflow/core";
+import {
+  AGENT_ROLES,
+  ApiSetup,
+  DEFAULT_SETTINGS,
+  DEFAULT_SETUP,
+  Settings,
+  type AgentSettings,
+} from "@reqflow/core";
 
 export function getSettingsFilePath(dataDir: string): string {
   return join(dataDir, "settings.json");
@@ -10,6 +17,27 @@ function asObject(val: unknown): Record<string, unknown> {
   return typeof val === "object" && val !== null && !Array.isArray(val)
     ? (val as Record<string, unknown>)
     : {};
+}
+
+/**
+ * Keeps every valid API setup and role assignment; drops broken setups and points roles whose
+ * setup is gone back to the default, instead of throwing all settings away.
+ */
+function mergeAgents(raw: unknown): AgentSettings {
+  const obj = asObject(raw);
+  const setups = (Array.isArray(obj.setups) ? obj.setups : [])
+    .map((s) => ApiSetup.safeParse(s))
+    .flatMap((r) => (r.success ? [r.data] : []))
+    .filter((s, i, all) => all.findIndex((o) => o.id === s.id) === i);
+  const stored = asObject(obj.roles);
+  const roles = Object.fromEntries(
+    AGENT_ROLES.map((role) => {
+      const id = stored[role];
+      return [role, typeof id === "string" && setups.some((s) => s.id === id) ? id : DEFAULT_SETUP];
+    }),
+  ) as AgentSettings["roles"];
+  const merged = { setups, roles };
+  return Settings.shape.agents.safeParse(merged).success ? merged : DEFAULT_SETTINGS.agents;
 }
 
 export function mergeWithDefaultSettings(raw: unknown): Settings {
@@ -52,6 +80,7 @@ export function mergeWithDefaultSettings(raw: unknown): Settings {
         ...asObject(review.reviewer),
       },
     },
+    agents: mergeAgents(obj.agents),
     defaultScope: {
       ...DEFAULT_SETTINGS.defaultScope,
       ...asObject(obj.defaultScope),

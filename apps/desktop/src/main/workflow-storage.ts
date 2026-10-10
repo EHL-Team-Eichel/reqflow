@@ -9,6 +9,7 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import {
+  migrateGraph,
   newId,
   validateGraph,
   withSplitterWorkplaces,
@@ -31,7 +32,7 @@ export function listWorkflows(dataDir: string): Workflow[] {
   for (const file of files) {
     try {
       const content = readFileSync(join(dir, file), "utf8");
-      workflows.push(withSplitterWorkplaces(Workflow.parse(JSON.parse(content))));
+      workflows.push(withSplitterWorkplaces(migrateGraph(Workflow.parse(JSON.parse(content)))));
     } catch {
       // skip corrupted files
     }
@@ -52,7 +53,7 @@ export function getWorkflow(dataDir: string, id: string): Workflow {
 
   try {
     const content = readFileSync(filePath, "utf8");
-    return withSplitterWorkplaces(Workflow.parse(JSON.parse(content)));
+    return withSplitterWorkplaces(migrateGraph(Workflow.parse(JSON.parse(content))));
   } catch (err) {
     throw new ReqflowError("not_found", `Failed to parse workflow ${id}`);
   }

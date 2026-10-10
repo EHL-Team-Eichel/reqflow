@@ -9,6 +9,7 @@ export * from "./ids";
 export * from "./ipc";
 export * from "./lineage";
 export * from "./pipeline";
+export * from "./reasoning";
 export * from "./requirement";
 export * from "./scope";
 export * from "./scoring";

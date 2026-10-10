@@ -8,6 +8,7 @@ export const ID_PREFIX = {
   run: "run",
   audit: "aud",
   file: "file",
+  reasoning: "rsn",
 } as const;
 
 export type IdPrefix = (typeof ID_PREFIX)[keyof typeof ID_PREFIX];

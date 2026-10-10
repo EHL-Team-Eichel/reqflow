@@ -27,7 +27,12 @@ import {
   type LlmClient,
   type WebSearch,
 } from "@reqflow/core";
-import type { AppInfo, ReqflowHandlers, SecretName } from "@reqflow/core/ipc";
+import {
+  SETUP_SECRET_PATTERN,
+  type AppInfo,
+  type ReqflowHandlers,
+  type SetupSecretName,
+} from "@reqflow/core/ipc";
 import {
   createDatabase,
   formatRequirementsCsv,
@@ -68,7 +73,10 @@ const AuditFilterSchema = z
   })
   .optional();
 
-const SecretNameSchema = z.enum(["anthropic_api_key", "tavily_api_key"]);
+const SecretNameSchema = z.union([
+  z.enum(["anthropic_api_key", "tavily_api_key"]),
+  z.string().regex(SETUP_SECRET_PATTERN, "Unknown secret name") as z.ZodType<SetupSecretName>,
+]);
 
 const ExportRequirementsSchema = z.object({
   runId: z.string().optional(),
@@ -494,6 +502,20 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
         const value = z.string().nullable().parse(valueInput);
         await secretsStore.setSecret(name, value);
         return await secretsStore.getStatus();
+      },
+      testSetup: async () => {
+        throw new ReqflowError("not_implemented", "Testing API setups isn't built yet");
+      },
+    },
+    reasoning: {
+      forRun: async () => {
+        throw new ReqflowError("not_implemented", "The agents' thought process isn't stored yet");
+      },
+      latest: async () => {
+        throw new ReqflowError("not_implemented", "The agents' thought process isn't stored yet");
+      },
+      forRequirement: async () => {
+        throw new ReqflowError("not_implemented", "The agents' thought process isn't stored yet");
       },
     },
     exports: {

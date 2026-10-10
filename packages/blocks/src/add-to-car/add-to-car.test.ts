@@ -84,7 +84,13 @@ describe("Add to Car rules", () => {
   });
 
   it("vehicle and market params override the run's scope", () => {
-    const p = { rankings: ["Must have"], vehicle: "5 Series", market: "US", mergeDuplicates: true };
+    const p = {
+      priorities: 1,
+      contexts: [],
+      maxRequirements: 20,
+      vehicle: "5 Series",
+      market: "US",
+    };
     expect(scopeFor(p, fixtureScope)).toMatchObject({
       vehicleLine: "5 Series",
       vehicleCode: "G60",

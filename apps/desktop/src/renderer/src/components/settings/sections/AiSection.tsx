@@ -1,4 +1,9 @@
-import { LlmProvider, ResearchProvider, type SecretName, type SecretStatus } from "@reqflow/core";
+import {
+  LlmProvider,
+  ResearchProvider,
+  type FixedSecretName,
+  type SecretStatus,
+} from "@reqflow/core";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import {
@@ -12,7 +17,7 @@ import { api, ReqflowError } from "@/lib/api";
 import { settingsStore, useSettings } from "@/lib/settings";
 import { SettingRow } from "../SettingRow";
 
-const SECRET_LABELS: Record<SecretName, string> = {
+const SECRET_LABELS: Record<FixedSecretName, string> = {
   anthropic_api_key: "Anthropic",
   tavily_api_key: "Tavily",
 };
@@ -169,7 +174,7 @@ export function AiSection() {
         ) : !secrets ? (
           <div className="text-sm text-muted">Checking keys…</div>
         ) : (
-          (Object.keys(SECRET_LABELS) as SecretName[]).map((name) => {
+          (Object.keys(SECRET_LABELS) as FixedSecretName[]).map((name) => {
             const status = secrets[name];
             return (
               <SettingRow key={name} label={SECRET_LABELS[name]}>
