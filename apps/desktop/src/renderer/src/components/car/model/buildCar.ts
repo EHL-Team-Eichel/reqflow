@@ -1,3 +1,5 @@
+import { buildPowertrain } from "../modelSwitcher/buildPowertrain";
+import type { PowertrainType } from "../models/types";
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { band, projectPatch, projectSketchLine, superellipse, type View } from "./decals";
@@ -61,7 +63,7 @@ export interface CarModel {
 const SIDES = [-1, 1] as const; // left (−z, driver in LHD), right (+z)
 const DRIVER_Z = -0.38;
 
-export function buildCar(): CarModel {
+export function buildCar(powertrain: PowertrainType = "electric"): CarModel {
   const root = new THREE.Group();
   root.name = "BMW sedan sketch — Hot Wheels reference";
   const pieces: CarPiece[] = [];
@@ -133,7 +135,7 @@ export function buildCar(): CarModel {
     const partId = panel === "underbody" ? "body" : panel;
     add(geometry, partId, (finish as PieceKind | undefined) ?? "paint", "exterior");
   }
-  addBodyDetails(pieces, add);
+  addBodyDetails(pieces, add, powertrain);
   const bodySurfaces = pieces
     .filter((p) => p.kind === "paint" || (p.partId === "body" && p.kind === "dark"))
     .map((p) => p.mesh);
@@ -281,6 +283,17 @@ export function buildCar(): CarModel {
         40,
       );
       disc("brakes", "metal", "exterior", 0.08, 0.03, [axle, G60.tyreRadius, z - side * 0.015]);
+      // Paired friction pads straddle the disc, inside the caliper at every wheel.
+      for (const face of [-1, 1]) {
+        box(
+          "brake_pads",
+          "dark",
+          "exterior",
+          [0.09, 0.05, 0.009],
+          [axle - 0.13, G60.tyreRadius + 0.1, z + side * 0.01 + face * 0.019],
+          { radius: 0.003, rotZ: 0.9 },
+        );
+      }
       box(
         "brake_calipers",
         "accent",
@@ -311,39 +324,7 @@ export function buildCar(): CarModel {
     }
   }
 
-  // ---- Drivetrain: battery under the floor, a motor and drive shafts on each axle ----------------
-  box("battery_pack", "dark", "interior", [2.5, 0.11, 1.42], [-0.05, 0.255, 0], { radius: 0.03 });
-  // Chassis support remains the selectable home for broad drivetrain requirements.
-  box("drivetrain", "metal", "interior", [2.6, 0.035, 1.35], [-0.05, 0.18, 0], { radius: 0.012 });
-  for (const axle of [G60.frontAxleX, G60.rearAxleX]) {
-    const motorId = axle === G60.frontAxleX ? "motor" : "rear_motor";
-    disc(motorId, "metal", "interior", 0.13, 0.36, [axle, 0.42, 0], 32);
-    // End caps and raised ribs give each motor an identifiable casing.
-    for (const z of [-0.185, 0.185])
-      disc(motorId, "metal", "interior", 0.115, 0.025, [axle, 0.42, z], 28);
-    for (const z of [-0.1, 0, 0.1])
-      add(new THREE.TorusGeometry(0.133, 0.007, 6, 32), motorId, "metal", "interior", (m) =>
-        m.position.set(axle, 0.42, z),
-      );
-    for (const side of SIDES) {
-      add(
-        new THREE.CylinderGeometry(0.022, 0.022, 0.52, 10).rotateX(Math.PI / 2),
-        "drive_shafts",
-        "metal",
-        "interior",
-        (m) => m.position.set(axle, 0.39, side * 0.45),
-      );
-    }
-  }
-  box("transmission", "metal", "interior", [0.3, 0.22, 0.25], [G60.frontAxleX - 0.24, 0.43, 0.04], {
-    radius: 0.035,
-  });
-  box("differential", "metal", "interior", [0.21, 0.18, 0.22], [G60.rearAxleX + 0.2, 0.4, 0], {
-    radius: 0.04,
-  });
-  box("inverter", "dark", "interior", [0.3, 0.12, 0.35], [G60.frontAxleX, 0.64, 0], {
-    radius: 0.025,
-  });
+  buildPowertrain(powertrain, { add, box, disc });
   box("cooling_system", "metal", "interior", [0.07, 0.32, 0.78], [1.9, 0.57, 0], { radius: 0.012 });
   for (const z of [-0.22, 0.22])
     add(
@@ -441,6 +422,34 @@ export function buildCar(): CarModel {
         m.rotation.z = Math.PI / 2 - 0.42;
       },
     );
+  }
+
+  // Driver footwell: wide brake on the left, a taller/narrower accelerator on the right.
+  // The faces point back toward the seat; hanging arms mount beneath the dashboard.
+  for (const [partId, y, z, height, width, tilt] of [
+    ["brake_pedal", 0.455, DRIVER_Z - 0.065, 0.095, 0.135, -0.24],
+    ["accelerator_pedal", 0.415, DRIVER_Z + 0.125, 0.17, 0.06, -0.18],
+  ] as const) {
+    const face = box(partId, "trim", "interior", [0.028, height, width], [0.655, y, z], {
+      radius: 0.009,
+      rotZ: tilt,
+    });
+    face.userData.pedalComponent = "face";
+    const arm = box(partId, "metal", "interior", [0.025, 0.205, 0.025], [0.704, 0.565, z], {
+      radius: 0.005,
+      rotZ: -0.3,
+    });
+    arm.userData.pedalComponent = "arm";
+    for (const offset of [-0.3, 0, 0.3]) {
+      const point = new THREE.Vector3(-0.016, height * offset, 0)
+        .applyEuler(face.rotation)
+        .add(face.position);
+      const grip = box(partId, "dark", "interior", [0.004, 0.006, width * 0.78], point.toArray(), {
+        radius: 0.001,
+        rotZ: tilt,
+      });
+      grip.userData.pedalComponent = "grip";
+    }
   }
 
   // Dashboard and the illuminated interaction bar.
@@ -577,6 +586,7 @@ export function buildCar(): CarModel {
 function addBodyDetails(
   pieces: CarPiece[],
   add: (g: THREE.BufferGeometry, partId: string, kind: PieceKind, layer: PieceLayer) => void,
+  powertrain: PowertrainType,
 ) {
   const panels = (...ids: string[]) =>
     pieces
@@ -922,7 +932,15 @@ function addBodyDetails(
     "front",
     0.008,
   );
-  put("charging_port", "dark", sides, superellipse(-1.79, 0.895, 0.075, 0.05, 4), 32, 3, "right");
+  const refillPart =
+    powertrain === "electric" || powertrain === "hybrid"
+      ? "charging_port"
+      : powertrain === "h2"
+        ? "h2_storage"
+        : "fuel_system";
+  put(refillPart, "dark", sides, superellipse(-1.79, 0.895, 0.075, 0.05, 4), 32, 3, "right");
+  if (powertrain === "hybrid")
+    put("fuel_system", "dark", sides, superellipse(-1.79, 0.895, 0.075, 0.05, 4), 32, 3, "left");
 }
 
 /** A helix along +y (coil spring). */

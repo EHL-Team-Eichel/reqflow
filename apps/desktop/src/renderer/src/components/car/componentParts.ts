@@ -3,6 +3,27 @@ import type { CarPart } from "./parts";
 /** More detailed selectable components, built as individual meshes in buildCar.ts. */
 export const COMPONENT_PARTS: CarPart[] = [
   {
+    id: "accelerator_pedal",
+    label: "Accelerator pedal",
+    group: "interior",
+    blurb: "Driver's accelerator: reach, grip and progressive throttle response.",
+    keywords: ["accelerator pedals?", "gas pedals?", "throttle pedals?", "gaspedale?"],
+  },
+  {
+    id: "brake_pedal",
+    label: "Brake pedal",
+    group: "interior",
+    blurb: "Driver's brake pedal: foot placement, grip and consistent pedal feel.",
+    keywords: ["brake pedals?", "bremspedale?"],
+  },
+  {
+    id: "brake_pads",
+    label: "Brake pads",
+    group: "technology",
+    blurb: "Friction pads on both sides of each brake disc: stopping feel, wear and noise.",
+    keywords: ["brake pads?", "braking pads?", "friction pads?", "bremsbeläge", "bremsbelag"],
+  },
+  {
     id: "motor",
     label: "Front motor / engine",
     group: "technology",

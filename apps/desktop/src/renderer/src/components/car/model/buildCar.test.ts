@@ -8,7 +8,7 @@ describe("buildCar", () => {
   const car = buildCar();
 
   it("has a clickable mesh and a badge anchor for every part in the catalog", () => {
-    expect(CAR_PARTS).toHaveLength(68);
+    expect(CAR_PARTS).toHaveLength(71);
     const modelled = new Set(car.pieces.map((p) => p.partId).filter(Boolean));
     const missing = CAR_PARTS.map((p) => p.id).filter((id) => !modelled.has(id));
     expect(missing).toEqual([]);

@@ -1,4 +1,12 @@
-import { useState } from "react";
+import { PowertrainSwitcher } from "@/components/car/modelSwitcher/PowertrainSwitcher";
+import {
+  availablePartIds,
+  powertrainSubclasses,
+  POWERTRAINS,
+} from "@/components/car/modelSwitcher/powertrains";
+import type { PowertrainType } from "@/components/car/models/types";
+import { useVehicleStore, getActiveVehicle } from "@/components/car/models/vehicleStore";
+import { useState, useMemo } from "react";
 import { CarViewer, type CameraPreset, type CarView } from "@/components/car/CarViewer";
 import { PartPanel } from "@/components/car/PartPanel";
 import { useCarRequirements } from "@/components/car/useCarRequirements";
@@ -32,13 +40,17 @@ const PRESETS: { value: CameraPreset; label: string }[] = [
  */
 export function CarPage() {
   const scope = useSettings((s) => s.settings.defaultScope);
+  const { selectedModelId, powertrain, setPowertrain } = useVehicleStore();
+  const active = useMemo(() => getActiveVehicle(), [selectedModelId, powertrain]);
+  const availableParts = availablePartIds(powertrain);
+  const subclasses = powertrainSubclasses(powertrain);
   const [view, setView] = useState<CarView>("exterior");
   const [selected, setSelected] = useState<string | null>(null);
   const [markerMenu, setMarkerMenu] = useState(initialMarkerMenu);
   const [preset, setPreset] = useState<CameraPreset>("front");
   const [presetNonce, setPresetNonce] = useState(0);
   const data = useCarRequirements("app");
-  const markerParts = selected ? [selected] : menuPartIds(markerMenu.active);
+  const markerParts = selected ? [selected] : menuPartIds(markerMenu.active, subclasses);
 
   const onMenuToggle = (id: string) => {
     const next = toggleMarkerMenu(markerMenu, id);
@@ -60,8 +72,7 @@ export function CarPage() {
         title={
           <span className="flex items-center gap-2.5">
             <MStripe variant="badge" />
-            BMW {scope.vehicleLine}
-            {scope.derivative ? ` ${scope.derivative}` : ""}
+            {active.model.name}
             <span className="text-sm font-normal text-muted">
               {scope.market} · {scope.horizonYears}-year horizon
             </span>
@@ -92,7 +103,10 @@ export function CarPage() {
         testId="car-page"
       >
         <div className="relative h-full">
+          <PowertrainSwitcher value={powertrain} onChange={setPowertrain} />
           <CarViewer
+            modelId={selectedModelId}
+            powertrain={powertrain}
             counts={data.counts}
             markerParts={markerParts}
             selected={selected}
@@ -102,13 +116,16 @@ export function CarPage() {
             onSelect={setSelected}
           />
           <p className="pointer-events-none absolute bottom-3 left-4 text-xs text-muted">
-            BMW-inspired sketch · drag to turn, scroll to zoom, click any part
+            {POWERTRAINS.find((option) => option.value === powertrain)?.description} · schematic
+            sketch · drag to turn, scroll to zoom, click any part
           </p>
         </div>
       </Panel>
       <Panel title="Parts & requirements" className="w-[26rem] shrink-0" testId="car-side">
         <PartPanel
           selected={selected}
+          availableParts={availableParts}
+          subclasses={subclasses}
           markerMenu={markerMenu}
           onMenuToggle={onMenuToggle}
           byPart={data.byPart}

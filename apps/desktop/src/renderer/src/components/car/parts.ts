@@ -327,7 +327,6 @@ export const CAR_PARTS: CarPart[] = [
     keywords: [
       "brakes?",
       "braking",
-      "brake pedal",
       "regen\\p{L}*",
       "recuperation",
       "one[ -]pedal",
@@ -360,9 +359,9 @@ export const CAR_PARTS: CarPart[] = [
   },
   {
     id: "drivetrain",
-    label: "Drivetrain & battery",
+    label: "Drivetrain & efficiency",
     group: "technology",
-    blurb: "Electric range, battery, motors, acceleration and efficiency.",
+    blurb: "Range, power delivery, acceleration and efficiency across powertrains.",
     keywords: [
       "range",
       "drivetrain",
@@ -635,6 +634,160 @@ export const CAR_PARTS: CarPart[] = [
   ...COMPONENT_PARTS,
 ];
 
+/** Car-specific and powertrain-specific parts that can be added to individual models. */
+export const EXTENDED_CAR_PARTS: CarPart[] = [
+  {
+    id: "combustion_engine",
+    label: "Combustion engine",
+    group: "technology",
+    blurb: "Engine response, refinement and combustion power delivery.",
+    keywords: [
+      "combustion engine",
+      "petrol engine",
+      "gasoline engine",
+      "engine",
+      "verbrennungsmotor",
+    ],
+    categories: ["driving_experience"],
+  },
+  {
+    id: "fuel_cell",
+    label: "Fuel cell",
+    group: "technology",
+    blurb: "Fuel cell stack converting hydrogen into electricity for the drive motor.",
+    keywords: ["fuel cell", "fuel cell stack", "brennstoffzelle"],
+    categories: ["range_charging"],
+  },
+  {
+    id: "rear_spoiler",
+    label: "Rear wing & spoiler",
+    group: "exterior",
+    blurb: "Aerodynamic rear wing or spoiler for high-speed stability and downforce.",
+    keywords: [
+      "spoiler",
+      "rear wing",
+      "gt wing",
+      "duckbill",
+      "downforce",
+      "heckflügel",
+      "heckspoiler",
+    ],
+    categories: ["exterior_design", "driving_experience"],
+  },
+  {
+    id: "front_splitter",
+    label: "Front splitter & canards",
+    group: "exterior",
+    blurb: "Front carbon splitter and aerodynamic dive planes for front downforce.",
+    keywords: [
+      "front splitter",
+      "splitter",
+      "canards",
+      "dive planes",
+      "frontlippe",
+      "aerodynamic kit",
+    ],
+    categories: ["exterior_design", "driving_experience"],
+  },
+  {
+    id: "rear_diffuser",
+    label: "Rear diffuser & aero",
+    group: "exterior",
+    blurb: "Underbody rear diffuser managing aerodynamic airflow and wake.",
+    keywords: ["diffuser", "rear diffuser", "heckdiffusor", "underbody aero", "fins"],
+    categories: ["exterior_design"],
+  },
+  {
+    id: "widebody_flares",
+    label: "Widebody kit & arches",
+    group: "exterior",
+    blurb: "Flared wheel arches, widebody kit and wider track stance.",
+    keywords: [
+      "widebody",
+      "fender flares",
+      "wide body",
+      "flared arches",
+      "kotflügelverbreiterung",
+      "body kit",
+    ],
+    categories: ["exterior_design"],
+  },
+  {
+    id: "roll_cage",
+    label: "Safety roll cage",
+    group: "interior",
+    blurb: "Motorsport safety roll cage providing chassis rigidity and protection.",
+    keywords: ["roll cage", "roll bar", "überrollkäfig", "chassis stiffness", "clubsport"],
+    categories: ["interior_quality", "driving_experience"],
+  },
+  {
+    id: "roof_rails",
+    label: "Roof rails & carrier",
+    group: "exterior",
+    blurb: "Longitudinal roof rails for cargo systems, roof boxes and sports gear.",
+    keywords: ["roof rails", "roof carrier", "dachreling", "dachträger", "roof rack"],
+    categories: ["space_practicality"],
+  },
+  {
+    id: "exhaust_system",
+    label: "Exhaust system & sound",
+    group: "technology",
+    blurb: "Exhaust pipes, active valves, acoustic sound tuning and emissions.",
+    keywords: [
+      "exhaust",
+      "tailpipes",
+      "exhaust system",
+      "auspuff",
+      "abgasanlage",
+      "sound tuning",
+      "m performance exhaust",
+    ],
+    categories: ["driving_experience"],
+  },
+  {
+    id: "fuel_system",
+    label: "Fuel tank & injection",
+    group: "technology",
+    blurb: "Fuel storage tank, filler neck and high-pressure fuel delivery.",
+    keywords: ["fuel tank", "fuel", "kraftstoff", "tank", "benzin", "gasoline", "fuel filler"],
+    categories: ["range_charging"],
+  },
+  {
+    id: "h2_storage",
+    label: "Hydrogen storage",
+    group: "technology",
+    blurb: "Hydrogen storage tanks, refuelling and usable range.",
+    keywords: ["hydrogen", "h2", "wasserstoff", "h2 tanks", "hydrogen storage"],
+    categories: ["range_charging"],
+  },
+  {
+    id: "skid_plates",
+    label: "Underbody skid plates",
+    group: "exterior",
+    blurb: "Reinforced underbody protection plates for off-road and rough terrain.",
+    keywords: ["skid plate", "underbody protection", "unterfahrschutz"],
+    categories: ["exterior_design"],
+  },
+  {
+    id: "convertible_roof",
+    label: "Convertible soft-top",
+    group: "exterior",
+    blurb: "Acoustic folding soft-top, roof mechanism and rollover protection.",
+    keywords: ["soft top", "convertible roof", "cabriolet", "verdeck", "folding roof"],
+    categories: ["exterior_design", "comfort"],
+  },
+  {
+    id: "hood_vents",
+    label: "Bonnet air extractors & louvers",
+    group: "exterior",
+    blurb: "Functional bonnet cooling louvers and thermal extraction vents.",
+    keywords: ["hood vents", "air extractors", "louvers", "lufteinlässe haube"],
+    categories: ["exterior_design"],
+  },
+];
+
+export const ALL_CAR_PARTS: CarPart[] = [...CAR_PARTS, ...EXTENDED_CAR_PARTS];
+
 /** Requirements the classifier can't place on a part land here (shown as "Whole car"). */
 export const WHOLE_CAR = {
   id: "whole_car",
@@ -643,4 +796,6 @@ export const WHOLE_CAR = {
     "Requirements about the car as a whole (variants, packages, overall character) or ones the auto classifier couldn't place on a single part.",
 } as const;
 
-export const PARTS_BY_ID: ReadonlyMap<string, CarPart> = new Map(CAR_PARTS.map((p) => [p.id, p]));
+export const PARTS_BY_ID: ReadonlyMap<string, CarPart> = new Map(
+  ALL_CAR_PARTS.map((p) => [p.id, p]),
+);

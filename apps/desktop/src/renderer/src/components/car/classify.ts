@@ -1,5 +1,6 @@
+import { CLASSIFIABLE_PARTS } from "./modelSwitcher/powertrains";
 import type { Requirement, RequirementCategory } from "@reqflow/core";
-import { CAR_PARTS, PARTS_BY_ID, WHOLE_CAR, type CarPart } from "./parts";
+import { PARTS_BY_ID, WHOLE_CAR, type CarPart } from "./parts";
 
 /**
  * Auto classifier: puts every requirement on the part of the car it is about, so the 3D car can
@@ -67,7 +68,7 @@ function compile(parts: readonly CarPart[]): CompiledKeyword[] {
   );
 }
 
-const COMPILED = compile(CAR_PARTS);
+const COMPILED = compile(CLASSIFIABLE_PARTS);
 
 interface Hit {
   partId: string;

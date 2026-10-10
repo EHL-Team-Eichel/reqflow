@@ -1,3 +1,4 @@
+import { retainedRequirementParts } from "./modelSwitcher/powertrains";
 import { useState } from "react";
 import { cx } from "@/lib/cx";
 import { XIcon } from "@/components/ui/icons";
@@ -5,10 +6,12 @@ import { RequirementCard } from "../requirements/RequirementCard";
 import { RequirementDialog } from "../requirements/RequirementDialog";
 import { label, type ClassifiedRequirement } from "./classify";
 import { PART_GROUP_LABELS, PARTS_BY_ID, WHOLE_CAR } from "./parts";
-import { menuCount, PART_SUBCLASSES, subclassParts } from "./partMenu";
+import { menuCount, type PartSubclass, subclassParts } from "./partMenu";
 import { MENU_GROUPS, type MarkerMenuState } from "./markerMenu";
 
 interface Props {
+  availableParts: ReadonlySet<string>;
+  subclasses: readonly PartSubclass[];
   selected: string | null;
   markerMenu: MarkerMenuState;
   onMenuToggle: (id: string) => void;
@@ -25,7 +28,16 @@ export function PartPanel(props: Props) {
   return <PartIndex {...props} />;
 }
 
-function PartIndex({ counts, total, emptyHint, onSelect, markerMenu, onMenuToggle }: Props) {
+function PartIndex({
+  counts,
+  total,
+  emptyHint,
+  onSelect,
+  markerMenu,
+  onMenuToggle,
+  availableParts,
+  subclasses: modelSubclasses,
+}: Props) {
   const whole = counts.get(WHOLE_CAR.id) ?? 0;
   return (
     <div className="flex h-full flex-col" data-testid="car-part-index">
@@ -42,7 +54,7 @@ function PartIndex({ counts, total, emptyHint, onSelect, markerMenu, onMenuToggl
       <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
         <PartRow id={WHOLE_CAR.id} name={WHOLE_CAR.label} count={whole} onSelect={onSelect} />
         {MENU_GROUPS.map((g) => {
-          const subclasses = PART_SUBCLASSES.filter((subclass) => subclass.group === g);
+          const subclasses = modelSubclasses.filter((subclass) => subclass.group === g);
           return (
             <details
               key={g}
@@ -105,6 +117,29 @@ function PartIndex({ counts, total, emptyHint, onSelect, markerMenu, onMenuToggl
             </details>
           );
         })}
+        {retainedRequirementParts(availableParts, counts).length > 0 && (
+          <section
+            className="mt-4 border-t border-line pt-3"
+            data-testid="car-retained-requirements"
+          >
+            <h3 className="px-2 text-xs font-semibold text-muted">
+              Requirements for other powertrains
+            </h3>
+            <p className="px-2 py-1 text-xs text-muted">
+              These parts are absent from this sketch. Their requirements remain available for
+              review.
+            </p>
+            {retainedRequirementParts(availableParts, counts).map((id) => (
+              <PartRow
+                key={id}
+                id={id}
+                name={label(id)}
+                count={counts.get(id) ?? 0}
+                onSelect={onSelect}
+              />
+            ))}
+          </section>
+        )}
       </div>
     </div>
   );
@@ -143,7 +178,13 @@ function PartRow(props: {
   );
 }
 
-function PartDetail({ partId, byPart, emptyHint, onSelect }: Props & { partId: string }) {
+function PartDetail({
+  partId,
+  byPart,
+  emptyHint,
+  onSelect,
+  availableParts,
+}: Props & { partId: string }) {
   const [opened, setOpened] = useState<ClassifiedRequirement | null>(null);
   const part = PARTS_BY_ID.get(partId);
   const items = byPart.get(partId) ?? [];
@@ -158,6 +199,12 @@ function PartDetail({ partId, byPart, emptyHint, onSelect }: Props & { partId: s
             {label(partId)}
           </h3>
           <p className="mt-1 text-sm text-muted">{part?.blurb ?? WHOLE_CAR.blurb}</p>
+          {partId !== WHOLE_CAR.id && !availableParts.has(partId) && (
+            <p className="mt-2 text-xs text-muted" data-testid="car-absent-part">
+              This part is absent from the selected powertrain sketch. Requirements are retained for
+              review.
+            </p>
+          )}
           {items.length > 0 && (
             <p className="mt-1 text-xs text-muted">
               {items.length} requirement{items.length === 1 ? "" : "s"} · Click for details &

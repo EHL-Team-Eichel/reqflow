@@ -7,6 +7,10 @@ import { partTag } from "./partTags";
 import { markerPresentation } from "./markerMenu";
 import { trackIdleOrbit } from "./idleOrbit";
 import { buildCar, type CarPiece } from "./model/buildCar";
+import { buildVehicleModel } from "./models/builder";
+import { getActiveVehicle } from "./models/vehicleStore";
+import { getVehicleModelById } from "./models/registry";
+import type { PowertrainType } from "./models/types";
 import { G60 } from "./model/body";
 import {
   exteriorBadgeTargets,
@@ -41,6 +45,7 @@ const PRESETS: Record<
 const UNGHOSTED_KINDS = new Set(["tyre", "rim", "metal", "accent"]);
 
 interface Props {
+  powertrain: PowertrainType;
   /** Requirement counts displayed on labeled markers. */
   counts: ReadonlyMap<string, number>;
   /** All parts in the active menu class, including parts without requirements. */
@@ -51,6 +56,7 @@ interface Props {
   /** Bumped to move the camera to `preset` again. */
   presetNonce: number;
   onSelect: (partId: string | null) => void;
+  modelId?: string;
 }
 
 /**
@@ -87,9 +93,9 @@ export function CarViewer(props: Props) {
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(32, 1, 0.05, 100);
-    camera.position.set(...PRESETS.front.position);
+    camera.position.set(...PRESETS[propsRef.current.preset].position);
     const controls = new OrbitControls(camera, renderer.domElement);
-    controls.target.set(...PRESETS.front.target);
+    controls.target.set(...PRESETS[propsRef.current.preset].target);
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
     controls.minDistance = 2.2;
@@ -100,7 +106,10 @@ export function CarViewer(props: Props) {
     const idleOrbit = trackIdleOrbit(window);
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
-    const car = buildCar();
+    const active = getActiveVehicle();
+    const activeModel = props.modelId ? getVehicleModelById(props.modelId) : active.model;
+    const activePowertrain = props.powertrain ?? active.powertrain;
+    const car = activeModel ? buildVehicleModel(activeModel, activePowertrain) : buildCar();
     scene.add(car.root);
     setAnchors(car.anchors);
     const exteriorTargets = exteriorBadgeTargets(car.pieces, car.anchors);
@@ -431,7 +440,7 @@ export function CarViewer(props: Props) {
       renderer.domElement.remove();
       apiRef.current = null;
     };
-  }, []);
+  }, [props.modelId, props.powertrain]);
 
   // React to selection, counts and view changes without rebuilding the scene.
   useEffect(() => {

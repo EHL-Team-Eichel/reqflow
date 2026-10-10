@@ -1,4 +1,4 @@
-import { PART_SUBCLASSES } from "./partMenu";
+import { PART_SUBCLASSES, type PartSubclass } from "./partMenu";
 import type { PartGroup } from "./parts";
 
 export const MENU_GROUPS: readonly PartGroup[] = ["exterior", "interior", "technology"];
@@ -19,12 +19,15 @@ export function menuGroup(id: string): PartGroup {
   return subclass.group;
 }
 
-export function menuPartIds(id: string | null): readonly string[] {
+export function menuPartIds(
+  id: string | null,
+  subclasses: readonly PartSubclass[] = PART_SUBCLASSES,
+): readonly string[] {
   if (id === null) return [];
   const group = menuGroup(id);
-  return PART_SUBCLASSES.filter((s) => s.id === id || (id === group && s.group === group)).flatMap(
-    (s) => s.partIds,
-  );
+  return subclasses
+    .filter((s) => s.id === id || (id === group && s.group === group))
+    .flatMap((s) => s.partIds);
 }
 
 /** Focus the last opened class; closing it restores its parent or clears its markers. */

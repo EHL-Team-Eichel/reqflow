@@ -193,7 +193,7 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 ## WS3 — Car tab: requirements review & audit UI
 
-**Status:** in progress (STL-guided car model refinement complete; requirements review pending) · **Owner:** Codex (BMW styling and geometry fixes) · **Branch:** `codex/car-model-refinements`
+**Status:** in progress (four-choice model switcher) · **Owner:** Codex (model switcher subtask) · **Branch:** `ws3-compact-requirements`
 **Depends on:** nothing to start: build on `@reqflow/core/fixtures` (5 requirements, findings, sources,
 audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 serves them.
 
@@ -219,6 +219,17 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - [ ] Subtle blue fill on the clicked car part, with light/dark selection regressions.
 
 **Log**
+
+- 2026-10-11: Implemented Model Switcher and Models 1-10 (2025 330i xDrive, M4 GT3 EVO G82, ZACOE M2 Widebody, SEMA M2 Widebody, Vorsteiner M2 Project, Vorsteiner M2 VRS, ADRO M2, M140i, M2 CS, 750Li xDrive). Dynamic powertrain switching (Gasoline, Hybrid, Electric, H2), model-specific aero parts (GT wing, front splitter, canards, widebody flares, rear diffuser, roll cage, hood vents, exhaust, fuel system, H2 storage), and Settings model switcher navigation.
+
+- 2026-10-11: Claimed pedal/brake-pad addition: model the driver accelerator and brake
+  pedal, fit paired friction pads around each disc, expose each in the existing parts menus,
+  preserve concurrent model-switcher work, verify and push the focused slice.
+
+
+- 2026-10-11: Claimed powertrain switching: Electric, Hybrid, H2 and Gasoline; reuse the
+  transferred part/type scaffolding, preserve BMW body/windows and requirement review,
+  verify renderer/model tests plus a synthetic Electron switching probe, then commit/push.
 
 - 2026-10-11: Side windows now have front, rear-door and fixed quarter panes separated
   by the existing B-pillar and a new slanted quarter-glass frame on both sides. Frames are

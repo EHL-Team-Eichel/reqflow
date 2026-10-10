@@ -4,10 +4,11 @@ import { SettingsNav, type NavItem } from "@/components/settings/SettingsNav";
 import { PersistenceBanner } from "@/components/settings/PersistenceBanner";
 import { AppSection } from "@/components/settings/sections/AppSection";
 import { ParametersSection } from "@/components/settings/sections/ParametersSection";
+import { ModelSwitcherSection } from "@/components/settings/sections/ModelSwitcherSection";
 import { AiSection } from "@/components/settings/sections/AiSection";
 import { CollaborationSection } from "@/components/settings/sections/CollaborationSection";
 import { AboutSection } from "@/components/settings/sections/AboutSection";
-import { AppIcon, SparklesIcon, UsersIcon, InfoIcon } from "@/components/settings/icons";
+import { AppIcon, SparklesIcon, UsersIcon, InfoIcon, CarIcon } from "@/components/settings/icons";
 import { SlidersIcon } from "@/components/ui/icons";
 
 const NAV_ITEMS: readonly NavItem[] = [
@@ -22,6 +23,12 @@ const NAV_ITEMS: readonly NavItem[] = [
     label: "Global parameters",
     hint: "Vehicle, scoring",
     icon: <SlidersIcon className="size-5" />,
+  },
+  {
+    id: "model-switcher",
+    label: "Model switcher",
+    hint: "Vehicle model, powertrain",
+    icon: <CarIcon className="size-5" />,
   },
   {
     id: "ai",
@@ -53,6 +60,9 @@ export function SettingsPage() {
       break;
     case "parameters":
       content = <ParametersSection />;
+      break;
+    case "model-switcher":
+      content = <ModelSwitcherSection />;
       break;
     case "ai":
       content = <AiSection />;

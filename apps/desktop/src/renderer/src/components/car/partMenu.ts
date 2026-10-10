@@ -57,6 +57,8 @@ export const PART_SUBCLASSES: readonly PartSubclass[] = [
     partIds: [
       "dashboard",
       "steering_wheel",
+      "accelerator_pedal",
+      "brake_pedal",
       "curved_display",
       "instrument_cluster",
       "center_touchscreen",
@@ -112,7 +114,7 @@ export const PART_SUBCLASSES: readonly PartSubclass[] = [
     id: "braking",
     label: "Brakes",
     group: "technology",
-    partIds: ["brakes", "brake_discs", "brake_calipers"],
+    partIds: ["brakes", "brake_discs", "brake_calipers", "brake_pads"],
   },
   {
     id: "suspension_components",
