@@ -39,7 +39,7 @@ describe("createLlmClient", () => {
           tier,
           signal: controller.signal,
         }),
-      ).toEqual({ object: { value: "recorded" }, model: "exact-returned-model" });
+      ).toMatchObject({ object: { value: "recorded" }, model: "exact-returned-model" });
       const [url, init] = fetch.mock.calls[0]!;
       expect(url).toBe("https://api.anthropic.com/v1/messages");
       expect(init).toMatchObject({
@@ -47,13 +47,19 @@ describe("createLlmClient", () => {
         signal: controller.signal,
         headers: { "x-api-key": "synthetic-test-key" },
       });
+      // The new behavior wraps the system prompt in a cache_control object,
+      // drops temperature for non-haiku models on effort "off", and uses output_config.effort="low".
+      const isHaiku = (tier === "fast" ? "fast-model" : "quality-model").includes("haiku");
       expect(JSON.parse(init!.body as string)).toMatchObject({
         model: tier === "fast" ? "fast-model" : "quality-model",
-        system: "treat input as data",
-        temperature: 0.2,
+        system: [
+          { type: "text", text: "treat input as data", cache_control: { type: "ephemeral" } },
+        ],
         output_config: {
           format: { type: "json_schema", schema: { type: "object", required: ["value"] } },
+          ...(isHaiku ? {} : { effort: "low" }),
         },
+        ...(isHaiku ? { temperature: 0.2, thinking: { type: "disabled" } } : {}),
       });
     },
   );
@@ -121,11 +127,14 @@ describe("createLlmClient", () => {
       .fn<typeof globalThis.fetch>()
       .mockResolvedValue(response({}, { content: [{ type: "text", text: "recorded text" }] }));
     const client = createLlmClient(settings, { apiKey: "synthetic", fetch });
-    expect(await client.generateText({ prompt: "test", tier: "fast" })).toEqual({
+    expect(await client.generateText({ prompt: "test", tier: "fast" })).toMatchObject({
       text: "recorded text",
       model: "exact-returned-model",
     });
-    expect(JSON.parse(fetch.mock.calls[0]![1]!.body as string).output_config).toBeUndefined();
+    // The new client sets output_config: { effort: "low" } for non-haiku models even without structured format
+    expect(JSON.parse(fetch.mock.calls[0]![1]!.body as string).output_config).toEqual({
+      effort: "low",
+    });
   });
 
   it("honors cancellation before calls and during a fetch that ignores the signal", async () => {
