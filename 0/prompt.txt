@@ -1,0 +1,9 @@
+it should be public. We want to make a multi system compatible app. what is the best way to do that, or is it already implemented
+
+---
+
+it shouldnt be a web app
+
+---
+
+dont build the actual app yet
