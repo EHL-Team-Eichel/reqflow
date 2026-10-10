@@ -1,0 +1,10 @@
+"READ-ONLY SECURITY REVIEW. Follow AGENTS.md. Repo /Users/jonas/Documents/reqflow is integrating origin/main 9228fb3 into branch ws6-ai-providers after a verified raw-only Research feature. DO NOT EDIT, stage, commit, spawn agents, inspect data/raw, print credential values, run root gates/smoke, or make live application/provider calls. All investigation uses synthetic/offline evidence only. Review unified main/SQLite persistence and credential/API boundaries: apps/desktop/src/main/{index.ts,handlers.ts,secrets.ts}, main/research/{runtime.ts,migration.ts,recovery.ts}, packages/db/src/{research.ts,files.ts}, packages/engine/src/{executor.ts,research-kernel.ts}. Crosscheck existing synthetic tests for lost audit/state, queued-before-run persistence, HIL restart/restore, partial cancellation-before-terminal publication, legacy encrypted migration without plaintext fallback, file copy preservation, secret redaction/live provider revocation/access/domain gates, byte budgets and native worker binding. No second app-state authority permitted. Changes are on disk; Git merge U state is not an executable source conflict. Report concrete still-blocking vulnerabilities only with severity,path:line, offline mechanism and narrow suggested fix; distinguish residual operational limits from reproduced issues. Run focused tests only when needed to resolve a concern; avoid broad repeat testing. Finish with concise evidence, checked invariants and honest residual limits."
+
+---
+
+▣ DCP | -62.8K removed, +3.1K summary
+
+│⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿███████████████│
+▣ Compression #1 -62.8K removed, +3.1K summary
+→ Topic: Read-only security mapping
+→ Items: 10 messages and 13 tools compressed
