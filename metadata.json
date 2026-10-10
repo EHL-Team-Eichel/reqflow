@@ -1,0 +1,29 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4M1T831VZ8725BZ3HABYHVT",
+  "strategy": "manual-commit",
+  "branch": "integrate/2026-10-11",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "packages/core/src/audit.ts",
+    "packages/core/src/lineage.test.ts",
+    "packages/core/src/pipeline.ts",
+    "packages/core/src/workflow.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 40,
+    "cache_creation_tokens": 35763,
+    "cache_read_tokens": 2281344,
+    "output_tokens": 14979,
+    "api_call_count": 20
+  }
+}
