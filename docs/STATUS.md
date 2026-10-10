@@ -226,6 +226,16 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 - 2026-10-11: Implemented Model Switcher and Models 1-10 (2025 330i xDrive, M4 GT3 EVO G82, ZACOE M2 Widebody, SEMA M2 Widebody, Vorsteiner M2 Project, Vorsteiner M2 VRS, ADRO M2, M140i, M2 CS, 750Li xDrive). Dynamic powertrain switching (Gasoline, Hybrid, Electric, H2), model-specific aero parts (GT wing, front splitter, canards, widebody flares, rear diffuser, roll cage, hood vents, exhaust, fuel system, H2 storage), and Settings model switcher navigation.
 
+- 2026-10-11: Added separate accelerator and brake pedals in the driver's footwell,
+  with support arms and grip ribs, plus paired friction pads around all four brake discs.
+  All three parts are selectable and classified in English/German; their labels anchor
+  to the pedal faces and a front-wheel pad. Base sketch has 71 selectable parts.
+  Typecheck, production build, eight pedal/pad regressions and the synthetic Electron
+  selection/render probe pass (side/front, light/dark; five screenshots reviewed).
+  Initial full suite passed 446 tests; latest concurrent catalog changes yielded 493 passes
+  and two unrelated engine-classification/catalog-count failures. Shared smoke produced
+  32 screenshots and retains its existing 12 menu-marker assertion failures.
+
 - 2026-10-11: Claimed pedal/brake-pad addition: model the driver accelerator and brake
   pedal, fit paired friction pads around each disc, expose each in the existing parts menus,
   preserve concurrent model-switcher work, verify and push the focused slice.

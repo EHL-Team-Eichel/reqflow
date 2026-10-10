@@ -36,6 +36,7 @@ describe("driver pedals and brake pads", () => {
       expect(bounds.min.y).toBeGreaterThan(floor.max.y);
       expect(bounds.max.y).toBeLessThan(dash.min.y);
       expect(car.anchors.has(p.partId!)).toBe(true);
+      expect(bounds.containsPoint(car.anchors.get(p.partId!)!)).toBe(true);
       expect(
         car.pieces.filter(
           (piece) => piece.partId === p.partId && piece.mesh.userData.pedalComponent === "grip",
@@ -73,6 +74,8 @@ describe("driver pedals and brake pads", () => {
       }
     }
     expect(car.anchors.has("brake_pads")).toBe(true);
+    const anchor = car.anchors.get("brake_pads")!;
+    expect(pads.some((p) => p.mesh.position.distanceTo(anchor) < 0.02)).toBe(true);
   });
 
   it.each([

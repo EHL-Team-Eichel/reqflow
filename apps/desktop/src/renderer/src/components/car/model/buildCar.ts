@@ -980,6 +980,9 @@ function mergeChildren(group: THREE.Group): THREE.BufferGeometry {
 const ANCHOR_OVERRIDES: Record<string, [number, number, number]> = {
   wheels: [G60.frontAxleX, G60.tyreRadius, -1.0],
   brakes: [G60.rearAxleX - 0.12, G60.tyreRadius + 0.1, -0.95],
+  brake_pads: [G60.frontAxleX - 0.13, G60.tyreRadius + 0.1, -G60.track / 2 - 0.019],
+  accelerator_pedal: [0.655, 0.415, DRIVER_Z + 0.125],
+  brake_pedal: [0.655, 0.455, DRIVER_Z - 0.065],
   suspension: [G60.frontAxleX, 0.72, -0.62],
   front_doors: [0.35, 0.7, -0.97],
   rear_doors: [-0.75, 0.7, -0.97],
