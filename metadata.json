@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4KZ7R9SQGQYZRTFD6YW6Y72",
   "strategy": "manual-commit",
   "branch": "ws7-mastra-splitter",
-  "checkpoints_count": 2,
+  "checkpoints_count": 3,
   "files_touched": [
     "apps/desktop/src/main/handlers.ts",
     "apps/desktop/src/main/index.ts",
@@ -41,6 +41,13 @@
       "compact_transcript": "/1/transcript.jsonl",
       "content_hash": "/1/content_hash.txt",
       "prompt": "/1/prompt.txt"
+    },
+    {
+      "metadata": "/2/metadata.json",
+      "transcript": "/2/full.jsonl",
+      "compact_transcript": "/2/transcript.jsonl",
+      "content_hash": "/2/content_hash.txt",
+      "prompt": "/2/prompt.txt"
     }
   ],
   "token_usage": {
