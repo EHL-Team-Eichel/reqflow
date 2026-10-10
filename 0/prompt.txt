@@ -1,0 +1,94 @@
+dont worry about what i added
+
+---
+
+<task-notification>
+<task-id>bn9kwvpid</task-id>
+<tool-use-id>toolu_019R16oxsGqCDnnQzNmgzDw5</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-johannesnirschl-Documents-temporary-EHL/40d2eb91-dde3-4e39-8ba4-6686a20b47a7/tasks/bn9kwvpid.output</output-file>
+<status>completed</status>
+<summary>Background command "Push to GitHub and verify checkpoint refs on remote" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+make it public
+
+---
+
+this is the prompt i have constructed for future agents to work on the project. make changes so it fits what you have built and give me a improved version:  
+
+<pasted_content id="a68a">
+Prompt:
+
+You are a part of a team of AI agents that are "teammembers" of a team of 3 humans at the Grand Finale Hackathon of the European Hackathon League.
+Your tasks include:
+
+* Research
+* UI/UX design
+* General frontend development
+* General Backend development
+* etc.
+
+Your capabilities include:
+
+* All the capabilities previously configured for you
+* Access to opencode, antigravity cli, claude code and codex (availability might differ so look which services you can find)
+
+Other Information:
+
+* We are using Entire in our Github Repo
+* All of the code is located at the github Organization https://github.com/EHL-Team-Eichel Make sure to use the preexisting github repos to keep the work organized, while keeping commit messages precise and short. Have a high frequency of commits rather than waiting too long to commit and push.
+* Update the file containing the project information for the next agent
+
+
+You are part of the Hackathon until I tell you that the Hackathon has concluded.
+</pasted_content id="a68a">
+
+---
+
+Now start building the actual app. This is the structure (I have included a reference screenshot):
+Dataflow page:
+Include Buildingsblocks you can draw on the workplane to result in a setup like n8n. These are the buildingsblocks while there is a option for each building to have different parameters as input, aswell as a option to expand the buildingblock to open a internal workplace where you can build a dataflow with other buildingblocks. These are the initial buildblocks:
+
+* custom: just the internal workplace, no param
+* Raw: just option to connect a database or upload excel; one exit with a unified stream of data.
+* Research: include internal workplace and parameters; one exit with a steam of data in the same format as raw
+* Ai Filter: Block with param; internal workplane
+* Ai Splitter: One Input; multiple output; with param
+* HIL: One input one ouput with a icon looking like a capacitor schematic; with param
+* Add to Car: Input with different rankings; parameter
+
+just use placeholder parameters and keep all workplane empty. Just concentrate on the structur of the app
+Car page:
+as a placeholder just have a icon of a car:
+Settings Page:
+Give the user a list of different settings to just configure the app, configure global parameters and collaborate together with other users
+
+---
+
+<task-notification>
+<task-id>bt5ubjd7w</task-id>
+<tool-use-id>toolu_01PrChdWGG68wJPtbL2FZrdR</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-johannesnirschl-Documents-temporary-EHL/40d2eb91-dde3-4e39-8ba4-6686a20b47a7/tasks/bt5ubjd7w.output</output-file>
+<status>completed</status>
+<summary>Background command "Delegate the Settings page UI to agy" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b64dnjwit</task-id>
+<tool-use-id>toolu_01K8Y5NhX72R4GBMaLEGjLVU</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-johannesnirschl-Documents-temporary-EHL/40d2eb91-dde3-4e39-8ba4-6686a20b47a7/tasks/b64dnjwit.output</output-file>
+<status>completed</status>
+<summary>Background command "Delegate the Data Flow editor UI to agy" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+use the colorway of bmw m, but first tell me how i can test the app
+
+---
+
+so where do i need to run npm run to try the app
