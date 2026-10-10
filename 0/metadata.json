@@ -1,0 +1,71 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4KN1QKCY6H8CHNEMPHPD72C",
+  "session_id": "40d2eb91-dde3-4e39-8ba4-6686a20b47a7",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-10T19:36:14.526859Z",
+  "branch": "ws2-workflow-templates",
+  "checkpoints_count": 5,
+  "save_step_count": 1,
+  "files_touched": [
+    "apps/desktop/src/renderer/src/components/dataflow/run-store.test.ts",
+    "apps/desktop/src/renderer/src/components/dataflow/run-store.ts",
+    "apps/desktop/src/renderer/src/components/dataflow/store.test.ts",
+    "apps/desktop/src/renderer/src/components/dataflow/store.ts"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-opus-5-5",
+  "turn_id": "61939d01b084",
+  "checkpoint_transcript_start": 4239,
+  "transcript_lines_at_start": 4239,
+  "compact_transcript_start": 618,
+  "token_usage": {
+    "input_tokens": 130,
+    "cache_creation_tokens": 368952,
+    "cache_read_tokens": 21734949,
+    "output_tokens": 60250,
+    "api_call_count": 66
+  },
+  "session_metrics": {
+    "turn_count": 18
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-10T19:36:14.040834Z",
+    "agent_lines": 25,
+    "agent_removed": 0,
+    "human_added": 111,
+    "human_modified": 4,
+    "human_removed": 0,
+    "total_committed": 138,
+    "total_lines_changed": 140,
+    "agent_percentage": 17.857142857142858,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 1204,
+      "user_lines_removed": 34,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "apps/desktop/src/renderer/src/components/dataflow/RunControls.tsx": 130,
+        "apps/desktop/src/renderer/src/components/dataflow/WorkflowSidebar.tsx": 92,
+        "apps/desktop/src/renderer/src/components/dataflow/run-store.test.ts": 373,
+        "apps/desktop/src/renderer/src/components/dataflow/run-store.ts": 167,
+        "apps/desktop/src/renderer/src/components/dataflow/store.test.ts": 62,
+        "apps/desktop/src/renderer/src/components/dataflow/store.ts": 19,
+        "apps/desktop/src/renderer/src/components/dataflow/templates.test.ts": 109,
+        "apps/desktop/src/renderer/src/components/dataflow/templates.ts": 89,
+        "apps/desktop/src/renderer/src/pages/DataflowPage.tsx": 17,
+        "docs/STATUS.md": 146
+      },
+      "user_removed_per_file": {
+        "apps/desktop/src/renderer/src/components/dataflow/store.test.ts": 1,
+        "apps/desktop/src/renderer/src/components/dataflow/store.ts": 1,
+        "apps/desktop/src/renderer/src/pages/DataflowPage.tsx": 14,
+        "docs/STATUS.md": 18
+      }
+    }
+  ]
+}
