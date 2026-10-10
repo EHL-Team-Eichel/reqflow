@@ -240,6 +240,8 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
   retains the same 12 documented stale marker/menu assertions (32 screenshots). Final checks
   run in an isolated checkout because other sessions are updating this branch concurrently.
 
+- 2026-10-11: Implemented BMW models 51-60 (2013 Vorsteiner E92 GTRS3 Widebody, 2018 M2 Special Edition Asphalt 8, 2008 M3 Coupe E92, 2010 M3 E92, 2006 Custom Z4 M Coupe E86, 2018 M6 GT3 F13, 2018 M4 Convertible F83, 2013 E92 M3 LB-Works Ver.2, 2017 Pandem E92 M3 GT Wing, 2018 M4 Coupe F82 LCI). Added M6 GT3 endurance cockpit aero, F83 convertible hardtop kinematics and E92 widebody aero.
+
 - 2026-10-11: Implemented BMW models 41-50 (2021 430i xDrive Coupé G22, 2022 M440i xDrive Gran Coupé G26, 2019 X5 xDrive30d G05, 2005 M3 E46, 2010 X6 M E71, 2016 Duke Dynamics E92 M3 Widebody, 2018 DTM FiberWerkz E46 M3 Widebody, 2003 M3 CSL E46, 2015 Pandem E46 M3 Duckbill, 2014 M2 Motoring E46 M3). Added E46 CSL carbon induction ducktail, DTM widebody kits and M Gran Coupé aero.
 
 - 2026-10-11: Implemented BMW models 31-40 (2014 LB★WORKS BMW 4 Series Body Kit F82, 2020 X1 xDrive 18d, 2019 X7 xDrive40i, 2020 X6 xDrive40i, 2019 X2 xDrive20d M Sport X, 2019 X4 xDrive20d, 2022 X3 xDrive 30i, 2018 X3 G01 Model M, 2018 3D Design i8 I12, 2015 Energy Motor Sport EVO i8 Widebody). Added LB-Works riveted overfenders, SAV roof rail packages, and hybrid futuristic aero kits.
