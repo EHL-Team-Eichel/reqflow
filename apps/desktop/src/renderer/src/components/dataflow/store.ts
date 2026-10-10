@@ -13,6 +13,7 @@ import {
   renameBlock as renameInGraph,
   setBlockParams,
   updateGraphAt,
+  walkBlocks,
   withSplitterWorkplaces,
   type BlockParams,
   type Connection,
@@ -61,6 +62,8 @@ export interface DataflowState {
   notice: Notice | null;
   /** The HIL review report that is open, if any (block id + the workplace it sits on). */
   report: { blockId: string; path: string[] } | null;
+  /** The Add to Car block whose thought process is open, if any. */
+  reasoning: { blockId: string } | null;
 
   /** Adds a block to the open workplace, selects it and returns its id. */
   addBlock(kind: PaletteBlockKind, position: XY): string;
@@ -81,6 +84,9 @@ export interface DataflowState {
   /** Opens the review report of a block on the open workplace. */
   openReport(blockId: string): void;
   closeReport(): void;
+  /** Opens the thought process of an Add to Car block (anywhere in the workflow). */
+  openReasoning(blockId: string): void;
+  closeReasoning(): void;
   /** Opens the workplace at `path` and selects the block there (closes the report). */
   revealBlock(path: string[], blockId: string): void;
   notify(tone: Notice["tone"], message: string): void;
@@ -162,6 +168,7 @@ export function createDataflowStore(initial: WorkflowGraph = emptyGraph()) {
       measured: {},
       notice: null,
       report: null,
+      reasoning: null,
 
       loadTemplate(template, beforeReplace) {
         try {
@@ -178,6 +185,7 @@ export function createDataflowStore(initial: WorkflowGraph = emptyGraph()) {
             selectedEdgeIds: [],
             measured: {},
             report: null,
+            reasoning: null,
           });
           get().notify(
             "info",
@@ -324,6 +332,19 @@ export function createDataflowStore(initial: WorkflowGraph = emptyGraph()) {
         set({ report: null });
       },
 
+      openReasoning(blockId) {
+        const found = [...walkBlocks(get().root)].find(({ block }) => block.id === blockId);
+        if (found?.block.kind !== "add_to_car") {
+          get().notify("error", `"${found?.block.label ?? blockId}" has no thought process.`);
+          return;
+        }
+        set({ reasoning: { blockId } });
+      },
+
+      closeReasoning() {
+        set({ reasoning: null });
+      },
+
       revealBlock(path, blockId) {
         try {
           if (!graphAt(get().root, path).blocks.some((b) => b.id === blockId)) {
@@ -333,7 +354,13 @@ export function createDataflowStore(initial: WorkflowGraph = emptyGraph()) {
           get().notify("error", message(err));
           return;
         }
-        set({ path: [...path], selectedBlockIds: [blockId], selectedEdgeIds: [], report: null });
+        set({
+          path: [...path],
+          selectedBlockIds: [blockId],
+          selectedEdgeIds: [],
+          report: null,
+          reasoning: null,
+        });
       },
 
       notify(tone, text) {

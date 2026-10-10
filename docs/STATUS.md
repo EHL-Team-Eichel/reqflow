@@ -366,7 +366,7 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 ## WS7 — AI blocks: AI Filter, AI Splitter, Add to Car
 
-**Status:** in progress (Add to Car and AI Splitter done; AI Filter open) · **Owner:** Claude Code (Add to Car), OpenCode (AI Splitter) · **Branch:** `main`, `ws7-ai-splitter`
+**Status:** in progress (Add to Car agents and AI Splitter done; AI Filter open) · **Owner:** Claude Code (Add to Car), OpenCode (AI Splitter) · **Branch:** `ws7-add-to-car-agents` (Add to Car agents, not merged yet), `main`
 **Depends on:** nothing for tasks 1–2; WS8 for the splitter's priority mode.
 
 **Tasks**
@@ -380,13 +380,32 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - [ ] AI Splitter: replace provisional missing-factor judgement with WS8's scorer when available.
 - [x] Add to Car: cluster and derive requirements (IDs via `formatRequirementId`, targets, evidence level
       A–D, Kano class, assumptions, uncertainties, conflicts), priority from the input port, hand them to `ctx.car.add`.
+- [x] Add to Car as an agent system (branch `ws7-add-to-car-agents`): inputs 1. Priority … n. Priority and
+      context inputs (Auto / Sales volumes); analysts → synthesizer → architect ⇄ critic → judge; confidence
+      score per requirement; thought-process view (block, inspector, Car → Why?); API setups per agent role
+      in Settings (Claude, OpenAI, Gemini, OpenAI-compatible, TypeSafe Jev, offline mock); `npm run eval:f70`.
+- [ ] Run `npm run eval:f70` with a real API setup (needs a key in Settings → AI) and tune prompts and
+      batch sizes on the numbers it prints; then merge `ws7-add-to-car-agents` into `main`.
+- [ ] TypeSafe Jev: built from its public docs and tested with recorded answers only (no access key yet);
+      check one live call.
 - [ ] `answerChallenge(...)` for the Car tab's challenge flow.
 - [ ] End-to-end offline test: fixture records → AI Filter → AI Splitter → Add to Car with `mock`.
-- [ ] Add to Car: optional LLM wording pass for titles/descriptions (keep the deterministic draft as fallback).
-- [ ] Add to Car: sales-volume weighting of themes once WS8's `customer_impact` factor exists.
 
 **Log**
 
+- 2026-10-11: **Add to Car rebuilt as an agent system** on `ws7-add-to-car-agents` (the rule-based
+  derive/splitter/taxonomy are gone). Contracts: `Requirement.confidence` + `inputRank`,
+  `ReasoningTrace` (`core/reasoning.ts`), `Settings.agents` (API setups + role assignment),
+  `DecisionClient`/`AgentServices` on the block context, IPC `reasoning.*` and `settings.testSetup`.
+  Add to Car params are now `priorities`, `contexts`, `maxRequirements`, `vehicle`, `market`; older
+  flows migrate on load. Providers in `packages/llm` (Claude with adaptive thinking — the 5.x models
+  reject `temperature` while thinking, so the old client's `temperature: 0.2` would have failed —,
+  Chat Completions, Jev, LLM judge; retries, limiter, provider errors never echoed). Traces stored in
+  `reasoning_traces`. Verified: `npm run check` (338 tests) and `npm run smoke` (37 screenshots,
+  incl. a run started from the editor through a HIL review into the block's thought process).
+  `npm run eval:f70` ran offline on BMW's F70 files (2,128 comments in 58 batches, 100 % verbatim
+  excerpts; numbers only, details in `data/raw/eval/`). **Not yet done:** a run with a real model
+  (no API key on this machine) and a live Jev call.
 - 2026-10-11: Closed the two Add to Car gaps in the shared architecture: `CarService` in
   `packages/engine/src/block.ts` now takes `add(requirements, evidence)` and an optional
   `nextSeq(scope)`; the desktop handlers store sources, cited records, findings and themes with the

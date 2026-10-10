@@ -15,6 +15,7 @@ function client(overrides: Partial<SettingsClient["settings"]> = {}): SettingsCl
       save: notBuilt,
       secrets: notBuilt,
       setSecret: notBuilt,
+      testSetup: notBuilt,
       ...overrides,
     },
   };

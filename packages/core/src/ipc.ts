@@ -13,6 +13,7 @@ import type { RequirementCategory } from "./category";
 import type { Finding } from "./finding";
 import type { PipelineData } from "./pipeline";
 import type { DecisionStatus, EvidenceLevel, Requirement } from "./requirement";
+import type { ReasoningTrace } from "./reasoning";
 import type { Priority } from "./scoring";
 import type { ProductScope } from "./scope";
 import type { Settings } from "./settings";
@@ -80,12 +81,27 @@ export interface AuditFilter {
 
 export type ExportFormat = "json" | "csv" | "md";
 
-/** API keys never cross into the renderer; it only learns whether one is configured. */
-export type SecretName = "anthropic_api_key" | "tavily_api_key";
-export type SecretStatus = Record<
-  SecretName,
-  { configured: boolean; source: "keychain" | "env" | null }
->;
+/**
+ * API keys never cross into the renderer; it only learns whether one is configured.
+ * `setup:<id>` is the key of an API setup (Settings → AI → API setups).
+ */
+export type FixedSecretName = "anthropic_api_key" | "tavily_api_key";
+export type SetupSecretName = `setup:${string}`;
+export type SecretName = FixedSecretName | SetupSecretName;
+export const SETUP_SECRET_PATTERN = /^setup:[a-z0-9][a-z0-9-]{0,39}$/;
+export interface SecretState {
+  configured: boolean;
+  source: "keychain" | "env" | null;
+}
+export type SecretStatus = Record<FixedSecretName, SecretState> & {
+  /** Per API setup id. Setups without a stored key are listed as not configured. */
+  setups: Record<string, SecretState>;
+};
+
+/** `settings.testSetup`: one tiny request through an API setup, to check the key and model. */
+export type SetupTestResult =
+  | { ok: true; model: string; ms: number; message: string }
+  | { ok: false; ms: number; message: string };
 
 export interface ReqflowApi {
   app: { info(): Promise<AppInfo> };
@@ -133,6 +149,16 @@ export interface ReqflowApi {
     secrets(): Promise<SecretStatus>;
     /** Stores the key encrypted with the OS keychain (Electron safeStorage); null deletes it. */
     setSecret(name: SecretName, value: string | null): Promise<SecretStatus>;
+    /** Sends one tiny request through a saved API setup. Never throws for API errors. */
+    testSetup(setupId: string): Promise<SetupTestResult>;
+  };
+  /** The Add to Car agents' thought process (see reasoning.ts). null = no agent run recorded. */
+  reasoning: {
+    forRun(runId: string, blockId: string): Promise<ReasoningTrace | null>;
+    /** The latest run of this workflow in which the block ran its agents. */
+    latest(workflowId: string, blockId: string): Promise<ReasoningTrace | null>;
+    /** The trace that proposed this requirement (older requirements have none). */
+    forRequirement(requirementId: string): Promise<ReasoningTrace | null>;
   };
   exports: {
     /** Opens the native save dialog and writes the requirement list. null = cancelled. */
@@ -159,7 +185,8 @@ export const IPC_INVOKE_METHODS = {
   runs: ["start", "get", "list", "blockOutput", "resume", "cancel"],
   requirements: ["list", "get", "edit", "decide", "reset"],
   audit: ["list"],
-  settings: ["get", "save", "secrets", "setSecret"],
+  settings: ["get", "save", "secrets", "setSecret", "testSetup"],
+  reasoning: ["forRun", "latest", "forRequirement"],
   exports: ["requirements"],
 } as const satisfies { [N in keyof ReqflowApi]: readonly InvokeKeys<ReqflowApi[N]>[] };
 

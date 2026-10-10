@@ -1,11 +1,14 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import type { SecretName, SecretStatus } from "@reqflow/core/ipc";
+import type { FixedSecretName, SecretName, SecretStatus } from "@reqflow/core/ipc";
 
-const ENV_VAR_MAP: Record<SecretName, string> = {
+const ENV_VAR_MAP: Record<FixedSecretName, string> = {
   anthropic_api_key: "ANTHROPIC_API_KEY",
   tavily_api_key: "TAVILY_API_KEY",
 };
+const FIXED: FixedSecretName[] = ["anthropic_api_key", "tavily_api_key"];
+const envVar = (name: SecretName): string | undefined =>
+  (ENV_VAR_MAP as Record<string, string | undefined>)[name];
 
 async function getSafeStorage() {
   try {
@@ -53,9 +56,9 @@ export class SecretsStore {
       }
     }
 
-    const envVar = ENV_VAR_MAP[name];
-    if (envVar && process.env[envVar]) {
-      return process.env[envVar]!;
+    const variable = envVar(name);
+    if (variable && process.env[variable]) {
+      return process.env[variable]!;
     }
 
     return null;
@@ -82,19 +85,23 @@ export class SecretsStore {
     const result: SecretStatus = {
       anthropic_api_key: { configured: false, source: null },
       tavily_api_key: { configured: false, source: null },
+      setups: {},
     };
 
-    const keys: SecretName[] = ["anthropic_api_key", "tavily_api_key"];
-    for (const key of keys) {
+    for (const key of FIXED) {
       if (all[key]) {
         result[key] = { configured: true, source: "keychain" };
       } else {
-        const envVar = ENV_VAR_MAP[key];
-        if (envVar && process.env[envVar]) {
-          result[key] = { configured: true, source: "env" };
-        } else {
-          result[key] = { configured: false, source: null };
-        }
+        const variable = ENV_VAR_MAP[key];
+        result[key] = process.env[variable]
+          ? { configured: true, source: "env" }
+          : { configured: false, source: null };
+      }
+    }
+    // API setup keys live only in the keychain; setups without a key are simply absent.
+    for (const [key, value] of Object.entries(all)) {
+      if (key.startsWith("setup:") && value) {
+        result.setups[key.slice("setup:".length)] = { configured: true, source: "keychain" };
       }
     }
 

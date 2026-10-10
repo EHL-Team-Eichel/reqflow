@@ -913,7 +913,13 @@ export const fixtureWorkflow: Workflow = withSplitterWorkplaces<Workflow>({
       kind: "add_to_car",
       label: "Add to Car",
       position: { x: 1280, y: 300 },
-      params: { rankings: RANKS, vehicle: "global", market: "global", mergeDuplicates: true },
+      params: {
+        priorities: RANKS.length,
+        contexts: [],
+        maxRequirements: 20,
+        vehicle: "global",
+        market: "global",
+      },
     },
   ],
   edges: [

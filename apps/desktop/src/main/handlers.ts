@@ -27,7 +27,12 @@ import {
   type LlmClient,
   type WebSearch,
 } from "@reqflow/core";
-import type { AppInfo, ReqflowHandlers, SecretName } from "@reqflow/core/ipc";
+import {
+  SETUP_SECRET_PATTERN,
+  type AppInfo,
+  type ReqflowHandlers,
+  type SetupSecretName,
+} from "@reqflow/core/ipc";
 import {
   createDatabase,
   formatRequirementsCsv,
@@ -35,12 +40,14 @@ import {
   formatRequirementsMarkdown,
   removeDemoData,
   SqliteAuditLogger,
+  SqliteReasoningRepository,
   SqliteRequirementRepository,
   SqliteRunRepository,
   type LocalFileStore,
 } from "@reqflow/db";
 import { BlockRegistry, WorkflowExecutor } from "@reqflow/engine";
 import { createLlmClient } from "@reqflow/llm";
+import { createAgentServices, testSetup, type AgentDeps } from "./agents";
 import { ReqflowError } from "./dispatch";
 import { previewBlock } from "./preview";
 import { SecretsStore } from "./secrets";
@@ -68,12 +75,28 @@ const AuditFilterSchema = z
   })
   .optional();
 
-const SecretNameSchema = z.enum(["anthropic_api_key", "tavily_api_key"]);
+const SecretNameSchema = z.union([
+  z.enum(["anthropic_api_key", "tavily_api_key"]),
+  z.string().regex(SETUP_SECRET_PATTERN, "Unknown secret name") as z.ZodType<SetupSecretName>,
+]);
 
 const ExportRequirementsSchema = z.object({
   runId: z.string().optional(),
   format: z.enum(["json", "csv", "md"]),
 });
+
+const RunIdSchema = z.string().startsWith("run_");
+const WorkflowIdSchema = z.string().startsWith("wf_");
+const NonEmptySchema = z.string().min(1);
+
+/** Parses an IPC argument; bad input → ReqflowError("invalid_input") naming the argument. */
+function parseArg<T>(schema: z.ZodType<T>, value: unknown, name: string): T {
+  const parsed = schema.safeParse(value);
+  if (!parsed.success) {
+    throw new ReqflowError("invalid_input", `Invalid ${name}`, parsed.error.issues);
+  }
+  return parsed.data;
+}
 
 async function showElectronSaveDialog(opts: SaveDialogOptions): Promise<SaveDialogReturnValue> {
   try {
@@ -100,6 +123,8 @@ export interface HandlerDeps {
   saveDialog?: (opts: SaveDialogOptions) => Promise<SaveDialogReturnValue>;
   pushRunUpdate?: (run: WorkflowRun) => void;
   secretsStore?: SecretsStore;
+  /** Injectable transport for API setups (tests); defaults to the global fetch. */
+  fetch?: typeof fetch;
 }
 
 export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
@@ -115,6 +140,7 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
   const auditLogger = new SqliteAuditLogger(db);
   const runRepo = new SqliteRunRepository(db);
   const reqRepo = new SqliteRequirementRepository(db);
+  const reasoningRepo = new SqliteReasoningRepository(db);
   const secretsStore = deps.secretsStore ?? new SecretsStore(dataDir);
 
   const configuredLlm = async (settings: Settings): Promise<LlmClient> => {
@@ -123,7 +149,15 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
       settings.llm.provider === "anthropic"
         ? ((await secretsStore.getSecret("anthropic_api_key")) ?? undefined)
         : undefined;
+    if (settings.llm.provider === "anthropic" && !apiKey) {
+      throw new Error("The default AI (Anthropic) has no API key. Add it in Settings → AI.");
+    }
     return createLlmClient(settings.llm, { apiKey });
+  };
+  const agentDeps: AgentDeps = {
+    defaultLlm: configuredLlm,
+    getKey: (setupId) => secretsStore.getSecret(`setup:${setupId}`),
+    fetch: deps.fetch,
   };
   const activeLlm: LlmClient = deps.llm ?? {
     generateObject: async (request) =>
@@ -138,6 +172,7 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
     registry,
     services: {
       llm: configuredLlm,
+      agents: (settings) => createAgentServices(settings, agentDeps),
       audit: auditLogger,
       files: deps.files,
       web: deps.web ?? null,
@@ -152,6 +187,9 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
         async nextSeq(scope) {
           // Counts deleted requirements too (via the audit trail): ids are never reused.
           return (await reqRepo.maxSeq(`REQ-${scope.vehicleCode}-${scope.market}-`)) + 1;
+        },
+        async saveReasoning(trace) {
+          await reasoningRepo.save(trace);
         },
       },
     },
@@ -469,6 +507,18 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
             changes.push({ path: key, before: oldSettings[key], after: saved[key] });
           }
         }
+        const oldSetups = oldSettings.agents?.setups || [];
+        const newSetups = saved.agents?.setups || [];
+        const newSetupIds = new Set(newSetups.map((s) => s.id));
+        for (const oldSetup of oldSetups) {
+          if (!newSetupIds.has(oldSetup.id)) {
+            try {
+              await secretsStore.setSecret(`setup:${oldSetup.id}` as SetupSecretName, null);
+            } catch (err) {
+              console.warn(`Failed to delete secret for removed API setup: ${err}`);
+            }
+          }
+        }
 
         if (changes.length > 0) {
           await auditLogger.record({
@@ -494,6 +544,26 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
         const value = z.string().nullable().parse(valueInput);
         await secretsStore.setSecret(name, value);
         return await secretsStore.getStatus();
+      },
+      testSetup: async (setupIdInput: unknown) => {
+        const setupId = parseArg(NonEmptySchema, setupIdInput, "setupId");
+        return await testSetup(loadSettings(dataDir), setupId, agentDeps);
+      },
+    },
+    reasoning: {
+      forRun: async (runIdInput: unknown, blockIdInput: unknown) => {
+        const runId = parseArg(RunIdSchema, runIdInput, "runId");
+        const blockId = parseArg(NonEmptySchema, blockIdInput, "blockId");
+        return await reasoningRepo.forRun(runId, blockId);
+      },
+      latest: async (workflowIdInput: unknown, blockIdInput: unknown) => {
+        const workflowId = parseArg(WorkflowIdSchema, workflowIdInput, "workflowId");
+        const blockId = parseArg(NonEmptySchema, blockIdInput, "blockId");
+        return await reasoningRepo.latest(workflowId, blockId);
+      },
+      forRequirement: async (requirementIdInput: unknown) => {
+        const reqId = parseArg(NonEmptySchema, requirementIdInput, "requirementId");
+        return await reasoningRepo.forRequirement(reqId);
       },
     },
     exports: {
