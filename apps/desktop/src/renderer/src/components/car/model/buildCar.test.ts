@@ -48,6 +48,72 @@ describe("buildCar", () => {
     }
   });
 
+  it("mounts four tyres on the arch centres, inside the body width and on the ground", () => {
+    const tyres = car.pieces.filter((p) => p.kind === "tyre");
+    expect(tyres).toHaveLength(4);
+    const mounts = new Set<string>();
+    for (const { mesh } of tyres) {
+      const { x, y, z } = mesh.position;
+      expect([G60.frontAxleX, G60.rearAxleX]).toContain(x);
+      expect(y).toBe(G60.tyreRadius);
+      expect(Math.abs(z)).toBe(G60.track / 2);
+      mounts.add(`${x}:${Math.sign(z)}`);
+      const bounds = new THREE.Box3().setFromObject(mesh);
+      expect(bounds.min.y).toBeCloseTo(0, 3);
+      expect(Math.max(Math.abs(bounds.min.z), Math.abs(bounds.max.z))).toBeLessThan(G60.width / 2);
+      expect(bounds.getSize(new THREE.Vector3()).z).toBeCloseTo(G60.tyreWidth, 2);
+      // The tyre envelope clears the arch rather than being detached beside the car.
+      expect(bounds.max.y).toBeLessThan(G60.tyreRadius + G60.archRadius);
+    }
+    expect(mounts.size).toBe(4);
+    expect(G60.frontAxleX - G60.rearAxleX).toBeCloseTo(G60.wheelbase, 5);
+  });
+
+  it("preserves both front seat assemblies, all three rear places and the LHD cockpit", () => {
+    const front = car.pieces.filter((p) => p.partId === "front_seats");
+    const rear = car.pieces.filter((p) => p.partId === "rear_seats");
+    expect(front).toHaveLength(6); // cushions, backrests and headrests
+    expect(rear).toHaveLength(9);
+    for (const z of [-0.38, 0.38])
+      expect(front.filter((p) => p.mesh.position.z === z)).toHaveLength(3);
+    for (const z of [-0.45, 0, 0.45])
+      expect(rear.filter((p) => p.mesh.position.z === z)).toHaveLength(3);
+    const driver = front.find((p) => p.mesh.userData.seatPosition === "driver")!.mesh;
+    const passenger = front.find((p) => p.mesh.userData.seatPosition === "front_passenger")!.mesh;
+    expect(driver.position.z).toBeLessThan(0);
+    expect(passenger.position.z).toBeGreaterThan(0);
+    const steering = car.pieces.find((p) => p.partId === "steering_wheel")!.mesh;
+    expect(steering.position.z).toBe(driver.position.z);
+    expect(steering.position.x).toBeGreaterThan(driver.position.x);
+    expect([...front, ...rear].every((p) => p.layer === "interior")).toBe(true);
+  });
+
+  it("draws smooth, mirrored reference strokes without long jumps across missing surfaces", () => {
+    expect(car.sketchLines).toHaveLength(10);
+    const a = new THREE.Vector3();
+    const b = new THREE.Vector3();
+    for (let i = 0; i < 5; i++) {
+      const left = car.sketchLines[i]!.getAttribute("position");
+      const right = car.sketchLines[i + 5]!.getAttribute("position");
+      expect(left.count).toBeGreaterThan(100);
+      expect(left.count).toBe(right.count);
+      for (let k = 0; k < left.count; k++) {
+        expect(left.getX(k)).toBeCloseTo(right.getX(k), 4);
+        // The independently triangulated panels can differ slightly at a seam.
+        // Keep mirrored strokes within the 3 mm surface lift used by the sketch.
+        a.fromBufferAttribute(left, k);
+        b.fromBufferAttribute(right, k);
+        b.z = -b.z;
+        expect(a.distanceTo(b)).toBeLessThan(0.003);
+      }
+      for (let k = 0; k < left.count; k += 2) {
+        a.fromBufferAttribute(left, k);
+        b.fromBufferAttribute(left, k + 1);
+        expect(a.distanceTo(b)).toBeLessThan(0.12);
+      }
+    }
+  });
+
   it("keeps the inner floor level through both wheel arches", () => {
     const grid = buildBodyGrid();
     for (let i = 0; i < STATIONS; i++) {

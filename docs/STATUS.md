@@ -193,7 +193,7 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 ## WS3 — Car tab: requirements review & audit UI
 
-**Status:** in progress (car model refinement complete; requirements review pending) · **Owner:** Codex (BMW styling and geometry fixes) · **Branch:** `codex/car-model-refinements`
+**Status:** in progress (STL-guided car model refinement complete; requirements review pending) · **Owner:** Codex (BMW styling and geometry fixes) · **Branch:** `codex/car-model-refinements`
 **Depends on:** nothing to start: build on `@reqflow/core/fixtures` (5 requirements, findings, sources,
 audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 serves them.
 
@@ -219,6 +219,18 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - [ ] Subtle blue fill on the clicked car part, with light/dark selection regressions.
 
 **Log**
+
+- 2026-10-10: Completed STL-guided sketch refinement. Traced the supplied sedan's roof,
+  bonnet, shoulders and rear deck into smooth procedural curves; fitted all four tyres,
+  arches, liners and axle components to its normalized wheel stations. Projected strokes
+  follow the panels and stop at openings. Preserved all 34 part IDs/anchors, both front
+  seats (LHD driver and passenger), three rear places, dashboard and the other interior forms.
+  Verified typecheck, full suite (269 passed, 25 skipped), smoke (PASS, 29 screenshots),
+  front/side/rear/top/interior and dark visual checks, changed-file Prettier and diff checks.
+
+- 2026-10-10: Claimed STL-guided refinement using the supplied Hot Wheels sedan: trace its
+  silhouette and body creases, fit all four tyres to the arches, preserve the 34-part catalog
+  and existing interior subforms, then verify and push the current branch.
 
 - 2026-10-10: Click-highlight slice complete: selected parts use the theme's soft-blue fill;
   deselection restores the sketch, with glass masks and interior ghosting preserved. Added 18

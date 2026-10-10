@@ -1,11 +1,13 @@
 import * as THREE from "three";
+import { BMW_REFERENCE } from "./reference";
 
 /**
  * The car body as one smooth parametric surface, cut into panels.
  *
- * Built procedurally (no downloaded model), inspired by the BMW 5 Series Sedan (G60).
+ * Built procedurally with contours traced from the supplied Hot Wheels BMW STL.
  * The nose and bonnet are shortened for the sketch: 4,730 mm overall, with the original
- * 1,900 mm width and 1,515 mm roof height. Surface shapes are drawn, not measured.
+ * 1,900 mm width and 1,515 mm roof height. The STL guides the silhouette and creases;
+ * panels and cabin components remain separate, selectable procedural forms.
  *
  * Axes: x forward (front bumper at +2.20, rear at −2.53), y up, z to the car's right; metres.
  * The surface is a tube: one cross-section ring per station along x. Each ring runs through ten
@@ -20,9 +22,9 @@ export const G60 = {
   rearX: -2.53,
   width: 1.9,
   height: 1.515,
-  wheelbase: 2.835,
-  frontAxleX: 1.42,
-  rearAxleX: -1.415,
+  wheelbase: BMW_REFERENCE.frontAxleX - BMW_REFERENCE.rearAxleX,
+  frontAxleX: BMW_REFERENCE.frontAxleX,
+  rearAxleX: BMW_REFERENCE.rearAxleX,
   track: 1.63,
   tyreRadius: 0.37,
   tyreWidth: 0.245,
@@ -67,29 +69,7 @@ const smoothstep = (a: number, b: number, x: number) => {
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 /** Side view: the top line (bumper → bonnet → windscreen → roof → rear window → boot → bumper). */
-export const topLine = profile([
-  [2.2, 0.8],
-  [2.185, 0.835],
-  [2.14, 0.87],
-  [1.96, 0.9],
-  [1.42, 0.949],
-  [1.05, 0.98],
-  [0.82, 0.995],
-  [0.55, 1.13],
-  [0.25, 1.31],
-  [0.0, 1.43],
-  [-0.3, 1.495],
-  [-0.7, 1.515],
-  [-1.1, 1.485],
-  [-1.45, 1.38],
-  [-1.75, 1.21],
-  [-1.97, 1.105],
-  [-2.2, 1.09],
-  [-2.36, 1.1],
-  [-2.46, 1.08],
-  [-2.515, 1.03],
-  [-2.53, 0.99],
-]);
+export const topLine = profile(BMW_REFERENCE.top);
 
 /** Window line (the lower edge of the side glass); rises slightly to the rear. */
 export const beltLine = profile([
@@ -114,15 +94,7 @@ export const bottomLine = profile([
   [-2.53, 0.38],
 ]);
 
-const baseHalfWidth = profile([
-  [-2.53, 0.915],
-  [-2.0, 0.935],
-  [-1.4, 0.95],
-  [0, 0.95],
-  [1.42, 0.945],
-  [1.88, 0.915],
-  [2.2, 0.88],
-]);
+const baseHalfWidth = profile(BMW_REFERENCE.halfWidth);
 
 const NOSE_START = 1.82;
 const TAIL_START = -2.2;
@@ -180,9 +152,9 @@ function section(x: number): Section {
   const half: Pt[] = [
     [0, yb],
     [0.78 * w, yb],
-    [0.965 * w, yb + 0.07],
-    [w, yb + 0.55 * (ybe - yb)],
-    [0.985 * w, ybe - 0.06],
+    [0.955 * w, yb + 0.07],
+    [0.99 * w, yb + 0.55 * (ybe - yb)],
+    [w, ybe - 0.06],
     [0.95 * w, ybe],
     [lerp(0.95 * w, wr, 0.62), ybe + 0.58 * h],
     [wr, yt - 0.045 * g - 0.012],

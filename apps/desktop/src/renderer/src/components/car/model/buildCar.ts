@@ -1,13 +1,12 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
-import { band, projectPatch, superellipse, type View } from "./decals";
+import { band, projectPatch, projectSketchLine, superellipse, type View } from "./decals";
+import { BMW_REFERENCE } from "./reference";
 import {
   bodyPanel,
   buildBodyGrid,
-  featureLine,
   G60,
   panelGeometries,
-  ringIndexOf,
   smoothPanelEdges,
   RING,
   STATIONS,
@@ -64,7 +63,7 @@ const DRIVER_Z = -0.38;
 
 export function buildCar(): CarModel {
   const root = new THREE.Group();
-  root.name = "BMW 5 Series (G60) sketch";
+  root.name = "BMW sedan sketch — Hot Wheels reference";
   const pieces: CarPiece[] = [];
 
   const add = (
@@ -135,24 +134,38 @@ export function buildCar(): CarModel {
     add(geometry, partId, (finish as PieceKind | undefined) ?? "paint", "exterior");
   }
   addBodyDetails(pieces, add);
-  const sketchLines = [
-    // Shoulder line at door-handle height, and the sill line between the wheels.
-    featureLine(grid, ringIndexOf(4), (x) => x < 1.86 && x > -2.0),
-    featureLine(grid, RING - ringIndexOf(4), (x) => x < 1.86 && x > -2.0),
-    featureLine(grid, ringIndexOf(2), (x) => x < 0.92 && x > -0.95),
-    featureLine(grid, RING - ringIndexOf(2), (x) => x < 0.92 && x > -0.95),
-    // Two bonnet creases converge towards the kidneys.
-    featureLine(grid, ringIndexOf(7), (x) => x > 0.9 && x < 2.09),
-    featureLine(grid, RING - ringIndexOf(7), (x) => x > 0.9 && x < 2.09),
-  ];
+  const bodySurfaces = pieces
+    .filter((p) => p.kind === "paint" || (p.partId === "body" && p.kind === "dark"))
+    .map((p) => p.mesh);
+  const sketchLines: THREE.BufferGeometry[] = [];
+  for (const side of SIDES) {
+    const view: View = side < 0 ? "left" : "right";
+    for (const contour of [BMW_REFERENCE.shoulder, BMW_REFERENCE.lowerDoor, BMW_REFERENCE.sill])
+      sketchLines.push(projectSketchLine(bodySurfaces, contour, view));
+    for (const contour of [BMW_REFERENCE.bonnet, BMW_REFERENCE.rearDeck])
+      sketchLines.push(
+        projectSketchLine(
+          bodySurfaces,
+          contour.map(([x, z]) => [x, side * z]),
+          "top",
+        ),
+      );
+  }
 
   // Wheel arch liners (not a part; they hide the inside of the body behind the wheels).
   for (const axle of [G60.frontAxleX, G60.rearAxleX]) {
     for (const side of SIDES) {
       add(
-        new THREE.CylinderGeometry(0.43, 0.43, 0.3, 32, 1, true, Math.PI / 2, Math.PI).rotateX(
+        new THREE.CylinderGeometry(
+          G60.archRadius,
+          G60.archRadius,
+          0.3,
+          48,
+          1,
+          true,
           Math.PI / 2,
-        ),
+          Math.PI,
+        ).rotateX(Math.PI / 2),
         null,
         "liner",
         "exterior",
@@ -204,7 +217,7 @@ export function buildCar(): CarModel {
     [0.345, -0.121],
     [0.362, -0.113],
     [0.37, -0.09],
-    [0.372, 0],
+    [G60.tyreRadius, 0],
     [0.37, 0.09],
     [0.362, 0.113],
     [0.345, 0.121],
@@ -298,10 +311,11 @@ export function buildCar(): CarModel {
   // Front seats: cushion, backrest leaning back, headrest.
   for (const side of SIDES) {
     const z = side * 0.38;
-    box("front_seats", "seat", "interior", [0.54, 0.12, 0.5], [-0.12, 0.47, z], {
+    const cushion = box("front_seats", "seat", "interior", [0.54, 0.12, 0.5], [-0.12, 0.47, z], {
       radius: 0.05,
       rotZ: 0.06,
     });
+    cushion.userData.seatPosition = side < 0 ? "driver" : "front_passenger";
     seatBack("front_seats", -0.43, 0.82, z, 0.5, 0.64, 0.24);
   }
   // Rear seats: three places on one bench.
@@ -659,8 +673,11 @@ function addBodyDetails(
       side,
     );
     // Flush door handles on both doors.
-    for (const x of [-0.1, -1.17]) {
-      put("door_handles", "chrome", sides, superellipse(x, 0.92, 0.075, 0.014, 6), 32, 2, side);
+    for (const [x, y] of [
+      [-0.1, 0.95],
+      [-1.17, 0.992],
+    ] as const) {
+      put("door_handles", "chrome", sides, superellipse(x, y, 0.075, 0.014, 6), 32, 2, side);
     }
   }
   put("front_bumper", "dark", front, superellipse(0, 0.355, 0.535, 0.06, 5), 64, 4, "front");
