@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4KMWRK0Z5V4D4GVXSB0HPP9",
   "strategy": "manual-commit",
   "branch": "ws6-research",
-  "checkpoints_count": 34,
+  "checkpoints_count": 35,
   "files_touched": [
     ".gitignore",
     ".prettierignore",
@@ -43,6 +43,7 @@
     "docs/research/settings.md",
     "docs/research/social-providers.md",
     "docs/research/verification.md",
+    "docs/research/web-providers.md",
     "docs/research/workflow.md",
     "package-lock.json",
     "package.json",
@@ -284,6 +285,13 @@
       "compact_transcript": "/25/transcript.jsonl",
       "content_hash": "/25/content_hash.txt",
       "prompt": "/25/prompt.txt"
+    },
+    {
+      "metadata": "/26/metadata.json",
+      "transcript": "/26/full.jsonl",
+      "compact_transcript": "/26/transcript.jsonl",
+      "content_hash": "/26/content_hash.txt",
+      "prompt": "/26/prompt.txt"
     }
   ],
   "token_usage": {
