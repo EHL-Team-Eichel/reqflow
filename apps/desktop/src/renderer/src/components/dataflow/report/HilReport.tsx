@@ -127,7 +127,7 @@ function ReportDialog({
 
         {/* Header */}
         <div className="flex flex-col border-b border-line p-6">
-          <div className="flex items-start justify-between">
+          <div className="flex items-start justify-between gap-4">
             <div className="flex gap-4">
               <div
                 className={cx(
@@ -141,7 +141,7 @@ function ReportDialog({
                 <h2 id="hil-report-title" className="text-xl font-semibold text-ink">
                   Review report · {block.label}
                 </h2>
-                <div className="mt-1 flex items-center gap-2 text-sm text-muted">
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted">
                   <span>Human in the loop</span>
                   <span className="w-1 h-1 rounded-full bg-line" />
                   <span>Reviewer: {reviewerLabel}</span>
@@ -153,7 +153,7 @@ function ReportDialog({
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex shrink-0 items-center gap-4">
               <Button
                 variant="secondary"
                 data-testid="report-data"
@@ -222,6 +222,8 @@ function ReportDialog({
               onReviewReady={setReviewReady}
               step={currentStep}
               isTarget={currentStep.block.id === lineage.targetId}
+              gateBlock={block}
+              lineage={lineage}
             />
           </div>
         </div>

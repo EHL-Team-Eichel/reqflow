@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import {
@@ -10,6 +10,7 @@ import {
   setBlockParams,
   type WorkflowGraph,
 } from "@reqflow/core";
+import { fixturePipelineData, fixtureScope } from "@reqflow/core/fixtures";
 import type { LocalFileStore } from "@reqflow/db";
 import type { BrowserWindow, NativeImage } from "electron";
 
@@ -506,6 +507,112 @@ export async function runSmoke(
     "report: Raw step should show its real data",
   );
   check((await count('[data-testid="data-table"] tbody tr')) === 3, "report: 3 real rows expected");
+
+  check(
+    await click('[data-testid="sample-export-toggle"]'),
+    "report: export sample panel not found",
+  );
+  await delay(300);
+  await type('input[aria-label="Review objective"]', ["Synthetic format-check review"]);
+  // Omit one of the three records, proving export selection is separate from displayed data.
+  await js(
+    `document.querySelectorAll('[data-testid="sample-item"][data-dataset="Records"]')[2]?.click()`,
+  );
+  await delay(100);
+  check(
+    (await js<number>(
+      `document.querySelectorAll('[data-testid="sample-item"][data-dataset="Records"]:checked').length`,
+    )) === 2,
+    "report: record deselection failed",
+  );
+  await shot("hil-report-export-panel");
+  check(await click('[data-testid="sample-export-pdf"]'), "report: export sample button not found");
+  const pdfDeadline = Date.now() + 20_000;
+  while (
+    !(await text('[data-testid="sample-export-result"]')).startsWith("PDF saved:") &&
+    Date.now() < pdfDeadline
+  )
+    await delay(100);
+  check(
+    (await text('[data-testid="sample-export-result"]')).startsWith("PDF saved:"),
+    "report: PDF export did not complete successfully",
+  );
+  const pdfPath = join(outDir, "synthetic-report.pdf");
+  check(existsSync(pdfPath), "report: PDF file was not created");
+  if (existsSync(pdfPath)) {
+    const pdfBuf = readFileSync(pdfPath);
+    writeFileSync(join(outDir, "synthetic-format-report.pdf"), pdfBuf);
+    check(
+      pdfBuf.toString("ascii", 0, 5) === "%PDF-",
+      "report: PDF file does not have valid header",
+    );
+  }
+  await shot("hil-report-export-saved");
+  await js('document.documentElement.dataset.theme = "dark"');
+  await shot("hil-report-export-dark");
+  await js('document.documentElement.dataset.theme = "light"');
+  wc.enableDeviceEmulation({
+    screenPosition: "desktop",
+    screenSize: { width: 1024, height: 640 },
+    viewPosition: { x: 0, y: 0 },
+    viewSize: { width: 1024, height: 640 },
+    deviceScaleFactor: 1,
+    scale: 1,
+  });
+  await delay(200);
+  check(
+    (await js<number>("window.innerWidth")) === 1024,
+    "report: minimum viewport emulation failed",
+  );
+  await shot("hil-report-export-minimum");
+  wc.disableDeviceEmulation();
+
+  // Exercise the richer brief with synthetic requirement/evidence fixtures, never app demo data.
+  const selectedData = {
+    sources: fixturePipelineData.sources.slice(0, 3),
+    records: fixturePipelineData.records.slice(0, 3),
+    findings: fixturePipelineData.findings.slice(0, 3),
+    themes: fixturePipelineData.themes.slice(0, 3),
+    requirements: fixturePipelineData.requirements.slice(0, 3),
+  };
+  const managementExport = await js<{ ok: boolean; error?: { message: string } }>(
+    `window.reqflowBridge.invoke("reqflow:exports.hilReport", ${JSON.stringify({
+      metadata: {
+        scope: fixtureScope,
+        gate: {
+          label: "Synthetic cross-functional concept review",
+          reviewer: "pm",
+          approvalsNeeded: 1,
+        },
+        currentStep: { label: "Synthetic requirement sample", id: "synthetic-gate" },
+        lineageSteps: [
+          { id: "synthetic-gate", label: "Synthetic requirement sample", kind: "hil", path: [] },
+        ],
+        lineageLinks: [],
+      },
+      selectedData,
+      fullCounts: {
+        Sources: fixturePipelineData.sources.length,
+        Records: fixturePipelineData.records.length,
+        Findings: fixturePipelineData.findings.length,
+        Themes: fixturePipelineData.themes.length,
+        Requirements: fixturePipelineData.requirements.length,
+      },
+      notes: {
+        objective: "Synthetic format validation, not product approval",
+        owner: "PM and UX reviewers",
+        nextCheckpoint: "Concept validation",
+        openQuestions: "Resolve evidence conflicts before commitment",
+      },
+    })})`,
+  );
+  check(
+    managementExport.ok,
+    `report: synthetic management export failed ${managementExport.error?.message ?? ""}`,
+  );
+  if (managementExport.ok)
+    writeFileSync(join(outDir, "synthetic-management-report.pdf"), readFileSync(pdfPath));
+
   await shot("hil-report-real");
   check(await click('[aria-label="Close report"]'), "report: no close button");
   await delay(300);

@@ -102,6 +102,12 @@ void app.whenReady().then(() => {
           : await dialog.showOpenDialog(options);
         return result.canceled ? null : (result.filePaths[0] ?? null);
       },
+      saveDialog: smokeDir
+        ? async (opts) =>
+            opts.filters?.some((filter) => filter.extensions.includes("pdf"))
+              ? { canceled: false, filePath: join(smokeDir, "synthetic-report.pdf") }
+              : { canceled: true, filePath: "" }
+        : undefined,
       appInfo: () => ({
         version: app.getVersion(),
         platform: process.platform,

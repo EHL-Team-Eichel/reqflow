@@ -1,5 +1,11 @@
 import { useState, useMemo, useEffect } from "react";
-import { type LineageStep, type WorkflowGraph, type WorkflowRun } from "@reqflow/core";
+import {
+  type LineageStep,
+  type WorkflowGraph,
+  type WorkflowRun,
+  type WorkflowBlock,
+  type Lineage,
+} from "@reqflow/core";
 import { TableIcon } from "@/components/ui/icons";
 import { TextInput } from "@/components/ui/controls";
 import { type PreviewState } from "../usePreview";
@@ -7,6 +13,7 @@ import { api } from "@/lib/api";
 import { useSettings } from "@/lib/settings";
 import { previewReportInputs, reportPreviewInputs } from "./preview";
 import { loadRunData } from "./run-data";
+import { ExportSamplePanel } from "./ExportSamplePanel";
 import {
   SourcesTable,
   RecordsTable,
@@ -22,12 +29,14 @@ interface Props {
   onReviewReady?: (ready: boolean) => void;
   step: LineageStep;
   isTarget: boolean;
+  gateBlock?: WorkflowBlock;
+  lineage?: Lineage;
 }
 
 const TABS = ["Requirements", "Themes", "Findings", "Records", "Sources"] as const;
 type Tab = (typeof TABS)[number];
 
-export function DataPanel({ root, run, step, isTarget, onReviewReady }: Props) {
+export function DataPanel({ root, run, step, isTarget, onReviewReady, gateBlock, lineage }: Props) {
   const [filter, setFilter] = useState("");
   const [activeTab, setActiveTab] = useState<Tab | null>(null);
 
@@ -156,8 +165,23 @@ export function DataPanel({ root, run, step, isTarget, onReviewReady }: Props) {
   const currentTab = activeTab || "Sources";
 
   return (
-    <div data-testid="data-panel" className="flex flex-col h-full border-l border-line bg-panel">
+    <div
+      data-testid="data-panel"
+      className="flex min-h-0 flex-col h-full border-l border-line bg-panel"
+    >
       <div className="border-b border-line p-4 text-sm font-medium text-ink">{headerLabel}</div>
+
+      {gateBlock && lineage && data && counts && (
+        <ExportSamplePanel
+          key={[step.block.id, run?.id].join("-")}
+          data={data}
+          counts={counts}
+          gateBlock={gateBlock}
+          lineage={lineage}
+          step={step}
+          run={run}
+        />
+      )}
 
       <div data-testid="data-real" className="bg-brand-soft px-4 py-2 text-xs text-brand">
         {run
@@ -168,7 +192,7 @@ export function DataPanel({ root, run, step, isTarget, onReviewReady }: Props) {
       </div>
 
       <div className="border-b border-line px-4 pt-2">
-        <div role="tablist" className="flex gap-4">
+        <div role="tablist" className="flex gap-4 overflow-x-auto">
           {TABS.map((tab) => (
             <button
               key={tab}
@@ -176,7 +200,7 @@ export function DataPanel({ root, run, step, isTarget, onReviewReady }: Props) {
               aria-selected={currentTab === tab}
               data-testid={`data-tab-${tab.toLowerCase()}`}
               className={cx(
-                "pb-2 text-sm font-medium border-b-2 transition-colors",
+                "shrink-0 pb-2 text-sm font-medium border-b-2 transition-colors",
                 currentTab === tab
                   ? "border-brand text-brand"
                   : "border-transparent text-muted hover:text-ink hover:border-line",

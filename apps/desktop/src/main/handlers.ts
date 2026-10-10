@@ -2,6 +2,7 @@ import { basename } from "node:path";
 import { writeFile } from "node:fs/promises";
 import type { SaveDialogOptions, SaveDialogReturnValue } from "electron";
 import { z } from "zod";
+import { exportHilReportPdf } from "./hil-exporter";
 import {
   allBlockImplementations,
   BMW_DEFAULT_TEMPLATE,
@@ -545,6 +546,9 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
         });
 
         return { path: res.filePath };
+      },
+      hilReport: async (reqInput: unknown) => {
+        return exportHilReportPdf(reqInput, deps.saveDialog);
       },
     },
   };
