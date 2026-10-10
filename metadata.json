@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4KMWRK0Z5V4D4GVXSB0HPP9",
   "strategy": "manual-commit",
   "branch": "ws6-research",
-  "checkpoints_count": 3,
+  "checkpoints_count": 4,
   "files_touched": [
     ".gitignore",
     ".prettierignore",
@@ -53,13 +53,20 @@
       "compact_transcript": "/1/transcript.jsonl",
       "content_hash": "/1/content_hash.txt",
       "prompt": "/1/prompt.txt"
+    },
+    {
+      "metadata": "/2/metadata.json",
+      "transcript": "/2/full.jsonl",
+      "compact_transcript": "/2/transcript.jsonl",
+      "content_hash": "/2/content_hash.txt",
+      "prompt": "/2/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 93,
-    "cache_creation_tokens": 134641,
-    "cache_read_tokens": 1267915,
-    "output_tokens": 15017,
-    "api_call_count": 31
+    "input_tokens": 129,
+    "cache_creation_tokens": 243500,
+    "cache_read_tokens": 1790494,
+    "output_tokens": 20674,
+    "api_call_count": 43
   }
 }
