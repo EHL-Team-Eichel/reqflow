@@ -19,6 +19,7 @@ const STATUS_LABELS = {
 };
 
 export function RunControls() {
+  const name = useDataflow((s) => s.name);
   const root = useDataflow((s) => s.root);
   const scope = useSettings((s) => s.settings.defaultScope);
   const run = useStore(runStore, (s) => s.run);
@@ -40,7 +41,7 @@ export function RunControls() {
         data-testid="flow-run"
         disabled={start.disabled}
         title={start.title}
-        onClick={() => void runStore.getState().start(root, scope)}
+        onClick={() => void runStore.getState().start(root, scope, name)}
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
           <path d="M8 5v14l11-7Z" />

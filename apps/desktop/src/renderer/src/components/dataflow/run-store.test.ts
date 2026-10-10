@@ -58,6 +58,42 @@ function setup() {
 }
 
 describe("Data Flow execution wiring", () => {
+  it("preserves a selected template's name when saving the workflow", async () => {
+    const { store, save } = setup();
+    await store.getState().start(graph, scope, "Feedback to requirements");
+    expect(save.mock.calls[0]![0].name).toBe("Feedback to requirements");
+  });
+
+  it("resets finished run identity before starting a different template as a new workflow", async () => {
+    const { store, save } = setup();
+    store.setState({
+      workflowId: "wf_old",
+      run: { ...run, status: "completed" },
+      error: "Old error",
+    });
+    expect(store.getState().reset()).toBe(true);
+    expect(store.getState()).toMatchObject({ workflowId: null, run: null, error: null });
+    await store.getState().start(graph, scope, "A different workflow");
+    expect(save.mock.calls[0]![0].id).toBeUndefined();
+  });
+
+  it.each(["queued", "running", "waiting_for_review"] as const)(
+    "does not reset a %s run to replace its graph",
+    (status) => {
+      const { store } = setup();
+      store.setState({ workflowId: run.workflowId, run: { ...run, status } });
+      expect(store.getState().reset()).toBe(false);
+      expect(store.getState().run?.status).toBe(status);
+    },
+  );
+
+  it("does not reset a workflow while it is being saved", () => {
+    const { store } = setup();
+    store.setState({ busy: true, workflowId: "wf_pending" });
+    expect(store.getState().reset()).toBe(false);
+    expect(store.getState().workflowId).toBe("wf_pending");
+  });
+
   it("saves the complete graph and scope before starting the persisted workflow", async () => {
     const { store, save, start } = setup();
     await store.getState().start(graph, scope);

@@ -20,10 +20,12 @@ import {
   type PaletteBlockKind,
   type WorkflowBlock,
   type WorkflowGraph,
+  type WorkflowTemplate,
 } from "@reqflow/core";
 import type { EdgeChange, NodeChange } from "@xyflow/react";
 import { useStore } from "zustand";
 import { createStore } from "zustand/vanilla";
+import { instantiateTemplate } from "./templates";
 
 /**
  * Editor state for the Data Flow page. The workflow is one tree of workplaces (`root`); `path`
@@ -50,6 +52,7 @@ export interface Crumb {
 }
 
 export interface DataflowState {
+  name: string;
   root: WorkflowGraph;
   path: string[]; // ids of blocks whose inner workplaces are open, outermost first
   selectedBlockIds: string[];
@@ -61,6 +64,7 @@ export interface DataflowState {
 
   /** Adds a block to the open workplace, selects it and returns its id. */
   addBlock(kind: PaletteBlockKind, position: XY): string;
+  loadTemplate(template: WorkflowTemplate, beforeReplace?: () => boolean): boolean;
   applyNodeChanges(changes: NodeChange[]): void;
   applyEdgeChanges(changes: EdgeChange[]): void;
   /** For React Flow's isValidConnection: same rules as connect(), without side effects. */
@@ -150,6 +154,7 @@ export function createDataflowStore(initial: WorkflowGraph = emptyGraph()) {
     };
 
     return {
+      name: "Data Flow",
       root: withSplitterWorkplaces(initial),
       path: [],
       selectedBlockIds: [],
@@ -157,6 +162,33 @@ export function createDataflowStore(initial: WorkflowGraph = emptyGraph()) {
       measured: {},
       notice: null,
       report: null,
+
+      loadTemplate(template, beforeReplace) {
+        try {
+          const root = instantiateTemplate(template, newBlockId);
+          if (beforeReplace && !beforeReplace()) {
+            get().notify("error", "Finish or cancel the current run before loading a template.");
+            return false;
+          }
+          set({
+            name: template.name.trim(),
+            root,
+            path: [],
+            selectedBlockIds: [],
+            selectedEdgeIds: [],
+            measured: {},
+            report: null,
+          });
+          get().notify(
+            "info",
+            `Loaded "${template.name}". Configure the data sources, then press Start when ready.`,
+          );
+          return true;
+        } catch (err) {
+          get().notify("error", message(err));
+          return false;
+        }
+      },
 
       addBlock(kind, position) {
         const id = newBlockId(kind);

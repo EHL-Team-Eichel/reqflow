@@ -14,9 +14,10 @@ interface RunState {
   run: WorkflowRun | null;
   busy: boolean;
   error: string | null;
-  start(graph: WorkflowGraph, scope: ProductScope): Promise<void>;
+  start(graph: WorkflowGraph, scope: ProductScope, name?: string): Promise<void>;
   cancel(): Promise<void>;
   resume(runId: string, blockId: string, confirmed: boolean): Promise<void>;
+  reset(): boolean;
   subscribe(): () => void;
 }
 
@@ -44,7 +45,12 @@ export function createRunStore(api: RunApi) {
     run: null,
     busy: false,
     error: null,
-    async start(graph, scope) {
+    reset() {
+      if (get().busy || active(get().run)) return false;
+      set({ workflowId: null, run: null, error: null });
+      return true;
+    },
+    async start(graph, scope, name = "Data Flow") {
       if (get().busy || active(get().run)) return;
       set({ busy: true, error: null });
       try {
@@ -57,7 +63,7 @@ export function createRunStore(api: RunApi) {
         const saved = await api.workflows.save({
           ...snapshot,
           scope: structuredClone(scope),
-          name: "Data Flow",
+          name,
           ...(get().workflowId ? { id: get().workflowId! } : {}),
         });
         set({ workflowId: saved.id, run: null });
