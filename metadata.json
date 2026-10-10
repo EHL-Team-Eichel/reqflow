@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4M1H5YN6JT6DXGYH6HXSTQN",
+  "strategy": "manual-commit",
+  "branch": "feature/hil-sample-pdf-report",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "packages/core/src/api.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 1542,
+    "cache_creation_tokens": 2269230,
+    "cache_read_tokens": 272736204,
+    "output_tokens": 1266977,
+    "api_call_count": 771
+  }
+}
