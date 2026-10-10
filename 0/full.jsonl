@@ -1,0 +1,5452 @@
+{
+  "info": {
+    "id": "ses_ed8595a0cffd9xF1vN22lOEtJp",
+    "projectID": "16c92c67b1a0f26ead3261533836e4e3202a6d01",
+    "agent": "build",
+    "model": {
+      "id": "gpt-6.1-sol",
+      "providerID": "openai",
+      "variant": "medium"
+    },
+    "cost": 0.46831530000000016,
+    "tokens": {
+      "input": 699,
+      "output": 8589,
+      "reasoning": 1908,
+      "cache": {
+        "read": 2134703,
+        "write": 59862
+      }
+    },
+    "outcome": "succeeded",
+    "time": {
+      "created": 1791666595318,
+      "updated": 1791668852572,
+      "idle": 1791667038872
+    },
+    "title": "[redacted:session-title:ses_ed8595a0cffd9xF1vN22lOEtJp]",
+    "permissions": [
+      {
+        "action": "browser",
+        "resource": "*",
+        "effect": "allow"
+      }
+    ],
+    "location": {
+      "directory": "/[redacted:session-directory:ses_ed8595a0cffd9xF1vN22lOEtJp]"
+    }
+  },
+  "messages": [
+    {
+      "id": "msg_127a6a5f3001xqvhXo0X0aFp5L",
+      "metadata": {
+        "redacted": "message-metadata:msg_127a6a5f3001xqvhXo0X0aFp5L"
+      },
+      "time": {
+        "created": 1791666595362
+      },
+      "text": "[redacted:text:msg_127a6a5f3001xqvhXo0X0aFp5L]",
+      "files": [],
+      "agents": [],
+      "type": "user"
+    },
+    {
+      "id": "msg_127a6a626001OwiZ5Nx1ipvfme",
+      "time": {
+        "created": 1791666595369,
+        "streamed": 1791666597693,
+        "completed": 1791666597694
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "tool",
+          "id": "call_CMwhYRowOVDXgGvUd7opukOY",
+          "name": "read",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127a6a626001OwiZ5Nx1ipvfme"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127a6a626001OwiZ5Nx1ipvfme"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127a6a626001OwiZ5Nx1ipvfme]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127a6a626001OwiZ5Nx1ipvfme"
+            }
+          },
+          "time": {
+            "created": 1791666597258,
+            "ran": 1791666597657,
+            "completed": 1791666597659
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acaa9a430ec87d1b57c026cc145933e",
+        "serviceTier": "default"
+      },
+      "cost": 0.020816,
+      "tokens": {
+        "input": 3,
+        "output": 30,
+        "reasoning": 0,
+        "cache": {
+          "read": 0,
+          "write": 8204
+        }
+      }
+    },
+    {
+      "id": "msg_127a6af43001pvCUqOp2XTSINy",
+      "time": {
+        "created": 1791666597704,
+        "streamed": 1791666600194,
+        "completed": 1791666600208
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "tool",
+          "id": "call_ecvY1dIThUno8C4Aambq3VK3",
+          "name": "glob",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:REDACTED"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:REDACTED"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:REDACTED]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:REDACTED"
+            }
+          },
+          "time": {
+            "created": 1791666600127,
+            "ran": 1791666600131,
+            "completed": 1791666600155
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_cbpgPmIAmUr3GKbwpTdFxbBV",
+          "name": "grep",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:REDACTED"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:REDACTED"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:REDACTED]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:REDACTED"
+            }
+          },
+          "time": {
+            "created": 1791666600134,
+            "ran": 1791666600140,
+            "completed": 1791666600162
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_P12tYhpF76pX0omJfpFoHBky",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:REDACTED"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:REDACTED"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:REDACTED]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:REDACTED"
+            }
+          },
+          "time": {
+            "created": 1791666600141,
+            "ran": 1791666600182,
+            "completed": 1791666600207
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acaa9a5cef487d19ff89ed19673eba4",
+        "serviceTier": "default"
+      },
+      "cost": 0.0023039000000000002,
+      "tokens": {
+        "input": 3,
+        "output": 129,
+        "reasoning": 0,
+        "cache": {
+          "read": 8204,
+          "write": 75
+        }
+      }
+    },
+    {
+      "id": "msg_127a6b9140011u7UNqzO21RGcC",
+      "time": {
+        "created": 1791666600215,
+        "streamed": 1791666602455,
+        "completed": 1791666602456
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "tool",
+          "id": "call_c0rT7dfrzqXQ02YgDVUx048X",
+          "name": "read",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127a6b9140011u7UNqzO21RGcC"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127a6b9140011u7UNqzO21RGcC"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127a6b9140011u7UNqzO21RGcC]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127a6b9140011u7UNqzO21RGcC"
+            }
+          },
+          "time": {
+            "created": 1791666602327,
+            "ran": 1791666602330,
+            "completed": 1791666602337
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_ENkXv6xGBgE160WvNDtLCMcY",
+          "name": "read",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127a6b9140011u7UNqzO21RGcC"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127a6b9140011u7UNqzO21RGcC"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127a6b9140011u7UNqzO21RGcC]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127a6b9140011u7UNqzO21RGcC"
+            }
+          },
+          "time": {
+            "created": 1791666602331,
+            "ran": 1791666602332,
+            "completed": 1791666602339
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_FhBksNZl5nMbRvAAq1E2kwsr",
+          "name": "read",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127a6b9140011u7UNqzO21RGcC"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127a6b9140011u7UNqzO21RGcC"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127a6b9140011u7UNqzO21RGcC]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127a6b9140011u7UNqzO21RGcC"
+            }
+          },
+          "time": {
+            "created": 1791666602334,
+            "ran": 1791666602367,
+            "completed": 1791666602369
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acaa9a851d087d1a30a7c1b704200b4",
+        "serviceTier": "default"
+      },
+      "cost": 0.0046964,
+      "tokens": {
+        "input": 3,
+        "output": 114,
+        "reasoning": 0,
+        "cache": {
+          "read": 8279,
+          "write": 1089
+        }
+      }
+    },
+    {
+      "id": "msg_127a6c163001OsvVOawl5FmTOA",
+      "metadata": {
+        "redacted": "message-metadata:msg_127a6c163001OsvVOawl5FmTOA"
+      },
+      "time": {
+        "created": 1791666602339
+      },
+      "text": "[redacted:synthetic:msg_127a6c163001OsvVOawl5FmTOA]",
+      "description": "[redacted:synthetic-description:msg_127a6c163001OsvVOawl5FmTOA]",
+      "type": "synthetic"
+    },
+    {
+      "id": "msg_127a6c1db001gazwl3M0Z3kGxe",
+      "time": {
+        "created": 1791666602462,
+        "streamed": 1791666607468,
+        "completed": 1791666607479
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "",
+          "state": {
+            "redacted": "reasoning-state:msg_127a6c1db001gazwl3M0Z3kGxe"
+          },
+          "time": {
+            "created": 1791666603636,
+            "completed": 1791666604841
+          }
+        },
+        {
+          "type": "text",
+          "text": "[redacted:text:msg_127a6c1db001gazwl3M0Z3kGxe]",
+          "state": {
+            "redacted": "text-state:msg_127a6c1db001gazwl3M0Z3kGxe"
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_n2mDAB76tCMGpKwdAsAtaUBJ",
+          "name": "read",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127a6c1db001gazwl3M0Z3kGxe"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127a6c1db001gazwl3M0Z3kGxe"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127a6c1db001gazwl3M0Z3kGxe]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127a6c1db001gazwl3M0Z3kGxe"
+            }
+          },
+          "time": {
+            "created": 1791666607280,
+            "ran": 1791666607282,
+            "completed": 1791666607286
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_UhwvqZy66MpoLwVbUQMk8ErI",
+          "name": "read",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127a6c1db001gazwl3M0Z3kGxe"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127a6c1db001gazwl3M0Z3kGxe"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127a6c1db001gazwl3M0Z3kGxe]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127a6c1db001gazwl3M0Z3kGxe"
+            }
+          },
+          "time": {
+            "created": 1791666607283,
+            "ran": 1791666607288,
+            "completed": 1791666607297
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_4avADhyGM7Okt5K0Y2jaCTFR",
+          "name": "grep",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127a6c1db001gazwl3M0Z3kGxe"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127a6c1db001gazwl3M0Z3kGxe"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127a6c1db001gazwl3M0Z3kGxe]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127a6c1db001gazwl3M0Z3kGxe"
+            }
+          },
+          "time": {
+            "created": 1791666607289,
+            "ran": 1791666607462,
+            "completed": 1791666607478
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_dY1LOGe1XpbIgbI5gdecljBq",
+          "name": "read",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127a6c1db001gazwl3M0Z3kGxe"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127a6c1db001gazwl3M0Z3kGxe"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127a6c1db001gazwl3M0Z3kGxe]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127a6c1db001gazwl3M0Z3kGxe"
+            }
+          },
+          "time": {
+            "created": 1791666607462,
+            "ran": 1791666607464,
+            "completed": 1791666607472
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_17WkbcevrNHspVSYppGtDo24",
+          "name": "glob",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127a6c1db001gazwl3M0Z3kGxe"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127a6c1db001gazwl3M0Z3kGxe"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127a6c1db001gazwl3M0Z3kGxe]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127a6c1db001gazwl3M0Z3kGxe"
+            }
+          },
+          "time": {
+            "created": 1791666607465,
+            "ran": 1791666607466,
+            "completed": 1791666607475
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acaa9aa937487d19d0a72b3e34c1541",
+        "serviceTier": "default"
+      },
+      "cost": 0.0159828,
+      "tokens": {
+        "input": 3,
+        "output": 274,
+        "reasoning": 11,
+        "cache": {
+          "read": 9368,
+          "write": 4876
+        }
+      }
+    },
+    {
+      "id": "msg_127a6d584001AKbTHekHh3mSJy",
+      "time": {
+        "created": 1791666607497,
+        "streamed": 1791666612523,
+        "completed": 1791666612524
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "",
+          "state": {
+            "redacted": "reasoning-state:REDACTED"
+          },
+          "time": {
+            "created": 1791666608511,
+            "completed": 1791666612331
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_IcaM3yKkZgyVrIoEffZ0JlLt",
+          "name": "read",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:REDACTED"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:REDACTED"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:REDACTED]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:REDACTED"
+            }
+          },
+          "time": {
+            "created": 1791666612333,
+            "ran": 1791666612335,
+            "completed": 1791666612349
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_XwmwOUoYlbDLG4hn6VHBmt2v",
+          "name": "read",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:REDACTED"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:REDACTED"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:REDACTED]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:REDACTED"
+            }
+          },
+          "time": {
+            "created": 1791666612336,
+            "ran": 1791666612338,
+            "completed": 1791666612346
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_2g3xmAZgVtIBZM6TOjKue2gi",
+          "name": "read",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:REDACTED"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:REDACTED"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:REDACTED]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:REDACTED"
+            }
+          },
+          "time": {
+            "created": 1791666612340,
+            "ran": 1791666612462,
+            "completed": 1791666612472
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_tMNQHmXt5huj2vktfy80jzxS",
+          "name": "glob",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:REDACTED"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:REDACTED"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:REDACTED]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:REDACTED"
+            }
+          },
+          "time": {
+            "created": 1791666612463,
+            "ran": 1791666612466,
+            "completed": 1791666612476
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acaa9af9ae487d181f342bb5fa75f10",
+        "serviceTier": "default"
+      },
+      "cost": 0.0125104,
+      "tokens": {
+        "input": 3,
+        "output": 183,
+        "reasoning": 79,
+        "cache": {
+          "read": 14244,
+          "write": 3384
+        }
+      }
+    },
+    {
+      "id": "msg_127a6e932001bq0bzcypXEDZsK",
+      "time": {
+        "created": 1791666612536,
+        "streamed": 1791666614692,
+        "completed": 1791666614694
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "",
+          "state": {
+            "redacted": "reasoning-state:msg_127a6e932001bq0bzcypXEDZsK"
+          },
+          "time": {
+            "created": 1791666613582,
+            "completed": 1791666613917
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_UyPupTNK4fZbHMqfr6RyCggQ",
+          "name": "read",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127a6e932001bq0bzcypXEDZsK"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127a6e932001bq0bzcypXEDZsK"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127a6e932001bq0bzcypXEDZsK]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127a6e932001bq0bzcypXEDZsK"
+            }
+          },
+          "time": {
+            "created": 1791666613920,
+            "ran": 1791666614593,
+            "completed": 1791666614599
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acaa9b4a50887d196079d2948419752",
+        "serviceTier": "default"
+      },
+      "cost": 0.010208799999999999,
+      "tokens": {
+        "input": 3,
+        "output": 49,
+        "reasoning": 22,
+        "cache": {
+          "read": 17628,
+          "write": 3092
+        }
+      }
+    },
+    {
+      "id": "msg_127a6f1ae001D6iW54ZgX4V9AN",
+      "time": {
+        "created": 1791666614708,
+        "streamed": 1791666617145,
+        "completed": 1791666617147
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "",
+          "state": {
+            "redacted": "reasoning-state:msg_127a6f1ae001D6iW54ZgX4V9AN"
+          },
+          "time": {
+            "created": 1791666615641,
+            "completed": 1791666617018
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_K7Af2AadfKPGVhNdD220XyBF",
+          "name": "read",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127a6f1ae001D6iW54ZgX4V9AN"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127a6f1ae001D6iW54ZgX4V9AN"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127a6f1ae001D6iW54ZgX4V9AN]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127a6f1ae001D6iW54ZgX4V9AN"
+            }
+          },
+          "time": {
+            "created": 1791666617022,
+            "ran": 1791666617027,
+            "completed": 1791666617043
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_7xOXdQJshgKxwACwLIn5SKw7",
+          "name": "read",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127a6f1ae001D6iW54ZgX4V9AN"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127a6f1ae001D6iW54ZgX4V9AN"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127a6f1ae001D6iW54ZgX4V9AN]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127a6f1ae001D6iW54ZgX4V9AN"
+            }
+          },
+          "time": {
+            "created": 1791666617029,
+            "ran": 1791666617032,
+            "completed": 1791666617046
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_XOPvRkSIwdtod93YKQFxJioQ",
+          "name": "read",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127a6f1ae001D6iW54ZgX4V9AN"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127a6f1ae001D6iW54ZgX4V9AN"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127a6f1ae001D6iW54ZgX4V9AN]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127a6f1ae001D6iW54ZgX4V9AN"
+            }
+          },
+          "time": {
+            "created": 1791666617037,
+            "ran": 1791666617132,
+            "completed": 1791666617138
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acaa9b6d17c87d19a67f22762c59c17",
+        "serviceTier": "default"
+      },
+      "cost": 0.005018,
+      "tokens": {
+        "input": 3,
+        "output": 123,
+        "reasoning": 10,
+        "cache": {
+          "read": 20720,
+          "write": 644
+        }
+      }
+    },
+    {
+      "id": "msg_127a6fb40001J2v4aQ6XIdcW0s",
+      "time": {
+        "created": 1791666617156,
+        "streamed": 1791666626863,
+        "completed": 1791666626866
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "",
+          "state": {
+            "redacted": "reasoning-state:msg_127a6fb40001J2v4aQ6XIdcW0s"
+          },
+          "time": {
+            "created": 1791666619325,
+            "completed": 1791666620701
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_AHvYVGQyWsCx7hsuzMGVjvr9",
+          "name": "patch",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127a6fb40001J2v4aQ6XIdcW0s"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127a6fb40001J2v4aQ6XIdcW0s"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127a6fb40001J2v4aQ6XIdcW0s]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127a6fb40001J2v4aQ6XIdcW0s"
+            }
+          },
+          "time": {
+            "created": 1791666620703,
+            "ran": 1791666626791,
+            "completed": 1791666626799
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acaa9b942f087d196c4ffd5ad660f52",
+        "serviceTier": "default"
+      },
+      "cost": 0.011874899999999999,
+      "tokens": {
+        "input": 3,
+        "output": 654,
+        "reasoning": 23,
+        "cache": {
+          "read": 21364,
+          "write": 1185
+        }
+      }
+    },
+    {
+      "id": "msg_127a72138001hUw7L90AR8xJy9",
+      "time": {
+        "created": 1791666626876,
+        "streamed": 1791666630296,
+        "completed": 1791666630297
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "",
+          "state": {
+            "redacted": "reasoning-state:msg_127a72138001hUw7L90AR8xJy9"
+          },
+          "time": {
+            "created": 1791666627963,
+            "completed": 1791666628493
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_jU9VLqC13DipgJ2OCAD0afpx",
+          "name": "patch",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127a72138001hUw7L90AR8xJy9"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127a72138001hUw7L90AR8xJy9"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127a72138001hUw7L90AR8xJy9]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127a72138001hUw7L90AR8xJy9"
+            }
+          },
+          "time": {
+            "created": 1791666628494,
+            "ran": 1791666630245,
+            "completed": 1791666630249
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acaa9c2fa9487d184c8022f6a17a6b2",
+        "serviceTier": "default"
+      },
+      "cost": 0.005888399999999999,
+      "tokens": {
+        "input": 3,
+        "output": 166,
+        "reasoning": 13,
+        "cache": {
+          "read": 22549,
+          "write": 735
+        }
+      }
+    },
+    {
+      "id": "msg_127a72e9d001f2xXAT9QkJhCyt",
+      "time": {
+        "created": 1791666630306,
+        "streamed": 1791666633679,
+        "completed": 1791666672522
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "tool",
+          "id": "call_SegfV2kLfflfxjgatu6Ug3AR",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127a72e9d001f2xXAT9QkJhCyt"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127a72e9d001f2xXAT9QkJhCyt"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127a72e9d001f2xXAT9QkJhCyt]"
+              },
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127a72e9d001f2xXAT9QkJhCyt]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127a72e9d001f2xXAT9QkJhCyt"
+            }
+          },
+          "time": {
+            "created": 1791666633325,
+            "ran": 1791666633337,
+            "completed": 1791666638942
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_A6rOoRQuyicq4DpENa5cundd",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127a72e9d001f2xXAT9QkJhCyt"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127a72e9d001f2xXAT9QkJhCyt"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127a72e9d001f2xXAT9QkJhCyt]"
+              },
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127a72e9d001f2xXAT9QkJhCyt]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127a72e9d001f2xXAT9QkJhCyt"
+            }
+          },
+          "time": {
+            "created": 1791666633338,
+            "ran": 1791666633357,
+            "completed": 1791666672521
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acaa9c6688c87d19b3954ce419aee2c",
+        "serviceTier": "default"
+      },
+      "cost": 0.0038219,
+      "tokens": {
+        "input": 3,
+        "output": 98,
+        "reasoning": 0,
+        "cache": {
+          "read": 23284,
+          "write": 203
+        }
+      }
+    },
+    {
+      "id": "msg_127a7d38e001EBG4V2wB17agEG",
+      "time": {
+        "created": 1791666672528,
+        "streamed": 1791666676406,
+        "completed": 1791666676407
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "",
+          "state": {
+            "redacted": "reasoning-state:msg_127a7d38e001EBG4V2wB17agEG"
+          },
+          "time": {
+            "created": 1791666673826,
+            "completed": 1791666675403
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_RSRRAceayeBNHXiyULBm9CvW",
+          "name": "patch",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127a7d38e001EBG4V2wB17agEG"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127a7d38e001EBG4V2wB17agEG"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127a7d38e001EBG4V2wB17agEG]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127a7d38e001EBG4V2wB17agEG"
+            }
+          },
+          "time": {
+            "created": 1791666675405,
+            "ran": 1791666676064,
+            "completed": 1791666676070
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acaa9f0a1e487d198c08ae620cdd41b",
+        "serviceTier": "default"
+      },
+      "cost": 0.007094700000000001,
+      "tokens": {
+        "input": 3,
+        "output": 85,
+        "reasoning": 42,
+        "cache": {
+          "read": 23487,
+          "write": 1388
+        }
+      }
+    },
+    {
+      "id": "msg_127a7e2be001SJGkeDTLUgQn3r",
+      "time": {
+        "created": 1791666676420,
+        "streamed": 1791666679177,
+        "completed": 1791666685556
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "tool",
+          "id": "call_vz04UDjAkvnXKWiHy5cJ1YqP",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127a7e2be001SJGkeDTLUgQn3r"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127a7e2be001SJGkeDTLUgQn3r"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127a7e2be001SJGkeDTLUgQn3r]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127a7e2be001SJGkeDTLUgQn3r"
+            }
+          },
+          "time": {
+            "created": 1791666679046,
+            "ran": 1791666679050,
+            "completed": 1791666685555
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_JYHSrZgtgr3PGSxt4xvfGGxv",
+          "name": "read",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127a7e2be001SJGkeDTLUgQn3r"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127a7e2be001SJGkeDTLUgQn3r"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127a7e2be001SJGkeDTLUgQn3r]"
+              },
+              {
+                "type": "file",
+                "uri": "[redacted:tool-file-uri:msg_127a7e2be001SJGkeDTLUgQn3r]",
+                "mime": "image/png",
+                "name": "[redacted:tool-file-name:msg_127a7e2be001SJGkeDTLUgQn3r]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127a7e2be001SJGkeDTLUgQn3r"
+            }
+          },
+          "time": {
+            "created": 1791666679052,
+            "ran": 1791666679055,
+            "completed": 1791666679085
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_obnVK6Az8edCv5fkt0IrOOlq",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127a7e2be001SJGkeDTLUgQn3r"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127a7e2be001SJGkeDTLUgQn3r"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127a7e2be001SJGkeDTLUgQn3r]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127a7e2be001SJGkeDTLUgQn3r"
+            }
+          },
+          "time": {
+            "created": 1791666679059,
+            "ran": 1791666679070,
+            "completed": 1791666679091
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acaa9f4870887d199052cef2b3251ec",
+        "serviceTier": "default"
+      },
+      "cost": 0.0043635,
+      "tokens": {
+        "input": 3,
+        "output": 147,
+        "reasoning": 0,
+        "cache": {
+          "read": 24875,
+          "write": 160
+        }
+      }
+    },
+    {
+      "id": "msg_127a80678001dcN8ZBDSY7Q1A1",
+      "time": {
+        "created": 1791666685563,
+        "streamed": 1791666697642,
+        "completed": 1791666697645
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "[redacted:reasoning:msg_127a80678001dcN8ZBDSY7Q1A1]",
+          "state": {
+            "redacted": "reasoning-state:msg_127a80678001dcN8ZBDSY7Q1A1"
+          },
+          "time": {
+            "created": 1791666686988,
+            "completed": 1791666694506
+          }
+        },
+        {
+          "type": "text",
+          "text": "[redacted:text:msg_127a80678001dcN8ZBDSY7Q1A1]",
+          "state": {
+            "redacted": "text-state:msg_127a80678001dcN8ZBDSY7Q1A1"
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_XKqSNBoBhjifuvY60Cvn6IE0",
+          "name": "patch",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127a80678001dcN8ZBDSY7Q1A1"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127a80678001dcN8ZBDSY7Q1A1"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127a80678001dcN8ZBDSY7Q1A1]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127a80678001dcN8ZBDSY7Q1A1"
+            }
+          },
+          "time": {
+            "created": 1791666694671,
+            "ran": 1791666697494,
+            "completed": 1791666697500
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acaa9fde62487d1bc77e29c8da074df",
+        "serviceTier": "default"
+      },
+      "cost": 0.016807,
+      "tokens": {
+        "input": 3,
+        "output": 304,
+        "reasoning": 313,
+        "cache": {
+          "read": 25035,
+          "write": 3251
+        }
+      }
+    },
+    {
+      "id": "msg_127a835b9001AhCveQOcD1E4Yo",
+      "time": {
+        "created": 1791666697664,
+        "streamed": 1791666700526,
+        "completed": 1791666700801
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "tool",
+          "id": "call_YLLsJyAUZ3fG9M26kJSZLHmp",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:REDACTED"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:REDACTED"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:REDACTED]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:REDACTED"
+            }
+          },
+          "time": {
+            "created": 1791666700407,
+            "ran": 1791666700412,
+            "completed": 1791666700447
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_lFjH9b3DkOD8O5p9jTBJP0x8",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:REDACTED"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:REDACTED"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:REDACTED]"
+              },
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:REDACTED]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:REDACTED"
+            }
+          },
+          "time": {
+            "created": 1791666700413,
+            "ran": 1791666700417,
+            "completed": 1791666700800
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_eA8hUwJhnOTYXo1o0FZQXLoQ",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:REDACTED"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:REDACTED"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:REDACTED]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:REDACTED"
+            }
+          },
+          "time": {
+            "created": 1791666700419,
+            "ran": 1791666700433,
+            "completed": 1791666700450
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acaaa09c58887d196aad2e2a35de7a2",
+        "serviceTier": "default"
+      },
+      "cost": 0.0060071000000000005,
+      "tokens": {
+        "input": 3,
+        "output": 157,
+        "reasoning": 0,
+        "cache": {
+          "read": 28286,
+          "write": 641
+        }
+      }
+    },
+    {
+      "id": "msg_127a84205001BWsM9TgBLIr8pw",
+      "time": {
+        "created": 1791666700808,
+        "streamed": 1791666703517,
+        "completed": 1791666703519
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "",
+          "state": {
+            "redacted": "reasoning-state:msg_127a84205001BWsM9TgBLIr8pw"
+          },
+          "time": {
+            "created": 1791666701963,
+            "completed": 1791666702202
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_oc81mqThTysUpwtfPTIvRSSx",
+          "name": "patch",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127a84205001BWsM9TgBLIr8pw"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127a84205001BWsM9TgBLIr8pw"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127a84205001BWsM9TgBLIr8pw]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127a84205001BWsM9TgBLIr8pw"
+            }
+          },
+          "time": {
+            "created": 1791666702204,
+            "ran": 1791666703459,
+            "completed": 1791666703464
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acaaa0cea3c87d1b0e7cd9d0e799e10",
+        "serviceTier": "default"
+      },
+      "cost": 0.005146200000000001,
+      "tokens": {
+        "input": 3,
+        "output": 132,
+        "reasoning": 9,
+        "cache": {
+          "read": 28927,
+          "write": 335
+        }
+      }
+    },
+    {
+      "id": "msg_127a84ca9001E8RAnNgDZBXP41",
+      "time": {
+        "created": 1791666703534,
+        "streamed": 1791666711274,
+        "completed": 1791666711284
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "",
+          "state": {
+            "redacted": "reasoning-state:msg_127a84ca9001E8RAnNgDZBXP41"
+          },
+          "time": {
+            "created": 1791666704701,
+            "completed": 1791666707149
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_RkWzH41ok5gZY72HnER8RKZa",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127a84ca9001E8RAnNgDZBXP41"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127a84ca9001E8RAnNgDZBXP41"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127a84ca9001E8RAnNgDZBXP41]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127a84ca9001E8RAnNgDZBXP41"
+            }
+          },
+          "time": {
+            "created": 1791666707154,
+            "ran": 1791666711178,
+            "completed": 1791666711284
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acaaa0fabd487d1b880950bbe24c924",
+        "serviceTier": "default"
+      },
+      "cost": 0.0079372,
+      "tokens": {
+        "input": 3,
+        "output": 365,
+        "reasoning": 92,
+        "cache": {
+          "read": 29262,
+          "write": 174
+        }
+      }
+    },
+    {
+      "id": "msg_127a86af9001fzHrCyZc0rJ0PF",
+      "time": {
+        "created": 1791666711292,
+        "streamed": 1791666714327,
+        "completed": 1791666714518
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "tool",
+          "id": "call_VUvlLDzELsPgc1TYqANW8wl1",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127a86af9001fzHrCyZc0rJ0PF"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127a86af9001fzHrCyZc0rJ0PF"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127a86af9001fzHrCyZc0rJ0PF]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127a86af9001fzHrCyZc0rJ0PF"
+            }
+          },
+          "time": {
+            "created": 1791666714201,
+            "ran": 1791666714210,
+            "completed": 1791666714243
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_274hpaeoppntllxCIkEPK08v",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127a86af9001fzHrCyZc0rJ0PF"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127a86af9001fzHrCyZc0rJ0PF"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127a86af9001fzHrCyZc0rJ0PF]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127a86af9001fzHrCyZc0rJ0PF"
+            }
+          },
+          "time": {
+            "created": 1791666714211,
+            "ran": 1791666714218,
+            "completed": 1791666714245
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_dfRcQ2xAsMfTwDMnTZKA0smR",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127a86af9001fzHrCyZc0rJ0PF"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127a86af9001fzHrCyZc0rJ0PF"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127a86af9001fzHrCyZc0rJ0PF]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127a86af9001fzHrCyZc0rJ0PF"
+            }
+          },
+          "time": {
+            "created": 1791666714220,
+            "ran": 1791666714222,
+            "completed": 1791666714517
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_YFzSnmkWB3nRaprapTvim7Bi",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127a86af9001fzHrCyZc0rJ0PF"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127a86af9001fzHrCyZc0rJ0PF"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127a86af9001fzHrCyZc0rJ0PF]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127a86af9001fzHrCyZc0rJ0PF"
+            }
+          },
+          "time": {
+            "created": 1791666714314,
+            "ran": 1791666714317,
+            "completed": 1791666714331
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acaaa17662087d1959a9db7c9cb4f86",
+        "serviceTier": "default"
+      },
+      "cost": 0.006044600000000001,
+      "tokens": {
+        "input": 3,
+        "output": 192,
+        "reasoning": 0,
+        "cache": {
+          "read": 29436,
+          "write": 470
+        }
+      }
+    },
+    {
+      "id": "msg_127a8779a001ZxIobM24n4eU3X",
+      "time": {
+        "created": 1791666714524,
+        "streamed": 1791666717046,
+        "completed": 1791666717092
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "tool",
+          "id": "call_kCi84DxAlNhos9LEKP4PsYzb",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127a8779a001ZxIobM24n4eU3X"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127a8779a001ZxIobM24n4eU3X"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127a8779a001ZxIobM24n4eU3X]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127a8779a001ZxIobM24n4eU3X"
+            }
+          },
+          "time": {
+            "created": 1791666716407,
+            "ran": 1791666717041,
+            "completed": 1791666717091
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acaaa1b255487d1a11e938f185405a7",
+        "serviceTier": "default"
+      },
+      "cost": 0.0051291,
+      "tokens": {
+        "input": 3,
+        "output": 51,
+        "reasoning": 0,
+        "cache": {
+          "read": 29906,
+          "write": 649
+        }
+      }
+    },
+    {
+      "id": "msg_127a881a9001yjthi8x6ubTAdM",
+      "time": {
+        "created": 1791666717100,
+        "streamed": 1791666718617,
+        "completed": 1791666720197
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "tool",
+          "id": "call_1zp5viw7MI7aq4ZoUeoXSoJr",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127a881a9001yjthi8x6ubTAdM"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127a881a9001yjthi8x6ubTAdM"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127a881a9001yjthi8x6ubTAdM]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127a881a9001yjthi8x6ubTAdM"
+            }
+          },
+          "time": {
+            "created": 1791666718253,
+            "ran": 1791666718612,
+            "completed": 1791666720196
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acaaa1d38a087d1a900f1cbebc0cf00",
+        "serviceTier": "default"
+      },
+      "cost": 0.004024,
+      "tokens": {
+        "input": 3,
+        "output": 40,
+        "reasoning": 0,
+        "cache": {
+          "read": 30555,
+          "write": 225
+        }
+      }
+    },
+    {
+      "id": "msg_127a88dcd001NX4yCdACbP6IC2",
+      "time": {
+        "created": 1791666720209,
+        "streamed": 1791666722176,
+        "completed": 1791666722178
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "[redacted:text:msg_127a88dcd001NX4yCdACbP6IC2]",
+          "state": {
+            "redacted": "text-state:msg_127a88dcd001NX4yCdACbP6IC2"
+          }
+        }
+      ],
+      "finish": "stop",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acaaa20523087d188e85e7288eeb3d3",
+        "serviceTier": "default"
+      },
+      "cost": 0.0038265,
+      "tokens": {
+        "input": 3,
+        "output": 51,
+        "reasoning": 0,
+        "cache": {
+          "read": 30780,
+          "write": 93
+        }
+      }
+    },
+    {
+      "id": "msg_127a89585001sZXXOJk3GG24jS",
+      "time": {
+        "created": 1791666722181
+      },
+      "type": "idle",
+      "outcome": "succeeded"
+    },
+    {
+      "id": "msg_127aba78a0018rl4OkY18FXpHy",
+      "metadata": {
+        "redacted": "message-metadata:msg_127aba78a0018rl4OkY18FXpHy"
+      },
+      "time": {
+        "created": 1791666923441
+      },
+      "text": "[redacted:text:msg_127aba78a0018rl4OkY18FXpHy]",
+      "files": [],
+      "agents": [],
+      "type": "user"
+    },
+    {
+      "id": "msg_127aba7b40010dTVmsCqXEsAYU",
+      "time": {
+        "created": 1791666923448,
+        "streamed": 1791666925738,
+        "completed": 1791666925739
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "tool",
+          "id": "call_ExdHZJUxUTS0vwsm0oaeK50d",
+          "name": "read",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127aba7b40010dTVmsCqXEsAYU"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127aba7b40010dTVmsCqXEsAYU"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127aba7b40010dTVmsCqXEsAYU]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127aba7b40010dTVmsCqXEsAYU"
+            }
+          },
+          "time": {
+            "created": 1791666924743,
+            "ran": 1791666925389,
+            "completed": 1791666925394
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acaaaeb8dd487d1b704ead363315bae",
+        "serviceTier": "default"
+      },
+      "cost": 0.0037858,
+      "tokens": {
+        "input": 3,
+        "output": 47,
+        "reasoning": 0,
+        "cache": {
+          "read": 30873,
+          "write": 89
+        }
+      }
+    },
+    {
+      "id": "msg_127abb0b0001kbUwkvxhkewmxR",
+      "time": {
+        "created": 1791666925748,
+        "streamed": 1791666928857,
+        "completed": 1791666928859
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "tool",
+          "id": "call_NOImvJmWarKsVmUw7y9mMIA8",
+          "name": "read",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127abb0b0001kbUwkvxhkewmxR"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127abb0b0001kbUwkvxhkewmxR"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127abb0b0001kbUwkvxhkewmxR]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127abb0b0001kbUwkvxhkewmxR"
+            }
+          },
+          "time": {
+            "created": 1791666928632,
+            "ran": 1791666928640,
+            "completed": 1791666928670
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_XoHAR4Uo6n22bdCdny3KliAm",
+          "name": "read",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127abb0b0001kbUwkvxhkewmxR"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127abb0b0001kbUwkvxhkewmxR"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127abb0b0001kbUwkvxhkewmxR]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127abb0b0001kbUwkvxhkewmxR"
+            }
+          },
+          "time": {
+            "created": 1791666928642,
+            "ran": 1791666928650,
+            "completed": 1791666928674
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_ik5VCmohiNDHnk1VPTIE51ZQ",
+          "name": "read",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127abb0b0001kbUwkvxhkewmxR"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127abb0b0001kbUwkvxhkewmxR"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127abb0b0001kbUwkvxhkewmxR]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127abb0b0001kbUwkvxhkewmxR"
+            }
+          },
+          "time": {
+            "created": 1791666928652,
+            "ran": 1791666928656,
+            "completed": 1791666928677
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_sCDjon3vzhWEOYWU3Bv5gVoe",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127abb0b0001kbUwkvxhkewmxR"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127abb0b0001kbUwkvxhkewmxR"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127abb0b0001kbUwkvxhkewmxR]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127abb0b0001kbUwkvxhkewmxR"
+            }
+          },
+          "time": {
+            "created": 1791666928658,
+            "ran": 1791666928760,
+            "completed": 1791666928791
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acaaaede01087d18626746c63f91046",
+        "serviceTier": "default"
+      },
+      "cost": 0.0156272,
+      "tokens": {
+        "input": 3,
+        "output": 182,
+        "reasoning": 0,
+        "cache": {
+          "read": 30962,
+          "write": 4282
+        }
+      }
+    },
+    {
+      "id": "msg_127abbce5001JcuETwWZCFysUy",
+      "time": {
+        "created": 1791666928878,
+        "streamed": 1791666932706,
+        "completed": 1791666932707
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "[redacted:reasoning:REDACTED]",
+          "state": {
+            "redacted": "reasoning-state:REDACTED"
+          },
+          "time": {
+            "created": 1791666930112,
+            "completed": 1791666932003
+          }
+        },
+        {
+          "type": "text",
+          "text": "[redacted:text:REDACTED]",
+          "state": {
+            "redacted": "text-state:REDACTED"
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_SfwYOxcRTLyq872nwdB8IE1J",
+          "name": "grep",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:REDACTED"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:REDACTED"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:REDACTED]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:REDACTED"
+            }
+          },
+          "time": {
+            "created": 1791666932262,
+            "ran": 1791666932649,
+            "completed": 1791666932672
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acaaaf0fe5c87d1abae4b02470369b0",
+        "serviceTier": "default"
+      },
+      "cost": 0.016667900000000003,
+      "tokens": {
+        "input": 3,
+        "output": 93,
+        "reasoning": 47,
+        "cache": {
+          "read": 35244,
+          "write": 4695
+        }
+      }
+    },
+    {
+      "id": "msg_127abcbee0019htatQGhV9OYGe",
+      "time": {
+        "created": 1791666932724,
+        "streamed": 1791666951017,
+        "completed": 1791666951018
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "",
+          "state": {
+            "redacted": "reasoning-state:msg_127abcbee0019htatQGhV9OYGe"
+          },
+          "time": {
+            "created": 1791666934646,
+            "completed": 1791666939026
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_rbroWmMJyleRwdxQVvRmI7Ck",
+          "name": "patch",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127abcbee0019htatQGhV9OYGe"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127abcbee0019htatQGhV9OYGe"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127abcbee0019htatQGhV9OYGe]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127abcbee0019htatQGhV9OYGe"
+            }
+          },
+          "time": {
+            "created": 1791666939029,
+            "ran": 1791666950955,
+            "completed": 1791666950959
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acaaaf4d52487d19c98345aab690ed0",
+        "serviceTier": "default"
+      },
+      "cost": 0.019047400000000003,
+      "tokens": {
+        "input": 3,
+        "output": 1052,
+        "reasoning": 173,
+        "cache": {
+          "read": 39939,
+          "write": 1119
+        }
+      }
+    },
+    {
+      "id": "msg_127ac1370001Y32OXcSGcszs5D",
+      "time": {
+        "created": 1791666951027,
+        "streamed": 1791666957076,
+        "completed": 1791666957077
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "[redacted:reasoning:msg_127ac1370001Y32OXcSGcszs5D]",
+          "state": {
+            "redacted": "reasoning-state:msg_127ac1370001Y32OXcSGcszs5D"
+          },
+          "time": {
+            "created": 1791666951976,
+            "completed": 1791666954767
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_j6O2iKr2jB6bcWTXmdBFZyiU",
+          "name": "patch",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127ac1370001Y32OXcSGcszs5D"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127ac1370001Y32OXcSGcszs5D"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127ac1370001Y32OXcSGcszs5D]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127ac1370001Y32OXcSGcszs5D"
+            }
+          },
+          "time": {
+            "created": 1791666954769,
+            "ran": 1791666957042,
+            "completed": 1791666957046
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acaab07238087d1b839e50bf41094bc",
+        "serviceTier": "default"
+      },
+      "cost": 0.0110268,
+      "tokens": {
+        "input": 3,
+        "output": 291,
+        "reasoning": 77,
+        "cache": {
+          "read": 41058,
+          "write": 1294
+        }
+      }
+    },
+    {
+      "id": "msg_127ac2b1b0017Vgt2KHUtrQdnK",
+      "time": {
+        "created": 1791666957086,
+        "streamed": 1791666960046,
+        "completed": 1791666999289
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "tool",
+          "id": "call_EIFgfJD45vgGoFRi4ubtxNwa",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127ac2b1b0017Vgt2KHUtrQdnK"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127ac2b1b0017Vgt2KHUtrQdnK"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127ac2b1b0017Vgt2KHUtrQdnK]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127ac2b1b0017Vgt2KHUtrQdnK"
+            }
+          },
+          "time": {
+            "created": 1791666959919,
+            "ran": 1791666959921,
+            "completed": 1791666967859
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_M453dUM9tUjwnQ5sx3qFYcUZ",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127ac2b1b0017Vgt2KHUtrQdnK"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127ac2b1b0017Vgt2KHUtrQdnK"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127ac2b1b0017Vgt2KHUtrQdnK]"
+              },
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127ac2b1b0017Vgt2KHUtrQdnK]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127ac2b1b0017Vgt2KHUtrQdnK"
+            }
+          },
+          "time": {
+            "created": 1791666959922,
+            "ran": 1791666959930,
+            "completed": 1791666999288
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_DWFZTYmhXRr1NhULaQ6lRCRw",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127ac2b1b0017Vgt2KHUtrQdnK"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127ac2b1b0017Vgt2KHUtrQdnK"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127ac2b1b0017Vgt2KHUtrQdnK]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127ac2b1b0017Vgt2KHUtrQdnK"
+            }
+          },
+          "time": {
+            "created": 1791666959931,
+            "ran": 1791666959959,
+            "completed": 1791666960433
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acaab0d42d487d18d262a1b3b863c56",
+        "serviceTier": "default"
+      },
+      "cost": 0.0069962,
+      "tokens": {
+        "input": 3,
+        "output": 173,
+        "reasoning": 0,
+        "cache": {
+          "read": 42352,
+          "write": 410
+        }
+      }
+    },
+    {
+      "id": "msg_127accfff001Php0NiFC7G758p",
+      "time": {
+        "created": 1791666999298,
+        "streamed": 1791667002380,
+        "completed": 1791667002382
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "tool",
+          "id": "call_6OeAxDDPPLvz9JvzVKhfRDpw",
+          "name": "read",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127accfff001Php0NiFC7G758p"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127accfff001Php0NiFC7G758p"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127accfff001Php0NiFC7G758p]"
+              },
+              {
+                "type": "file",
+                "uri": "[redacted:tool-file-uri:msg_127accfff001Php0NiFC7G758p]",
+                "mime": "image/png",
+                "name": "[redacted:tool-file-name:msg_127accfff001Php0NiFC7G758p]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127accfff001Php0NiFC7G758p"
+            }
+          },
+          "time": {
+            "created": 1791667002118,
+            "ran": 1791667002121,
+            "completed": 1791667002152
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_46ZfYC61ESsiawfoO9VdqeTV",
+          "name": "read",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127accfff001Php0NiFC7G758p"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127accfff001Php0NiFC7G758p"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127accfff001Php0NiFC7G758p]"
+              },
+              {
+                "type": "file",
+                "uri": "[redacted:tool-file-uri:msg_127accfff001Php0NiFC7G758p]",
+                "mime": "image/png",
+                "name": "[redacted:tool-file-name:msg_127accfff001Php0NiFC7G758p]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127accfff001Php0NiFC7G758p"
+            }
+          },
+          "time": {
+            "created": 1791667002123,
+            "ran": 1791667002127,
+            "completed": 1791667002141
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_KD8LAk5t9xK9NU3NcS1Bb2r4",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127accfff001Php0NiFC7G758p"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127accfff001Php0NiFC7G758p"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127accfff001Php0NiFC7G758p]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127accfff001Php0NiFC7G758p"
+            }
+          },
+          "time": {
+            "created": 1791667002128,
+            "ran": 1791667002159,
+            "completed": 1791667002188
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acaab3767b887d1a650df04ed458cd4",
+        "serviceTier": "default"
+      },
+      "cost": 0.0092797,
+      "tokens": {
+        "input": 3,
+        "output": 139,
+        "reasoning": 0,
+        "cache": {
+          "read": 42762,
+          "write": 1443
+        }
+      }
+    },
+    {
+      "id": "msg_127acdc14001MaOJx20h5jYJQB",
+      "time": {
+        "created": 1791667002392,
+        "streamed": 1791667010473,
+        "completed": 1791667010474
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "",
+          "state": {
+            "redacted": "reasoning-state:msg_127acdc14001MaOJx20h5jYJQB"
+          },
+          "time": {
+            "created": 1791667004120,
+            "completed": 1791667007418
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_3jDcJB59mUulkwMhGQUzAYhi",
+          "name": "patch",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127acdc14001MaOJx20h5jYJQB"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127acdc14001MaOJx20h5jYJQB"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127acdc14001MaOJx20h5jYJQB]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127acdc14001MaOJx20h5jYJQB"
+            }
+          },
+          "time": {
+            "created": 1791667007421,
+            "ran": 1791667010412,
+            "completed": 1791667010420
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acaab3acc2087d19556f0c1ff0dc6ea",
+        "serviceTier": "default"
+      },
+      "cost": 0.0178715,
+      "tokens": {
+        "input": 3,
+        "output": 255,
+        "reasoning": 120,
+        "cache": {
+          "read": 44205,
+          "write": 3878
+        }
+      }
+    },
+    {
+      "id": "msg_127acfbb5001sXsIHvfKAbt1QL",
+      "time": {
+        "created": 1791667010492,
+        "streamed": 1791667020945,
+        "completed": 1791667021048
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "[redacted:reasoning:msg_127acfbb5001sXsIHvfKAbt1QL]",
+          "state": {
+            "redacted": "reasoning-state:msg_127acfbb5001sXsIHvfKAbt1QL"
+          },
+          "time": {
+            "created": 1791667011546,
+            "completed": 1791667012848
+          }
+        },
+        {
+          "type": "text",
+          "text": "[redacted:text:msg_127acfbb5001sXsIHvfKAbt1QL]",
+          "state": {
+            "redacted": "text-state:msg_127acfbb5001sXsIHvfKAbt1QL"
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_LsROLlNOu1YDUTgRW9YORhfn",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127acfbb5001sXsIHvfKAbt1QL"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127acfbb5001sXsIHvfKAbt1QL"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127acfbb5001sXsIHvfKAbt1QL]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127acfbb5001sXsIHvfKAbt1QL"
+            }
+          },
+          "time": {
+            "created": 1791667013020,
+            "ran": 1791667020918,
+            "completed": 1791667021047
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acaab4299a087d183cf5db2a4ce99f6",
+        "serviceTier": "default"
+      },
+      "cost": 0.014281799999999999,
+      "tokens": {
+        "input": 3,
+        "output": 828,
+        "reasoning": 19,
+        "cache": {
+          "read": 48083,
+          "write": 399
+        }
+      }
+    },
+    {
+      "id": "msg_127ad24fd001NomGav7D0F7pd1",
+      "time": {
+        "created": 1791667021057,
+        "streamed": 1791667030157,
+        "completed": 1791667030160
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "tool",
+          "id": "call_7ATYGFs75mm2aZpIC08Uioj2",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127ad24fd001NomGav7D0F7pd1"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127ad24fd001NomGav7D0F7pd1"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127ad24fd001NomGav7D0F7pd1]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127ad24fd001NomGav7D0F7pd1"
+            }
+          },
+          "time": {
+            "created": 1791667029158,
+            "ran": 1791667029162,
+            "completed": 1791667029204
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_A4Pc62ZididS6lB3WHTn8SeZ",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127ad24fd001NomGav7D0F7pd1"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127ad24fd001NomGav7D0F7pd1"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127ad24fd001NomGav7D0F7pd1]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127ad24fd001NomGav7D0F7pd1"
+            }
+          },
+          "time": {
+            "created": 1791667029164,
+            "ran": 1791667029171,
+            "completed": 1791667029201
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_HcadIwlcWCPuaOG7owpv5k3q",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127ad24fd001NomGav7D0F7pd1"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127ad24fd001NomGav7D0F7pd1"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127ad24fd001NomGav7D0F7pd1]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127ad24fd001NomGav7D0F7pd1"
+            }
+          },
+          "time": {
+            "created": 1791667029173,
+            "ran": 1791667029179,
+            "completed": 1791667029203
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acaab4d385c87d1b75c736089a6c7ae",
+        "serviceTier": "default"
+      },
+      "cost": 0.008384200000000001,
+      "tokens": {
+        "input": 3,
+        "output": 138,
+        "reasoning": 0,
+        "cache": {
+          "read": 48482,
+          "write": 860
+        }
+      }
+    },
+    {
+      "id": "msg_127ad48a30015Tc2QRNz1XQADo",
+      "time": {
+        "created": 1791667030188,
+        "streamed": 1791667032434,
+        "completed": 1791667032436
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "tool",
+          "id": "call_WUHiUKZUE6CQIMJ4wHH6lYeT",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127ad48a30015Tc2QRNz1XQADo"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127ad48a30015Tc2QRNz1XQADo"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127ad48a30015Tc2QRNz1XQADo]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127ad48a30015Tc2QRNz1XQADo"
+            }
+          },
+          "time": {
+            "created": 1791667031725,
+            "ran": 1791667032371,
+            "completed": 1791667032429
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acaab564cc487d18d0631822b64f485",
+        "serviceTier": "default"
+      },
+      "cost": 0.0074727000000000005,
+      "tokens": {
+        "input": 3,
+        "output": 52,
+        "reasoning": 0,
+        "cache": {
+          "read": 49342,
+          "write": 805
+        }
+      }
+    },
+    {
+      "id": "msg_127ad5179001wE71ejBCvYmbXK",
+      "time": {
+        "created": 1791667032445,
+        "streamed": 1791667034624,
+        "completed": 1791667036764
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "tool",
+          "id": "call_tWOXtadI6J1d4VkrIa2Iq4KH",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127ad5179001wE71ejBCvYmbXK"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127ad5179001wE71ejBCvYmbXK"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127ad5179001wE71ejBCvYmbXK]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127ad5179001wE71ejBCvYmbXK"
+            }
+          },
+          "time": {
+            "created": 1791667034269,
+            "ran": 1791667034326,
+            "completed": 1791667036760
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acaab588d6c87d1ab8d7747079b1fa3",
+        "serviceTier": "default"
+      },
+      "cost": 0.0060407,
+      "tokens": {
+        "input": 3,
+        "output": 40,
+        "reasoning": 0,
+        "cache": {
+          "read": 50147,
+          "write": 248
+        }
+      }
+    },
+    {
+      "id": "msg_127ad6269001QzI5C0EMqVF5M1",
+      "time": {
+        "created": 1791667036783,
+        "streamed": 1791667038868,
+        "completed": 1791667038870
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "[redacted:text:msg_127ad6269001QzI5C0EMqVF5M1]",
+          "state": {
+            "redacted": "text-state:msg_127ad6269001QzI5C0EMqVF5M1"
+          }
+        }
+      ],
+      "finish": "stop",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acaab5cf37c87d1b32be6cce270dd1a",
+        "serviceTier": "default"
+      },
+      "cost": 0.0058205,
+      "tokens": {
+        "input": 3,
+        "output": 54,
+        "reasoning": 0,
+        "cache": {
+          "read": 50395,
+          "write": 94
+        }
+      }
+    },
+    {
+      "id": "msg_127ad6a980017LJMfU54wor0gs",
+      "time": {
+        "created": 1791667038872
+      },
+      "type": "idle",
+      "outcome": "succeeded"
+    },
+    {
+      "id": "msg_127c8a08c001nbYT2oXMcVEYAt",
+      "metadata": {
+        "redacted": "message-metadata:msg_127c8a08c001nbYT2oXMcVEYAt"
+      },
+      "time": {
+        "created": 1791668822201
+      },
+      "text": "[redacted:text:msg_127c8a08c001nbYT2oXMcVEYAt]",
+      "files": [],
+      "agents": [],
+      "type": "user"
+    },
+    {
+      "id": "msg_127c8a0bd001x8L6CHFIZoeg6T",
+      "time": {
+        "created": 1791668822211,
+        "streamed": 1791668824326,
+        "completed": 1791668824327
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "tool",
+          "id": "call_ssFSTWEy2mt2gHWurMzpbXbQ",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127c8a0bd001x8L6CHFIZoeg6T"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127c8a0bd001x8L6CHFIZoeg6T"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127c8a0bd001x8L6CHFIZoeg6T]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127c8a0bd001x8L6CHFIZoeg6T"
+            }
+          },
+          "time": {
+            "created": 1791668823951,
+            "ran": 1791668824213,
+            "completed": 1791668824236
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acab256531487d1859dba7b153c2a54",
+        "serviceTier": "default"
+      },
+      "cost": 0.0056224000000000005,
+      "tokens": {
+        "input": 3,
+        "output": 39,
+        "reasoning": 0,
+        "cache": {
+          "read": 50489,
+          "write": 71
+        }
+      }
+    },
+    {
+      "id": "msg_127c8a90e001Ja5vXr04Q0KGxV",
+      "time": {
+        "created": 1791668824338,
+        "streamed": 1791668827203,
+        "completed": 1791668827204
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "",
+          "state": {
+            "redacted": "reasoning-state:msg_127c8a90e001Ja5vXr04Q0KGxV"
+          },
+          "time": {
+            "created": 1791668825430,
+            "completed": 1791668827106
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_d2KcFdDOKUdEwGD968qHY4P0",
+          "name": "read",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127c8a90e001Ja5vXr04Q0KGxV"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127c8a90e001Ja5vXr04Q0KGxV"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127c8a90e001Ja5vXr04Q0KGxV]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127c8a90e001Ja5vXr04Q0KGxV"
+            }
+          },
+          "time": {
+            "created": 1791668827107,
+            "ran": 1791668827110,
+            "completed": 1791668827118
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_h0EqVECx6mr2uwJqQfO1iYEp",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127c8a90e001Ja5vXr04Q0KGxV"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127c8a90e001Ja5vXr04Q0KGxV"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127c8a90e001Ja5vXr04Q0KGxV]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127c8a90e001Ja5vXr04Q0KGxV"
+            }
+          },
+          "time": {
+            "created": 1791668827111,
+            "ran": 1791668827113,
+            "completed": 1791668827136
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_2Cbb4c1p8Srd9t8XQgTWRHVN",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127c8a90e001Ja5vXr04Q0KGxV"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127c8a90e001Ja5vXr04Q0KGxV"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127c8a90e001Ja5vXr04Q0KGxV]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127c8a90e001Ja5vXr04Q0KGxV"
+            }
+          },
+          "time": {
+            "created": 1791668827113,
+            "ran": 1791668827170,
+            "completed": 1791668827186
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acab258797887d18cdceaeb884522c5",
+        "serviceTier": "default"
+      },
+      "cost": 0.007152,
+      "tokens": {
+        "input": 3,
+        "output": 134,
+        "reasoning": 15,
+        "cache": {
+          "read": 50560,
+          "write": 240
+        }
+      }
+    },
+    {
+      "id": "msg_127c8b449001CIYgawUqRKX06h",
+      "time": {
+        "created": 1791668827213,
+        "streamed": 1791668830620,
+        "completed": 1791668830622
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "tool",
+          "id": "call_Kl9maFfbxkJ7zb6I5wmwUnPL",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:REDACTED"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:REDACTED"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:REDACTED]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:REDACTED"
+            }
+          },
+          "time": {
+            "created": 1791668830510,
+            "ran": 1791668830512,
+            "completed": 1791668830582
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_TPZvZOamfH8TU3iNkvLcSj1Z",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:REDACTED"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:REDACTED"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:REDACTED]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:REDACTED"
+            }
+          },
+          "time": {
+            "created": 1791668830513,
+            "ran": 1791668830516,
+            "completed": 1791668830549
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_pjkovChAXkgMwB7z7vAkoATU",
+          "name": "read",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:REDACTED"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:REDACTED"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:REDACTED]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:REDACTED"
+            }
+          },
+          "time": {
+            "created": 1791668830516,
+            "ran": 1791668830519,
+            "completed": 1791668830529
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_nGzKKppMFjXzTCQh0UUqdK6S",
+          "name": "shell",
+          "executed": false,
+          "state": {
+            "status": "error",
+            "input": {
+              "redacted": "tool-input:REDACTED"
+            },
+            "error": {
+              "type": "provider.rate-limit",
+              "message": "rate_limit_exceeded: Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 963373, Requested 51407. Please try again in 886ms. Visit https://platform.openai.com/account/rate-limits to learn more.",
+              "response": {
+                "body": "{\"type\":\"error\",\"error\":{\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\",\"headers\":{\"retry-after\":\"1\",\"retry-after-ms\":\"886\",\"x-ratelimit-limit-input-images\":\"50000\",\"x-ratelimit-limit-requests\":\"5000\",\"x-ratelimit-limit-tokens\":\"1000000\",\"x-ratelimit-remaining-input-images\":\"49984\",\"x-ratelimit-remaining-requests\":\"4997\",\"x-ratelimit-remaining-tokens\":\"36627\",\"x-ratelimit-reset-input-images\":\"19ms\",\"x-ratelimit-reset-requests\":\"36ms\",\"x-ratelimit-reset-tokens\":\"57.802s\"},\"message\":\"Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 963373, Requested 51407. Please try again in 886ms. Visit https://platform.openai.com/account/rate-limits to learn more.\",\"param\":null},\"sequence_number\":16}"
+              }
+            }
+          },
+          "time": {
+            "created": 1791668830618,
+            "completed": 1791668830621
+          }
+        }
+      ],
+      "finish": "error",
+      "error": {
+        "type": "provider.rate-limit",
+        "message": "rate_limit_exceeded: Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 963373, Requested 51407. Please try again in 886ms. Visit https://platform.openai.com/account/rate-limits to learn more.",
+        "response": {
+          "body": "{\"type\":\"error\",\"error\":{\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\",\"headers\":{\"retry-after\":\"1\",\"retry-after-ms\":\"886\",\"x-ratelimit-limit-input-images\":\"50000\",\"x-ratelimit-limit-requests\":\"5000\",\"x-ratelimit-limit-tokens\":\"1000000\",\"x-ratelimit-remaining-input-images\":\"49984\",\"x-ratelimit-remaining-requests\":\"4997\",\"x-ratelimit-remaining-tokens\":\"36627\",\"x-ratelimit-reset-input-images\":\"19ms\",\"x-ratelimit-reset-requests\":\"36ms\",\"x-ratelimit-reset-tokens\":\"57.802s\"},\"message\":\"Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 963373, Requested 51407. Please try again in 886ms. Visit https://platform.openai.com/account/rate-limits to learn more.\",\"param\":null},\"sequence_number\":16}"
+        }
+      },
+      "retry": {
+        "attempt": 2,
+        "at": 1791668832499,
+        "error": {
+          "type": "provider.rate-limit",
+          "message": "rate_limit_exceeded: Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 963373, Requested 51407. Please try again in 886ms. Visit https://platform.openai.com/account/rate-limits to learn more.",
+          "response": {
+            "body": "{\"type\":\"error\",\"error\":{\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\",\"headers\":{\"retry-after\":\"1\",\"retry-after-ms\":\"886\",\"x-ratelimit-limit-input-images\":\"50000\",\"x-ratelimit-limit-requests\":\"5000\",\"x-ratelimit-limit-tokens\":\"1000000\",\"x-ratelimit-remaining-input-images\":\"49984\",\"x-ratelimit-remaining-requests\":\"4997\",\"x-ratelimit-remaining-tokens\":\"36627\",\"x-ratelimit-reset-input-images\":\"19ms\",\"x-ratelimit-reset-requests\":\"36ms\",\"x-ratelimit-reset-tokens\":\"57.802s\"},\"message\":\"Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 963373, Requested 51407. Please try again in 886ms. Visit https://platform.openai.com/account/rate-limits to learn more.\",\"param\":null},\"sequence_number\":16}"
+          }
+        }
+      }
+    },
+    {
+      "id": "msg_127c8c8f6001ow5QuBTdGr8LWg",
+      "time": {
+        "created": 1791668832502
+      },
+      "text": "[redacted:synthetic:msg_127c8c8f6001ow5QuBTdGr8LWg]",
+      "type": "synthetic"
+    },
+    {
+      "id": "msg_127c8c8f7001FmxAJloomw0JOk",
+      "time": {
+        "created": 1791668832513,
+        "streamed": 1791668838482,
+        "completed": 1791668838484
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "tool",
+          "id": "call_jwWFAbJUh8TT5XV4bIGzCDoi",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127c8c8f7001FmxAJloomw0JOk"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127c8c8f7001FmxAJloomw0JOk"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127c8c8f7001FmxAJloomw0JOk]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127c8c8f7001FmxAJloomw0JOk"
+            }
+          },
+          "time": {
+            "created": 1791668838222,
+            "ran": 1791668838224,
+            "completed": 1791668838254
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_JXX5cmWR9izjYuY6Nu8dFKRz",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127c8c8f7001FmxAJloomw0JOk"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127c8c8f7001FmxAJloomw0JOk"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127c8c8f7001FmxAJloomw0JOk]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127c8c8f7001FmxAJloomw0JOk"
+            }
+          },
+          "time": {
+            "created": 1791668838224,
+            "ran": 1791668838229,
+            "completed": 1791668838256
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_Yd9tbOzuIbQNTergcru46E22",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127c8c8f7001FmxAJloomw0JOk"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127c8c8f7001FmxAJloomw0JOk"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127c8c8f7001FmxAJloomw0JOk]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127c8c8f7001FmxAJloomw0JOk"
+            }
+          },
+          "time": {
+            "created": 1791668838230,
+            "ran": 1791668838263,
+            "completed": 1791668838308
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acab2638b0c87d1b65ab2f4a37c8ddf",
+        "serviceTier": "default"
+      },
+      "cost": 0.009015700000000001,
+      "tokens": {
+        "input": 3,
+        "output": 128,
+        "reasoning": 0,
+        "cache": {
+          "read": 51572,
+          "write": 1029
+        }
+      }
+    },
+    {
+      "id": "msg_127c8e05c001QNW0tsQrsMVXnP",
+      "time": {
+        "created": 1791668838498,
+        "streamed": 1791668839945,
+        "completed": 1791668839949
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "tool",
+          "id": "call_vskC67j4AVWE4rBVRrjnaOwf",
+          "name": "shell",
+          "executed": false,
+          "state": {
+            "status": "error",
+            "input": {
+              "redacted": "tool-input:msg_127c8e05c001QNW0tsQrsMVXnP"
+            },
+            "error": {
+              "type": "provider.rate-limit",
+              "message": "rate_limit_exceeded: Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 967563, Requested 53618. Please try again in 1.27s. Visit https://platform.openai.com/account/rate-limits to learn more.",
+              "response": {
+                "body": "{\"type\":\"error\",\"error\":{\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\",\"headers\":{\"retry-after\":\"2\",\"retry-after-ms\":\"1270\",\"x-ratelimit-limit-input-images\":\"50000\",\"x-ratelimit-limit-requests\":\"5000\",\"x-ratelimit-limit-tokens\":\"1000000\",\"x-ratelimit-remaining-input-images\":\"49992\",\"x-ratelimit-remaining-requests\":\"4998\",\"x-ratelimit-remaining-tokens\":\"32437\",\"x-ratelimit-reset-input-images\":\"9ms\",\"x-ratelimit-reset-requests\":\"24ms\",\"x-ratelimit-reset-tokens\":\"58.053s\"},\"message\":\"Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 967563, Requested 53618. Please try again in 1.27s. Visit https://platform.openai.com/account/rate-limits to learn more.\",\"param\":null},\"sequence_number\":30}"
+              }
+            }
+          },
+          "time": {
+            "created": 1791668839599,
+            "completed": 1791668839947
+          }
+        }
+      ],
+      "finish": "error",
+      "error": {
+        "type": "provider.rate-limit",
+        "message": "rate_limit_exceeded: Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 967563, Requested 53618. Please try again in 1.27s. Visit https://platform.openai.com/account/rate-limits to learn more.",
+        "response": {
+          "body": "{\"type\":\"error\",\"error\":{\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\",\"headers\":{\"retry-after\":\"2\",\"retry-after-ms\":\"1270\",\"x-ratelimit-limit-input-images\":\"50000\",\"x-ratelimit-limit-requests\":\"5000\",\"x-ratelimit-limit-tokens\":\"1000000\",\"x-ratelimit-remaining-input-images\":\"49992\",\"x-ratelimit-remaining-requests\":\"4998\",\"x-ratelimit-remaining-tokens\":\"32437\",\"x-ratelimit-reset-input-images\":\"9ms\",\"x-ratelimit-reset-requests\":\"24ms\",\"x-ratelimit-reset-tokens\":\"58.053s\"},\"message\":\"Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 967563, Requested 53618. Please try again in 1.27s. Visit https://platform.openai.com/account/rate-limits to learn more.\",\"param\":null},\"sequence_number\":30}"
+        }
+      },
+      "retry": {
+        "attempt": 2,
+        "at": 1791668841972,
+        "error": {
+          "type": "provider.rate-limit",
+          "message": "rate_limit_exceeded: Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 967563, Requested 53618. Please try again in 1.27s. Visit https://platform.openai.com/account/rate-limits to learn more.",
+          "response": {
+            "body": "{\"type\":\"error\",\"error\":{\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\",\"headers\":{\"retry-after\":\"2\",\"retry-after-ms\":\"1270\",\"x-ratelimit-limit-input-images\":\"50000\",\"x-ratelimit-limit-requests\":\"5000\",\"x-ratelimit-limit-tokens\":\"1000000\",\"x-ratelimit-remaining-input-images\":\"49992\",\"x-ratelimit-remaining-requests\":\"4998\",\"x-ratelimit-remaining-tokens\":\"32437\",\"x-ratelimit-reset-input-images\":\"9ms\",\"x-ratelimit-reset-requests\":\"24ms\",\"x-ratelimit-reset-tokens\":\"58.053s\"},\"message\":\"Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 967563, Requested 53618. Please try again in 1.27s. Visit https://platform.openai.com/account/rate-limits to learn more.\",\"param\":null},\"sequence_number\":30}"
+          }
+        }
+      }
+    },
+    {
+      "id": "msg_127c8edf4001ZVqLJOyDTmS3c2",
+      "time": {
+        "created": 1791668841972
+      },
+      "text": "[redacted:synthetic:REDACTED]",
+      "type": "synthetic"
+    },
+    {
+      "id": "msg_127c8edf60012JA7ffvZA3gWgm",
+      "time": {
+        "created": 1791668841985,
+        "streamed": 1791668847398,
+        "completed": 1791668847399
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "tool",
+          "id": "call_lcbSwLCAIq8yjDPqI1OhshgM",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127c8edf60012JA7ffvZA3gWgm"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127c8edf60012JA7ffvZA3gWgm"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127c8edf60012JA7ffvZA3gWgm]"
+              },
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127c8edf60012JA7ffvZA3gWgm]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127c8edf60012JA7ffvZA3gWgm"
+            }
+          },
+          "time": {
+            "created": 1791668846976,
+            "ran": 1791668847294,
+            "completed": 1791668847334
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acab26d14b087d190a0038a38c5cc38",
+        "serviceTier": "default"
+      },
+      "cost": 0.0067793,
+      "tokens": {
+        "input": 3,
+        "output": 44,
+        "reasoning": 0,
+        "cache": {
+          "read": 53783,
+          "write": 382
+        }
+      }
+    },
+    {
+      "id": "msg_127c9032d001WFAg6OahAtZHyj",
+      "time": {
+        "created": 1791668847410,
+        "streamed": 1791668852642,
+        "completed": 1791668852644
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "",
+          "state": {
+            "redacted": "reasoning-state:msg_127c9032d001WFAg6OahAtZHyj"
+          },
+          "time": {
+            "created": 1791668849560,
+            "completed": 1791668852400
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_2bb07J9bjcSfjBcBvwsZ5cry",
+          "name": "execute",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127c9032d001WFAg6OahAtZHyj"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127c9032d001WFAg6OahAtZHyj"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127c9032d001WFAg6OahAtZHyj]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127c9032d001WFAg6OahAtZHyj"
+            }
+          },
+          "time": {
+            "created": 1791668852406,
+            "ran": 1791668852554,
+            "completed": 1791668852574
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acab270958087d1bbab013435eafa66",
+        "serviceTier": "default"
+      },
+      "cost": 0.0071625,
+      "tokens": {
+        "input": 3,
+        "output": 38,
+        "reasoning": 119,
+        "cache": {
+          "read": 54165,
+          "write": 68
+        }
+      }
+    },
+    {
+      "id": "msg_127c917af001gUtl1wq7qXGGn2",
+      "time": {
+        "created": 1791668852662,
+        "streamed": 1791668860725,
+        "completed": 1791668865645
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "",
+          "state": {
+            "redacted": "reasoning-state:msg_127c917af001gUtl1wq7qXGGn2"
+          },
+          "time": {
+            "created": 1791668855031,
+            "completed": 1791668858409
+          }
+        },
+        {
+          "type": "text",
+          "text": "[redacted:text:msg_127c917af001gUtl1wq7qXGGn2]",
+          "state": {
+            "redacted": "text-state:msg_127c917af001gUtl1wq7qXGGn2"
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_jaYHnMZ22iPDDGdHtH6i4Usx",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127c917af001gUtl1wq7qXGGn2"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127c917af001gUtl1wq7qXGGn2"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127c917af001gUtl1wq7qXGGn2]"
+              },
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127c917af001gUtl1wq7qXGGn2]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127c917af001gUtl1wq7qXGGn2"
+            }
+          },
+          "time": {
+            "created": 1791668860543,
+            "ran": 1791668860546,
+            "completed": 1791668865644
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_I5XpoZsKQ0pIGWlx9zoJ4HD9",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127c917af001gUtl1wq7qXGGn2"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127c917af001gUtl1wq7qXGGn2"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127c917af001gUtl1wq7qXGGn2]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127c917af001gUtl1wq7qXGGn2"
+            }
+          },
+          "time": {
+            "created": 1791668860548,
+            "ran": 1791668860553,
+            "completed": 1791668860577
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_Ewzprk3tRSgS2vyQ0uAu9oRN",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127c917af001gUtl1wq7qXGGn2"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127c917af001gUtl1wq7qXGGn2"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127c917af001gUtl1wq7qXGGn2]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127c917af001gUtl1wq7qXGGn2"
+            }
+          },
+          "time": {
+            "created": 1791668860555,
+            "ran": 1791668860700,
+            "completed": 1791668860720
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acab274c59c87d1903f69ae17d25f12",
+        "serviceTier": "default"
+      },
+      "cost": 0.0095993,
+      "tokens": {
+        "input": 3,
+        "output": 203,
+        "reasoning": 162,
+        "cache": {
+          "read": 54233,
+          "write": 208
+        }
+      }
+    },
+    {
+      "id": "msg_127c94a74001gWX3lr7idTwg3w",
+      "time": {
+        "created": 1791668865656,
+        "streamed": 1791668879761,
+        "completed": 1791668898382
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "[redacted:reasoning:msg_127c94a74001gWX3lr7idTwg3w]",
+          "state": {
+            "redacted": "reasoning-state:msg_127c94a74001gWX3lr7idTwg3w"
+          },
+          "time": {
+            "created": 1791668877649,
+            "completed": 1791668879684
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_IR1AVigHYSP5nNGH0CRoBLhS",
+          "name": "glob",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127c94a74001gWX3lr7idTwg3w"
+          },
+          "state": {
+            "status": "error",
+            "input": {
+              "redacted": "tool-input:msg_127c94a74001gWX3lr7idTwg3w"
+            },
+            "error": {
+              "type": "tool.execution",
+              "message": "Search path does not exist: /Users/alexanderkluge/.opencode"
+            }
+          },
+          "time": {
+            "created": 1791668879688,
+            "ran": 1791668879689,
+            "completed": 1791668896697
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_WRcFW4tbA7dKDmeljYk138Wh",
+          "name": "glob",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127c94a74001gWX3lr7idTwg3w"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127c94a74001gWX3lr7idTwg3w"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127c94a74001gWX3lr7idTwg3w]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127c94a74001gWX3lr7idTwg3w"
+            }
+          },
+          "time": {
+            "created": 1791668879690,
+            "ran": 1791668879692,
+            "completed": 1791668894491
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_i6get6bRmvOO5SyqAGbC3A6m",
+          "name": "read",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127c94a74001gWX3lr7idTwg3w"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127c94a74001gWX3lr7idTwg3w"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127c94a74001gWX3lr7idTwg3w]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127c94a74001gWX3lr7idTwg3w"
+            }
+          },
+          "time": {
+            "created": 1791668879693,
+            "ran": 1791668879698,
+            "completed": 1791668898379
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acab287994087d1b6587d0530f59f97",
+        "serviceTier": "default"
+      },
+      "cost": 0.0085001,
+      "tokens": {
+        "input": 3,
+        "output": 110,
+        "reasoning": 34,
+        "cache": {
+          "read": 54441,
+          "write": 644
+        }
+      }
+    },
+    {
+      "id": "msg_127c9ca5b001W3KEbW91tN8xIt",
+      "time": {
+        "created": 1791668898402,
+        "streamed": 1791668910837,
+        "completed": 1791668910842
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "",
+          "state": {
+            "redacted": "reasoning-state:msg_127c9ca5b001W3KEbW91tN8xIt"
+          },
+          "time": {
+            "created": 1791668900023,
+            "completed": 1791668909944
+          }
+        },
+        {
+          "type": "text",
+          "text": "[redacted:text:msg_127c9ca5b001W3KEbW91tN8xIt]",
+          "state": {
+            "redacted": "text-state:msg_127c9ca5b001W3KEbW91tN8xIt"
+          }
+        }
+      ],
+      "finish": "error",
+      "error": {
+        "type": "provider.rate-limit",
+        "message": "rate_limit_exceeded: Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 971580, Requested 55215. Please try again in 1.607s. Visit https://platform.openai.com/account/rate-limits to learn more.",
+        "response": {
+          "body": "{\"type\":\"error\",\"error\":{\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\",\"headers\":{\"retry-after\":\"2\",\"retry-after-ms\":\"1607\",\"x-ratelimit-limit-input-images\":\"50000\",\"x-ratelimit-limit-requests\":\"5000\",\"x-ratelimit-limit-tokens\":\"1000000\",\"x-ratelimit-remaining-input-images\":\"49993\",\"x-ratelimit-remaining-requests\":\"4998\",\"x-ratelimit-remaining-tokens\":\"28420\",\"x-ratelimit-reset-input-images\":\"8ms\",\"x-ratelimit-reset-requests\":\"24ms\",\"x-ratelimit-reset-tokens\":\"58.294s\"},\"message\":\"Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 971580, Requested 55215. Please try again in 1.607s. Visit https://platform.openai.com/account/rate-limits to learn more.\",\"param\":null},\"sequence_number\":64}"
+        }
+      },
+      "retry": {
+        "attempt": 2,
+        "at": 1791668913027,
+        "error": {
+          "type": "provider.rate-limit",
+          "message": "rate_limit_exceeded: Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 971580, Requested 55215. Please try again in 1.607s. Visit https://platform.openai.com/account/rate-limits to learn more.",
+          "response": {
+            "body": "{\"type\":\"error\",\"error\":{\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\",\"headers\":{\"retry-after\":\"2\",\"retry-after-ms\":\"1607\",\"x-ratelimit-limit-input-images\":\"50000\",\"x-ratelimit-limit-requests\":\"5000\",\"x-ratelimit-limit-tokens\":\"1000000\",\"x-ratelimit-remaining-input-images\":\"49993\",\"x-ratelimit-remaining-requests\":\"4998\",\"x-ratelimit-remaining-tokens\":\"28420\",\"x-ratelimit-reset-input-images\":\"8ms\",\"x-ratelimit-reset-requests\":\"24ms\",\"x-ratelimit-reset-tokens\":\"58.294s\"},\"message\":\"Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 971580, Requested 55215. Please try again in 1.607s. Visit https://platform.openai.com/account/rate-limits to learn more.\",\"param\":null},\"sequence_number\":64}"
+          }
+        }
+      }
+    },
+    {
+      "id": "msg_127ca0385001IPZAZgquvwRwiT",
+      "time": {
+        "created": 1791668913029
+      },
+      "text": "[redacted:synthetic:msg_127ca0385001IPZAZgquvwRwiT]",
+      "type": "synthetic"
+    },
+    {
+      "id": "msg_127ca0389001mWINS5frxQRej4",
+      "time": {
+        "created": 1791668913057,
+        "streamed": 1791668921330,
+        "completed": 1791668921333
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "",
+          "state": {
+            "redacted": "reasoning-state:REDACTED"
+          },
+          "time": {
+            "created": 1791668918193,
+            "completed": 1791668920274
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_yUyy6utRcrb6Nl4AyfsEx03M",
+          "name": "skill",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:REDACTED"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:REDACTED"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:REDACTED]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:REDACTED"
+            }
+          },
+          "time": {
+            "created": 1791668921079,
+            "ran": 1791668921086,
+            "completed": 1791668921100
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acab2b2d5c887d19cfb030f131d7332",
+        "serviceTier": "default"
+      },
+      "cost": 0.0066765,
+      "tokens": {
+        "input": 3,
+        "output": 20,
+        "reasoning": 72,
+        "cache": {
+          "read": 55380,
+          "write": 85
+        }
+      }
+    },
+    {
+      "id": "msg_127ca24030013175YOANFt2mpz",
+      "time": {
+        "created": 1791668921354,
+        "streamed": 1791668924556,
+        "completed": 1791668943791
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "",
+          "state": {
+            "redacted": "reasoning-state:msg_127ca24030013175YOANFt2mpz"
+          },
+          "time": {
+            "created": 1791668922466,
+            "completed": 1791668924262
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_KjrqVMd4RjCoI5ouLH27Wycr",
+          "name": "read",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127ca24030013175YOANFt2mpz"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127ca24030013175YOANFt2mpz"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127ca24030013175YOANFt2mpz]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127ca24030013175YOANFt2mpz"
+            }
+          },
+          "time": {
+            "created": 1791668924265,
+            "ran": 1791668924273,
+            "completed": 1791668924287
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_ygmLN3gMDrlWFcivlPMuZsa0",
+          "name": "read",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127ca24030013175YOANFt2mpz"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127ca24030013175YOANFt2mpz"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127ca24030013175YOANFt2mpz]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127ca24030013175YOANFt2mpz"
+            }
+          },
+          "time": {
+            "created": 1791668924275,
+            "ran": 1791668924280,
+            "completed": 1791668943167
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_4piv8QznH0S1h5WNcwQPh17B",
+          "name": "glob",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127ca24030013175YOANFt2mpz"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127ca24030013175YOANFt2mpz"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127ca24030013175YOANFt2mpz]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127ca24030013175YOANFt2mpz"
+            }
+          },
+          "time": {
+            "created": 1791668924464,
+            "ran": 1791668924473,
+            "completed": 1791668943790
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acab2b9829487d1a1f370da2c99414d",
+        "serviceTier": "default"
+      },
+      "cost": 0.014405,
+      "tokens": {
+        "input": 3,
+        "output": 102,
+        "reasoning": 39,
+        "cache": {
+          "read": 55465,
+          "write": 2977
+        }
+      }
+    },
+    {
+      "id": "msg_127ca7bb5001Sb7gwDqec4PVIf",
+      "time": {
+        "created": 1791668943801,
+        "streamed": 1791668945138,
+        "completed": 1791668945140
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "tool",
+          "id": "call_I3QxMGZWHnAZk3qsMnSp9Uim",
+          "name": "read",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127ca7bb5001Sb7gwDqec4PVIf"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127ca7bb5001Sb7gwDqec4PVIf"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127ca7bb5001Sb7gwDqec4PVIf]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127ca7bb5001Sb7gwDqec4PVIf"
+            }
+          },
+          "time": {
+            "created": 1791668944807,
+            "ran": 1791668945055,
+            "completed": 1791668945059
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acab2cff39487d1ba70ec50542c5c2e",
+        "serviceTier": "default"
+      },
+      "cost": 0.006997700000000001,
+      "tokens": {
+        "input": 3,
+        "output": 30,
+        "reasoning": 0,
+        "cache": {
+          "read": 58442,
+          "write": 339
+        }
+      }
+    },
+    {
+      "id": "msg_127ca80fe0013FgBX7DOosduNW",
+      "time": {
+        "created": 1791668945156,
+        "streamed": 1791668957043,
+        "completed": 1791668957047
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "tool",
+          "id": "call_tDcUuLc3NgOFmNU0UdQIclx1",
+          "name": "read",
+          "executed": false,
+          "state": {
+            "status": "error",
+            "input": {
+              "redacted": "tool-input:msg_127ca80fe0013FgBX7DOosduNW"
+            },
+            "error": {
+              "type": "provider.rate-limit",
+              "message": "rate_limit_exceeded: Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 960039, Requested 58677. Please try again in 1.122s. Visit https://platform.openai.com/account/rate-limits to learn more.",
+              "response": {
+                "body": "{\"type\":\"error\",\"error\":{\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\",\"headers\":{\"retry-after\":\"2\",\"retry-after-ms\":\"1122\",\"x-ratelimit-limit-input-images\":\"50000\",\"x-ratelimit-limit-requests\":\"5000\",\"x-ratelimit-limit-tokens\":\"1000000\",\"x-ratelimit-remaining-input-images\":\"49997\",\"x-ratelimit-remaining-requests\":\"4999\",\"x-ratelimit-remaining-tokens\":\"39961\",\"x-ratelimit-reset-input-images\":\"3ms\",\"x-ratelimit-reset-requests\":\"12ms\",\"x-ratelimit-reset-tokens\":\"57.602s\"},\"message\":\"Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 960039, Requested 58677. Please try again in 1.122s. Visit https://platform.openai.com/account/rate-limits to learn more.\",\"param\":null},\"sequence_number\":20}"
+              }
+            }
+          },
+          "time": {
+            "created": 1791668953127,
+            "completed": 1791668957045
+          }
+        }
+      ],
+      "finish": "error",
+      "error": {
+        "type": "provider.rate-limit",
+        "message": "rate_limit_exceeded: Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 960039, Requested 58677. Please try again in 1.122s. Visit https://platform.openai.com/account/rate-limits to learn more.",
+        "response": {
+          "body": "{\"type\":\"error\",\"error\":{\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\",\"headers\":{\"retry-after\":\"2\",\"retry-after-ms\":\"1122\",\"x-ratelimit-limit-input-images\":\"50000\",\"x-ratelimit-limit-requests\":\"5000\",\"x-ratelimit-limit-tokens\":\"1000000\",\"x-ratelimit-remaining-input-images\":\"49997\",\"x-ratelimit-remaining-requests\":\"4999\",\"x-ratelimit-remaining-tokens\":\"39961\",\"x-ratelimit-reset-input-images\":\"3ms\",\"x-ratelimit-reset-requests\":\"12ms\",\"x-ratelimit-reset-tokens\":\"57.602s\"},\"message\":\"Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 960039, Requested 58677. Please try again in 1.122s. Visit https://platform.openai.com/account/rate-limits to learn more.\",\"param\":null},\"sequence_number\":20}"
+        }
+      },
+      "retry": {
+        "attempt": 2,
+        "at": 1791668959210,
+        "error": {
+          "type": "provider.rate-limit",
+          "message": "rate_limit_exceeded: Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 960039, Requested 58677. Please try again in 1.122s. Visit https://platform.openai.com/account/rate-limits to learn more.",
+          "response": {
+            "body": "{\"type\":\"error\",\"error\":{\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\",\"headers\":{\"retry-after\":\"2\",\"retry-after-ms\":\"1122\",\"x-ratelimit-limit-input-images\":\"50000\",\"x-ratelimit-limit-requests\":\"5000\",\"x-ratelimit-limit-tokens\":\"1000000\",\"x-ratelimit-remaining-input-images\":\"49997\",\"x-ratelimit-remaining-requests\":\"4999\",\"x-ratelimit-remaining-tokens\":\"39961\",\"x-ratelimit-reset-input-images\":\"3ms\",\"x-ratelimit-reset-requests\":\"12ms\",\"x-ratelimit-reset-tokens\":\"57.602s\"},\"message\":\"Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 960039, Requested 58677. Please try again in 1.122s. Visit https://platform.openai.com/account/rate-limits to learn more.\",\"param\":null},\"sequence_number\":20}"
+          }
+        }
+      }
+    },
+    {
+      "id": "msg_127cab7ea001EJPIA2F1VPaYz7",
+      "time": {
+        "created": 1791668959210
+      },
+      "text": "[redacted:synthetic:msg_127cab7ea001EJPIA2F1VPaYz7]",
+      "type": "synthetic"
+    },
+    {
+      "id": "msg_127cab7ed00150pywj1uKvRH7k",
+      "time": {
+        "created": 1791668969933,
+        "streamed": 1791668980925,
+        "completed": 1791668980928
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "tool",
+          "id": "call_EzlguBJEBypMR1SSW00n1aOH",
+          "name": "read",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127cab7ed00150pywj1uKvRH7k"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127cab7ed00150pywj1uKvRH7k"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127cab7ed00150pywj1uKvRH7k]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127cab7ed00150pywj1uKvRH7k"
+            }
+          },
+          "time": {
+            "created": 1791668979338,
+            "ran": 1791668979340,
+            "completed": 1791668979344
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acab2f0719c87d19808d070d6d51e65",
+        "serviceTier": "default"
+      },
+      "cost": 0.0071352,
+      "tokens": {
+        "input": 3,
+        "output": 29,
+        "reasoning": 0,
+        "cache": {
+          "read": 58842,
+          "write": 382
+        }
+      }
+    },
+    {
+      "id": "msg_127cb0cce001KE0hMM5eAkoXXH",
+      "time": {
+        "created": 1791668980949,
+        "streamed": 1791668983870,
+        "completed": 1791668983874
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "tool",
+          "id": "call_7H4XY9LfFFLBk5gOjSldxdiv",
+          "name": "read",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127cb0cce001KE0hMM5eAkoXXH"
+          },
+          "state": {
+            "status": "error",
+            "input": {
+              "redacted": "tool-input:msg_127cb0cce001KE0hMM5eAkoXXH"
+            },
+            "error": {
+              "type": "unknown",
+              "message": "Cannot read binary file: /Applications/OpenCode.app/Contents/Resources/opencode-cli"
+            }
+          },
+          "time": {
+            "created": 1791668983585,
+            "ran": 1791668983589,
+            "completed": 1791668983603
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_ZHdDC9YeKs7gXZNHm9s4XNaD",
+          "name": "read",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127cb0cce001KE0hMM5eAkoXXH"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127cb0cce001KE0hMM5eAkoXXH"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127cb0cce001KE0hMM5eAkoXXH]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127cb0cce001KE0hMM5eAkoXXH"
+            }
+          },
+          "time": {
+            "created": 1791668983591,
+            "ran": 1791668983721,
+            "completed": 1791668983728
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acab2f5587087d18e4ff59adbdd756a",
+        "serviceTier": "default"
+      },
+      "cost": 0.0074384,
+      "tokens": {
+        "input": 3,
+        "output": 73,
+        "reasoning": 0,
+        "cache": {
+          "read": 59224,
+          "write": 312
+        }
+      }
+    },
+    {
+      "id": "msg_127cb1850001uROAFf0Tk0dYOd",
+      "time": {
+        "created": 1791668983894,
+        "streamed": 1791668991426,
+        "completed": 1791668991428
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "",
+          "state": {
+            "redacted": "reasoning-state:msg_127cb1850001uROAFf0Tk0dYOd"
+          },
+          "time": {
+            "created": 1791668984970,
+            "completed": 1791668991059
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_cqLfXAI9HJFYLb7ryLy6Jsxm",
+          "name": "webfetch",
+          "executed": false,
+          "state": {
+            "status": "error",
+            "input": {
+              "redacted": "tool-input:msg_127cb1850001uROAFf0Tk0dYOd"
+            },
+            "error": {
+              "type": "provider.rate-limit",
+              "message": "rate_limit_exceeded: Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 947948, Requested 59523. Please try again in 448ms. Visit https://platform.openai.com/account/rate-limits to learn more.",
+              "response": {
+                "body": "{\"type\":\"error\",\"error\":{\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\",\"headers\":{\"retry-after\":\"1\",\"retry-after-ms\":\"448\",\"x-ratelimit-limit-input-images\":\"50000\",\"x-ratelimit-limit-requests\":\"5000\",\"x-ratelimit-limit-tokens\":\"1000000\",\"x-ratelimit-remaining-input-images\":\"49997\",\"x-ratelimit-remaining-requests\":\"4999\",\"x-ratelimit-remaining-tokens\":\"52052\",\"x-ratelimit-reset-input-images\":\"3ms\",\"x-ratelimit-reset-requests\":\"12ms\",\"x-ratelimit-reset-tokens\":\"56.876s\"},\"message\":\"Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 947948, Requested 59523. Please try again in 448ms. Visit https://platform.openai.com/account/rate-limits to learn more.\",\"param\":null},\"sequence_number\":39}"
+              }
+            }
+          },
+          "time": {
+            "created": 1791668991061,
+            "completed": 1791668991427
+          }
+        }
+      ],
+      "finish": "error",
+      "error": {
+        "type": "provider.rate-limit",
+        "message": "rate_limit_exceeded: Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 947948, Requested 59523. Please try again in 448ms. Visit https://platform.openai.com/account/rate-limits to learn more.",
+        "response": {
+          "body": "{\"type\":\"error\",\"error\":{\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\",\"headers\":{\"retry-after\":\"1\",\"retry-after-ms\":\"448\",\"x-ratelimit-limit-input-images\":\"50000\",\"x-ratelimit-limit-requests\":\"5000\",\"x-ratelimit-limit-tokens\":\"1000000\",\"x-ratelimit-remaining-input-images\":\"49997\",\"x-ratelimit-remaining-requests\":\"4999\",\"x-ratelimit-remaining-tokens\":\"52052\",\"x-ratelimit-reset-input-images\":\"3ms\",\"x-ratelimit-reset-requests\":\"12ms\",\"x-ratelimit-reset-tokens\":\"56.876s\"},\"message\":\"Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 947948, Requested 59523. Please try again in 448ms. Visit https://platform.openai.com/account/rate-limits to learn more.\",\"param\":null},\"sequence_number\":39}"
+        }
+      },
+      "retry": {
+        "attempt": 2,
+        "at": 1791668993622,
+        "error": {
+          "type": "provider.rate-limit",
+          "message": "rate_limit_exceeded: Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 947948, Requested 59523. Please try again in 448ms. Visit https://platform.openai.com/account/rate-limits to learn more.",
+          "response": {
+            "body": "{\"type\":\"error\",\"error\":{\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\",\"headers\":{\"retry-after\":\"1\",\"retry-after-ms\":\"448\",\"x-ratelimit-limit-input-images\":\"50000\",\"x-ratelimit-limit-requests\":\"5000\",\"x-ratelimit-limit-tokens\":\"1000000\",\"x-ratelimit-remaining-input-images\":\"49997\",\"x-ratelimit-remaining-requests\":\"4999\",\"x-ratelimit-remaining-tokens\":\"52052\",\"x-ratelimit-reset-input-images\":\"3ms\",\"x-ratelimit-reset-requests\":\"12ms\",\"x-ratelimit-reset-tokens\":\"56.876s\"},\"message\":\"Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 947948, Requested 59523. Please try again in 448ms. Visit https://platform.openai.com/account/rate-limits to learn more.\",\"param\":null},\"sequence_number\":39}"
+          }
+        }
+      }
+    },
+    {
+      "id": "msg_127cb3e570016iQKkVguHAZSTx",
+      "time": {
+        "created": 1791668993623
+      },
+      "text": "[redacted:synthetic:REDACTED]",
+      "type": "synthetic"
+    },
+    {
+      "id": "msg_127cb3e59001fRwRQee4gkTBMk",
+      "time": {
+        "created": 1791668993635,
+        "streamed": 1791669001687,
+        "completed": 1791669001753
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "",
+          "state": {
+            "redacted": "reasoning-state:msg_127cb3e59001fRwRQee4gkTBMk"
+          },
+          "time": {
+            "created": 1791668998564,
+            "completed": 1791669001395
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_I3RkxrKMIHSwWRkPGa7kMV1x",
+          "name": "webfetch",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127cb3e59001fRwRQee4gkTBMk"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127cb3e59001fRwRQee4gkTBMk"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127cb3e59001fRwRQee4gkTBMk]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127cb3e59001fRwRQee4gkTBMk"
+            }
+          },
+          "time": {
+            "created": 1791669001397,
+            "ran": 1791669001398,
+            "completed": 1791669001751
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_f8OK3y2aiN762rDZmadrb64g",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127cb3e59001fRwRQee4gkTBMk"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127cb3e59001fRwRQee4gkTBMk"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127cb3e59001fRwRQee4gkTBMk]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127cb3e59001fRwRQee4gkTBMk"
+            }
+          },
+          "time": {
+            "created": 1791669001399,
+            "ran": 1791669001416,
+            "completed": 1791669001474
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acab305445887d1b42f05ce479bc21d",
+        "serviceTier": "default"
+      },
+      "cost": 0.0085423,
+      "tokens": {
+        "input": 3,
+        "output": 99,
+        "reasoning": 63,
+        "cache": {
+          "read": 59688,
+          "write": 379
+        }
+      }
+    },
+    {
+      "id": "msg_127cb5e20001IzXATkuWH8ShpI",
+      "time": {
+        "created": 1791669001765,
+        "streamed": 1791669007317,
+        "completed": 1791669007324
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "",
+          "state": {
+            "redacted": "reasoning-state:REDACTED"
+          },
+          "time": {
+            "created": 1791669003420,
+            "completed": 1791669004690
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_3XwWGXrVQ43E9JwfWCBgqscp",
+          "name": "shell",
+          "executed": false,
+          "state": {
+            "status": "error",
+            "input": {
+              "redacted": "tool-input:REDACTED"
+            },
+            "error": {
+              "type": "provider.rate-limit",
+              "message": "rate_limit_exceeded: Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 959373, Requested 61247. Please try again in 1.237s. Visit https://platform.openai.com/account/rate-limits to learn more.",
+              "response": {
+                "body": "{\"type\":\"error\",\"error\":{\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\",\"headers\":{\"retry-after\":\"2\",\"retry-after-ms\":\"1237\",\"x-ratelimit-limit-input-images\":\"50000\",\"x-ratelimit-limit-requests\":\"5000\",\"x-ratelimit-limit-tokens\":\"1000000\",\"x-ratelimit-remaining-input-images\":\"49989\",\"x-ratelimit-remaining-requests\":\"4997\",\"x-ratelimit-remaining-tokens\":\"40627\",\"x-ratelimit-reset-input-images\":\"13ms\",\"x-ratelimit-reset-requests\":\"36ms\",\"x-ratelimit-reset-tokens\":\"57.562s\"},\"message\":\"Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 959373, Requested 61247. Please try again in 1.237s. Visit https://platform.openai.com/account/rate-limits to learn more.\",\"param\":null},\"sequence_number\":224}"
+              }
+            }
+          },
+          "time": {
+            "created": 1791669004694,
+            "completed": 1791669007319
+          }
+        }
+      ],
+      "finish": "error",
+      "error": {
+        "type": "provider.rate-limit",
+        "message": "rate_limit_exceeded: Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 959373, Requested 61247. Please try again in 1.237s. Visit https://platform.openai.com/account/rate-limits to learn more.",
+        "response": {
+          "body": "{\"type\":\"error\",\"error\":{\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\",\"headers\":{\"retry-after\":\"2\",\"retry-after-ms\":\"1237\",\"x-ratelimit-limit-input-images\":\"50000\",\"x-ratelimit-limit-requests\":\"5000\",\"x-ratelimit-limit-tokens\":\"1000000\",\"x-ratelimit-remaining-input-images\":\"49989\",\"x-ratelimit-remaining-requests\":\"4997\",\"x-ratelimit-remaining-tokens\":\"40627\",\"x-ratelimit-reset-input-images\":\"13ms\",\"x-ratelimit-reset-requests\":\"36ms\",\"x-ratelimit-reset-tokens\":\"57.562s\"},\"message\":\"Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 959373, Requested 61247. Please try again in 1.237s. Visit https://platform.openai.com/account/rate-limits to learn more.\",\"param\":null},\"sequence_number\":224}"
+        }
+      },
+      "retry": {
+        "attempt": 2,
+        "at": 1791669009328,
+        "error": {
+          "type": "provider.rate-limit",
+          "message": "rate_limit_exceeded: Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 959373, Requested 61247. Please try again in 1.237s. Visit https://platform.openai.com/account/rate-limits to learn more.",
+          "response": {
+            "body": "{\"type\":\"error\",\"error\":{\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\",\"headers\":{\"retry-after\":\"2\",\"retry-after-ms\":\"1237\",\"x-ratelimit-limit-input-images\":\"50000\",\"x-ratelimit-limit-requests\":\"5000\",\"x-ratelimit-limit-tokens\":\"1000000\",\"x-ratelimit-remaining-input-images\":\"49989\",\"x-ratelimit-remaining-requests\":\"4997\",\"x-ratelimit-remaining-tokens\":\"40627\",\"x-ratelimit-reset-input-images\":\"13ms\",\"x-ratelimit-reset-requests\":\"36ms\",\"x-ratelimit-reset-tokens\":\"57.562s\"},\"message\":\"Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 959373, Requested 61247. Please try again in 1.237s. Visit https://platform.openai.com/account/rate-limits to learn more.\",\"param\":null},\"sequence_number\":224}"
+          }
+        }
+      }
+    },
+    {
+      "id": "msg_127cb7bb0001FAKPFNLaW5GewS",
+      "time": {
+        "created": 1791669009328
+      },
+      "text": "[redacted:synthetic:msg_127cb7bb0001FAKPFNLaW5GewS]",
+      "type": "synthetic"
+    },
+    {
+      "id": "msg_127cb7bb3001JdRPEhAwBnPG92",
+      "time": {
+        "created": 1791669009349,
+        "streamed": 1791669017309,
+        "completed": 1791669017843
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "tool",
+          "id": "call_N1YxF9n3MpNSf7cdlDyKNwZe",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127cb7bb3001JdRPEhAwBnPG92"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127cb7bb3001JdRPEhAwBnPG92"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127cb7bb3001JdRPEhAwBnPG92]"
+              },
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127cb7bb3001JdRPEhAwBnPG92]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127cb7bb3001JdRPEhAwBnPG92"
+            }
+          },
+          "time": {
+            "created": 1791669015219,
+            "ran": 1791669017286,
+            "completed": 1791669017843
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acab315cf6887d188402ea24aee7584",
+        "serviceTier": "default"
+      },
+      "cost": 0.009232200000000001,
+      "tokens": {
+        "input": 3,
+        "output": 213,
+        "reasoning": 0,
+        "cache": {
+          "read": 61412,
+          "write": 382
+        }
+      }
+    },
+    {
+      "id": "msg_127cb9cf800173VM97W3A6o919",
+      "time": {
+        "created": 1791669017851,
+        "streamed": 1791669021725,
+        "completed": 1791669021726
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "",
+          "state": {
+            "redacted": "reasoning-state:msg_127cb9cf800173VM97W3A6o919"
+          },
+          "time": {
+            "created": 1791669019059,
+            "completed": 1791669021313
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_3CAfAzqACh3duPPunhpTNwrA",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127cb9cf800173VM97W3A6o919"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127cb9cf800173VM97W3A6o919"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127cb9cf800173VM97W3A6o919]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127cb9cf800173VM97W3A6o919"
+            }
+          },
+          "time": {
+            "created": 1791669021315,
+            "ran": 1791669021627,
+            "completed": 1791669021678
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acab31a262487d188dd8830dc715c40",
+        "serviceTier": "default"
+      },
+      "cost": 0.008465400000000001,
+      "tokens": {
+        "input": 3,
+        "output": 57,
+        "reasoning": 107,
+        "cache": {
+          "read": 61794,
+          "write": 256
+        }
+      }
+    },
+    {
+      "id": "msg_127cbac25001o1DnZsYMeshjac",
+      "time": {
+        "created": 1791669021737,
+        "streamed": 1791669029910,
+        "completed": 1791669029914
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "",
+          "state": {
+            "redacted": "reasoning-state:msg_127cbac25001o1DnZsYMeshjac"
+          },
+          "time": {
+            "created": 1791669023230,
+            "completed": 1791669029366
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_PKnt9x0E3ymgW4uvpRBb0SF0",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127cbac25001o1DnZsYMeshjac"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127cbac25001o1DnZsYMeshjac"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127cbac25001o1DnZsYMeshjac]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127cbac25001o1DnZsYMeshjac"
+            }
+          },
+          "time": {
+            "created": 1791669029370,
+            "ran": 1791669029610,
+            "completed": 1791669029678
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acab31de3fc87d183f76c3952f06dba",
+        "serviceTier": "default"
+      },
+      "cost": 0.010016,
+      "tokens": {
+        "input": 3,
+        "output": 58,
+        "reasoning": 227,
+        "cache": {
+          "read": 62050,
+          "write": 382
+        }
+      }
+    },
+    {
+      "id": "msg_127cbcc25001iO8GwT5E7TREal",
+      "time": {
+        "created": 1791669029933,
+        "streamed": 1791669033616,
+        "completed": 1791669033667
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "",
+          "state": {
+            "redacted": "reasoning-state:msg_127cbcc25001iO8GwT5E7TREal"
+          },
+          "time": {
+            "created": 1791669031096,
+            "completed": 1791669032258
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_hz8ap0k1xJVNxCsgArGh5eAo",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127cbcc25001iO8GwT5E7TREal"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127cbcc25001iO8GwT5E7TREal"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127cbcc25001iO8GwT5E7TREal]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127cbcc25001iO8GwT5E7TREal"
+            }
+          },
+          "time": {
+            "created": 1791669032259,
+            "ran": 1791669033558,
+            "completed": 1791669033666
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acab3260a0c87d1bb69d9df2ef65c55",
+        "serviceTier": "default"
+      },
+      "cost": 0.009821700000000001,
+      "tokens": {
+        "input": 3,
+        "output": 208,
+        "reasoning": 20,
+        "cache": {
+          "read": 62432,
+          "write": 517
+        }
+      }
+    },
+    {
+      "id": "msg_127cbdac8001mKeoEHlo23kqzY",
+      "time": {
+        "created": 1791669033676,
+        "streamed": 1791669039738,
+        "completed": 1791669039739
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "",
+          "state": {
+            "redacted": "reasoning-state:REDACTED"
+          },
+          "time": {
+            "created": 1791669034955,
+            "completed": 1791669037430
+          }
+        },
+        {
+          "type": "text",
+          "text": "[redacted:text:REDACTED]",
+          "state": {
+            "redacted": "text-state:REDACTED"
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_pJRlqp3IrvC0gZaMeDfjFFNp",
+          "name": "patch",
+          "executed": false,
+          "state": {
+            "status": "error",
+            "input": {
+              "redacted": "tool-input:REDACTED"
+            },
+            "error": {
+              "type": "provider.rate-limit",
+              "message": "rate_limit_exceeded: Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 957445, Requested 63045. Please try again in 1.229s. Visit https://platform.openai.com/account/rate-limits to learn more.",
+              "response": {
+                "body": "{\"type\":\"error\",\"error\":{\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\",\"headers\":{\"retry-after\":\"2\",\"retry-after-ms\":\"1229\",\"x-ratelimit-limit-input-images\":\"50000\",\"x-ratelimit-limit-requests\":\"5000\",\"x-ratelimit-limit-tokens\":\"1000000\",\"x-ratelimit-remaining-input-images\":\"49997\",\"x-ratelimit-remaining-requests\":\"4999\",\"x-ratelimit-remaining-tokens\":\"42555\",\"x-ratelimit-reset-input-images\":\"3ms\",\"x-ratelimit-reset-requests\":\"12ms\",\"x-ratelimit-reset-tokens\":\"57.446s\"},\"message\":\"Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 957445, Requested 63045. Please try again in 1.229s. Visit https://platform.openai.com/account/rate-limits to learn more.\",\"param\":null},\"sequence_number\":185}"
+              }
+            }
+          },
+          "time": {
+            "created": 1791669038301,
+            "completed": 1791669039739
+          }
+        }
+      ],
+      "finish": "error",
+      "error": {
+        "type": "provider.rate-limit",
+        "message": "rate_limit_exceeded: Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 957445, Requested 63045. Please try again in 1.229s. Visit https://platform.openai.com/account/rate-limits to learn more.",
+        "response": {
+          "body": "{\"type\":\"error\",\"error\":{\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\",\"headers\":{\"retry-after\":\"2\",\"retry-after-ms\":\"1229\",\"x-ratelimit-limit-input-images\":\"50000\",\"x-ratelimit-limit-requests\":\"5000\",\"x-ratelimit-limit-tokens\":\"1000000\",\"x-ratelimit-remaining-input-images\":\"49997\",\"x-ratelimit-remaining-requests\":\"4999\",\"x-ratelimit-remaining-tokens\":\"42555\",\"x-ratelimit-reset-input-images\":\"3ms\",\"x-ratelimit-reset-requests\":\"12ms\",\"x-ratelimit-reset-tokens\":\"57.446s\"},\"message\":\"Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 957445, Requested 63045. Please try again in 1.229s. Visit https://platform.openai.com/account/rate-limits to learn more.\",\"param\":null},\"sequence_number\":185}"
+        }
+      },
+      "retry": {
+        "attempt": 2,
+        "at": 1791669041421,
+        "error": {
+          "type": "provider.rate-limit",
+          "message": "rate_limit_exceeded: Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 957445, Requested 63045. Please try again in 1.229s. Visit https://platform.openai.com/account/rate-limits to learn more.",
+          "response": {
+            "body": "{\"type\":\"error\",\"error\":{\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\",\"headers\":{\"retry-after\":\"2\",\"retry-after-ms\":\"1229\",\"x-ratelimit-limit-input-images\":\"50000\",\"x-ratelimit-limit-requests\":\"5000\",\"x-ratelimit-limit-tokens\":\"1000000\",\"x-ratelimit-remaining-input-images\":\"49997\",\"x-ratelimit-remaining-requests\":\"4999\",\"x-ratelimit-remaining-tokens\":\"42555\",\"x-ratelimit-reset-input-images\":\"3ms\",\"x-ratelimit-reset-requests\":\"12ms\",\"x-ratelimit-reset-tokens\":\"57.446s\"},\"message\":\"Rate limit reached for gpt-6.1-sol in organization org-DS8OJDDRaZWxwDF1Djgc1dsa on tokens per min (TPM): Limit 1000000, Used 957445, Requested 63045. Please try again in 1.229s. Visit https://platform.openai.com/account/rate-limits to learn more.\",\"param\":null},\"sequence_number\":185}"
+          }
+        }
+      }
+    },
+    {
+      "id": "msg_127cbf90e001QdPL0SH8QrH27O",
+      "time": {
+        "created": 1791669041423
+      },
+      "text": "[redacted:synthetic:msg_127cbf90e001QdPL0SH8QrH27O]",
+      "type": "synthetic"
+    },
+    {
+      "id": "msg_127cbf910001023vWqiahoEzgQ",
+      "time": {
+        "created": 1791669050132,
+        "streamed": 1791669059744,
+        "completed": 1791669059747
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "tool",
+          "id": "call_faXQ46GxErZXhUMLOiPqYCaz",
+          "name": "patch",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127cbf910001023vWqiahoEzgQ"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127cbf910001023vWqiahoEzgQ"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127cbf910001023vWqiahoEzgQ]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127cbf910001023vWqiahoEzgQ"
+            }
+          },
+          "time": {
+            "created": 1791669058033,
+            "ran": 1791669059567,
+            "completed": 1791669059572
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acab340318887d1a9ef9e1cb0aa2995",
+        "serviceTier": "default"
+      },
+      "cost": 0.008807,
+      "tokens": {
+        "input": 3,
+        "output": 139,
+        "reasoning": 0,
+        "cache": {
+          "read": 63210,
+          "write": 436
+        }
+      }
+    },
+    {
+      "id": "msg_127cc40ad001rkR6fZvvmdVbeV",
+      "time": {
+        "created": 1791669059763,
+        "streamed": 1791669062638,
+        "completed": 1791669062639
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "tool",
+          "id": "call_LHPrd51u1PPZ9CP1wi3WFavX",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127cc40ad001rkR6fZvvmdVbeV"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127cc40ad001rkR6fZvvmdVbeV"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127cc40ad001rkR6fZvvmdVbeV]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127cc40ad001rkR6fZvvmdVbeV"
+            }
+          },
+          "time": {
+            "created": 1791669062000,
+            "ran": 1791669062609,
+            "completed": 1791669062621
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acab344943c87d19b4d2e4e86a8f668",
+        "serviceTier": "default"
+      },
+      "cost": 0.0076106,
+      "tokens": {
+        "input": 3,
+        "output": 75,
+        "reasoning": 0,
+        "cache": {
+          "read": 63646,
+          "write": 196
+        }
+      }
+    },
+    {
+      "id": "msg_127cc4bfa001jyd6d2xdGDNPf0",
+      "time": {
+        "created": 1791669062657,
+        "streamed": 1791669069429,
+        "completed": 1791669069434
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "gpt-6.1-sol",
+        "providerID": "openai",
+        "variant": "medium"
+      },
+      "content": [
+        {
+          "type": "tool",
+          "id": "call_WW4wS1AdD7MbHrOCotGy8oDq",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "redacted": "tool-provider-state:msg_127cc4bfa001jyd6d2xdGDNPf0"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "redacted": "tool-input:msg_127cc4bfa001jyd6d2xdGDNPf0"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[redacted:tool-output:msg_127cc4bfa001jyd6d2xdGDNPf0]"
+              }
+            ],
+            "metadata": {
+              "redacted": "tool-metadata:msg_127cc4bfa001jyd6d2xdGDNPf0"
+            }
+          },
+          "time": {
+            "created": 1791669065540,
+            "ran": 1791669067892,
+            "completed": 1791669067979
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_0a9c367db1dd48fa016acab346c44887d1a75242cb8cacdefc",
+        "serviceTier": "default"
+      },
+      "cost": 0.007470200000000001,
+      "tokens": {
+        "input": 3,
+        "output": 86,
+        "reasoning": 0,
+        "cache": {
+          "read": 63842,
+          "write": 88
+        }
+      }
+    }
+  ]
+}
