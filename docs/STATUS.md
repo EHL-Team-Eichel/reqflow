@@ -271,6 +271,13 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
   transferred part/type scaffolding, preserve BMW body/windows and requirement review,
   verify renderer/model tests plus a synthetic Electron switching probe, then commit/push.
 
+- 2026-10-11: Rear-door window support is now upright like the B-pillar and stands
+  directly over the rear door handle (`REAR_WINDOW_SUPPORT_X` in `body.ts`), as on the
+  BMW M5, replacing the slanted quarter-glass frame. Applies to every catalog model (shared
+  G60 body). Regressions cover the upright bar and handle alignment; reviewed side and
+  three-quarter smoke screenshots. Typecheck passes; the one failing catalog-switching test and
+  the 12 smoke menu assertions also fail at `79d858c` without this change.
+
 - 2026-10-11: Side windows now have front, rear-door and fixed quarter panes separated
   by the existing B-pillar and a new slanted quarter-glass frame on both sides. Frames are
   part of the body surface, with existing selectable ids retained. Added three regressions;

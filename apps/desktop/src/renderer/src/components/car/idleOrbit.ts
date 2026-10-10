@@ -1,6 +1,6 @@
 export const IDLE_ORBIT_DELAY_MS = 30_000;
 
-/** App-wide activity, not just canvas input. Opening the car starts in idle mode. */
+/** Deliberate app-wide input pauses rotation; hovering does not. Opening starts in idle mode. */
 export function trackIdleOrbit(target: EventTarget, now: () => number = () => performance.now()) {
   let lastActivity = -Infinity;
   const pointers = new Set<number>();
@@ -19,7 +19,6 @@ export function trackIdleOrbit(target: EventTarget, now: () => number = () => pe
     pointers.clear();
   };
   const listeners: [string, EventListener][] = [
-    ["pointermove", activity],
     ["pointerdown", down],
     ["pointerup", up],
     ["pointercancel", up],

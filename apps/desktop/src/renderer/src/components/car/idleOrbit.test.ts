@@ -13,24 +13,40 @@ describe("idle car orbit", () => {
     expect(setup().orbit.shouldRotate()).toBe(true);
   });
 
-  it.each([
-    "pointermove",
-    "pointerdown",
-    "pointerup",
-    "pointercancel",
-    "wheel",
-    "keydown",
-    "scroll",
-  ])("stops on app-wide %s and restarts after 30 seconds", (type) => {
+  it("keeps rotating while entering, hovering over and leaving the model", () => {
     const { target, orbit, advance } = setup();
-    target.dispatchEvent(new Event(type));
-    expect(orbit.shouldRotate()).toBe(false);
-    if (type === "pointerdown") target.dispatchEvent(new Event("pointerup"));
-    advance(IDLE_ORBIT_DELAY_MS - 1);
-    expect(orbit.shouldRotate()).toBe(false);
-    advance(1);
+    for (const type of ["pointerenter", "pointerover", "pointermove", "pointerleave"]) {
+      advance(100);
+      target.dispatchEvent(new Event(type));
+      expect(orbit.shouldRotate()).toBe(true);
+    }
+  });
+
+  it("resumes after 30 seconds even while the pointer keeps hovering", () => {
+    const { target, orbit, advance } = setup();
+    target.dispatchEvent(new Event("pointerdown"));
+    target.dispatchEvent(new Event("pointerup"));
+    for (let i = 0; i < 30; i++) {
+      expect(orbit.shouldRotate()).toBe(false);
+      advance(1_000);
+      target.dispatchEvent(new Event("pointermove"));
+    }
     expect(orbit.shouldRotate()).toBe(true);
   });
+
+  it.each(["pointerdown", "pointerup", "pointercancel", "wheel", "keydown", "scroll"])(
+    "stops on app-wide %s and restarts after 30 seconds",
+    (type) => {
+      const { target, orbit, advance } = setup();
+      target.dispatchEvent(new Event(type));
+      expect(orbit.shouldRotate()).toBe(false);
+      if (type === "pointerdown") target.dispatchEvent(new Event("pointerup"));
+      advance(IDLE_ORBIT_DELAY_MS - 1);
+      expect(orbit.shouldRotate()).toBe(false);
+      advance(1);
+      expect(orbit.shouldRotate()).toBe(true);
+    },
+  );
 
   it("restarts the full delay with each interaction", () => {
     const { target, orbit, advance } = setup();
@@ -47,6 +63,7 @@ describe("idle car orbit", () => {
     const { target, orbit, advance } = setup();
     target.dispatchEvent(new Event("pointerdown"));
     advance(60_000);
+    target.dispatchEvent(new Event("pointermove"));
     expect(orbit.shouldRotate()).toBe(false);
     target.dispatchEvent(new Event("pointerup"));
     expect(orbit.shouldRotate()).toBe(false);
