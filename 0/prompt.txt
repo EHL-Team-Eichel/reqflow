@@ -1,0 +1,1 @@
+commit and push after being finished , in the exterior view only show things you can see from the outside, and hide every other point inside the car
