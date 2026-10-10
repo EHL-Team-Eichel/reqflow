@@ -1,9 +1,9 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { BMW_DEFAULT_TEMPLATE } from "@reqflow/blocks";
-import { DEFAULT_SETTINGS } from "@reqflow/core";
+import { createBlock, DEFAULT_SETTINGS, validateGraph } from "@reqflow/core";
 import { getWorkflow, listWorkflows, removeWorkflow, saveWorkflow } from "./workflow-storage";
 
 describe("workflow-storage", () => {
@@ -74,5 +74,25 @@ describe("workflow-storage", () => {
         edges: [],
       }),
     ).toThrowError(/Workflow graph has .* validation issue/);
+  });
+
+  it("loads legacy splitters without rewriting their files, then saves their workplace", () => {
+    const saved = saveWorkflow(tempDir, {
+      name: "Legacy splitter",
+      scope: DEFAULT_SETTINGS.defaultScope,
+      blocks: [createBlock("ai_splitter", { id: "split", position: { x: 0, y: 0 } })],
+      edges: [],
+    });
+    delete saved.blocks[0]!.inner;
+    const path = join(tempDir, "workflows", `${saved.id}.json`);
+    const serialized = JSON.stringify(saved);
+    writeFileSync(path, serialized);
+    const loaded = getWorkflow(tempDir, saved.id);
+    expect(loaded.blocks[0]!.inner?.blocks).toHaveLength(4);
+    expect(listWorkflows(tempDir)[0]!.blocks[0]!.inner?.blocks).toHaveLength(4);
+    expect(readFileSync(path, "utf8")).toBe(serialized);
+    const updated = saveWorkflow(tempDir, loaded);
+    expect(updated.version).toBe(2);
+    expect(validateGraph(updated)).toEqual([]);
   });
 });

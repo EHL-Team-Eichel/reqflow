@@ -294,7 +294,7 @@ export const BLOCK_SPECS: { readonly [K in PaletteBlockKind]: BlockSpec & { kind
     label: "AI Splitter",
     description: "Sorts every item into one of several branches. Each branch is its own output.",
     group: "ai",
-    hasInnerWorkplace: false,
+    hasInnerWorkplace: true,
     params: [
       {
         key: "splitBy",
@@ -314,7 +314,7 @@ export const BLOCK_SPECS: { readonly [K in PaletteBlockKind]: BlockSpec & { kind
         type: "list",
         default: ["Must have", "Should have", "Could have"],
         minItems: 2,
-        maxItems: 8,
+        maxItems: 10,
         itemPlaceholder: "Branch name",
       },
       {

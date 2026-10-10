@@ -13,6 +13,7 @@ import {
   renameBlock as renameInGraph,
   setBlockParams,
   updateGraphAt,
+  withSplitterWorkplaces,
   type BlockParams,
   type Connection,
   type ConnectionCheck,
@@ -149,7 +150,7 @@ export function createDataflowStore(initial: WorkflowGraph = emptyGraph()) {
     };
 
     return {
-      root: initial,
+      root: withSplitterWorkplaces(initial),
       path: [],
       selectedBlockIds: [],
       selectedEdgeIds: [],

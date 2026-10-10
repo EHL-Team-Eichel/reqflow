@@ -8,7 +8,13 @@ import {
   writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
-import { newId, validateGraph, Workflow, type WorkflowSave } from "@reqflow/core";
+import {
+  newId,
+  validateGraph,
+  withSplitterWorkplaces,
+  Workflow,
+  type WorkflowSave,
+} from "@reqflow/core";
 import { ReqflowError } from "./dispatch";
 
 export function getWorkflowsDir(dataDir: string): string {
@@ -25,7 +31,7 @@ export function listWorkflows(dataDir: string): Workflow[] {
   for (const file of files) {
     try {
       const content = readFileSync(join(dir, file), "utf8");
-      workflows.push(Workflow.parse(JSON.parse(content)));
+      workflows.push(withSplitterWorkplaces(Workflow.parse(JSON.parse(content))));
     } catch {
       // skip corrupted files
     }
@@ -46,13 +52,14 @@ export function getWorkflow(dataDir: string, id: string): Workflow {
 
   try {
     const content = readFileSync(filePath, "utf8");
-    return Workflow.parse(JSON.parse(content));
+    return withSplitterWorkplaces(Workflow.parse(JSON.parse(content)));
   } catch (err) {
     throw new ReqflowError("not_found", `Failed to parse workflow ${id}`);
   }
 }
 
 export function saveWorkflow(dataDir: string, input: WorkflowSave): Workflow {
+  input = withSplitterWorkplaces(input);
   // Validate graph
   const issues = validateGraph({ blocks: input.blocks, edges: input.edges });
   if (issues.length > 0) {

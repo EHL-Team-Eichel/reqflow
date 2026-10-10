@@ -1,8 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   DEFAULT_SETTINGS,
+  connect,
+  createBlock,
   defaultBlockParams,
   emptyPipelineData,
+  setBlockParams,
   type AuditLogger,
   type FileStore,
   type LlmClient,
@@ -32,6 +35,109 @@ const mockServices = () => {
 };
 
 describe("WorkflowExecutor (@reqflow/engine)", () => {
+  const splitterWorkflow = (count: number): Workflow => {
+    const raw = createBlock("raw", { id: "raw", position: { x: 0, y: 0 } });
+    const split = createBlock("ai_splitter", { id: "split", position: { x: 300, y: 0 } });
+    const graph = setBlockParams({ blocks: [raw, split], edges: [] }, "split", {
+      ...split.params,
+      splitBy: "category",
+      branches: Array.from({ length: count }, (_, i) => `Branch ${i}`),
+    }).graph;
+    return {
+      ...connect(graph, { source: "raw", sourcePort: "out", target: "split", targetPort: "in" }),
+      id: "wf_split",
+      version: 1,
+      name: "Splitter integration",
+      scope: DEFAULT_SETTINGS.defaultScope,
+      createdAt: "2026-10-10T00:00:00Z",
+      updatedAt: "2026-10-10T00:00:00Z",
+    };
+  };
+  const actor = { type: "human" as const, userId: "pm", name: "PM" };
+
+  it.each([2, 10])(
+    "executes built-in splitter routing with %i unwired output boundaries",
+    async (count) => {
+      const envelope = emptyPipelineData();
+      const splitRun = vi.fn(async (inputs) => {
+        expect(inputs.in).toBe(envelope);
+        return {
+          status: "ok" as const,
+          outputs: Object.fromEntries(
+            Array.from({ length: count }, (_, i) => [
+              `out-${i}`,
+              i === count - 1 ? envelope : emptyPipelineData(),
+            ]),
+          ),
+        };
+      });
+      const executor = new WorkflowExecutor({
+        registry: new BlockRegistry([
+          defineBlock({
+            kind: "raw",
+            async run() {
+              return { status: "ok", outputs: { out: envelope } };
+            },
+          }),
+          defineBlock({ kind: "ai_splitter", run: splitRun }),
+        ]),
+        services: mockServices(),
+      });
+      const run = await executor.execute(splitterWorkflow(count), actor, DEFAULT_SETTINGS);
+      expect(run.status).toBe("completed");
+      expect(splitRun).toHaveBeenCalledOnce();
+      expect(Object.keys((await executor.getBlockOutput(run.id, "split"))!)).toHaveLength(count);
+      expect(run.blockRuns.map((b) => b.blockId)).toEqual(["raw", "split"]);
+    },
+  );
+
+  it("executes authored splitter workplace routing and preserves it across a legacy upgrade", async () => {
+    const workflow = splitterWorkflow(2);
+    const split = workflow.blocks.find((b) => b.id === "split")!;
+    split.inner = connect(split.inner!, {
+      source: "split--in",
+      sourcePort: "out",
+      target: "split--out-1",
+      targetPort: "in",
+    });
+    const envelope = emptyPipelineData();
+    const executor = new WorkflowExecutor({
+      registry: new BlockRegistry([
+        defineBlock({
+          kind: "raw",
+          async run() {
+            return { status: "ok", outputs: { out: envelope } };
+          },
+        }),
+      ]),
+      services: mockServices(),
+    });
+    const run = await executor.execute(workflow, actor, DEFAULT_SETTINGS);
+    expect(run.status).toBe("completed");
+    expect((await executor.getBlockOutput(run.id, "split"))!["out-1"]).toBe(envelope);
+    expect(run.graph.blocks.find((b) => b.id === "split")!.inner).toEqual(split.inner);
+    expect(run.blockRuns).toHaveLength(5);
+    expect(run.blockRuns.every((b) => b.status === "succeeded")).toBe(true);
+  });
+
+  it("runs legacy splitters and fails clearly when their default implementation is missing", async () => {
+    const workflow = splitterWorkflow(2);
+    delete workflow.blocks.find((b) => b.id === "split")!.inner;
+    const executor = new WorkflowExecutor({
+      registry: new BlockRegistry([
+        defineBlock({
+          kind: "raw",
+          async run() {
+            return { status: "ok", outputs: { out: emptyPipelineData() } };
+          },
+        }),
+      ]),
+      services: mockServices(),
+    });
+    expect(() => executor.validateBeforeRun(workflow)).toThrow(/no implementation.*ai_splitter/);
+    expect(workflow.blocks.find((b) => b.id === "split")!.inner).toBeUndefined();
+  });
+
   it("executes a workplace in topological order and streams updates", async () => {
     const registry = new BlockRegistry([
       defineBlock({
@@ -570,6 +676,53 @@ describe("WorkflowExecutor (@reqflow/engine)", () => {
     expect(resumedRun.blockRuns.find((b) => b.blockId === "h1")?.status).toBe("succeeded");
     expect(resumedRun.blockRuns.find((b) => b.blockId === "c1")?.status).toBe("succeeded");
     expect(hilRuns).toBe(2);
+  });
+
+  it("keeps a cancelled splitter run cancelled when the AI call rejects on abort", async () => {
+    const services = mockServices();
+    let latest: WorkflowRun | undefined;
+    const executor = new WorkflowExecutor({
+      registry: new BlockRegistry([
+        defineBlock({
+          kind: "raw",
+          async run() {
+            return { status: "ok", outputs: { out: emptyPipelineData() } };
+          },
+        }),
+        defineBlock({
+          kind: "ai_splitter",
+          async run(_inputs, _params, ctx) {
+            await new Promise<never>((_resolve, reject) => {
+              ctx.signal.addEventListener("abort", () => reject(new Error("Aborted")), {
+                once: true,
+              });
+            });
+            throw new Error("Unreachable");
+          },
+        }),
+      ]),
+      services,
+      onUpdate: (update) => {
+        latest = update;
+      },
+    });
+    const run = await executor.start(
+      splitterWorkflow(2),
+      { type: "human", userId: "u1", name: "Alice" },
+      DEFAULT_SETTINGS,
+    );
+    await vi.waitFor(() => {
+      expect(latest?.blockRuns.find((block) => block.blockId === "split")?.status).toBe("running");
+    });
+    await executor.cancel(run.id);
+    await vi.waitFor(() => {
+      expect(latest?.blockRuns.find((block) => block.blockId === "split")?.status).toBe("skipped");
+    });
+    expect(latest?.status).toBe("cancelled");
+    expect(latest?.error).toBeUndefined();
+    expect(services.audit.record).not.toHaveBeenCalledWith(
+      expect.objectContaining({ action: "run.failed" }),
+    );
   });
 
   it("handles cancellation via cancel()", async () => {

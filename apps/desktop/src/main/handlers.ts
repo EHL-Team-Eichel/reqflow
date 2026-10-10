@@ -40,6 +40,7 @@ import {
   type LocalFileStore,
 } from "@reqflow/db";
 import { BlockRegistry, WorkflowExecutor } from "@reqflow/engine";
+import { createLlmClient } from "@reqflow/llm";
 import { ReqflowError } from "./dispatch";
 import { previewBlock } from "./preview";
 import { SecretsStore } from "./secrets";
@@ -114,25 +115,27 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
   const reqRepo = new SqliteRequirementRepository(db);
   const secretsStore = deps.secretsStore ?? new SecretsStore(dataDir);
 
-  const fallbackLlm: LlmClient = {
-    async generateObject<T>() {
-      throw new ReqflowError("not_implemented", "No LLM provider configured");
-    },
-    async generateText({ prompt }) {
-      return {
-        text: `Analysis: Evaluated challenge on requirements against available customer telemetry. Prompt: "${prompt.slice(0, 60)}"`,
-        model: "mock-evaluator",
-      };
-    },
+  const configuredLlm = async (settings: Settings): Promise<LlmClient> => {
+    if (deps.llm) return deps.llm;
+    const apiKey =
+      settings.llm.provider === "anthropic"
+        ? ((await secretsStore.getSecret("anthropic_api_key")) ?? undefined)
+        : undefined;
+    return createLlmClient(settings.llm, { apiKey });
   };
-  const activeLlm = deps.llm ?? fallbackLlm;
+  const activeLlm: LlmClient = deps.llm ?? {
+    generateObject: async (request) =>
+      (await configuredLlm(loadSettings(dataDir))).generateObject(request),
+    generateText: async (request) =>
+      (await configuredLlm(loadSettings(dataDir))).generateText(request),
+  };
 
   const registry = deps.registry ?? createBlockRegistry();
 
   const executor = new WorkflowExecutor({
     registry,
     services: {
-      llm: activeLlm,
+      llm: configuredLlm,
       audit: auditLogger,
       files: deps.files,
       web: deps.web ?? null,
