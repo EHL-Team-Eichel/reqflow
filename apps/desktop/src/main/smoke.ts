@@ -32,7 +32,13 @@ const slug = (route: string) => route.replace(/^\//, "").replace(/[^a-zA-Z0-9]+/
 export async function runSmoke(
   win: BrowserWindow,
   outDir: string,
-  deps: { files: LocalFileStore; samplesDir: string; bmwDir: string },
+  deps: {
+    files: LocalFileStore;
+    samplesDir: string;
+    bmwDir: string;
+    /** The next "Choose file…" in the app returns this path instead of opening a dialog. */
+    queuePick: (path: string) => void;
+  },
 ): Promise<number> {
   mkdirSync(outDir, { recursive: true });
   const errors: string[] = [];
@@ -648,37 +654,105 @@ export async function runSmoke(
   check(await click('[data-testid="car-view-exterior"]'), "car: no exterior view");
   await delay(300);
 
-  // New Reasoning view checks
-  check(await click('[data-testid^="car-part-"]'), "car: select a part for reasoning");
-  await delay(300);
+  // Car: the part behind a badge shows its requirements with confidence and a "Why?" button.
+  check(
+    !!badge && (await click(`[data-testid="${badge}"]`)),
+    "car: no badge for the reasoning check",
+  );
+  await delay(400);
   check(
     (await count('[data-testid="car-requirement-confidence"]')) >= 1,
     "car: requirement should have confidence chip",
   );
   await shot("car-confidence");
-
   check(await click('[data-testid="car-requirement-why"]'), "car: no why button");
-  for (let i = 0; i < 20 && (await count('[data-testid="reasoning-view"]')) === 0; i++)
+  for (let i = 0; i < 30 && (await count('[data-testid="reasoning-view"]')) === 0; i++)
     await delay(100);
   check((await count('[data-testid="reasoning-view"]')) >= 1, "car: reasoning view didn't open");
-  await delay(100);
+  check(
+    (await count('[data-testid="reasoning-requirement"]')) >= 1,
+    "car: the thought process lists no requirement",
+  );
+  await delay(500);
   await shot("reasoning-requirement");
-
   check(await click('[aria-label="Close thought process"]'), "car: no reasoning close button");
   await delay(300);
 
-  // Data Flow block reasoning
+  // Data Flow, as a user would: load a template, choose its file, start, pass the HIL review,
+  // then open the Add to Car block's thought process of that run.
   await go("/dataflow");
-  for (let i = 0; i < 40 && (await count('[data-testid^="block-"]')) === 0; i++) await delay(100);
+  await js("window.confirm = () => true; true"); // replacing the current flow asks first
+  check(await click('[data-testid="sidebar-mode-templates"]'), "dataflow: no templates tab");
+  for (let i = 0; i < 30 && (await count('[data-testid="workflow-template"]')) === 0; i++)
+    await delay(100);
+  const loaded = await js<boolean>(`(() => {
+    const cards = [...document.querySelectorAll('[data-testid="workflow-template"]')];
+    const i = cards.findIndex((c) => c.querySelector("h3")?.textContent === "Feedback to requirements");
+    const use = i < 0 ? null : document.querySelector('[data-testid="template-use-' + i + '"]');
+    use?.click();
+    return !!use;
+  })()`);
+  check(loaded, "dataflow: no 'Feedback to requirements' template");
+  await delay(600);
+  check(await click('[data-testid="block-raw"]'), "dataflow: the template has no Raw block");
+  await delay(300);
+  deps.queuePick(join(outDir, "car-feedback.csv"));
+  const chose = await js<boolean>(`(() => {
+    const b = [...document.querySelectorAll('[data-testid="inspector"] button')]
+      .find((e) => e.textContent.trim() === "Choose file…");
+    b?.click();
+    return !!b;
+  })()`);
+  check(chose, "dataflow: the Raw block has no file button");
+  for (
+    let i = 0;
+    i < 30 && !(await text('[data-testid="inspector"]')).includes("car-feedback.csv");
+    i++
+  )
+    await delay(100);
+  check(await click('[data-testid="flow-run"]'), "dataflow: no Start button");
+  for (let i = 0; i < 150 && (await count('[data-testid="flow-review"]')) === 0; i++)
+    await delay(100);
+  check(await click('[data-testid="flow-review"]'), "dataflow: the run didn't wait for review");
+  for (
+    let i = 0;
+    i < 100 &&
+    !(await js<boolean>(
+      `!!document.querySelector('[data-testid="hil-review-confirm"]') && !document.querySelector('[data-testid="hil-review-confirm"]').disabled`,
+    ));
+    i++
+  )
+    await delay(100);
+  check(await click('[data-testid="hil-review-confirm"]'), "dataflow: no review confirmation");
+  check(await click('[data-testid="hil-review-continue"]'), "dataflow: no Continue button");
+  for (
+    let i = 0;
+    i < 200 && !(await text('[data-testid="flow-run-status"]')).includes("Completed");
+    i++
+  )
+    await delay(100);
+  check(
+    (await text('[data-testid="flow-run-status"]')).includes("Completed"),
+    `dataflow: the editor run ended "${await text('[data-testid="flow-run-status"]')}"`,
+  );
+  await click('[aria-label="Close report"]');
+  await delay(300);
   check(await click('[data-testid="block-reasoning"]'), "dataflow: no block-reasoning button");
-  for (let i = 0; i < 20 && (await count('[data-testid="reasoning-view"]')) === 0; i++)
+  for (let i = 0; i < 30 && (await count('[data-testid="reasoning-view"]')) === 0; i++)
     await delay(100);
   check(
     (await count('[data-testid="reasoning-view"]')) >= 1,
     "dataflow: block reasoning view didn't open",
   );
-  await delay(100);
+  check(
+    (await count('[data-testid="reasoning-step"]')) >= 4,
+    "dataflow: the thought process should show the agents' steps",
+  );
+  await delay(500); // let the off-screen view paint the loaded trace
   await shot("reasoning-block");
+  check(await click('[data-testid="reasoning-step"]'), "dataflow: steps should be clickable");
+  await delay(200);
+  await shot("reasoning-block-step");
   check(await click('[aria-label="Close thought process"]'), "dataflow: no reasoning close button");
   await delay(300);
 
@@ -689,6 +763,9 @@ export async function runSmoke(
   check(await click('[data-testid="settings-add-setup"]'), "settings: no add setup button");
   await delay(200);
   await shot("settings-api-setups");
+  await js(`document.querySelector('[data-testid="settings-content"]').scrollTop = 900; true`);
+  await delay(300);
+  await shot("settings-agents");
   check(await click('[data-testid^="settings-delete-setup-"]'), "settings: no delete setup button");
   await delay(200);
 

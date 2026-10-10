@@ -15,7 +15,6 @@ import {
   formatDuration,
 } from "./format";
 import { cx } from "@/lib/cx";
-import { MStripe } from "@/components/ui/MStripe";
 
 export function ReasoningView({
   trace,
@@ -51,7 +50,8 @@ export function ReasoningView({
 
       <div className="text-muted">
         {trace.requirements.length} requirements · {trace.heldBack.length} themes held back ·{" "}
-        {trace.totals.calls} AI calls · {formatDuration(trace.totals.durationMs)}
+        {trace.offline ? "no AI calls" : `${trace.totals.calls} AI calls`} ·{" "}
+        {formatDuration(trace.totals.durationMs)}
         {modelsUsed.length > 0 && ` · Models: ${modelsUsed.join(", ")}`}
       </div>
 

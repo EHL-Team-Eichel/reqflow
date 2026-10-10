@@ -75,6 +75,8 @@ app.on("window-all-closed", () => {
 
 void app.whenReady().then(() => {
   loadDevEnv();
+  // The smoke test can't click a native dialog: it queues the files "Choose file…" returns.
+  const smokePicks: string[] = [];
   const dir = dataDir(smokeDir ? join(smokeDir, "data") : null);
   const files = createFileStore(uploadsDir(dir));
   const pushRunUpdate = (run: WorkflowRun) => {
@@ -91,6 +93,7 @@ void app.whenReady().then(() => {
       dataDir: dir,
       pushRunUpdate,
       pickFile: async () => {
+        if (smokeDir) return smokePicks.shift() ?? null;
         const options: Electron.OpenDialogOptions = {
           title: "Choose an Excel or CSV file",
           properties: ["openFile"],
@@ -118,6 +121,7 @@ void app.whenReady().then(() => {
       files,
       samplesDir: join(app.getAppPath(), "../../data/samples"),
       bmwDir: join(app.getAppPath(), "../../data/raw"),
+      queuePick: (path) => void smokePicks.push(path),
     }).then(
       (code) => app.exit(code),
       (err) => {

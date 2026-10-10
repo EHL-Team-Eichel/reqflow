@@ -106,10 +106,6 @@ function BlockInspector({ block, kind }: { block: WorkflowBlock; kind: PaletteBl
         <p className="text-sm text-muted">{spec.description}</p>
         {block.kind === "add_to_car" && (
           <>
-            <p className="text-xs text-muted">
-              Data on 1. Priority matters most. Context inputs are background the agents read but
-              don't turn into requirements: choose Auto or Sales volumes.
-            </p>
             <Button
               data-testid="inspector-open-reasoning"
               onClick={() => dataflowStore.getState().openReasoning(block.id)}

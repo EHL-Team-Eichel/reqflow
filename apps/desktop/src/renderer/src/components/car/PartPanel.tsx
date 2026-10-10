@@ -165,7 +165,8 @@ function RequirementCard({
               type="button"
               data-testid="car-requirement-why"
               onClick={() => onWhy(r.id)}
-              className="rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted hover:bg-panel-2 hover:text-ink"
+              title="How the agents came to this requirement"
+              className="rounded px-1.5 py-0.5 text-xs font-medium text-brand hover:bg-brand-soft"
             >
               Why?
             </button>
