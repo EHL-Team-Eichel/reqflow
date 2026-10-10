@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4KZ6HCAMTTPBMH80774HD0H",
   "strategy": "manual-commit",
   "branch": "ws7-mastra-splitter",
-  "checkpoints_count": 4,
+  "checkpoints_count": 6,
   "files_touched": [
     "package-lock.json",
     "packages/llm/package.json",
@@ -38,13 +38,20 @@
       "compact_transcript": "/3/transcript.jsonl",
       "content_hash": "/3/content_hash.txt",
       "prompt": "/3/prompt.txt"
+    },
+    {
+      "metadata": "/4/metadata.json",
+      "transcript": "/4/full.jsonl",
+      "compact_transcript": "/4/transcript.jsonl",
+      "content_hash": "/4/content_hash.txt",
+      "prompt": "/4/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 286219,
-    "cache_creation_tokens": 292710,
-    "cache_read_tokens": 6941975,
-    "output_tokens": 25133,
-    "api_call_count": 123
+    "input_tokens": 286279,
+    "cache_creation_tokens": 541331,
+    "cache_read_tokens": 8446933,
+    "output_tokens": 34931,
+    "api_call_count": 144
   }
 }
