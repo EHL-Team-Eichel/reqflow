@@ -3,9 +3,12 @@
 ## What we're building
 
 **ReqFlow** is a hackathon prototype for the BMW challenge _"AI for Product Decision Making"_: a
-**native desktop app for Windows, macOS and Linux** (Electron, not a web app). An n8n-style **workflow** turns customer and market data into prioritized, evidence-linked car
-requirements. A PM reviews them on a **Requirements** page, and a **Settings** page configures the
-app. Full spec: [PRODUCT.md](PRODUCT.md). Your task: [docs/WORKSTREAMS.md](docs/WORKSTREAMS.md).
+**native desktop app for Windows, macOS and Linux** (Electron, not a web app) with three tabs. On
+**Data Flow**, an n8n-style flow of **building blocks** (Custom, Raw, Research, AI Filter, AI Splitter,
+HIL, Add to Car; some expand into their own inner workplace) turns customer and market data into
+prioritized, evidence-linked car requirements. The **Car** tab shows them for the PM to review, and
+**Settings** configures the app, global parameters and collaboration. Full spec: [PRODUCT.md](PRODUCT.md). Your task: [docs/WORKSTREAMS.md](docs/WORKSTREAMS.md).
+Current state and handoffs: [docs/STATUS.md](docs/STATUS.md).
 
 ## The challenge in brief (from `context/`)
 
@@ -55,6 +58,11 @@ app. Full spec: [PRODUCT.md](PRODUCT.md). Your task: [docs/WORKSTREAMS.md](docs/
 8. **Sessions are tracked with [Entire](https://github.com/entireio/cli).** Commit with plain `git`.
    Entire attaches your session to each commit as a checkpoint and pushes it on `git push`. Don't
    remove its hooks (`.claude/settings.json`, `.git/hooks`) and never put secrets in prompts.
+
+9. **Hand off in [docs/STATUS.md](docs/STATUS.md).** Claim your workstream there when you start; your
+   tasks are the checklist in its section, in priority order. Update your own section (and only that
+   one) when you finish a slice, get blocked or stop: tick done tasks, add a log entry. The next agent
+   starts from it. The repo and Entire transcripts are **public**, so never paste keys or BMW data anywhere.
 
 ## Commands (repo root, Node ≥ 22.13; works on Windows, macOS, Linux)
 

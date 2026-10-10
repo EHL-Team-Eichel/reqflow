@@ -9,7 +9,9 @@ Decision Making_.
 | [PRODUCT.md](PRODUCT.md)                     | What we build and why (the product definition)          |
 | [AGENTS.md](AGENTS.md)                       | Challenge digest and rules for every coding agent       |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Stack, layout, processes, IPC API, engine semantics     |
-| [docs/WORKSTREAMS.md](docs/WORKSTREAMS.md)   | Parallel work packages, path ownership, kickoff prompt  |
+| [docs/WORKSTREAMS.md](docs/WORKSTREAMS.md)   | Parallel work packages and path ownership               |
+| [docs/STATUS.md](docs/STATUS.md)             | Current state, task list per workstream, handoffs       |
+| [docs/AGENT_PROMPT.md](docs/AGENT_PROMPT.md) | The prompt that starts a new AI teammate                |
 | [docs/decisions/](docs/decisions/)           | Architecture decisions (why Electron, why one TS stack) |
 | [context/](context/)                         | Original briefing material                              |
 

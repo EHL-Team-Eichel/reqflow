@@ -2,34 +2,35 @@
 
 ReqFlow is a **native desktop app for Windows, macOS and Linux** (Electron), not a web app.
 Background and alternatives: [decisions/0002-electron-desktop-app.md](decisions/0002-electron-desktop-app.md).
+Why the flow is built from blocks: [decisions/0003-building-blocks.md](decisions/0003-building-blocks.md).
 
 ## Stack
 
-| Concern         | Choice                                                                                  | Why                                                                                   |
-| --------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| Language        | TypeScript everywhere (npm workspaces)                                                  | One shared contract for UI, engine and nodes                                          |
-| App shell       | Electron 44 (pinned, Node 24 inside), electron-vite 5, electron-builder                 | Same Chromium on every OS; Node in the main process runs the engine                   |
-| UI              | React 19 + React Router (hash routing) + Tailwind 4                                     | Renders from `file://` in the installed app                                           |
-| Workflow canvas | `@xyflow/react` (React Flow)                                                            | The standard n8n-style node editor                                                    |
-| Schemas         | Zod 4                                                                                   | Runtime validation and TS types from one source; `z.toJSONSchema` drives config forms |
-| LLM             | Claude API (`@anthropic-ai/sdk`) behind `LlmClient`, plus a `mock` provider             | Swappable; works offline and in tests                                                 |
-| Persistence     | SQLite via built-in `node:sqlite`, in the OS app-data folder                            | Zero setup, no native module to rebuild per OS                                        |
-| Tests           | Vitest (colocated `*.test.ts`) + `npm run smoke` (screenshots every screen in Electron) | Fast unit tests; a real-app check without clicking                                    |
+| Concern         | Choice                                                                                | Why                                                                 |
+| --------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Language        | TypeScript everywhere (npm workspaces)                                                | One shared contract for UI, engine and blocks                       |
+| App shell       | Electron 44 (pinned, Node 24 inside), electron-vite 5, electron-builder               | Same Chromium on every OS; Node in the main process runs the engine |
+| UI              | React 19 + React Router (hash routing) + Tailwind 4 + zustand 5                       | Renders from `file://` in the installed app; small, testable stores |
+| Workflow canvas | `@xyflow/react` (React Flow 12)                                                       | The standard n8n-style node editor                                  |
+| Schemas         | Zod 4                                                                                 | Runtime validation and TS types from one source                     |
+| LLM             | Claude API (`@anthropic-ai/sdk`) behind `LlmClient`, plus a `mock` provider           | Swappable; works offline and in tests                               |
+| Persistence     | SQLite via built-in `node:sqlite`, in the OS app-data folder                          | Zero setup, no native module to rebuild per OS                      |
+| Tests           | Vitest (colocated `*.test.ts`) + `npm run smoke` (clicks through the app in Electron) | Fast unit tests; a real-app check without clicking                  |
 
 ## Repo layout
 
 ```
 .
 ├── AGENTS.md  PRODUCT.md  README.md   ← start here
-├── context/                           ← original hackathon briefing (read-only)
-├── docs/                              ← ARCHITECTURE, WORKSTREAMS, decisions/ (ADRs)
+├── context/                           ← original hackathon briefing + the app sketch (read-only)
+├── docs/                              ← ARCHITECTURE, WORKSTREAMS, STATUS, decisions/ (ADRs)
 ├── data/
 │   ├── raw/        (gitignored)       ← BMW-provided datasets
 │   └── samples/                       ← small synthetic datasets for dev
 ├── packages/
-│   ├── core/       ← CONTRACT: domain schemas, service interfaces, IPC API (ipc.ts), fixtures
-│   ├── engine/     ← node contract + registry (done); graph validation + executor (WS1)
-│   ├── nodes/      ← node implementations, one folder per workstream + default template
+│   ├── core/       ← CONTRACT: domain schemas, blocks.ts (block specs), graph.ts (graph rules), IPC API, fixtures
+│   ├── engine/     ← block contract + registry (done); executor (WS1)
+│   ├── blocks/     ← block implementations, one folder per block + default template
 │   ├── llm/        ← LlmClient implementations: anthropic, mock (WS7)
 │   └── db/         ← SQLite repositories, AuditLogger, FileStore (WS1)
 └── apps/desktop/                      ← the Electron app
@@ -38,13 +39,15 @@ Background and alternatives: [decisions/0002-electron-desktop-app.md](decisions/
         ├── main/       ← Node: window, IPC handlers, wiring of engine/db/llm, smoke test
         ├── preload/    ← the bridge: allow-listed invoke + run-update events (keep tiny)
         └── renderer/src/
-            ├── pages/  components/<area>/  router.tsx
-            └── lib/api.ts             ← the only way UI code reaches the main process
+            ├── pages/        DataflowPage · CarPage · SettingsPage
+            ├── components/   dataflow/ (editor + its store) · settings/ · shell/ (bottom tabs) · ui/ (shared controls)
+            ├── lib/          api.ts (the only way to main) · settings.ts (settings store) · theme.ts
+            └── router.tsx  globals.css (design tokens, light + dark)
 ```
 
-Dependency direction (no cycles): `core ← engine ← nodes`, `core ← llm`, `core ← db`, and
-`apps/desktop/src/main` → all of them. The renderer imports only `@reqflow/core` (types, constants,
-fixtures). It never imports engine, db, llm or nodes.
+Dependency direction (no cycles): `core ← engine ← blocks`, `core ← llm`, `core ← db`, and
+`apps/desktop/src/main` → all of them. The renderer imports only `@reqflow/core` (types, block specs,
+graph rules, fixtures). It never imports engine, db, llm or blocks.
 
 ## Processes and security
 
@@ -61,6 +64,77 @@ renderer (React, sandboxed)  ──api.x.y(…)──▶  preload (allow-list)  
 - API keys are entered in Settings, encrypted with Electron `safeStorage` (OS keychain) and never sent to
   the renderer. In dev, `apps/desktop/.env` is also read (see `.env.example`).
 
+## The building blocks (`packages/core/src/blocks.ts`)
+
+A workflow is a tree of **workplaces**. Each workplace holds blocks and edges. Seven kinds of block
+are in the palette, defined once in `BLOCK_SPECS` (label, description, group, params, ports, whether
+it has an inner workplace):
+
+| Block       | Ports                                 | Inner workplace | Params (placeholders for now)                 |
+| ----------- | ------------------------------------- | --------------- | --------------------------------------------- |
+| Custom      | 1 in · 1 out                          | yes             | none                                          |
+| Raw         | no input · 1 out (data stream)        | no              | Excel upload or database, dataset, file/query |
+| Research    | no input · 1 out (same format as Raw) | yes             | question, source types, market, age, results  |
+| AI Filter   | 1 in · 1 out (kept)                   | yes             | criterion, model, min. confidence             |
+| AI Splitter | 1 in · one out **per branch**         | no              | split by, branches (list → ports), model      |
+| HIL         | 1 in · 1 out                          | no              | reviewer, instructions, approvals, edits      |
+| Add to Car  | one in **per ranking** · no output    | no              | rankings (list → ports), vehicle, market      |
+
+- **Ports** come from `blockPorts(block)`. They can depend on params (the splitter's `branches`, Add to
+  Car's `rankings`), and port ids are positional (`out-0`, `in-2`). When params change, `setBlockParams`
+  removes edges on ports that no longer exist and returns them, so the editor can tell the user.
+- **Params** are declared as `ParamSpec`s (text, textarea, number, slider, select, multiselect, toggle,
+  list, file). The editor renders a form from them, and `parseBlockParams` validates strictly (unknown
+  keys and wrong types are errors). Select options with the value `"global"` mean "use Settings →
+  Global parameters".
+- **Inner workplaces** (Custom, Research, AI Filter) hold a sub-flow built from the same blocks,
+  recursively. Each one has fixed **boundary blocks**: one `block_input` per input port of the parent
+  and one `block_output` per output port. They are created with the block and can't be deleted.
+- **Ids** are unique across the whole tree, so run status and outputs are keyed by block id alone.
+- **Graph rules** live in `packages/core/src/graph.ts` and are shared by the editor and the engine:
+  `checkConnection` (ports exist, no self-loop, no duplicates, no cycles), `connect`, `removeBlocks`,
+  `setBlockParams`, `graphAt` / `updateGraphAt` (navigate the tree), `validateGraph` (everything,
+  recursively). Several edges may enter one input (merged) or leave one output (fan-out).
+
+## Data flow: one envelope per port
+
+Every port carries a `PipelineData` envelope (`sources, records, findings, themes, requirements`).
+Raw and Research emit sources and records (the "unified data stream"). Later blocks enrich the same
+envelope: AI Filter keeps matching items (and extracts evidence-linked findings), AI Splitter routes
+items to one branch each, HIL passes on what the reviewer approved, and Add to Car turns what arrives
+into requirements; the input it arrives on sets the ranking. Several edges into one input are combined
+with `mergePipelineData` (concatenate, de-duplicate by `id`, later edge wins).
+
+```ts
+defineBlock({
+  kind: "ai_filter",
+  async run(inputs, params, ctx) {
+    const input = inputs.in; // one envelope per input port id
+    /* ctx.llm, ctx.audit, ctx.log … */
+    return { status: "ok", outputs: { out: kept } }; // one envelope per output port id
+  },
+});
+```
+
+## Engine semantics (WS1 implements, everyone relies on)
+
+1. **Validate before running** with `validateGraph`, and check that every block kind (except
+   Custom) has an implementation (`BlockRegistry.missing()`). If anything fails, the run fails before it
+   starts, with per-block errors.
+2. **Execute each workplace in topological order.** A block's input per port is the merge of what its
+   incoming edges carry. Store each block's output per port and push `BlockRun` status, counts, logs
+   and progress via `runs.onUpdate`.
+3. **Inner workplaces.** A block whose inner workplace contains blocks runs that sub-flow: each
+   `block_input` emits what arrived on its parent port, and what reaches each `block_output` becomes
+   the parent's output on that port. A Custom block always runs its sub-flow. Research and AI Filter run
+   their built-in implementation while their inner workplace is empty.
+4. **Failure.** A block that throws is marked `failed`, its downstream blocks `skipped`, and the run
+   `failed`. Nothing is partially published.
+5. **Pause / resume.** HIL returns `{ status: "paused" }` → the run is `waiting_for_review`.
+   `runs.resume` reloads what the reviewer changed, re-invokes the block with `ctx.resumed = true`, and continues.
+6. **Cancel.** The run's `AbortSignal` fires, and blocks must stop promptly.
+7. **Audit.** The engine logs `run.*` events, blocks log what they create or change, and handlers log human actions.
+
 ## IPC API (`packages/core/src/ipc.ts`)
 
 UI code calls `api.<namespace>.<method>(…)` from `@/lib/api`. Main implements `ReqflowHandlers`
@@ -70,12 +144,11 @@ validates every argument with the Zod schemas, because the renderer counts as un
 
 | Method                                               | Purpose                                                                                                                             |
 | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `app.info()`                                         | Version, OS, data directory                                                                                                         |
-| `nodes.catalog()`                                    | `NodeCatalogEntry[]`: palette and config JSON Schema                                                                                |
-| `templates.list()`                                   | Workflow templates (`BMW_DEFAULT_TEMPLATE`)                                                                                         |
+| `app.info()`                                         | Version, OS, data directory (**built**)                                                                                             |
+| `templates.list()`                                   | Workflow templates (`BMW_DEFAULT_TEMPLATE`) (**built**)                                                                             |
 | `workflows.list/get/save/remove`                     | Workflow CRUD. `save` assigns the id and bumps `version`                                                                            |
-| `files.import()`                                     | Native open dialog → copies the file into the data dir → `StoredFileInfo` (`null` if cancelled)                                     |
-| `runs.start/get/list/nodeOutput/resume/cancel`       | Run lifecycle. `nodeOutput` returns that node's `PipelineData`                                                                      |
+| `files.import()`                                     | Native open dialog → copies the file into the data dir → `StoredFileInfo` (`null` if cancelled). Raw's `file` param stores it       |
+| `runs.start/get/list/blockOutput/resume/cancel`      | Run lifecycle. `blockOutput` returns that block's output per port                                                                   |
 | `runs.onUpdate(listener)`                            | Push events on every status, progress or log change (no polling)                                                                    |
 | `requirements.list(filter)` · `requirements.get(id)` | Latest versions · `RequirementDetail` (findings, evidence, sources, versions)                                                       |
 | `requirements.edit(id, RequirementEdit)`             | PM edit, rationale required → new version and audit                                                                                 |
@@ -87,41 +160,23 @@ validates every argument with the Zod schemas, because the renderer counts as un
 To add a method: add it to `ReqflowApi` **and** `IPC_INVOKE_METHODS` (the compiler enforces both),
 then implement it in `handlers.ts`.
 
-## Data flow: one envelope on every edge
+## Renderer state
 
-Each node has **one input and one output**. Both are a `PipelineData`
-(`sources, records, findings, themes, requirements`). A node reads the keys it `consumes` and returns
-the envelope with the keys it `produces` updated. When a node has several incoming edges, the engine
-combines them with `mergePipelineData` (concatenate, de-duplicate by `id`, later edge wins).
-
-```ts
-defineNode({
-  type: "analysis.extract_signals",
-  category: "analysis",
-  consumes: ["records"],
-  produces: ["findings"],
-  configSchema: z.object({ batchSize: z.number().int().default(25) }),
-  async run(input, config, ctx) {
-    /* ctx.llm, ctx.audit, ctx.log … */ return { status: "ok", data: { ...input, findings } };
-  },
-});
-```
-
-## Engine semantics (WS1 implements, everyone relies on)
-
-1. **Validate before running.** Every node type must be registered, the graph must be acyclic, edges
-   must point at existing nodes, and each node's `config` must parse with its `configSchema`. If
-   anything fails, the run fails before it starts, with per-node errors.
-2. **Execute in topological order.** A node's input is the merge of its parents' outputs (a source
-   node gets an empty envelope). Store each node's output and push `NodeRun` status, counts, logs and
-   progress via `runs.onUpdate`.
-3. **Failure.** A node that throws is marked `failed`, its downstream nodes `skipped`, and the run
-   `failed`. Nothing is partially published.
-4. **Pause / resume.** A `review.*` node returns `{status:"paused"}` → the run is
-   `waiting_for_review`. `runs.resume` reloads the latest requirement versions from the DB (the PM may
-   have edited them), re-invokes the gate with `ctx.resumed = true`, and continues.
-5. **Cancel.** The run's `AbortSignal` fires, and nodes must stop promptly.
-6. **Audit.** The engine logs `run.*` events, nodes log what they create or change, and handlers log human actions.
+- **`components/dataflow/store.ts`**: the editor store (zustand). It holds the workflow tree, the
+  open workplace (`path`), the selection, React Flow sizes and a notice. Every edit goes through the
+  core graph rules; errors become a visible notice, never a silent no-op. It lives for the whole app
+  session, so switching tabs keeps the flow. It isn't saved to disk yet (`workflows.*` is WS1).
+- **`lib/settings.ts`**: the settings store. It loads `settings.get()` at startup, validates every
+  change with the `Settings` schema and saves in the background. While main has no settings storage
+  (`not_implemented`), it keeps the defaults and the Settings page says so.
+- **zustand 5 rule:** never return a new object or array from a selector (it re-renders forever).
+  Select existing objects or primitives and derive the rest with `useMemo`.
+- **Theme:** `lib/theme.ts` sets `<html data-theme>` from Settings (system, light or dark). The CSS
+  tokens in `globals.css` follow it, so use token classes (`bg-panel`, `text-muted`, …), never hex colors.
+- **Colorway: BMW M.** The M stripe colours (`m-light` #81C4FF, `m-dark` #16588E, `m-red` #E7222E) on
+  carbon neutrals. Block groups take them: sources light blue, AI dark blue, HIL red (a person has to
+  act), Add to Car neutral. `MStripe` (`components/ui/`) marks the active tab. Filled controls use
+  `bg-brand-fill` so white text stays readable in both themes.
 
 ## AI usage rules
 
@@ -131,7 +186,7 @@ defineNode({
 - Batch the records. Use `tier: "fast"` for per-record extraction and `default` for clustering, derivation and challenges.
 - AI actors in the audit trail record the exact model id returned by the client.
 - The `mock` provider must return schema-valid, deterministic output so the whole pipeline runs offline.
-- Prompts live next to the node that uses them (`nodes/src/<area>/<node>.prompt.ts`).
+- Prompts live next to the block that uses them (`blocks/src/<block>/<name>.prompt.ts`).
 
 ## Persistence notes (WS1)
 
@@ -140,18 +195,19 @@ defineNode({
   `~/.config/ReqFlow/data`). `REQFLOW_DATA_DIR` overrides it. Always build paths with `node:path`, never
   with string concatenation (Windows uses `\`).
 - Only one app instance runs at a time (single-instance lock), so only one process writes SQLite.
+- Workflows are stored whole (the block tree as JSON) and versioned on save.
 - Requirements are versioned: one row per `(id, version)`. "Current" means the max version.
 - `audit_events` is insert-only, with no update or delete code path.
-- Node outputs are stored per `(runId, nodeId)` as JSON. Imported files are copied into `data/uploads/` inside the data dir.
+- Block outputs are stored per `(runId, blockId, port)` as JSON. Imported files are copied into `data/uploads/` inside the data dir.
 
 ## Running, checking, packaging
 
-| Command (repo root) | What it does                                                                                                                             |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run dev`       | Opens the app with hot reload (renderer) and auto-restart (main)                                                                         |
-| `npm run smoke`     | Builds, opens every screen, screenshots it to `apps/desktop/out/smoke/`, checks the IPC bridge, and exits non-zero on any renderer error |
-| `npm run check`     | Typecheck + unit tests + format check                                                                                                    |
-| `npm run package`   | Installer for the **current** OS in `apps/desktop/release/`: `.exe` (NSIS), `.dmg` or `.AppImage`                                        |
+| Command (repo root) | What it does                                                                                                                                                                                                                                                                                                                                                                |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run dev`       | Opens the app with hot reload (renderer) and auto-restart (main)                                                                                                                                                                                                                                                                                                            |
+| `npm run smoke`     | Builds, then drives the real app off screen: opens every screen, adds every block, opens an inner workplace, types into fields, connects ports by mouse drag (and checks a loop is refused), walks the settings, switches to dark mode, screenshots each step to `apps/desktop/out/smoke/`, checks the IPC bridge, and exits non-zero on any failed check or renderer error |
+| `npm run check`     | Typecheck + unit tests + format check                                                                                                                                                                                                                                                                                                                                       |
+| `npm run package`   | Installer for the **current** OS in `apps/desktop/release/`: `.exe` (NSIS), `.dmg` or `.AppImage`                                                                                                                                                                                                                                                                           |
 
 Installers must be built on their own OS (or in a CI matrix later). Builds are unsigned, so macOS
 Gatekeeper and Windows SmartScreen show a warning on first launch. Code signing is out of scope for the

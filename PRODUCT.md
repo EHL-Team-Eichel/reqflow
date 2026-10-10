@@ -13,9 +13,9 @@ what evidence backs it, or who decided it.
 
 ## Product in one sentence
 
-A visual, n8n-style **workflow** turns raw customer and market data into **evidence-linked, prioritized
-car requirements**. A product manager then reviews, challenges and decides on them on a separate
-**Requirements** page, and every step is recorded in an **audit trail**.
+A visual, n8n-style **data flow** built from **building blocks** turns raw customer and market data into
+**evidence-linked, prioritized car requirements**. A product manager reviews, challenges and decides on
+them on the **Car** page, and every step is recorded in an **audit trail**.
 
 > Customer requirement = customer-relevant attribute of a car. (BMW briefing)
 
@@ -24,40 +24,55 @@ car requirements**. A product manager then reviews, challenges and decides on th
 - **Product Manager (primary).** Owns the requirement set for one vehicle line × market. Makes every decision.
 - **Analyst / PM ops (secondary).** Builds and tunes workflows, connects data and adjusts scoring in Settings.
 
-## The app — three pages (plus the audit trail)
+## The app — three tabs
 
 A **native desktop app for Windows, macOS and Linux**, not a web app. Everything runs locally on
 the PM's machine. BMW files are imported through the system file dialog, results are exported
 through the save dialog, and API keys are stored in the OS keychain. Only the AI and web-research
-calls leave the machine.
+calls leave the machine. Layout (sketch: `context/Building_Blocks.jpeg`): the page fills the window, and
+a tab bar at the bottom switches between **Data Flow · Car · Settings** (⌘/Ctrl + 1–3).
 
-| Page                      | What the user does                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Workflow**              | Drag nodes onto a canvas and connect them (BMW datasets, web research, AI analysis steps, scoring, a PM-review gate, publish), then run the workflow. Each node shows its status, item counts and logs, and you can click a node to see the data it produced. A run **pauses at the review gate**.                                                                                                                                             |
-| **Requirements** (output) | Shows the result: what the next car should offer. Each requirement has an ID, title, description, measurable targets, category, score breakdown, priority with rationale, evidence level, assumptions, uncertainties, conflicting evidence and status. A detail view goes from requirement → findings → verbatim evidence → source. The PM can **approve / reject / defer / edit / challenge** each one, and must give a rationale every time. |
-| **Settings**              | Choose the AI provider and models, the web research provider and allowed domains, the prioritization weights and thresholds, the default scope (vehicle line, derivative, market, horizon) and the reviewer identity. API keys are entered here and stored in the OS keychain.                                                                                                                                                                 |
-| **Audit trail**           | A chronological, append-only log: who or what (AI model, PM, system) changed what, when, from what to what, and why. Filterable down to one requirement.                                                                                                                                                                                                                                                                                       |
+| Tab           | What the user does                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Data Flow** | **Building Blocks** on the left, the **Workplace** on the right. Drag blocks (or click them) onto the workplace, connect an output to an input, and set each block's parameters in the inspector. Custom, Research and AI Filter blocks **expand** into their own inner workplace, built from the same blocks. Later: run the flow, see each block's status, counts and logs, and inspect what it produced. A run **pauses at HIL blocks** until a person has reviewed.                                                                                                            |
+| **Car**       | The output: what the next car should offer. Today a placeholder (a car and the global vehicle/market). WS3 builds the requirement list here. Each requirement has an ID, title, description, measurable targets, category, score breakdown, priority with rationale, evidence level, assumptions, uncertainties, conflicting evidence and status, with a drill-down requirement → findings → verbatim evidence → source, **approve / reject / defer / edit / challenge** (rationale required) and the **audit trail**: who or what changed what, when, from what to what, and why. |
+| **Settings**  | **App** (theme, workplace grid and minimap, delete confirmation) · **Global parameters** (vehicle line, derivative, code, market, horizon; prioritization weights and thresholds with a live example; output language) · **AI & research** (provider, models, temperature, web research, domains, API-key status) · **Collaboration** (your name and role for the audit trail, team members and invitations, sharing via a shared folder or Git repo, notifications, four-eyes approval) · **About**.                                                                              |
 
-## Pipeline (default workflow template)
+## The building blocks
 
-The pipeline mirrors the BMW process slide (`context/` image). The robot icon means the AI does the step on its own; the person icon means a human is involved.
+| Block           | What it does                                                                                        | Ports              | Inner workplace |
+| --------------- | --------------------------------------------------------------------------------------------------- | ------------------ | --------------- |
+| **Custom**      | An empty block. Build any sub-flow inside it.                                                       | 1 in · 1 out       | yes             |
+| **Raw**         | Brings in an Excel file or a database table as one unified data stream.                             | 1 out              | no              |
+| **Research**    | Searches the web; emits a data stream in the same format as Raw.                                    | 1 out              | yes             |
+| **AI Filter**   | Keeps the items that match a criterion written in plain language.                                   | 1 in · 1 out       | yes             |
+| **AI Splitter** | Sorts every item into one branch (e.g. by priority or category). One output per branch.             | 1 in · n out       | no              |
+| **HIL**         | Human in the loop (capacitor icon): the flow waits until a person has reviewed what passes through. | 1 in · 1 out       | no              |
+| **Add to Car**  | Adds what arrives to the car's requirements. The input it arrives on sets the ranking.              | one in per ranking | no              |
+
+Parameters are placeholders until each block is built (see `docs/WORKSTREAMS.md`). Spec and ports: `packages/core/src/blocks.ts`.
+
+## Default flow (template)
+
+The default template mirrors the BMW process slide (`context/` image). The robot icon means the AI does the step on its own; the person icon means a human is involved.
 
 ```
-Situation analysis      Structure & context            Requirements definition      Prioritization      Review         Documentation
-──────────────────      ───────────────────            ───────────────────────      ──────────────      ──────         ─────────────
-BMW feedback   ┐
-Customer study ┤
-Equipment data ┼─▶ extract signals ─▶ scope filter ─▶ cluster ─▶ derive ─▶ specify targets ─▶ score ─▶ 🧑 PM gate ─▶ publish / export
-Sales volumes  ┤     (findings +       (drop regulatory, (themes,     (drafts)   (metrics,          (weighted,   (pause until   (Requirements
-Web research   ┘      evidence)         engineering,      dedupe)                evidence level,    explainable)  PM decided)    page, JSON/CSV/MD)
-                                         pricing)                                assumptions)
+Situation analysis        Structure & context          Prioritization                  Review          Documentation
+──────────────────        ───────────────────          ──────────────                  ──────          ─────────────
+Raw: customer feedback ┐
+Raw: customer study    ┤
+Raw: equipment data    ┼─▶ AI Filter ───────────────▶ AI Splitter ──must───▶ 🧑 HIL ──┐
+Raw: sales volumes     ┤   "customer-facing only"     "by priority" ──should─▶ 🧑 HIL ──┼─▶ Add to Car
+Research: web          ┘   (findings + evidence;       (explainable ──could─────────────┘   (requirements,
+                            drops regulatory,           weighted       (unreviewed)          ranked by input)
+                            engineering, pricing)       score)
 ```
 
-**Where AI acts on its own:** ingestion, signal extraction, scope filtering, clustering, drafting
-requirements, specifying targets, scoring.
-**Where a human must act:** approving, rejecting, deferring or editing a requirement, overriding a
-priority, answering a challenge, and resuming the run after the gate. The AI can **never** set a
-requirement to `approved` or `rejected`.
+**Where AI acts on its own:** ingestion (Raw, Research), filtering and extracting evidence-linked
+findings (AI Filter), scoring and routing (AI Splitter), drafting requirements (Add to Car).
+**Where a human must act:** at every HIL block, and when approving, rejecting, deferring or editing a
+requirement, overriding a priority or answering a challenge on the Car tab. The AI can **never** set
+a requirement to `approved` or `rejected`.
 
 ## Core objects (full schemas in `packages/core`)
 
@@ -94,15 +109,15 @@ qualitative · **C** — a single source or anecdotal · **D** — rests mainly 
   infotainment and digital services, design and quality perception, driving experience, range and charging
   _as the customer experiences them_, and variants and packages.
 - **Out of scope:** regulatory and homologation topics, technical and engineering specs, and
-  pricing or business cases. The scope filter removes these, and every exclusion is logged with a reason.
+  pricing or business cases. An AI Filter removes these, and every exclusion is logged with a reason.
 
 ## Demo scenario
 
 **BMW 5 Series Sedan · EU · 5-year horizon.** This is our default. Confirm it once BMW's datasets arrive.
 
-1. Open the default template, attach the BMW files, enable web research, and run.
-2. Watch the nodes fill up, then click _extract signals_ to see findings with their evidence.
-3. The run pauses at the PM gate. On Requirements, open a must-have and trace it down to a verbatim customer quote.
+1. Open the default template, attach the BMW files to the Raw blocks, enable web research, and run.
+2. Watch the blocks fill up, then click the AI Filter to see findings with their evidence.
+3. The run pauses at the HIL block. On the Car tab, open a must-have and trace it down to a verbatim customer quote.
 4. Challenge one requirement. The AI answers. Edit one, approve one with a priority override, and reject one.
 5. Resume the run, which publishes and exports. The audit trail shows the full history of one requirement.
 6. Switch the scope to another series or market in Settings to show the workflow isn't a one-off.
@@ -110,12 +125,13 @@ qualitative · **C** — a single source or anecdotal · **D** — rests mainly 
 ## Deliverables checklist (briefing → where we show it)
 
 - [ ] Concept and working prototype → the app and this document
-- [ ] Structured sample list of requirements with all the required fields → Requirements page and export
-- [ ] End-to-end workflow showing which steps the AI does alone and where a human must act → Workflow page and the diagram above
-- [ ] Audit trail from source to decision → Audit trail page and the requirement History tab
+- [ ] Structured sample list of requirements with all the required fields → Car tab and export
+- [ ] End-to-end workflow showing which steps the AI does alone and where a human must act → Data Flow tab (HIL blocks) and the diagram above
+- [ ] Audit trail from source to decision → audit trail on the Car tab and the requirement History
 
 ## Non-goals for the hackathon
 
-Authentication and roles (one demo reviewer identity), multi-user live collaboration and sync between
-machines, web and mobile versions, signed installers and auto-update. Any of these can be mocked if the
+Authentication, live multi-user editing and a sync server (Settings → Collaboration keeps the team and
+the sharing choice on this computer; sending invitations and syncing come later, if at all), web and
+mobile versions, signed installers and auto-update. Any of these can be mocked if the
 demo needs them.
