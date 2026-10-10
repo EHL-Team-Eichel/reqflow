@@ -1,0 +1,59 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4KZ7R9SQGQYZRTFD6YW6Y72",
+  "session_id": "ses_ed81c7dd0ffe4RPCzlJMOs2Y2J",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-10T22:34:17.455008Z",
+  "branch": "ws7-mastra-splitter",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "apps/desktop/src/main/handlers.ts",
+    "apps/desktop/src/main/index.ts",
+    "packages/blocks/src/ai-splitter/ai-splitter.test.ts",
+    "packages/blocks/src/ai-splitter/ai-splitter.ts",
+    "packages/blocks/src/ai-splitter/priority.ts",
+    "packages/blocks/src/ai-splitter/protocol.ts",
+    "packages/blocks/src/raw/index.ts",
+    "packages/blocks/src/raw/raw.ts",
+    "packages/core/src/audit.ts",
+    "packages/core/src/blocks.ts",
+    "packages/core/src/graph.ts",
+    "packages/core/src/index.ts",
+    "packages/core/src/ipc.ts",
+    "packages/core/src/lineage.test.ts",
+    "packages/core/src/pipeline.ts",
+    "packages/core/src/workflow.ts",
+    "packages/db/src/audit.ts",
+    "packages/db/src/runs.ts",
+    "packages/engine/src/block.ts",
+    "packages/engine/src/executor.ts"
+  ],
+  "agent": "OpenCode",
+  "model": "gpt-6.1-sol",
+  "turn_id": "5d91a72a47f5",
+  "checkpoint_transcript_start": 25,
+  "transcript_lines_at_start": 25,
+  "compact_transcript_start": 25,
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  },
+  "session_metrics": {
+    "turn_count": 1
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-10T22:34:17.428959Z",
+    "agent_lines": 356,
+    "agent_removed": 66,
+    "human_added": 3267,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 3623,
+    "total_lines_changed": 3689,
+    "agent_percentage": 11.439414475467606,
+    "metric_version": 2
+  }
+}
