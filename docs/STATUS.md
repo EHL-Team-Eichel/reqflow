@@ -123,7 +123,7 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 ## WS2 — Data Flow editor UI
 
-**Status:** review · **Owner:** OpenCode · **Branch:** `ws2-hil-review-resume`
+**Status:** open · **Owner:** — · **Branch:** —
 **Depends on:** WS1 for save/load and runs. Tasks 1–3 can start now.
 
 **Tasks**
@@ -140,7 +140,7 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 - [ ] Run button and live status on every block (`api.runs.start`, `api.runs.onUpdate`): status dot,
       counts, logs; a "waiting for review" banner linking to the Car tab. Mock with `fixtureRun` until WS1.
 - [ ] Output inspector: click a finished block → `api.runs.blockOutput()` per port.
-- [ ] HIL report with real data for steps that need a run: Raw steps already show their real data
+- [x] HIL report with real data for steps that need a run: Raw steps already show their real data
       (`blocks.preview`); for the others, replace the "no run yet" state in
       `components/dataflow/report/DataPanel.tsx` with the step's data from the latest run (`api.runs.blockOutput`; for the HIL itself merge what
       its incoming edges carried with `mergePipelineData`). Keep the synthetic sample as an explicit option.
@@ -149,10 +149,12 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 - [x] Save and execute the current flow so Add to Car publishes proposed requirements; expose status, block logs and cancellation (PR #8).
 - [x] Explicit Start button for the full workflow, including inner workplaces; prevent duplicate runs
       and preserve HIL pauses (PR #10, verified on merged main).
+- [x] Continue single-reviewer HIL gates after explicit review of saved run inputs; reset confirmation per run/gate and preserve Start controls (PR #12).
 
 **Log**
 
-- 2026-10-10: Human authorized integration with the concurrent Start-button slice. Preserved Start/play icon, its full-workflow and safety-state labels, all existing tests/logs, and stale-active-update protection; extended that protection to resume events/replies with another regression. Backend Add to Car evidence storage and non-reused ids were also integrated unchanged from main. Reverified: `npm run check` passed (258 passed, 10 skipped), `npm run smoke` passed (29 screenshots), and native sequential-HIL review passed again with a proposed requirement visible on the Car. Ready to merge PR #12.
+- 2026-10-10: HIL fix merged in PR #12 with the Start-button integration preserved. Verified integrated code: `npm run check` (258 passed, 10 skipped), `npm run smoke` (29 screenshots), and native Raw → HIL → HIL → Add to Car with two explicit confirmations, saved data unaffected by source mutation, and proposed-only publication on the Car. Requested slice complete; WS2 released. Multi-reviewer/reviewer-record and restart-recovery limits below remain WS1/WS0 follow-ups.
+- 2026-10-10: Human authorized integration with the concurrent Start-button slice. Preserved Start/play icon, its full-workflow and safety-state labels, all existing tests/logs, and stale-active-update protection; extended that protection to resume events/replies with another regression. Backend Add to Car evidence storage and non-reused ids were also integrated unchanged from main. Reverified: `npm run check` passed (258 passed, 10 skipped), `npm run smoke` passed (29 screenshots), and native sequential-HIL review passed again with a proposed requirement visible on the Car.
 - 2026-10-10: HIL review/resume implemented and verified. Waiting runs expose Review paused step; reports use the frozen run graph and persisted per-port outputs, including merged HIL inputs. Continue flow needs loaded target data plus an explicit checkbox and calls existing `runs.resume` for that exact run/gate only. Confirmation resets per run/gate; errors remain visible; resumed work can be cancelled. Added 13 regressions: `npm run check` passed (240 passed, 10 skipped); `npm run smoke` passed (29 screenshots). Native synthetic Raw → HIL → HIL → Add to Car probe confirmed each gate separately, kept original review data after source mutation, checked two pause/resume audit events and proposed-only publication, and found the requirement on a Car card. Screenshots inspected: `hil-review-gate-{1,2}.png`, `hil-resumed-car.png` under `apps/desktop/out/smoke/`.
 - Remaining HIL limits for WS1/WS0: multiple required reviewers are explicitly blocked in this UI (no fake extra approvals); reviewer identity/role enforcement and per-review rationale require backend review records. The existing engine logs pause/resume events, but this UI does not claim those are separate reviewer-signature records. Resuming after app restart still depends on WS1's in-memory paused-state recovery. Request shared smoke coverage for the human checkbox → resume → Car path. No core, main, engine or block files changed.
 - 2026-10-10: Fixing HIL getting stuck: expose the paused gate's run-snapshot report, load persisted input data (not re-read files or samples), and require explicit human review before existing `runs.resume`. Single-reviewer gates supported; do not bypass multi-reviewer gates or set requirement decision statuses. Scope: WS2 renderer/report and synthetic tests only.
