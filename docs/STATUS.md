@@ -323,8 +323,9 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
   - Main-process LLM uses the run Settings snapshot and SecretsStore. Offline deterministic mock is
     clearly labelled; Anthropic structured-output schema adaptation and validation use fake HTTP tests.
     No live-provider call was made. Abort rejections keep a run cancelled instead of marking it failed.
-  - Verification: root typecheck, 181 tests passed (24 unrelated real-data tests skipped), format check;
-    `npm run smoke` passed with 22 screenshots. Inspected `splitter-ten-outputs.png`,
+  - Verification after rebasing onto latest main (`3f8b235`): `npm run check` passed (typecheck,
+    204 tests passed, 24 unrelated real-data tests skipped, format check);
+    `npm run smoke` passed with 29 screenshots. Inspected `splitter-ten-outputs.png`,
     `splitter-inner-ten.png`, `splitter-inner-two.png`; packaged IPC Raw SQLite → Splitter routes
     three synthetic records exactly once. Use `npm run check` and `npm run smoke` for the handoff gate.
   - Next: WS8 scorer integration and the existing AI Filter/end-to-end checklist. The original WS6
