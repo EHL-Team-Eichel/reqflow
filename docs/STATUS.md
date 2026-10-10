@@ -157,7 +157,7 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 ## WS3 — Car tab: requirements review & audit UI
 
-**Status:** in progress (3D car + part classifier first) · **Owner:** Claude Code (car-model session) · **Branch:** `ws3-car-model`
+**Status:** in progress (3D car + part classifier in review) · **Owner:** Claude Code (car-model session) · **Branch:** `ws3-car-model`
 **Depends on:** nothing to start: build on `@reqflow/core/fixtures` (5 requirements, findings, sources,
 audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 serves them.
 
@@ -174,12 +174,33 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - [ ] Audit timeline (global and per requirement) from `api.audit.list`, before → after diffs, filters.
 - [ ] Export button → `api.exports.requirements` (JSON / CSV / Markdown).
 - [ ] Add Car-tab steps to `npm run smoke` (propose the diff to WS1/WS0 in your log).
-- [ ] 3D car (5 Series G60 proportions, blueprint-sketch look): orbit / zoom, every part clickable,
-      the part's requirements from Add to Car shown in a side panel.
-- [ ] Auto classifier: assign every requirement to a car part (explainable: matched terms, confidence).
+- [x] 3D car (5 Series G60 proportions, pure line sketch: no paint, no shading): orbit / zoom,
+      camera presets, exterior / interior view, 34 clickable parts, badges with counts, the part's
+      requirements in a side panel.
+- [x] Auto classifier: assign every requirement to a car part (explainable: matched terms, confidence).
+- [ ] Requirement detail / drill-down from a card on the car (the list tasks above).
+- [ ] PM override of the auto-classified part (needs a contract field + audit event, WS0).
 
 **Log**
 
+- 2026-10-10 night: 3D car + auto classifier built (`components/car/`, `pages/CarPage.tsx`).
+  - **Car:** procedural three.js model (`model/body.ts` parametric body cut into panels,
+    `model/decals.ts` grille/lights/handles projected onto it, `model/buildCar.ts` wheels, chassis,
+    interior). Drawn as a pen sketch (`model/sketch.ts`): page-colour fills hide back lines, ink
+    silhouettes + panel lines, follows light/dark. Selection is the only colour (brand lines).
+  - **Auto classifier** (`classify.ts`, vocabulary in `parts.ts`, EN + DE): deterministic, title >
+    description > targets, longest match wins, category only breaks ties or places with low
+    confidence, otherwise "Whole car". Each card shows why ("Named in the title: …").
+  - Data: `api.requirements.list()`, reloaded on every run update; "Synthetic sample" toggle shows
+    the fixtures, labelled as such.
+  - Verify: `npm run check` (classifier + model tests: every part has a mesh and an anchor, G60
+    dimensions) and `npm run smoke` (screens `car-3d`, `car-part-selected`, `car-side/rear/top`,
+    `car-clicked` = a real click on the canvas selects a part, `car-interior`).
+  - **Outside my lane, please review (WS0):** added the Car steps to `apps/desktop/src/main/smoke.ts`
+    (WS1-owned; the WS3 task asked for them). New dependency in `apps/desktop`: `three` 0.186.
+  - **Contract request (WS0):** if the classifier should also feed the AI Splitter / Add to Car,
+    move `classify.ts` + `parts.ts` to `packages/core`; a `carPart` override on Requirement would let
+    the PM correct a placement with an audit event.
 - 2026-10-10 night: Claimed WS3. Starting with the 3D car and the part classifier the user asked for.
   Decision: no free BMW G60 3D model is licensed for a public repo (all are paid or editorial-only),
   so the car is built procedurally in three.js from G60 dimensions, every part its own mesh.
