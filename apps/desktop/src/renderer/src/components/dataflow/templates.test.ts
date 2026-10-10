@@ -1,4 +1,5 @@
 import {
+  BLOCK_SPECS,
   boundaryBlockId,
   connect,
   createBlock,
@@ -67,6 +68,13 @@ describe("product-management workflow templates", () => {
       "in-1",
     );
     expect(FEEDBACK_TEMPLATES[1]!.graph.blocks.filter((b) => b.kind === "hil")).toHaveLength(3);
+    const car = FEEDBACK_TEMPLATES[0]!.graph.blocks.find((b) => b.kind === "add_to_car")!;
+    expect(BLOCK_SPECS.add_to_car.ports(car.params).inputs.map((p) => p.label)).toEqual([
+      "1. Priority",
+      "2. Priority",
+      "3. Priority",
+      "Context 1 · Auto",
+    ]);
   });
 
   it("assigns fresh ids across the whole tree and deep-clones parameters and positions", () => {

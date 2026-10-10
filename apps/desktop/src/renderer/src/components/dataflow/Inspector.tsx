@@ -104,6 +104,20 @@ function BlockInspector({ block, kind }: { block: WorkflowBlock; kind: PaletteBl
     >
       <div className="flex flex-col gap-5">
         <p className="text-sm text-muted">{spec.description}</p>
+        {block.kind === "add_to_car" && (
+          <>
+            <p className="text-xs text-muted">
+              Data on 1. Priority matters most. Context inputs are background the agents read but
+              don't turn into requirements: choose Auto or Sales volumes.
+            </p>
+            <Button
+              data-testid="inspector-open-reasoning"
+              onClick={() => dataflowStore.getState().openReasoning(block.id)}
+            >
+              Open thought process
+            </Button>
+          </>
+        )}
         <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
           <dt className="font-medium text-ink">Inputs</dt>
           <dd className="text-muted">{portList(ports.inputs)}</dd>

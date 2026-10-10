@@ -30,6 +30,41 @@ function WorkplaceActions() {
 }
 
 import { HilReport } from "@/components/dataflow/report/HilReport";
+import { ReasoningDialog } from "@/components/reasoning/ReasoningDialog";
+import { walkBlocks } from "@reqflow/core";
+import { runStore } from "@/components/dataflow/run-session";
+import { api } from "@/lib/api";
+import { useCallback } from "react";
+
+function ReasoningDialogHost() {
+  const reasoning = useDataflow((s) => s.reasoning);
+  const block = useDataflow((s) =>
+    reasoning ? [...walkBlocks(s.root)].find((b) => b.block.id === reasoning.blockId)?.block : null,
+  );
+
+  const load = useCallback(() => {
+    if (!block) return Promise.resolve(null);
+    const run = runStore.getState().run;
+    if (run && [...walkBlocks(run.graph)].some((b) => b.block.id === block.id)) {
+      return api.reasoning.forRun(run.id, block.id);
+    }
+    const workflowId = runStore.getState().workflowId;
+    if (workflowId) {
+      return api.reasoning.latest(workflowId, block.id);
+    }
+    return Promise.resolve(null);
+  }, [block]);
+
+  if (!reasoning || !block) return null;
+
+  return (
+    <ReasoningDialog
+      title={`Thought process · ${block.label}`}
+      load={load}
+      onClose={() => dataflowStore.getState().closeReasoning()}
+    />
+  );
+}
 
 export function DataflowPage() {
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -62,6 +97,7 @@ export function DataflowPage() {
         </div>
       </div>
       <HilReport />
+      <ReasoningDialogHost />
     </ReactFlowProvider>
   );
 }

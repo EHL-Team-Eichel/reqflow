@@ -2,6 +2,7 @@ import { useState } from "react";
 import { CarViewer, type CameraPreset, type CarView } from "@/components/car/CarViewer";
 import { PartPanel } from "@/components/car/PartPanel";
 import { useCarRequirements } from "@/components/car/useCarRequirements";
+import { ReasoningDialog } from "@/components/reasoning/ReasoningDialog";
 import { Segmented } from "@/components/settings/Segmented";
 import { Button } from "@/components/ui/Button";
 import { MStripe } from "@/components/ui/MStripe";
@@ -34,6 +35,8 @@ export function CarPage() {
   const data = useCarRequirements();
   const reset = useReset(data.reload);
 
+  const [whyReqId, setWhyReqId] = useState<string | null>(null);
+
   const emptyHint =
     data.error ??
     (data.loading
@@ -42,6 +45,14 @@ export function CarPage() {
 
   return (
     <div className="flex h-full gap-2">
+      {whyReqId && (
+        <ReasoningDialog
+          title={`Why ${whyReqId}?`}
+          focusRequirementId={whyReqId}
+          load={() => api.reasoning.forRequirement(whyReqId)}
+          onClose={() => setWhyReqId(null)}
+        />
+      )}
       <h1 className="sr-only">Car</h1>
       <Panel
         title={
@@ -153,6 +164,7 @@ export function CarPage() {
           total={data.total}
           emptyHint={emptyHint}
           onSelect={setSelected}
+          onWhy={setWhyReqId}
         />
       </Panel>
     </div>
