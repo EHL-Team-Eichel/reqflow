@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4KMWRK0Z5V4D4GVXSB0HPP9",
   "strategy": "manual-commit",
   "branch": "ws6-research",
-  "checkpoints_count": 14,
+  "checkpoints_count": 15,
   "files_touched": [
     ".gitignore",
     ".prettierignore",
@@ -44,6 +44,7 @@
     "packages/blocks/src/index.ts",
     "packages/blocks/src/research/data-budget.test.ts",
     "packages/blocks/src/research/data-budget.ts",
+    "packages/blocks/src/research/documents/xlsx-worker.ts",
     "packages/blocks/src/research/export.test.ts",
     "packages/blocks/src/research/export.ts",
     "packages/blocks/src/research/http.test.ts",
@@ -156,6 +157,13 @@
       "compact_transcript": "/12/transcript.jsonl",
       "content_hash": "/12/content_hash.txt",
       "prompt": "/12/prompt.txt"
+    },
+    {
+      "metadata": "/13/metadata.json",
+      "transcript": "/13/full.jsonl",
+      "compact_transcript": "/13/transcript.jsonl",
+      "content_hash": "/13/content_hash.txt",
+      "prompt": "/13/prompt.txt"
     }
   ],
   "token_usage": {
