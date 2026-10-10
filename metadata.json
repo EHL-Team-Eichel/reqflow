@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4M0REXDEJ1NA3T0PXVX9PPV",
   "strategy": "manual-commit",
   "branch": "ws6-ai-providers",
-  "checkpoints_count": 1,
+  "checkpoints_count": 2,
   "files_touched": [
     "docs/STATUS.md"
   ],
@@ -14,13 +14,20 @@
       "compact_transcript": "/0/transcript.jsonl",
       "content_hash": "/0/content_hash.txt",
       "prompt": "/0/prompt.txt"
+    },
+    {
+      "metadata": "/1/metadata.json",
+      "transcript": "/1/full.jsonl",
+      "compact_transcript": "/1/transcript.jsonl",
+      "content_hash": "/1/content_hash.txt",
+      "prompt": "/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 72,
+    "input_tokens": 489301,
     "cache_creation_tokens": 207220,
-    "cache_read_tokens": 1403379,
-    "output_tokens": 9300,
-    "api_call_count": 24
+    "cache_read_tokens": 6064064,
+    "output_tokens": 15585,
+    "api_call_count": 117
   }
 }

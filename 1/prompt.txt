@@ -1,0 +1,19 @@
+"READ-ONLY focused correctness review. Follow AGENTS.md. Repo /Users/jonas/Documents/reqflow branch ws6-ai-providers has new OpenAI Responses + Google Gemini app LLM clients and provider-aware Mastra query planning. Do not edit/stage/commit/spawn agents, inspect data/raw or keys, run root gates/native smoke or make live provider requests. Review packages/llm/src/{index.ts,json-schema.ts,openai-schema.ts,google-schema.ts}, research/{mastra.ts,runtime.ts} under packages/blocks/src, and their synthetic tests plus core/settings.ts. Check exact REST request/response handling, model normalization/tier/custom IDs/reasoning parameters, original Zod schema validation, optional-null encoding/root envelopes, safety/refusal/incomplete rejection, cancellation and credential-safe errors. Query planning only explicit opt-in and shared HTTP budget; never receives collected originals/tools/decisions. No automatic paid fallback. Official endpoint compatibility can be assessed against existing docs/research/llm-providers.md, not live generation. Report concrete actionable findings with path:line, cause and minimal fix; separate live availability not tested. Run focused tests only for an unresolved hypothesis. Finish concise."
+
+---
+
+▣ DCP | -41.8K removed, +316 summary
+
+│█⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿██│
+▣ Compression #1 -41.8K removed, +316 summary
+→ Topic: LLM and Research Review
+→ Items: 27 messages and 27 tools compressed
+
+---
+
+▣ DCP | -82.8K removed, +731 summary
+
+│░░░░░░░░░░░░░░░░░░░░⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿█│
+▣ Compression #2 -40.8K removed, +731 summary
+→ Topic: Focused Review Verification
+→ Items: 39 messages and 39 tools compressed
