@@ -1,5 +1,6 @@
 // @reqflow/engine — workflow runtime. Owner: WS1 (see docs/WORKSTREAMS.md).
-// Contract (stable): NodeDefinition / NodeContext / NodeResult / NodeRegistry.
-// To build here: graph validation + executor (topological run, merge inputs, pause/resume, cancel).
-export * from "./node";
+// Contract (stable): BlockImplementation / BlockContext / BlockResult / BlockRegistry.
+// To build here: the executor (validateGraph, topological run per workplace, inner workplaces,
+// merge per input port, pause/resume at HIL, cancel). Semantics: docs/ARCHITECTURE.md.
+export * from "./block";
 export * from "./registry";

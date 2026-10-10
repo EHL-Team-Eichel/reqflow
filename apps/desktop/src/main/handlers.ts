@@ -1,5 +1,5 @@
 import type { AppInfo, ReqflowHandlers } from "@reqflow/core/ipc";
-import { BMW_DEFAULT_TEMPLATE, createNodeRegistry } from "@reqflow/nodes";
+import { BMW_DEFAULT_TEMPLATE } from "@reqflow/blocks";
 import { ReqflowError } from "./dispatch";
 
 // Owner: WS1 (docs/WORKSTREAMS.md). Every method the UI can call is listed here; the ones not built
@@ -20,10 +20,8 @@ export interface HandlerDeps {
 }
 
 export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
-  const registry = createNodeRegistry();
   return {
     app: { info: async () => deps.appInfo() },
-    nodes: { catalog: async () => registry.catalog() },
     templates: { list: async () => [BMW_DEFAULT_TEMPLATE] },
     workflows: {
       list: notBuilt("workflows.list"),
@@ -36,7 +34,7 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
       start: notBuilt("runs.start"),
       get: notBuilt("runs.get"),
       list: notBuilt("runs.list"),
-      nodeOutput: notBuilt("runs.nodeOutput"),
+      blockOutput: notBuilt("runs.blockOutput"),
       resume: notBuilt("runs.resume"),
       cancel: notBuilt("runs.cancel"),
     },

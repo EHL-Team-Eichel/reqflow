@@ -2,9 +2,9 @@ import type { z } from "zod";
 import type { AuditEvent, AuditEventInput } from "./audit";
 
 /**
- * Service interfaces handed to nodes via NodeContext. Implementations live elsewhere
- * (llm → @reqflow/llm, audit/files → @reqflow/db, web search → nodes/research) and are
- * wired together in the Electron main process (apps/desktop/src/main). Nodes never read env vars or the DB directly.
+ * Service interfaces handed to blocks via BlockContext (@reqflow/engine). Implementations live
+ * elsewhere (llm → @reqflow/llm, audit/files → @reqflow/db, web search → blocks/research) and are
+ * wired together in the Electron main process (apps/desktop/src/main). Blocks never read env vars or the DB directly.
  */
 
 export type ModelTier = "default" | "fast";

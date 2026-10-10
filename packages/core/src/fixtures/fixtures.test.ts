@@ -28,6 +28,7 @@ import {
   priorityForScore,
   ScoreFactor,
   FindingKind,
+  validateGraph,
 } from "../index";
 
 describe("synthetic fixture data", () => {
@@ -42,6 +43,13 @@ describe("synthetic fixture data", () => {
     expect(() => WorkflowRun.parse(fixtureRun)).not.toThrow();
     fixtureAuditEvents.forEach((e) => expect(() => AuditEvent.parse(e)).not.toThrow());
     expect(() => PipelineData.parse(fixturePipelineData)).not.toThrow();
+  });
+
+  it("has a valid workflow whose run covers every top-level block", () => {
+    expect(validateGraph(fixtureWorkflow)).toEqual([]);
+    expect(fixtureRun.blockRuns.map((r) => r.blockId).sort()).toEqual(
+      fixtureWorkflow.blocks.map((b) => b.id).sort(),
+    );
   });
 
   it("maintains referential integrity", () => {

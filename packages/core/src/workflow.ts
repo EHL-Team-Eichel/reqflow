@@ -1,41 +1,57 @@
 import { z } from "zod";
 import { Actor } from "./audit";
+import { BlockKind } from "./blocks";
 import { DataKey } from "./pipeline";
 import { ProductScope } from "./scope";
 
-/** Palette groups in the editor; mirror the BMW process columns. */
-export const NodeCategory = z.enum([
-  "source", // situation analysis: BMW data + web
-  "analysis", // structure & context: extract, filter, cluster
-  "requirements", // requirements definition: derive, specify targets
-  "prioritization",
-  "review", // human-in-the-loop gates
-  "output", // documentation / publish / export
-]);
-export type NodeCategory = z.infer<typeof NodeCategory>;
+/**
+ * A block placed on a workplace. `id` is unique across the whole workflow, inner workplaces
+ * included, so run status and outputs can be keyed by id alone.
+ */
+export interface WorkflowBlock {
+  id: string;
+  kind: BlockKind;
+  label: string;
+  position: { x: number; y: number };
+  params: Record<string, unknown>; // validated per kind: parseBlockParams (blocks.ts)
+  /** The block's own workplace. Present exactly when the kind has one (BLOCK_SPECS.hasInnerWorkplace). */
+  inner?: WorkflowGraph;
+}
 
-export const WorkflowNode = z.object({
-  id: z.string().min(1), // unique within the workflow, e.g. "extract-1"
-  type: z.string().regex(/^[a-z]+\.[a-z_]+$/), // registry key, e.g. "analysis.extract_signals"
-  label: z.string().optional(),
-  position: z.object({ x: z.number(), y: z.number() }),
-  config: z.record(z.string(), z.unknown()), // validated against the node's configSchema at run time
-});
-export type WorkflowNode = z.infer<typeof WorkflowNode>;
-
-/** Nodes have exactly one input and one output port, so an edge is just source → target. */
+/** Connects an output port of one block to an input port of another, on the same workplace. */
 export const WorkflowEdge = z.object({
   id: z.string().min(1),
   source: z.string().min(1),
+  sourcePort: z.string().min(1),
   target: z.string().min(1),
+  targetPort: z.string().min(1),
 });
 export type WorkflowEdge = z.infer<typeof WorkflowEdge>;
 
+/** One workplace: the top level of a workflow, or the inside of an expandable block. */
+export interface WorkflowGraph {
+  blocks: WorkflowBlock[];
+  edges: WorkflowEdge[];
+}
+
+export const BlockId = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9_-]{0,99}$/);
+
+export const WorkflowBlock: z.ZodType<WorkflowBlock> = z.object({
+  id: BlockId,
+  kind: BlockKind,
+  label: z.string().trim().min(1).max(80),
+  position: z.object({ x: z.number(), y: z.number() }),
+  params: z.record(z.string(), z.unknown()),
+  get inner() {
+    return WorkflowGraph.optional();
+  },
+});
+
+/** Shape only. `validateGraph` (graph.ts) checks ports, params, cycles and unique ids. */
 export const WorkflowGraph = z.object({
-  nodes: z.array(WorkflowNode),
+  blocks: z.array(WorkflowBlock),
   edges: z.array(WorkflowEdge),
 });
-export type WorkflowGraph = z.infer<typeof WorkflowGraph>;
 
 export const Workflow = WorkflowGraph.extend({
   id: z.string().startsWith("wf_"),
@@ -51,38 +67,38 @@ export type Workflow = z.infer<typeof Workflow>;
 export const RunStatus = z.enum([
   "queued",
   "running",
-  "waiting_for_review", // paused at a review.* node until the PM resumes
+  "waiting_for_review", // paused at a HIL block until a person has reviewed
   "completed",
   "failed",
   "cancelled",
 ]);
 export type RunStatus = z.infer<typeof RunStatus>;
 
-export const NodeRunStatus = z.enum([
+export const BlockRunStatus = z.enum([
   "pending",
   "running",
   "succeeded",
   "failed",
-  "skipped", // an upstream node failed
+  "skipped", // an upstream block failed
   "waiting_for_review",
 ]);
-export type NodeRunStatus = z.infer<typeof NodeRunStatus>;
+export type BlockRunStatus = z.infer<typeof BlockRunStatus>;
 
-export const NodeRunLog = z.object({ at: z.iso.datetime(), message: z.string() });
-export type NodeRunLog = z.infer<typeof NodeRunLog>;
+export const BlockRunLog = z.object({ at: z.iso.datetime(), message: z.string() });
+export type BlockRunLog = z.infer<typeof BlockRunLog>;
 
-/** Status shown on each canvas node. Full node output is stored separately (see ARCHITECTURE.md). */
-export const NodeRun = z.object({
-  nodeId: z.string().min(1),
-  status: NodeRunStatus,
+/** Status shown on each block. Full block output is stored separately (see ARCHITECTURE.md). */
+export const BlockRun = z.object({
+  blockId: BlockId, // ids are unique across inner workplaces too
+  status: BlockRunStatus,
   startedAt: z.iso.datetime().optional(),
   finishedAt: z.iso.datetime().optional(),
   progress: z.number().min(0).max(1).optional(),
   counts: z.partialRecord(DataKey, z.number().int().nonnegative()), // output size per data key
-  logs: z.array(NodeRunLog),
+  logs: z.array(BlockRunLog),
   error: z.string().optional(),
 });
-export type NodeRun = z.infer<typeof NodeRun>;
+export type BlockRun = z.infer<typeof BlockRun>;
 
 export const WorkflowRun = z.object({
   id: z.string().startsWith("run_"),
@@ -94,23 +110,12 @@ export const WorkflowRun = z.object({
   startedBy: Actor,
   startedAt: z.iso.datetime(),
   finishedAt: z.iso.datetime().optional(),
-  nodeRuns: z.array(NodeRun),
+  blockRuns: z.array(BlockRun),
   error: z.string().optional(),
 });
 export type WorkflowRun = z.infer<typeof WorkflowRun>;
 
-/** One palette entry in the editor (served by `nodes.catalog()`). */
-export interface NodeCatalogEntry {
-  type: string;
-  label: string;
-  description: string;
-  category: NodeCategory;
-  consumes: DataKey[];
-  produces: DataKey[];
-  configJsonSchema: unknown; // JSON Schema generated from the node's configSchema
-}
-
-/** A ready-made graph the editor can instantiate ("New from template"). */
+/** A ready-made workflow the editor can instantiate ("New from template"). */
 export interface WorkflowTemplate {
   name: string;
   description: string;

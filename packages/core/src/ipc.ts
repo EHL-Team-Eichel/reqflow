@@ -15,7 +15,7 @@ import type { DecisionStatus, EvidenceLevel, Requirement } from "./requirement";
 import type { Priority } from "./scoring";
 import type { Settings } from "./settings";
 import type { Source, SourceRecord } from "./source";
-import type { NodeCatalogEntry, Workflow, WorkflowRun, WorkflowTemplate } from "./workflow";
+import type { Workflow, WorkflowRun, WorkflowTemplate } from "./workflow";
 
 export interface AppInfo {
   version: string;
@@ -25,14 +25,14 @@ export interface AppInfo {
 }
 
 /** Create (no id) or update (with id) a workflow; main assigns id, version and timestamps. */
-export type WorkflowSave = Pick<Workflow, "name" | "scope" | "nodes" | "edges"> & {
+export type WorkflowSave = Pick<Workflow, "name" | "scope" | "blocks" | "edges"> & {
   id?: string;
   description?: string;
 };
 
 /** A dataset copied into the app's data directory by `files.import()`. */
 export interface StoredFileInfo {
-  id: string; // "file_…" — use as `fileId` in source.bmw_dataset config
+  id: string; // "file_…" — stored as `{ fileId, name }` in a Raw block's `file` param
   name: string;
   mimeType: string;
   sizeBytes: number;
@@ -76,7 +76,6 @@ export type SecretStatus = Record<
 
 export interface ReqflowApi {
   app: { info(): Promise<AppInfo> };
-  nodes: { catalog(): Promise<NodeCatalogEntry[]> };
   templates: { list(): Promise<WorkflowTemplate[]> };
   workflows: {
     list(): Promise<Workflow[]>;
@@ -92,7 +91,8 @@ export interface ReqflowApi {
     start(workflowId: string): Promise<WorkflowRun>;
     get(runId: string): Promise<WorkflowRun>;
     list(workflowId?: string): Promise<WorkflowRun[]>;
-    nodeOutput(runId: string, nodeId: string): Promise<PipelineData>;
+    /** What one block emitted, per output port id. */
+    blockOutput(runId: string, blockId: string): Promise<Record<string, PipelineData>>;
     resume(runId: string): Promise<WorkflowRun>;
     cancel(runId: string): Promise<WorkflowRun>;
     /** Pushed by main on every status/progress change. Returns an unsubscribe function. */
@@ -130,11 +130,10 @@ export type ReqflowHandlers = {
 /** Every request/response method, by namespace. Preload allow-lists exactly these channels. */
 export const IPC_INVOKE_METHODS = {
   app: ["info"],
-  nodes: ["catalog"],
   templates: ["list"],
   workflows: ["list", "get", "save", "remove"],
   files: ["import"],
-  runs: ["start", "get", "list", "nodeOutput", "resume", "cancel"],
+  runs: ["start", "get", "list", "blockOutput", "resume", "cancel"],
   requirements: ["list", "get", "edit", "decide"],
   audit: ["list"],
   settings: ["get", "save", "secrets", "setSecret"],

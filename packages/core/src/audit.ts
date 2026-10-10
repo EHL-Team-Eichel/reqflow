@@ -4,7 +4,7 @@ import { z } from "zod";
 export const Actor = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("ai"),
-    component: z.string().min(1), // node type, e.g. "requirements.derive"
+    component: z.string().min(1), // block kind, e.g. "ai_filter"
     model: z.string().min(1), // exact model id, or "deterministic" for rule-based steps
   }),
   z.object({

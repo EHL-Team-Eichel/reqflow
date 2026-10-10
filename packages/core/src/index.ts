@@ -1,8 +1,10 @@
 // @reqflow/core — the shared contract. Changes here affect every workstream: see AGENTS.md.
 export * from "./api";
 export * from "./audit";
+export * from "./blocks";
 export * from "./category";
 export * from "./finding";
+export * from "./graph";
 export * from "./ids";
 export * from "./ipc";
 export * from "./pipeline";

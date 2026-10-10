@@ -1,47 +1,42 @@
-import type { NodeCatalogEntry } from "@reqflow/core";
-import { z } from "zod";
-import type { NodeDefinition } from "./node";
+import { isPaletteBlockKind, PALETTE_BLOCK_KINDS, type PaletteBlockKind } from "@reqflow/core";
+import type { BlockImplementation } from "./block";
 
-export class NodeRegistry {
-  private readonly defs = new Map<string, NodeDefinition>();
+/**
+ * Block kinds that never need an implementation: a custom block only runs its inner workplace.
+ * (Specs, ports and params of every kind live in `@reqflow/core` → BLOCK_SPECS.)
+ */
+export const SUBFLOW_ONLY_KINDS: readonly PaletteBlockKind[] = ["custom"];
 
-  constructor(defs: readonly NodeDefinition[] = []) {
-    for (const def of defs) this.register(def);
+export class BlockRegistry {
+  private readonly impls = new Map<PaletteBlockKind, BlockImplementation>();
+
+  constructor(impls: readonly BlockImplementation[] = []) {
+    for (const impl of impls) this.register(impl);
   }
 
-  register(def: NodeDefinition): void {
-    if (this.defs.has(def.type)) {
-      throw new Error(`Node type "${def.type}" is already registered`);
+  register(impl: BlockImplementation): void {
+    if (!isPaletteBlockKind(impl.kind)) throw new Error(`Unknown block kind "${impl.kind}"`);
+    if (SUBFLOW_ONLY_KINDS.includes(impl.kind)) {
+      throw new Error(`"${impl.kind}" blocks only run their inner workplace`);
     }
-    if (!/^[a-z]+\.[a-z_]+$/.test(def.type)) {
-      throw new Error(`Node type "${def.type}" must look like "<category>.<snake_name>"`);
+    if (this.impls.has(impl.kind)) {
+      throw new Error(`Block kind "${impl.kind}" is already registered`);
     }
-    this.defs.set(def.type, def);
+    this.impls.set(impl.kind, impl);
   }
 
-  get(type: string): NodeDefinition {
-    const def = this.defs.get(type);
-    if (!def) throw new Error(`Unknown node type "${type}"`);
-    return def;
+  get(kind: PaletteBlockKind): BlockImplementation {
+    const impl = this.impls.get(kind);
+    if (!impl) throw new Error(`Block kind "${kind}" has no implementation yet`);
+    return impl;
   }
 
-  has(type: string): boolean {
-    return this.defs.has(type);
+  has(kind: PaletteBlockKind): boolean {
+    return this.impls.has(kind);
   }
 
-  list(): NodeDefinition[] {
-    return [...this.defs.values()];
-  }
-
-  catalog(): NodeCatalogEntry[] {
-    return this.list().map((def) => ({
-      type: def.type,
-      label: def.label,
-      description: def.description,
-      category: def.category,
-      consumes: def.consumes,
-      produces: def.produces,
-      configJsonSchema: z.toJSONSchema(def.configSchema, { unrepresentable: "any" }),
-    }));
+  /** Kinds that still need an implementation, for status reporting. */
+  missing(): PaletteBlockKind[] {
+    return PALETTE_BLOCK_KINDS.filter((k) => !SUBFLOW_ONLY_KINDS.includes(k) && !this.has(k));
   }
 }
