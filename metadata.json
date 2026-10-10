@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4KEQM3V5ASEF48MGNK78YTA",
   "strategy": "manual-commit",
   "branch": "ws7-ai-splitter",
-  "checkpoints_count": 5,
+  "checkpoints_count": 6,
   "files_touched": [
     "docs/STATUS.md"
   ],
@@ -35,13 +35,20 @@
       "compact_transcript": "/3/transcript.jsonl",
       "content_hash": "/3/content_hash.txt",
       "prompt": "/3/prompt.txt"
+    },
+    {
+      "metadata": "/4/metadata.json",
+      "transcript": "/4/full.jsonl",
+      "compact_transcript": "/4/transcript.jsonl",
+      "content_hash": "/4/content_hash.txt",
+      "prompt": "/4/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 282,
-    "cache_creation_tokens": 340082,
-    "cache_read_tokens": 5808268,
-    "output_tokens": 64956,
-    "api_call_count": 95
+    "input_tokens": 354,
+    "cache_creation_tokens": 429019,
+    "cache_read_tokens": 7147163,
+    "output_tokens": 84388,
+    "api_call_count": 119
   }
 }
