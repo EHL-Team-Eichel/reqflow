@@ -59,11 +59,11 @@ export const useVehicleStore = create<VehicleState>((set, get) => {
 
     selectModel: (modelId: string) => {
       const model = getVehicleModelById(modelId);
-      if (!model) return;
+      if (!model) throw new Error(`Unknown vehicle model: ${modelId}`);
 
-      const nextPowertrain = model.supportedPowertrains.includes(get().powertrain)
-        ? get().powertrain
-        : model.defaultPowertrain;
+      // Sketch choices are exploratory and remain available for every catalog model.
+      // Changing the sketch must not reset the chosen powertrain or alter requirement scope.
+      const nextPowertrain = get().powertrain;
 
       set({ selectedModelId: modelId, powertrain: nextPowertrain });
       persist(modelId, nextPowertrain);

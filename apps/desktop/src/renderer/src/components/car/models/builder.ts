@@ -18,7 +18,7 @@ import type { PowertrainType, VehicleModel } from "./types";
  */
 export function buildVehicleModel(
   model?: VehicleModel,
-  powertrain: PowertrainType = "gasoline",
+  powertrain: PowertrainType = "electric",
 ): CarModel {
   const base = buildCar(powertrain);
   if (!model) return base;

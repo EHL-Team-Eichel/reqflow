@@ -4,7 +4,6 @@ import {
   powertrainSubclasses,
   POWERTRAINS,
 } from "@/components/car/modelSwitcher/powertrains";
-import type { PowertrainType } from "@/components/car/models/types";
 import { useVehicleStore, getActiveVehicle } from "@/components/car/models/vehicleStore";
 import { useState, useMemo } from "react";
 import { CarViewer, type CameraPreset, type CarView } from "@/components/car/CarViewer";
@@ -72,7 +71,8 @@ export function CarPage() {
         title={
           <span className="flex items-center gap-2.5">
             <MStripe variant="badge" />
-            {active.model.name}
+            BMW {scope.vehicleLine}
+            {scope.derivative ? ` ${scope.derivative}` : ""}
             <span className="text-sm font-normal text-muted">
               {scope.market} · {scope.horizonYears}-year horizon
             </span>
@@ -116,6 +116,7 @@ export function CarPage() {
             onSelect={setSelected}
           />
           <p className="pointer-events-none absolute bottom-3 left-4 text-xs text-muted">
+            Sketch: {active.model.name} ·{" "}
             {POWERTRAINS.find((option) => option.value === powertrain)?.description} · schematic
             sketch · drag to turn, scroll to zoom, click any part
           </p>
