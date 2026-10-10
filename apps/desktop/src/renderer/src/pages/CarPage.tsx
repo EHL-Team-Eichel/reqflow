@@ -93,8 +93,7 @@ export function CarPage() {
             onSelect={setSelected}
           />
           <p className="pointer-events-none absolute bottom-3 left-4 text-xs text-muted">
-            Sketch modelled on the 5 Series Sedan (G60) dimensions · drag to turn, scroll to zoom,
-            click any part
+            BMW-inspired sketch · drag to turn, scroll to zoom, click any part
           </p>
         </div>
       </Panel>
