@@ -1,0 +1,47 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4KZ91HJ7SBVZZ777QGBNC3K",
+  "session_id": "ses_ed8133610ffewo2GDz4GwdQ4i0",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-10T22:34:59.258285Z",
+  "branch": "ws7-mastra-splitter",
+  "checkpoints_count": 1,
+  "save_step_count": 1,
+  "files_touched": [
+    "PRODUCT.md",
+    "apps/desktop/src/main/smoke.ts",
+    "apps/desktop/src/renderer/src/components/dataflow/BlockNode.tsx",
+    "apps/desktop/src/renderer/src/components/dataflow/Inspector.tsx",
+    "apps/desktop/src/renderer/src/components/dataflow/report/DataPanel.tsx",
+    "apps/desktop/src/renderer/src/components/dataflow/report/HilReport.tsx",
+    "apps/desktop/src/renderer/src/components/dataflow/report/StepNode.tsx",
+    "apps/desktop/src/renderer/src/components/dataflow/report/run-data.test.ts",
+    "docs/ARCHITECTURE.md"
+  ],
+  "agent": "OpenCode",
+  "model": "gemini-3.8-flash",
+  "turn_id": "3d46e027cc0a",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 286024,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 3263732,
+    "output_tokens": 6983,
+    "api_call_count": 58
+  },
+  "session_metrics": {
+    "turn_count": 1
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-10T22:34:59.246217Z",
+    "agent_lines": 542,
+    "agent_removed": 77,
+    "human_added": 1696,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 2238,
+    "total_lines_changed": 2315,
+    "agent_percentage": 26.738660907127432,
+    "metric_version": 2
+  }
+}
