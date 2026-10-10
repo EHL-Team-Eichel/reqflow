@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { cx } from "@/lib/cx";
 import { label } from "./classify";
+import { partTag } from "./partTags";
 import { buildCar, type CarPiece } from "./model/buildCar";
 import { G60 } from "./model/body";
 import {
@@ -410,16 +411,18 @@ export function CarViewer(props: Props) {
           }}
           onClick={() => props.onSelect(partId)}
           data-testid={`car-badge-${partId}`}
-          title={`${label(partId)}: ${n} requirement${n === 1 ? "" : "s"}`}
+          aria-label={`Review ${label(partId)}: ${n} requirement${n === 1 ? "" : "s"}`}
+          aria-pressed={props.selected === partId}
           className={cx(
-            "absolute top-0 left-0 grid h-6 min-w-6 place-items-center rounded-full border px-1.5 text-xs font-semibold shadow-sm transition-colors",
+            "absolute top-0 left-0 flex h-6 items-center gap-1.5 rounded-full border px-2 text-[11px] font-medium whitespace-nowrap shadow-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand",
             props.selected === partId
               ? "border-brand bg-brand-fill text-white"
               : "border-line bg-panel text-ink hover:border-brand",
           )}
           style={{ visibility: "hidden" }}
         >
-          {n}
+          <span>{partTag(partId)}</span>
+          <span className="text-[10px] opacity-70">{n}</span>
         </button>
       ))}
       <div
@@ -429,7 +432,7 @@ export function CarViewer(props: Props) {
           hovered ? "opacity-100" : "opacity-0",
         )}
       >
-        {hovered ? label(hovered) : ""}
+        {hovered ? partTag(hovered) : ""}
       </div>
     </div>
   );

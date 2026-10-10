@@ -220,6 +220,18 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 **Log**
 
+- 2026-10-10: Compact car-point tags complete: short labels (e.g. Grille, Display, Rear seats)
+  plus a small count replace number-only points and long hover names. Removed the long native
+  hover tooltip; full accessible names remain. Point clicks still select the detailed side-panel
+  review with descriptions, targets, evidence and classification. Added 37 tag regressions.
+  Typecheck and all 327 tests pass (25 skipped); Prettier passes; reviewed `car-3d.png` and
+  `car-clicked.png`. Smoke produces 29 screenshots but retains the seven obsolete sample-control
+  failures documented below; WS1-owned smoke script remains unchanged.
+
+- 2026-10-10: OpenCode claimed compact car-point tags: replace long hover names with short
+  labels, show a small tag and count on each point, and preserve click-through to the full review.
+  Existing visibility/model and part-menu changes remain outside this slice.
+
 - 2026-10-10: OpenCode claimed the expandable parts-menu slice on the current branch:
   Exterior / Interior / Technology sections with broader subclasses (Doors, Seats, etc.)
   and all existing detailed parts visible by default. Preserve concurrent model edits.
