@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4KMWRK0Z5V4D4GVXSB0HPP9",
   "strategy": "manual-commit",
   "branch": "ws6-research",
-  "checkpoints_count": 32,
+  "checkpoints_count": 33,
   "files_touched": [
     ".gitignore",
     ".prettierignore",
@@ -34,6 +34,7 @@
     "apps/desktop/tsconfig.web.json",
     "docs/STATUS.md",
     "docs/research/README.md",
+    "docs/research/apify.md",
     "docs/research/documents-statistics.md",
     "docs/research/exports.md",
     "docs/research/http.md",
@@ -269,6 +270,13 @@
       "compact_transcript": "/23/transcript.jsonl",
       "content_hash": "/23/content_hash.txt",
       "prompt": "/23/prompt.txt"
+    },
+    {
+      "metadata": "/24/metadata.json",
+      "transcript": "/24/full.jsonl",
+      "compact_transcript": "/24/transcript.jsonl",
+      "content_hash": "/24/content_hash.txt",
+      "prompt": "/24/prompt.txt"
     }
   ],
   "token_usage": {
