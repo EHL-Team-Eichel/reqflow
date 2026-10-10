@@ -121,7 +121,7 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 ## WS2 — Data Flow editor UI
 
-**Status:** open · **Owner:** — · **Branch:** —
+**Status:** review · **Owner:** OpenCode · **Branch:** `ws2-hil-raw-report`
 **Depends on:** WS1 for save/load and runs. Tasks 1–3 can start now.
 
 **Tasks**
@@ -143,8 +143,14 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
       `components/dataflow/report/DataPanel.tsx` with the step's data from the latest run (`api.runs.blockOutput`; for the HIL itself merge what
       its incoming edges carried with `mergePipelineData`). Keep the synthetic sample as an explicit option.
 - [ ] Polish: "Tidy up" auto-layout, multi-select actions, minimap colours per block group.
+- [ ] Fix direct Raw → HIL report input preview (implemented and verified; awaiting merge).
 
 **Log**
+
+- 2026-10-10: Fixed the default HIL data view for directly connected source blocks. Exact output ports are merged in edge order, duplicate ids are de-duplicated, failures are visible, and stale responses are ignored. Processing blocks still require a run; real previews never fall back to samples. Verify: `npm run check` (99 tests, including 9 new report regressions) and `npm run smoke` (19 screenshots). Also drove Raw SQLite → HIL in an isolated native Electron instance: 3 real records shown on opening the report, screenshot inspected at `apps/desktop/out/smoke/hil-report-direct-raw.png` (synthetic data only).
+- Request for WS1/WS0: extend `main/smoke.ts` with a direct Raw → HIL connection and assert real rows on the default HIL step, not only when selecting the upstream Raw step. Wait for ready data before capturing its screenshot. Existing smoke does not cover this direct-input regression.
+- Next: merge this narrow fix; the remaining WS2 checklist is unchanged. No executor or core changes needed.
+- 2026-10-10: Investigating Raw → HIL report showing no data: the target HIL panel does not preview its connected inputs. Scope: report UI and synthetic regression tests; no executor or core contract changes.
 
 ## WS3 — Car tab: requirements review & audit UI
 
