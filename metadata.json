@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4KMWRK0Z5V4D4GVXSB0HPP9",
   "strategy": "manual-commit",
   "branch": "ws6-research",
-  "checkpoints_count": 31,
+  "checkpoints_count": 32,
   "files_touched": [
     ".gitignore",
     ".prettierignore",
@@ -34,6 +34,7 @@
     "apps/desktop/tsconfig.web.json",
     "docs/STATUS.md",
     "docs/research/README.md",
+    "docs/research/documents-statistics.md",
     "docs/research/exports.md",
     "docs/research/http.md",
     "docs/research/mastra.md",
@@ -261,13 +262,20 @@
       "compact_transcript": "/22/transcript.jsonl",
       "content_hash": "/22/content_hash.txt",
       "prompt": "/22/prompt.txt"
+    },
+    {
+      "metadata": "/23/metadata.json",
+      "transcript": "/23/full.jsonl",
+      "compact_transcript": "/23/transcript.jsonl",
+      "content_hash": "/23/content_hash.txt",
+      "prompt": "/23/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 891,
-    "cache_creation_tokens": 1614033,
-    "cache_read_tokens": 23203210,
-    "output_tokens": 128167,
-    "api_call_count": 297
+    "input_tokens": 918,
+    "cache_creation_tokens": 1795747,
+    "cache_read_tokens": 24601501,
+    "output_tokens": 131875,
+    "api_call_count": 306
   }
 }
