@@ -1,0 +1,38 @@
+start finalizing the building blocks. This is the format they will be in: Blocks and Function (Includes Param/Includes subworkplane/number inputs/number outputs).
+Start with this one:
+Human In Loop(t/f/1/1): This block should create a interactive report when double clikcking where it shows a flow chart how the data was collected, a icon to actually see the data at this point.
+
+---
+
+do ws 5
+
+---
+
+<task-notification>
+<task-id>bpw3eotwv</task-id>
+<tool-use-id>toolu_016GMXhguj7kLEQYFyeVNPaV</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-johannesnirschl-Documents-temporary-EHL/40d2eb91-dde3-4e39-8ba4-6686a20b47a7/tasks/bpw3eotwv.output</output-file>
+<status>completed</status>
+<summary>Background command "Delegate the HIL review report UI to agy" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+@"/Users/johannesnirschl/Downloads/F70_feedback_hackathon.xlsx" @"/Users/johannesnirschl/Downloads/F70_G60_G68_G70_customer_studies.xlsx" @"/Users/johannesnirschl/Downloads/F70_OptionList.PDF" @"/Users/johannesnirschl/Downloads/sales_volumes.xlsx"
+add these files to testing of the app, but add them to gitignore. but first tell me if you have commited and pushed the previous edits
+
+---
+
+what are you currently doing. i just wanted you to add the files
+
+---
+
+no keep working on that
+
+---
+
+switch to f70. what do mean by handle the transcript
+
+---
+
+what file was the bmw sales figures?
