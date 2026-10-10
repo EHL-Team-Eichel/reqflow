@@ -240,6 +240,8 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
   retains the same 12 documented stale marker/menu assertions (32 screenshots). Final checks
   run in an isolated checkout because other sessions are updating this branch concurrently.
 
+- 2026-10-11: Implemented BMW models 101-105 (2022 M4 GT3 G82, 2022 M4 CSL G82, 2021 M4 Coupé Competition Spec II, 2021 M4 G82 M Performance, 2022 M5 CS F90). Completed all 105 BMW 3D models from the Sketchfab collection with parametric geometry generation, model-specific aero and powertrain variants.
+
 - 2026-10-11: Implemented BMW models 91-100 (2020 M8 Coupé, 2020 M8 Competition Coupé, 2020 M8 Pride Convertible, 2014 M235i Coupe F22, 2019 M2 Competition F87, 2023 M2 M-Performance G87, 2023 M2 G87 Coupé, 2021 325LI G28, 2015 3.0 CSL Hommage Concept, 2023 M3 Touring G81). Added central stacked M Performance exhaust, 3.0 CSL Hommage giant batmobile aero and G81 production M Touring package.
 
 - 2026-10-11: Implemented BMW models 81-90 (2009 128i Coupe E82, 2021 M5 Competition F90 LCI, 2022 G82 M4 ADRO Carbon Widebody, 2021 M4 Competition G82, 2021 M4 G82 Zacoe Carbon Kit, 2015 X6 F16, 2015 X5 F15, 2016 X6 M F86, 2016 X5 M F85, 2019 Z4 M40i G29). Added ADRO aerodynamic redesign, ZACOE multi-tier splitters, F85/F86 M V8 power plants and Z4 roadster soft-top.

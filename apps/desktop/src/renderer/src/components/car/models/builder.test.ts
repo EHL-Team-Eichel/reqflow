@@ -7,8 +7,8 @@ import type { PowertrainType } from "./types";
 
 describe("Vehicle Models & Builder", () => {
   it("has valid and uniquely identifiable catalog definitions", () => {
-    expect(VEHICLE_MODELS.length).toBeGreaterThan(0);
-    expect(new Set(VEHICLE_MODELS.map((model) => model.id)).size).toBe(VEHICLE_MODELS.length);
+    expect(VEHICLE_MODELS).toHaveLength(105);
+    expect(new Set(VEHICLE_MODELS.map((model) => model.id)).size).toBe(105);
     for (const model of VEHICLE_MODELS) {
       expect(model.id).toBeTruthy();
       expect(model.name).toBeTruthy();
