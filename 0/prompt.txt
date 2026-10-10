@@ -1,0 +1,13 @@
+does it now  support uploading the pdfs too, or what were you working on
+
+---
+
+what did you work on then?
+
+---
+
+when i attach a hil block after it it says it doesnt have data available.
+
+---
+
+I have done some work while you were gone. I want you to remove all of the demo data and add a reset button to the car page to remove requirements
