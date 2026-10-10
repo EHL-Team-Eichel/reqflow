@@ -1,0 +1,31 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4KE77ZC5100CWX6QDGQ0WD1",
+  "strategy": "manual-commit",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "docs/STATUS.md",
+    "packages/blocks/src/add-to-car/add-to-car.test.ts",
+    "packages/blocks/src/add-to-car/add-to-car.ts",
+    "packages/blocks/src/add-to-car/derive.ts",
+    "packages/blocks/src/add-to-car/index.ts",
+    "packages/blocks/src/add-to-car/splitter.ts",
+    "packages/blocks/src/add-to-car/taxonomy.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 8,
+    "cache_creation_tokens": 3944,
+    "cache_read_tokens": 1973748,
+    "output_tokens": 3015,
+    "api_call_count": 4
+  }
+}

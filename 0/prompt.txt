@@ -1,0 +1,107 @@
+do not create a new branch i mean that it should to that in the elctron app
+
+---
+
+the types are not confidential you can use them do not create synthetic data
+
+---
+
+<bash-input>cd "/Users/alexanderkluge/Documents/EHL Final BMW/splitter" && npm run query -- "squeaking seats"</bash-input><bash-stdout>&gt; reqflow-splitter@0.1.0 query
+&gt; node src/query.ts squeaking seats
+
+query "squeaking seats"  →  Seats › Noise, squeak &amp; rattle / sound   (resolved by keyword rules)
+
+FOCUS (distinct verbatims)
+                                                     total  neg  pos  req  unk    tag rule  knn   +text
+Seats › Noise, squeak &amp; rattle / sound                  10    7    3    0    0      7    3    0      25
+
+RELATED ASPECTS OF THE SAME PART
+Seats › Comfort &amp; ergonomics                           170   49  117    3    3    152   18    0      66
+Seats › Overall / unspecified                           95    1   78    3   13     76   19    0     286
+Seats › Ease of use                                     90   61   15   14    0     90    0    0      23
+Seats › Features &amp; functionality                        53    0    1   52    0     52    1    0      72
+Seats › Defects &amp; reliability                           44   44    0    0    0     44    0    0      24
+Seats › Build quality, damage &amp; materials               36   30    1    4    1     35    1    0      18
+Seats › Performance &amp; response                          14   11    3    0    0     10    4    0      28
+Seats › Design &amp; looks                                  11    0   10    0    1     10    1    0      46
+Seats › Visibility &amp; view                                5    4    0    0    1      4    1    0       7
+Seats › Space, size &amp; storage                            3    0    0    0    3      0    3    0      58
+Seats › Efficiency &amp; range                               1    0    1    0    0      0    1    0      20
+Seats › Price &amp; value                                    0    0    0    0    0      0    0    0      21
+  tag = BMW label · rule = keyword rule on untagged text · knn = vector vote · +text = mentioned inside feedback BMW tagged differently
+
+WHERE IT COMES FROM (focus, primary placements)
+model  market engine  total  neg  pos  req  feedback in slice  neg/1k
+F70    EU     ICE         3    3    0    0               1433       2
+G60    US     PHEV        3    2    1    0                322       6
+G60    US     ICE         1    0    1    0               2017       0
+G70    US     BEV         1    1    0    0               1075       1
+G70    US     ICE         1    1    0    0               2435       0
+G70    US     PHEV        1    0    1    0                282       0
+channels: Source A 5 (neg 5, pos 0) · Source B 2 (neg 2, pos 0) · Source D 2 (neg 0, pos 2) · Source C 1 (neg 0, pos 1)
+
+BMW LABELS BEHIND THE COUNTS (top 12)
+     6  Seats : Noise  [Defect]
+     1  Seating, ventilate / heat : Noise  [Defect]
+
+EVIDENCE CLOSEST TO THE QUERY (best clause per verbatim)
+  negative       F70-0494 [F70_feedback_hackathon.xlsx:964, Source A, F70/EU/ICE]  "the driver seat has an annoying squeak, especially when g force shifts. 3."
+  negative       F70-1088 [F70_feedback_hackathon.xlsx:2110, Source A, F70/EU/ICE]  "only issues are the ambiant lighting showing up in the wing mirrors and my seat making a squeak."
+  negative       G60-3299 [G60_feedback_hackathon.xlsx:4148, Source B, G60/US/PHEV]  "but have noticed the sound disappears when there is weight on the seat."
+  positive       G60-1052 [G60_feedback_hackathon.xlsx:1311, Source D, G60/US/ICE]  "comfortable seats, quiet cabin."
+  positive       G60-1478 [G60_feedback_hackathon.xlsx:1839, Source C, G60/US/PHEV]  ": "Performance and handling, high mileage, solid sound system, really great seats""
+  positive       G70-2009 [G70_feedback_hackathon.xlsx:2350, Source D, G70/US/PHEV]  "the seats are extremely comfy, the ride stays very smooth, and the cabin is super quiet."
+  +text/negative F70-0015 [F70_feedback_hackathon.xlsx:34, Source A, F70/EU/ICE]  "my seat has squeaks that i only noticed after turning my music off due to a damaged speaker."
+  +text/request  G70-2898 [G70_feedback_hackathon.xlsx:3393, Source A, G70/US/BEV]  "i wish the seat coolers were quieter."
+  +text/unknown  F70-1989 [F70_feedback_hackathon.xlsx:3810, Source A, F70/EU/ICE]  "the heated seats are quite mediocre compared with competitors, and the non hk speakers sound very b…"
+
+CUSTOMER STUDIES (dimensions split into the same categories)
+
+  CN_EU_2025 · Overall seating comfort                         mean (1-10)   G68/CN 8.67 G70/CN 8.72 F70/EU 8.98 G60/EU 8.81 G70/EU 9.29
+  CN_EU_2025 · Driving position                                mean (1-10)   G68/CN 8.69 G70/CN 8.80 F70/EU 9.18 G60/EU 9.17 G70/EU 9.13
+  US_2025 · Quality of seat materials                          bottom-3 box  G60/US 2.9% G70/US 4.1%
+  US_2025 · Quality of seat materials                          top-2 box     G60/US 50.4% G70/US 57.7%
+  US_2025 · Overall comfort of the seats                       bottom-3 box  G60/US 4.0% G70/US 3.1%
+  US_2025 · Overall comfort of the seats                       top-2 box     G60/US 66.6% G70/US 66.1%
+  US_2025 · Comfort of front seat                              bottom-3 box  G60/US 7.0% G70/US 2.2%
+  US_2025 · Comfort of front seat                              top-2 box     G60/US 65.3% G70/US 57.6%
+  US_2025 · Comfort of 2nd row seat                            bottom-3 box  G60/US 4.9% G70/US 3.2%
+  US_2025 · Comfort of 2nd row seat                            top-2 box     G60/US 47.1% G70/US 73.6%
+  US_2025 · Ease of front seat entry                           bottom-3 box  G60/US 2.1% G70/US 2.3%
+  US_2025 · Ease of front seat entry                           top-2 box     G60/US 54.3% G70/US 58.5%
+  US_2025 · Front seat roominess                               bottom-3 box  G60/US 1.6% G70/US 2.4%
+  US_2025 · Front seat roominess                               top-2 box     G60/US 68.3% G70/US 76.6%
+  US_2025 · Ease of 2nd row seat entry                         bottom-3 box  G60/US 1.4% G70/US 3.4%
+  US_2025 · Ease of 2nd row seat entry                         top-2 box     G60/US 45.8% G70/US 65.7%
+  US_2025 · 2nd row seat roominess                             bottom-3 box  G60/US 2.4% G70/US 3.2%
+  US_2025 · 2nd row seat roominess                             top-2 box     G60/US 47.3% G70/US 77.9%
+  US_2025 · Passenger seating capacity                         bottom-3 box  G60/US 2.1% G70/US 3.0%
+  US_2025 · Passenger seating capacity                         top-2 box     G60/US 50.9% G70/US 56.8%
+  US_2025 · Overall interior versatility/seat stowaway         bottom-3 box  G60/US 4.6% G70/US 1.3%
+  US_2025 · Overall interior versatility/seat stowaway         top-2 box     G60/US 55.0% G70/US 59.0%
+  US_2025 · Driver seat adjustability                          bottom-3 box  G60/US 4.2% G70/US 2.3%
+  US_2025 · Driver seat adjustability                          top-2 box     G60/US 55.5% G70/US 60.4%
+  US_2025 · Passenger seat adjustability                       bottom-3 box  G60/US 2.1% G70/US 2.9%
+  US_2025 · Passenger seat adjustability                       top-2 box     G60/US 45.4% G70/US 57.4%
+
+MOST SIMILAR CLAUSES (any category; score = 0.6 keyword coverage + 0.4 semantic)
+  0.87 (kw 1.00 sem 0.68)    F70-0494 [F70_feedback_hackathon.xlsx:964, Source A, F70/EU/ICE]  "the driver seat has an annoying squeak, especially when g force shifts. 3."
+                             placed in: seats›noise (negative, bmw_tag)
+  0.78 (kw 1.00 sem 0.45)    F70-0015 [F70_feedback_hackathon.xlsx:34, Source A, F70/EU/ICE]  "my seat has squeaks that i only noticed after turning my music off due to a dam…"
+                             placed in: - (+1 other topics)
+  0.76 (kw 1.00 sem 0.40)    F70-1088 [F70_feedback_hackathon.xlsx:2110, Source A, F70/EU/ICE]  "only issues are the ambiant lighting showing up in the wing mirrors and my seat…"
+                             placed in: seats›noise (negative, bmw_tag) (+3 other topics)
+  0.62 (kw 0.37 sem 0.99)    F70-0371 [F70_feedback_hackathon.xlsx:731, Source A, F70/RoW/ICE]  "the seats have also deteriorated."
+                             placed in: seats›quality (negative, bmw_tag) (+2 other topics)
+  0.62 (kw 0.37 sem 0.99)    G70-0053 [G70_feedback_hackathon.xlsx:56, Source D, G70/US/ICE]  "The seats.."
+                             placed in: seats›general (unknown, text_rule) (+1 other topics)
+  0.62 (kw 0.37 sem 0.99)    G70-3698 [G70_feedback_hackathon.xlsx:4343, Source D, G70/US/BEV]  "seat confort."
+                             placed in: seats›comfort (positive, text_rule); seats›general (unknown, text_rule)
+  0.62 (kw 0.37 sem 0.99)    G70-2459 [G70_feedback_hackathon.xlsx:2887, Source D, G70/US/ICE]  "supportive seats."
+                             placed in: seats›comfort (unknown, text_rule)
+  0.62 (kw 0.37 sem 0.99)    G70-0201 [G70_feedback_hackathon.xlsx:214, Source A, G70/US/BEV]  "my seat memories had vanished."
+                             placed in: seats›reliability (negative, bmw_tag) (+9 other topics)</bash-stdout><bash-stderr></bash-stderr>
+
+---
+
+push the splitter module to git, and test it with the real dataset,
