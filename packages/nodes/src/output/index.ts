@@ -1,5 +1,9 @@
 import type { NodeDefinition } from "@reqflow/engine";
+import { publishNode } from "./publish";
+import { exportNode } from "./export";
 
-// Owner: WS1 — implements output.publish, output.export.
-// One file per node (e.g. ./publish.ts) + a colocated *.test.ts; register it in this list.
-export const outputNodes: NodeDefinition[] = [];
+export * from "./formatters";
+export * from "./publish";
+export * from "./export";
+
+export const outputNodes: NodeDefinition[] = [publishNode, exportNode];

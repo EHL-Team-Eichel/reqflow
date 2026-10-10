@@ -1,5 +1,6 @@
 import type { NodeDefinition } from "@reqflow/engine";
+import { pmGateNode } from "./pm-gate";
 
-// Owner: WS1 — implements review.pm_gate.
-// One file per node (e.g. ./pm-gate.ts) + a colocated *.test.ts; register it in this list.
-export const reviewNodes: NodeDefinition[] = [];
+export * from "./pm-gate";
+
+export const reviewNodes: NodeDefinition[] = [pmGateNode];
