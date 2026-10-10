@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import type { CarPowertrain } from "@reqflow/core";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { cx } from "@/lib/cx";
@@ -41,6 +42,7 @@ const PRESETS: Record<
 const UNGHOSTED_KINDS = new Set(["tyre", "rim", "metal", "accent"]);
 
 interface Props {
+  powertrain: CarPowertrain;
   /** Requirement counts displayed on labeled markers. */
   counts: ReadonlyMap<string, number>;
   /** All parts in the active menu class, including parts without requirements. */
@@ -100,7 +102,7 @@ export function CarViewer(props: Props) {
     const idleOrbit = trackIdleOrbit(window);
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
-    const car = buildCar();
+    const car = buildCar(propsRef.current.powertrain);
     scene.add(car.root);
     setAnchors(car.anchors);
     const exteriorTargets = exteriorBadgeTargets(car.pieces, car.anchors);
@@ -452,7 +454,12 @@ export function CarViewer(props: Props) {
   );
   const markers = markerPresentation(props.markerParts, eligibleMarkers);
   return (
-    <div ref={hostRef} className="relative h-full w-full overflow-hidden" data-testid="car-viewer">
+    <div
+      ref={hostRef}
+      className="relative h-full w-full overflow-hidden"
+      data-testid="car-viewer"
+      data-powertrain={props.powertrain}
+    >
       {markers.partIds.map((partId) => {
         const n = props.counts.get(partId) ?? 0;
         return (

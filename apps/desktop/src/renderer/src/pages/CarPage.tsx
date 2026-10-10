@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/Button";
 import { MStripe } from "@/components/ui/MStripe";
 import { Panel } from "@/components/ui/Panel";
 import { useSettings } from "@/lib/settings";
+import { CAR_MODELS } from "@/components/car/model/powertrains";
 
 const VIEWS = [
   { value: "exterior", label: "Exterior" },
@@ -32,6 +33,7 @@ const PRESETS: { value: CameraPreset; label: string }[] = [
  */
 export function CarPage() {
   const scope = useSettings((s) => s.settings.defaultScope);
+  const powertrain = useSettings((s) => s.settings.model.powertrain);
   const [view, setView] = useState<CarView>("exterior");
   const [selected, setSelected] = useState<string | null>(null);
   const [markerMenu, setMarkerMenu] = useState(initialMarkerMenu);
@@ -63,7 +65,7 @@ export function CarPage() {
             BMW {scope.vehicleLine}
             {scope.derivative ? ` ${scope.derivative}` : ""}
             <span className="text-sm font-normal text-muted">
-              {scope.market} · {scope.horizonYears}-year horizon
+              {scope.market} · {scope.horizonYears}-year horizon · {CAR_MODELS[powertrain].label}
             </span>
           </span>
         }
@@ -93,6 +95,8 @@ export function CarPage() {
       >
         <div className="relative h-full">
           <CarViewer
+            key={powertrain}
+            powertrain={powertrain}
             counts={data.counts}
             markerParts={markerParts}
             selected={selected}
@@ -102,7 +106,8 @@ export function CarPage() {
             onSelect={setSelected}
           />
           <p className="pointer-events-none absolute bottom-3 left-4 text-xs text-muted">
-            BMW-inspired sketch · drag to turn, scroll to zoom, click any part
+            {CAR_MODELS[powertrain].label} concept · BMW-inspired sketch · drag to turn, scroll to
+            zoom, click any part
           </p>
         </div>
       </Panel>

@@ -3,6 +3,7 @@ import { join, resolve } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import {
   connect,
+  CarPowertrain,
   createBlock,
   DEFAULT_SETTINGS,
   defaultBlockParams,
@@ -19,7 +20,7 @@ import type { BrowserWindow, NativeImage } from "electron";
  * failed check or renderer error. Used by agents to verify UI work without clicking through the app.
  */
 export const SMOKE_ROUTES = ["/dataflow", "/car", "/settings"] as const;
-const SETTINGS_SECTIONS = ["app", "parameters", "ai", "collaboration", "about"] as const;
+const SETTINGS_SECTIONS = ["app", "model", "parameters", "ai", "collaboration", "about"] as const;
 
 export function parseSmokeArg(argv: readonly string[]): string | null {
   const arg = argv.find((a) => a.startsWith("--smoke="));
@@ -529,6 +530,12 @@ export async function runSmoke(
   await delay(600);
   await shot("car-3d");
   check(
+    (await count('[data-testid^="car-badge-"]')) === 0,
+    "car: collapsed menus should have no points",
+  );
+  check(await click('[data-testid="car-part-group-exterior"] > summary'), "car: no exterior menu");
+  await delay(300);
+  check(
     (await count('[data-testid^="car-part-"]')) >= 30,
     "car: part index should list every part",
   );
@@ -568,6 +575,8 @@ export async function runSmoke(
   );
   await shot("car-exterior-points");
   check(await click('[data-testid="car-view-interior"]'), "car: no interior view");
+  check(await click('[aria-label="Back to all parts"]'), "car: no back button");
+  check(await click('[data-testid="car-part-group-interior"] > summary'), "car: no interior menu");
   await delay(400);
   check(
     (await count('[data-testid^="car-badge-"]')) >= 4,
@@ -638,6 +647,94 @@ export async function runSmoke(
     await delay(300);
     await shot(`settings-${id}`);
   }
+
+  // Model selection is saved through IPC, survives a renderer reload, and changes only the concept.
+  const modelSettings = await js<{ ok: boolean; value?: typeof DEFAULT_SETTINGS }>(
+    'window.reqflowBridge.invoke("reqflow:settings.get")',
+  );
+  const modelRequirements = await js<{ ok: boolean; value?: unknown[] }>(
+    'window.reqflowBridge.invoke("reqflow:requirements.list")',
+  );
+  for (const powertrain of CarPowertrain.options) {
+    await go("/settings");
+    check(await click('[data-testid="settings-section-model"]'), "settings: no model section");
+    check(await click(`[data-testid="model-${powertrain}"]`), `settings: no ${powertrain} model`);
+    await delay(700);
+    check(
+      await js<boolean>(
+        `document.querySelector('[data-testid="model-${powertrain}"]')?.getAttribute("aria-pressed") === "true"`,
+      ),
+      `settings: ${powertrain} not selected`,
+    );
+    const stored = await js<{ ok: boolean; value?: typeof DEFAULT_SETTINGS }>(
+      'window.reqflowBridge.invoke("reqflow:settings.get")',
+    );
+    check(
+      stored.ok && stored.value?.model.powertrain === powertrain,
+      `settings: ${powertrain} was not saved`,
+    );
+    check(
+      JSON.stringify(stored.value?.defaultScope) ===
+        JSON.stringify(modelSettings.value?.defaultScope),
+      "model: vehicle scope changed",
+    );
+    await go("/car");
+    const loaded = new Promise<void>((resolve) => wc.once("did-finish-load", () => resolve()));
+    wc.reload();
+    await loaded;
+    await delay(900);
+    check(
+      await js<boolean>(
+        `document.querySelector('[data-testid="car-viewer"]')?.getAttribute("data-powertrain") === ${JSON.stringify(powertrain)}`,
+      ),
+      `car: ${powertrain} did not survive reload`,
+    );
+    check((await count('[data-testid="car-canvas"]')) === 1, `car: ${powertrain} canvas missing`);
+    await shot(`car-model-${powertrain}-exterior`);
+    check(
+      await click('[data-testid="car-part-group-technology"] > summary'),
+      `car: no ${powertrain} technology menu`,
+    );
+    check(
+      await click('[data-testid="car-part-subclass-power_chassis"] > summary'),
+      `car: no ${powertrain} powertrain menu`,
+    );
+    await delay(300);
+    const requiredPart =
+      powertrain === "hydrogen"
+        ? "fuel_cell"
+        : powertrain === "electric"
+          ? "battery_pack"
+          : "fuel_tank";
+    check(
+      (await count(`[data-testid="car-badge-${requiredPart}"]`)) === 1,
+      `car: ${powertrain} ${requiredPart} marker missing`,
+    );
+    check(await click('[data-testid="car-camera-top"]'), "car: no model top camera");
+    await delay(900);
+    await shot(`car-model-${powertrain}-powertrain`);
+    check(
+      await click(`[data-testid="car-part-${requiredPart}"]`),
+      `car: ${powertrain} part selection missing`,
+    );
+    await delay(300);
+    check(
+      (await text('[data-testid="car-part-title"]')).length > 0,
+      `car: ${powertrain} selected part missing`,
+    );
+    await shot(`car-model-${powertrain}-selected`);
+    const after = await js<{ ok: boolean; value?: unknown[] }>(
+      'window.reqflowBridge.invoke("reqflow:requirements.list")',
+    );
+    check(
+      after.ok && JSON.stringify(after.value) === JSON.stringify(modelRequirements.value),
+      "model: requirements changed",
+    );
+  }
+  await go("/settings");
+  check(await click('[data-testid="settings-section-model"]'), "settings: no model reset section");
+  check(await click('[data-testid="model-electric"]'), "settings: cannot restore default model");
+  await delay(700);
   check(await click('[data-testid="settings-section-app"]'), "settings: no app section");
   await delay(200);
   check(await click('[data-testid="theme-dark"]'), "settings: no dark theme option");
@@ -650,14 +747,21 @@ export async function runSmoke(
   for (const route of ["/dataflow", "/car"]) {
     await go(route);
     if (route === "/car") {
-      for (let i = 0; i < 40 && (await count('[data-testid="car-badge-kidney_grille"]')) === 0; i++)
-        await delay(100);
+      check(
+        await click('[data-testid="car-part-group-exterior"] > summary'),
+        "car: no dark exterior menu",
+      );
+      for (let i = 0; i < 40 && !(await badgeVisible("kidney_grille")); i++) await delay(100);
       check((await count(internalBadges)) === 0, "car: dark Exterior must hide internal points");
       check(await badgeVisible("kidney_grille"), "car: dark Exterior must retain visible points");
     }
     await shot(`${slug(route)}-dark`);
   }
   check(await click('[data-testid="car-view-interior"]'), "car: no dark interior view");
+  check(
+    await click('[data-testid="car-part-group-interior"] > summary'),
+    "car: no dark interior menu",
+  );
   await delay(400);
   check(await badgeVisible("rear_seats"), "car: dark Interior must restore internal points");
   await shot("car-interior-dark");

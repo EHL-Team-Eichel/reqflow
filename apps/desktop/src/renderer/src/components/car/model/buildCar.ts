@@ -1,4 +1,6 @@
 import * as THREE from "three";
+import { CarPowertrain } from "@reqflow/core";
+import { isModelPartAvailable } from "./powertrains";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { band, projectPatch, projectSketchLine, superellipse, type View } from "./decals";
 import { BMW_REFERENCE } from "./reference";
@@ -61,9 +63,11 @@ export interface CarModel {
 const SIDES = [-1, 1] as const; // left (−z, driver in LHD), right (+z)
 const DRIVER_Z = -0.38;
 
-export function buildCar(): CarModel {
+export function buildCar(model: CarPowertrain = "electric"): CarModel {
+  const powertrain = CarPowertrain.parse(model);
+  const combustion = powertrain === "fuel" || powertrain === "hybrid";
   const root = new THREE.Group();
-  root.name = "BMW sedan sketch — Hot Wheels reference";
+  root.name = `BMW sedan sketch — ${powertrain} concept`;
   const pieces: CarPiece[] = [];
 
   const add = (
@@ -133,7 +137,7 @@ export function buildCar(): CarModel {
     const partId = panel === "underbody" ? "body" : panel;
     add(geometry, partId, (finish as PieceKind | undefined) ?? "paint", "exterior");
   }
-  addBodyDetails(pieces, add);
+  addBodyDetails(pieces, add, powertrain);
   const bodySurfaces = pieces
     .filter((p) => p.kind === "paint" || (p.partId === "body" && p.kind === "dark"))
     .map((p) => p.mesh);
@@ -300,20 +304,66 @@ export function buildCar(): CarModel {
     }
   }
 
-  // ---- Drivetrain: battery under the floor, a motor and drive shafts on each axle ----------------
-  box("battery_pack", "dark", "interior", [2.5, 0.11, 1.42], [-0.05, 0.255, 0], { radius: 0.03 });
+  // ---- Conceptual powertrains; the shell, cabin and chassis stay identical --------------------
+  if (powertrain === "electric")
+    box("battery_pack", "dark", "interior", [2.5, 0.11, 1.42], [-0.05, 0.255, 0], { radius: 0.03 });
+  if (powertrain === "hybrid")
+    box("battery_pack", "dark", "interior", [0.95, 0.11, 0.65], [-0.05, 0.255, -0.3], {
+      radius: 0.03,
+    });
+  if (powertrain === "hydrogen") {
+    box("battery_pack", "dark", "interior", [0.45, 0.1, 0.55], [-1.08, 0.28, 0], { radius: 0.025 });
+    box("fuel_cell", "metal", "interior", [0.52, 0.29, 0.62], [1.26, 0.62, 0], { radius: 0.025 });
+    for (const x of [1.08, 1.17, 1.26, 1.35, 1.44])
+      box("fuel_cell", "dark", "interior", [0.012, 0.24, 0.64], [x, 0.62, 0], { radius: 0.004 });
+    for (const x of [-0.15, -0.57]) {
+      disc("hydrogen_tanks", "metal", "interior", 0.13, 1.05, [x, 0.3, 0]);
+      for (const z of [-0.53, 0.53])
+        add(new THREE.SphereGeometry(0.13, 20, 12), "hydrogen_tanks", "metal", "interior", (m) => {
+          m.position.set(x, 0.3, z);
+          m.scale.z = 0.5;
+        });
+    }
+  }
+  if (combustion) {
+    // A block, cylinder head and intake distinguish the engine from an electric motor.
+    box("motor", "metal", "interior", [0.55, 0.31, 0.45], [G60.frontAxleX, 0.51, 0], {
+      radius: 0.04,
+    });
+    box("motor", "dark", "interior", [0.49, 0.08, 0.4], [G60.frontAxleX, 0.705, 0], {
+      radius: 0.025,
+    });
+    for (const x of [-0.18, -0.06, 0.06, 0.18])
+      box("motor", "metal", "interior", [0.035, 0.015, 0.3], [G60.frontAxleX + x, 0.755, 0], {
+        radius: 0.006,
+      });
+    box("fuel_tank", "dark", "interior", [0.52, 0.18, 0.95], [-0.97, 0.29, 0], { radius: 0.07 });
+    add(
+      new THREE.CylinderGeometry(0.025, 0.025, 3.15, 12).rotateZ(Math.PI / 2),
+      "exhaust_system",
+      "metal",
+      "interior",
+      (m) => m.position.set(-0.38, 0.2, 0.56),
+    );
+    box("exhaust_system", "metal", "interior", [0.45, 0.1, 0.25], [-1.98, 0.24, 0.56], {
+      radius: 0.045,
+    });
+  }
   // Chassis support remains the selectable home for broad drivetrain requirements.
   box("drivetrain", "metal", "interior", [2.6, 0.035, 1.35], [-0.05, 0.18, 0], { radius: 0.012 });
   for (const axle of [G60.frontAxleX, G60.rearAxleX]) {
     const motorId = axle === G60.frontAxleX ? "motor" : "rear_motor";
-    disc(motorId, "metal", "interior", 0.13, 0.36, [axle, 0.42, 0], 32);
-    // End caps and raised ribs give each motor an identifiable casing.
-    for (const z of [-0.185, 0.185])
-      disc(motorId, "metal", "interior", 0.115, 0.025, [axle, 0.42, z], 28);
-    for (const z of [-0.1, 0, 0.1])
-      add(new THREE.TorusGeometry(0.133, 0.007, 6, 32), motorId, "metal", "interior", (m) =>
-        m.position.set(axle, 0.42, z),
-      );
+    const electricMotor = axle === G60.frontAxleX ? !combustion : powertrain !== "fuel";
+    if (electricMotor) {
+      disc(motorId, "metal", "interior", 0.13, 0.36, [axle, 0.42, 0], 32);
+      // End caps and raised ribs give each motor an identifiable casing.
+      for (const z of [-0.185, 0.185])
+        disc(motorId, "metal", "interior", 0.115, 0.025, [axle, 0.42, z], 28);
+      for (const z of [-0.1, 0, 0.1])
+        add(new THREE.TorusGeometry(0.133, 0.007, 6, 32), motorId, "metal", "interior", (m) =>
+          m.position.set(axle, 0.42, z),
+        );
+    }
     for (const side of SIDES) {
       add(
         new THREE.CylinderGeometry(0.022, 0.022, 0.52, 10).rotateX(Math.PI / 2),
@@ -330,9 +380,17 @@ export function buildCar(): CarModel {
   box("differential", "metal", "interior", [0.21, 0.18, 0.22], [G60.rearAxleX + 0.2, 0.4, 0], {
     radius: 0.04,
   });
-  box("inverter", "dark", "interior", [0.3, 0.12, 0.35], [G60.frontAxleX, 0.64, 0], {
-    radius: 0.025,
-  });
+  if (powertrain !== "fuel")
+    box(
+      "inverter",
+      "dark",
+      "interior",
+      [0.3, 0.12, 0.35],
+      [powertrain === "electric" ? G60.frontAxleX : G60.rearAxleX, 0.64, 0],
+      {
+        radius: 0.025,
+      },
+    );
   box("cooling_system", "metal", "interior", [0.07, 0.32, 0.78], [1.9, 0.57, 0], { radius: 0.012 });
   for (const z of [-0.22, 0.22])
     add(
@@ -566,6 +624,7 @@ export function buildCar(): CarModel {
 function addBodyDetails(
   pieces: CarPiece[],
   add: (g: THREE.BufferGeometry, partId: string, kind: PieceKind, layer: PieceLayer) => void,
+  powertrain: CarPowertrain,
 ) {
   const panels = (...ids: string[]) =>
     pieces
@@ -911,7 +970,18 @@ function addBodyDetails(
     "front",
     0.008,
   );
-  put("charging_port", "dark", sides, superellipse(-1.79, 0.895, 0.075, 0.05, 4), 32, 3, "right");
+  if (isModelPartAvailable("charging_port", powertrain))
+    put("charging_port", "dark", sides, superellipse(-1.79, 0.895, 0.075, 0.05, 4), 32, 3, "right");
+  if (isModelPartAvailable("refuelling_port", powertrain))
+    put(
+      "refuelling_port",
+      "dark",
+      sides,
+      superellipse(-1.79, 0.895, 0.075, 0.05, 4),
+      32,
+      3,
+      "left",
+    );
 }
 
 /** A helix along +y (coil spring). */

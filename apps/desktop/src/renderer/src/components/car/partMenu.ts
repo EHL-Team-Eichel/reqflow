@@ -106,6 +106,11 @@ export const PART_SUBCLASSES: readonly PartSubclass[] = [
       "drive_shafts",
       "differential",
       "charging_port",
+      "fuel_cell",
+      "hydrogen_tanks",
+      "fuel_tank",
+      "exhaust_system",
+      "refuelling_port",
     ],
   },
   {

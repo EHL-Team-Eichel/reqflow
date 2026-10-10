@@ -387,7 +387,7 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 ## WS4 — Settings, app shell & packaging
 
-**Status:** open · **Owner:** — · **Branch:** —
+**Status:** review (Model setting complete) · **Owner:** OpenCode · **Branch:** `ws4-car-models`
 **Depends on:** WS1 for tasks 1–2.
 
 **Tasks**
@@ -400,8 +400,21 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - [ ] Optional: GitHub Actions matrix (macOS, Windows, Ubuntu) running `npm run check` and
       `npm run smoke` (`xvfb-run` on Linux).
 - [ ] Demo polish: keyboard-shortcut overview, consistent empty states, About screen with team names.
+- [ ] Persist Settings → Model with Hydrogen / Hybrid / Electric / Fuel; keep the existing shell and vary the selectable powertrain.
+      Implemented and verified on `ws4-car-models`; merge pending.
 
 **Log**
+
+- 2026-10-10: Model slice complete: four saved choices, backward-compatible electric default,
+  distinct selectable powertrains on the unchanged shell/cabin/chassis, model-aware menus and
+  preserved off-model requirements. Main-process settings audit is unchanged and tested; no scope,
+  workflow or decision mutation. Verified typecheck, 430 passing tests (25 real-data tests skipped),
+  and native smoke PASS with 45 screenshots; reviewed Model, all four powertrains, selected fuel
+  cell and dark rendering. Smoke now opens the collapsed class menus before testing points and
+  waits for the visible dark marker, resolving the previously documented WS3 smoke assertions.
+  Concurrent compact-review edits in the original checkout were left untouched.
+
+- 2026-10-10: Claimed the requested Model slice in an isolated worktree. Human authorized the narrow shared Settings contract, Car renderer and native smoke changes. Preserve concurrent requirements-review work; default to the existing electric sketch and label alternatives as conceptual layouts, not production BMW specifications.
 
 ## WS5 — Raw block (BMW data ingestion)
 

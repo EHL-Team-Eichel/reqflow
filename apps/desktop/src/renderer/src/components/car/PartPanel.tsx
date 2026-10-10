@@ -5,6 +5,8 @@ import { label, type ClassifiedRequirement, type Confidence } from "./classify";
 import { PART_GROUP_LABELS, PARTS_BY_ID, WHOLE_CAR } from "./parts";
 import { menuCount, PART_SUBCLASSES, subclassParts } from "./partMenu";
 import { MENU_GROUPS, type MarkerMenuState } from "./markerMenu";
+import { useSettings } from "@/lib/settings";
+import { isModelPartAvailable, modelMenuParts } from "./model/powertrains";
 
 const PRIORITY_LABELS: Record<Priority, string> = {
   must: "Must",
@@ -44,6 +46,14 @@ export function PartPanel(props: Props) {
 }
 
 function PartIndex({ counts, total, emptyHint, onSelect, markerMenu, onMenuToggle }: Props) {
+  const powertrain = useSettings((s) => s.settings.model.powertrain);
+  const visibleParts = new Set(
+    modelMenuParts(
+      PART_SUBCLASSES.flatMap((s) => s.partIds),
+      powertrain,
+      counts,
+    ),
+  );
   const whole = counts.get(WHOLE_CAR.id) ?? 0;
   return (
     <div className="flex h-full flex-col" data-testid="car-part-index">
@@ -107,15 +117,17 @@ function PartIndex({ counts, total, emptyHint, onSelect, markerMenu, onMenuToggl
                       <MenuCount count={menuCount(subclass.partIds, counts)} />
                     </summary>
                     <div className="ml-3 border-l border-line pl-2">
-                      {subclassParts(subclass).map((p) => (
-                        <PartRow
-                          key={p.id}
-                          id={p.id}
-                          name={p.label}
-                          count={counts.get(p.id) ?? 0}
-                          onSelect={onSelect}
-                        />
-                      ))}
+                      {subclassParts(subclass)
+                        .filter((p) => visibleParts.has(p.id))
+                        .map((p) => (
+                          <PartRow
+                            key={p.id}
+                            id={p.id}
+                            name={p.label}
+                            count={counts.get(p.id) ?? 0}
+                            onSelect={onSelect}
+                          />
+                        ))}
                     </div>
                   </details>
                 ))}
@@ -142,16 +154,20 @@ function PartRow(props: {
   count: number;
   onSelect: (id: string) => void;
 }) {
+  const powertrain = useSettings((s) => s.settings.model.powertrain);
+  const available = isModelPartAvailable(props.id, powertrain);
   return (
     <button
       type="button"
       onClick={() => props.onSelect(props.id)}
       data-testid={`car-part-${props.id}`}
+      data-model-available={available}
       className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-panel-2"
     >
       <span className={cx("min-w-0 flex-1 truncate", props.count === 0 && "text-muted")}>
         {props.name}
       </span>
+      {!available && <span className="text-[10px] text-muted">Not on model</span>}
       {props.count > 0 && (
         <span className="grid h-5 min-w-5 place-items-center rounded-full bg-brand-soft px-1.5 text-xs font-semibold text-brand">
           {props.count}
@@ -162,6 +178,7 @@ function PartRow(props: {
 }
 
 function PartDetail({ partId, byPart, emptyHint, onSelect }: Props & { partId: string }) {
+  const powertrain = useSettings((s) => s.settings.model.powertrain);
   const part = PARTS_BY_ID.get(partId);
   const items = byPart.get(partId) ?? [];
   return (
@@ -175,6 +192,11 @@ function PartDetail({ partId, byPart, emptyHint, onSelect }: Props & { partId: s
             {label(partId)}
           </h3>
           <p className="mt-1 text-sm text-muted">{part?.blurb ?? WHOLE_CAR.blurb}</p>
+          {!isModelPartAvailable(partId, powertrain) && (
+            <p className="mt-2 text-xs text-muted" data-testid="car-part-off-model">
+              Not present on this model. Existing requirements remain available for review.
+            </p>
+          )}
         </div>
         <button
           type="button"

@@ -3,6 +3,47 @@ import type { CarPart } from "./parts";
 /** More detailed selectable components, built as individual meshes in buildCar.ts. */
 export const COMPONENT_PARTS: CarPart[] = [
   {
+    id: "fuel_cell",
+    label: "Hydrogen fuel-cell stack",
+    group: "technology",
+    blurb: "Fuel-cell power delivery, smoothness and operating noise.",
+    keywords: ["fuel[ -]cells?", "fuel[ -]cell stacks?", "brennstoffzellen?"],
+  },
+  {
+    id: "hydrogen_tanks",
+    label: "Hydrogen tanks",
+    group: "technology",
+    blurb: "Hydrogen storage and its effect on usable range and cabin space.",
+    keywords: ["hydrogen(?: tanks?| storage)?", "h2 tanks?", "wasserstoff(?:tanks?)?"],
+  },
+  {
+    id: "fuel_tank",
+    label: "Fuel tank",
+    group: "technology",
+    blurb: "Liquid fuel storage and the range between refuelling stops.",
+    keywords: [
+      "fuel tanks?",
+      "petrol tanks?",
+      "gasoline tanks?",
+      "kraftstofftanks?",
+      "benzintanks?",
+    ],
+  },
+  {
+    id: "exhaust_system",
+    label: "Exhaust system",
+    group: "technology",
+    blurb: "Exhaust sound, vibration and cabin comfort on combustion models.",
+    keywords: ["exhaust systems?", "exhaust noise", "mufflers?", "abgasanlage", "auspuffanlage"],
+  },
+  {
+    id: "refuelling_port",
+    label: "Refuelling port",
+    group: "technology",
+    blurb: "Access to the liquid-fuel or hydrogen filler and the refuelling experience.",
+    keywords: ["refuell?ing", "fuel fillers?", "filler flaps?", "tankklappe", "betankung"],
+  },
+  {
     id: "motor",
     label: "Front motor / engine",
     group: "technology",
@@ -46,7 +87,7 @@ export const COMPONENT_PARTS: CarPart[] = [
   },
   {
     id: "cooling_system",
-    label: "Motor & battery cooling",
+    label: "Powertrain cooling",
     group: "technology",
     blurb: "Cooling circuit, radiator and thermal management of the drive units.",
     keywords: [

@@ -3,12 +3,13 @@ import { Panel } from "@/components/ui/Panel";
 import { SettingsNav, type NavItem } from "@/components/settings/SettingsNav";
 import { PersistenceBanner } from "@/components/settings/PersistenceBanner";
 import { AppSection } from "@/components/settings/sections/AppSection";
+import { ModelSection } from "@/components/settings/sections/ModelSection";
 import { ParametersSection } from "@/components/settings/sections/ParametersSection";
 import { AiSection } from "@/components/settings/sections/AiSection";
 import { CollaborationSection } from "@/components/settings/sections/CollaborationSection";
 import { AboutSection } from "@/components/settings/sections/AboutSection";
 import { AppIcon, SparklesIcon, UsersIcon, InfoIcon } from "@/components/settings/icons";
-import { SlidersIcon } from "@/components/ui/icons";
+import { CarIcon, SlidersIcon } from "@/components/ui/icons";
 
 const NAV_ITEMS: readonly NavItem[] = [
   {
@@ -16,6 +17,12 @@ const NAV_ITEMS: readonly NavItem[] = [
     label: "App",
     hint: "Theme, behaviour",
     icon: <AppIcon className="size-5" />,
+  },
+  {
+    id: "model",
+    label: "Model",
+    hint: "Car powertrain",
+    icon: <CarIcon className="size-5" />,
   },
   {
     id: "parameters",
@@ -53,6 +60,9 @@ export function SettingsPage() {
       break;
     case "parameters":
       content = <ParametersSection />;
+      break;
+    case "model":
+      content = <ModelSection />;
       break;
     case "ai":
       content = <AiSection />;

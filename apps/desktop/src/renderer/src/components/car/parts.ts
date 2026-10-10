@@ -360,7 +360,7 @@ export const CAR_PARTS: CarPart[] = [
   },
   {
     id: "drivetrain",
-    label: "Drivetrain & battery",
+    label: "Drivetrain",
     group: "technology",
     blurb: "Electric range, battery, motors, acceleration and efficiency.",
     keywords: [
