@@ -21,7 +21,19 @@ import {
 } from "@reqflow/db";
 import { BlockRegistry, defineBlock } from "@reqflow/engine";
 import { createHandlers } from "./handlers";
-import { SecretsStore } from "./secrets";
+import { SecretsStore, type SecureStorage } from "./secrets";
+
+// Synthetic boundary double: no Electron, host environment credentials, or plaintext fallback.
+const secureStorage: SecureStorage = {
+  isEncryptionAvailable: () => true,
+  encryptString: (value) => Buffer.from(`synthetic-cipher:${value.split("").reverse().join("")}`),
+  decryptString: (value) => {
+    const text = value.toString();
+    if (!text.startsWith("synthetic-cipher:")) throw new Error("Invalid synthetic ciphertext");
+    return text.slice("synthetic-cipher:".length).split("").reverse().join("");
+  },
+};
+const syntheticSecrets = (dir: string) => new SecretsStore(dir, { secureStorage, environment: {} });
 
 /** BMW's real export, present only locally in data/raw/ (gitignored). */
 const BMW_FEEDBACK = join(import.meta.dirname, "../../../../data/raw/F70_feedback_hackathon.xlsx");
@@ -55,7 +67,7 @@ async function runFeedbackToCar(handlers: Handlers, uploadsDir: string, path: st
   const initial = await handlers.runs.start(workflow.id);
   let run = await handlers.runs.get(initial.id);
   const deadline = Date.now() + 30_000;
-  while (run.status === "running" && Date.now() < deadline) {
+  while (["queued", "running"].includes(run.status) && Date.now() < deadline) {
     await new Promise((resolve) => setTimeout(resolve, 50));
     run = await handlers.runs.get(initial.id);
   }
@@ -79,7 +91,7 @@ describe("handlers (All IPC methods against SQLite and stores)", () => {
 
   const setup = (registry?: BlockRegistry) => {
     const pushedRuns: WorkflowRun[] = [];
-    const secretsStore = new SecretsStore(tempDir);
+    const secretsStore = syntheticSecrets(tempDir);
     const files = createFileStore(join(tempDir, "uploads"));
     const handlers = createHandlers({
       dataDir: tempDir,
@@ -173,8 +185,8 @@ describe("handlers (All IPC methods against SQLite and stores)", () => {
     });
 
     const finalSecrets = await handlers.settings.secrets();
-    expect(finalSecrets.setups["test-1"]?.configured).toBe(true);
-    expect(finalSecrets.setups["test-2"]).toBeUndefined();
+    expect(finalSecrets.setups?.["test-1"]?.configured).toBe(true);
+    expect(finalSecrets.setups?.["test-2"]).toBeUndefined();
   });
 
   it("handles workflows CRUD with validation", async () => {
@@ -237,7 +249,7 @@ describe("handlers (All IPC methods against SQLite and stores)", () => {
     const initial = await handlers.runs.start(workflow.id);
     let run = await handlers.runs.get(initial.id);
     const deadline = Date.now() + 2000;
-    while (run.status === "running" && Date.now() < deadline) {
+    while (["queued", "running"].includes(run.status) && Date.now() < deadline) {
       await new Promise((resolve) => setTimeout(resolve, 10));
       run = await handlers.runs.get(initial.id);
     }
@@ -382,6 +394,7 @@ describe("handlers (All IPC methods against SQLite and stores)", () => {
     const testHandlers = createHandlers({
       dataDir: tempDir,
       dbPath,
+      secretsStore: syntheticSecrets(tempDir),
       files: createFileStore(join(tempDir, "uploads")),
       registry: customRegistry,
       pushRunUpdate: (r) => pushedRuns.push(r),
@@ -446,6 +459,7 @@ describe("handlers (All IPC methods against SQLite and stores)", () => {
     const handlers = createHandlers({
       dataDir: tempDir,
       dbPath,
+      secretsStore: syntheticSecrets(tempDir),
       files,
       appInfo: () => ({
         version: "0.1.0",

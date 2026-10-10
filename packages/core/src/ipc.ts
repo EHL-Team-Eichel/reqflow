@@ -20,6 +20,15 @@ import type { Settings } from "./settings";
 import type { Source, SourceRecord } from "./source";
 import type { SplitterReview } from "./splitter-report";
 import type { Workflow, WorkflowRun, WorkflowTemplate } from "./workflow";
+import type {
+  ResearchProviderId,
+  ResearchProviderConfig,
+  ResearchProviderStatus,
+  ResearchDataset,
+  ResearchAgentDefinition,
+} from "./research";
+import type { SecretName } from "./secrets";
+export type { SecretName } from "./secrets";
 
 export interface AppInfo {
   version: string;
@@ -86,17 +95,17 @@ export type ExportFormat = "json" | "csv" | "md";
  * API keys never cross into the renderer; it only learns whether one is configured.
  * `setup:<id>` is the key of an API setup (Settings → AI → API setups).
  */
-export type FixedSecretName = "anthropic_api_key" | "tavily_api_key";
+export type FixedSecretName = SecretName;
 export type SetupSecretName = `setup:${string}`;
-export type SecretName = FixedSecretName | SetupSecretName;
+export type AnySecretName = SecretName | SetupSecretName;
 export const SETUP_SECRET_PATTERN = /^setup:[a-z0-9][a-z0-9-]{0,39}$/;
 export interface SecretState {
   configured: boolean;
   source: "keychain" | "env" | null;
 }
-export type SecretStatus = Record<FixedSecretName, SecretState> & {
+export type SecretStatus = Record<SecretName, SecretState> & {
   /** Per API setup id. Setups without a stored key are listed as not configured. */
-  setups: Record<string, SecretState>;
+  setups?: Record<string, SecretState>;
 };
 
 /** `settings.testSetup`: one tiny request through an API setup, to check the key and model. */
@@ -146,12 +155,22 @@ export interface ReqflowApi {
     reset(): Promise<{ removed: number }>;
   };
   audit: { list(filter?: AuditFilter): Promise<AuditEvent[]> };
+  research: {
+    agents(): Promise<ResearchAgentDefinition[]>;
+    providers(): Promise<ResearchProviderStatus[]>;
+    configure(
+      id: ResearchProviderId,
+      config: ResearchProviderConfig,
+    ): Promise<ResearchProviderStatus>;
+    test(id: ResearchProviderId): Promise<ResearchProviderStatus>;
+    dataset(runId: string): Promise<ResearchDataset>;
+  };
   settings: {
     get(): Promise<Settings>;
     save(settings: Settings): Promise<Settings>;
     secrets(): Promise<SecretStatus>;
     /** Stores the key encrypted with the OS keychain (Electron safeStorage); null deletes it. */
-    setSecret(name: SecretName, value: string | null): Promise<SecretStatus>;
+    setSecret(name: SecretName | SetupSecretName, value: string | null): Promise<SecretStatus>;
     /** Sends one tiny request through a saved API setup. Never throws for API errors. */
     testSetup(setupId: string): Promise<SetupTestResult>;
   };
@@ -166,6 +185,10 @@ export interface ReqflowApi {
   exports: {
     /** Opens the native save dialog and writes the requirement list. null = cancelled. */
     requirements(opts: { runId?: string; format: ExportFormat }): Promise<{ path: string } | null>;
+    research(opts: {
+      runId: string;
+      format: "json" | "xlsx" | "csv";
+    }): Promise<{ path: string } | null>;
   };
 }
 
@@ -188,9 +211,10 @@ export const IPC_INVOKE_METHODS = {
   runs: ["start", "get", "list", "blockOutput", "reviewSplitter", "resume", "cancel"],
   requirements: ["list", "get", "edit", "decide", "reset"],
   audit: ["list"],
+  research: ["agents", "providers", "configure", "test", "dataset"],
   settings: ["get", "save", "secrets", "setSecret", "testSetup"],
   reasoning: ["forRun", "latest", "forRequirement"],
-  exports: ["requirements"],
+  exports: ["requirements", "research"],
 } as const satisfies { [N in keyof ReqflowApi]: readonly InvokeKeys<ReqflowApi[N]>[] };
 
 // Compile-time guard: adding a method to ReqflowApi without listing it above is a type error.

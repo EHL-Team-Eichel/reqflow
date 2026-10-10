@@ -12,6 +12,7 @@ import type {
   Settings,
   SplitterReport,
   WebSearch,
+  ResearchCollector,
 } from "@reqflow/core";
 
 /** Evidence behind requirements, stored with them so the Car page can show it. */
@@ -46,6 +47,7 @@ export interface BlockContext {
   progress(fraction: number, message?: string): void; // 0–1
   signal: AbortSignal; // run cancelled → stop promptly
   resumed: boolean; // true when a HIL block is re-entered after the reviewer finished
+  research?: ResearchCollector; // Raw-only research service wired in Electron main.
 }
 
 /** What arrived, per input port id. Several edges into one port are merged with `mergePipelineData`. */

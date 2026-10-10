@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { RESEARCH_AGENT_IDS } from "./research";
 
 /**
  * The building blocks of a data flow: what the palette offers, which ports each block has, and the
@@ -325,6 +326,66 @@ export const BLOCK_SPECS: { readonly [K in PaletteBlockKind]: BlockSpec & { kind
         unit: "months",
       },
       { key: "maxResults", label: "Max. results", type: "number", default: 10, min: 1, max: 50 },
+      {
+        key: "agents",
+        label: "Research agents",
+        type: "multiselect",
+        default: ["editorial_reviews", "competitor_models", "technology"],
+        options: RESEARCH_AGENT_IDS.map((value) => ({ value, label: value.replaceAll("_", " ") })),
+      },
+      {
+        key: "scopeJson",
+        label: "Advanced research scope (JSON)",
+        type: "textarea",
+        default: "{}",
+        help: "Vehicle generations, languages, markets, publication dates, competitors, URLs, documentIds and Eurostat datasets. See docs/research/README.md. Missing source metadata stays unknown.",
+      },
+      {
+        key: "queryPlanning",
+        label: "Mastra query planning (optional model request)",
+        type: "toggle",
+        default: false,
+        help: "Optional neutral search-query planning using the selected Anthropic, OpenAI or Google Gemini fast model. Requires its API key and may incur usage costs. Original source content is never sent to the planner.",
+      },
+      {
+        key: "document",
+        label: "Local original document",
+        type: "file",
+        accept: [".xlsx", ".txt", ".pdf", ".docx", ".pptx"],
+      },
+      {
+        key: "maxRequests",
+        label: "Request limit (all agents)",
+        type: "number",
+        default: 100,
+        min: 1,
+        max: 1000,
+      },
+      {
+        key: "maxDocumentPages",
+        label: "Document page limit",
+        type: "number",
+        default: 20,
+        min: 1,
+        max: 500,
+      },
+      {
+        key: "timeoutMs",
+        label: "Time limit",
+        type: "number",
+        default: 120000,
+        min: 1000,
+        max: 900000,
+        unit: "ms",
+      },
+      {
+        key: "concurrency",
+        label: "Parallel requests",
+        type: "number",
+        default: 3,
+        min: 1,
+        max: 8,
+      },
     ],
     ports: () => ({ inputs: [], outputs: [STREAM] }),
   },

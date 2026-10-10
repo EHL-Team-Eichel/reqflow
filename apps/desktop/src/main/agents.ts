@@ -29,7 +29,7 @@ function defaultInfo(settings: Settings): AgentModel {
   return {
     setupId: DEFAULT_SETUP,
     setupName: "Default AI",
-    provider: settings.llm.provider,
+    provider: settings.llm.provider === "google" ? "gemini" : settings.llm.provider,
     model: settings.llm.model,
     fastModel: settings.llm.fastModel,
     maxParallel: DEFAULT_AI_PARALLEL,

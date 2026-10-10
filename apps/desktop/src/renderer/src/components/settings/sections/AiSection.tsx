@@ -1,9 +1,9 @@
-import { cx } from "@/lib/cx";
+import { cx } from "../../../lib/cx";
 import {
   LlmProvider,
   ResearchProvider,
-  type FixedSecretName,
-  type SecretStatus,
+  LLM_SECRET_NAMES,
+  type Settings,
   API_PROVIDER_INFO,
   type ApiProvider,
   DEFAULT_SETUP,
@@ -11,33 +11,29 @@ import {
   AGENT_ROLE_INFO,
   type AgentRole,
 } from "@reqflow/core";
-import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/Button";
-import {
-  NumberInput,
-  Select,
-  Slider,
-  TextArea,
-  ValidatedTextInput,
-} from "@/components/ui/controls";
-import { api, ReqflowError } from "@/lib/api";
-import { settingsStore, useSettings } from "@/lib/settings";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { Button } from "../../ui/Button";
+import { NumberInput, Select, Slider, TextArea, ValidatedTextInput } from "../../ui/controls";
+import { api, ReqflowError } from "../../../lib/api";
+import { settingsStore, useSettings } from "../../../lib/settings";
 import { SettingRow } from "../SettingRow";
 import { Segmented } from "../Segmented";
 
-const SECRET_LABELS: Record<FixedSecretName, string> = {
-  anthropic_api_key: "Anthropic",
-  tavily_api_key: "Tavily",
-};
+import { CredentialInput } from "./ResearchApisSection";
+import {
+  LLM_PROVIDER_LABELS,
+  LLM_PROVIDER_OPTIONS,
+  createAiCredentialsController,
+  modelPresets,
+  modelValidationError,
+  switchLlmProvider,
+  temperatureHelp,
+} from "./AiSection.helpers";
 
-const LLM_PROVIDER_OPTIONS = [
-  { value: "mock", label: "Mock (offline demo)" },
-  { value: "anthropic", label: "Anthropic Claude" },
-];
 const RESEARCH_PROVIDER_OPTIONS = [
-  { value: "off", label: "Off" },
-  { value: "anthropic_web_search", label: "Claude web search" },
-  { value: "tavily", label: "Tavily" },
+  { value: "off", label: "Off (no web search)" },
+  { value: "firecrawl", label: "Firecrawl (recommended)" },
+  { value: "tavily", label: "Tavily (alternative)" },
 ];
 
 /** One domain per line; blank lines ignored. */
@@ -75,51 +71,133 @@ function DomainList(props: {
   );
 }
 
+function ModelSelection(props: {
+  provider: Settings["llm"]["provider"];
+  tier: "quality" | "fast";
+  value: string;
+}) {
+  const [customSelected, setCustomSelected] = useState(false);
+  const [selectionError, setSelectionError] = useState<string | null>(null);
+  const presets = modelPresets(props.provider);
+  const custom = customSelected || !presets.some((option) => option.value === props.value);
+  const disabled = props.provider === "mock";
+  const label = props.tier === "quality" ? "Quality model" : "Fast model";
+  const id = `llm-${props.tier}`;
+  const commit = (input: string) => {
+    if (disabled) return "Mock does not use live models.";
+    if (settingsStore.getState().settings.llm.provider !== props.provider) {
+      return "Provider changed. Edit the selected provider's model.";
+    }
+    const error = modelValidationError(props.provider, input);
+    if (error) return error;
+    return settingsStore.getState().update("llm", {
+      [props.tier === "quality" ? "model" : "fastModel"]: input.trim(),
+    });
+  };
+
+  return (
+    <SettingRow
+      label={label}
+      description={
+        props.tier === "quality"
+          ? "QUALITY · complex writing and reasoning"
+          : "FAST · bulk extraction and lightweight work"
+      }
+      error={
+        disabled ? null : (selectionError ?? modelValidationError(props.provider, props.value))
+      }
+    >
+      <label htmlFor={`${id}-preset`} className="sr-only">
+        {label} preset
+      </label>
+      <Select
+        id={`${id}-preset`}
+        options={[...presets, { value: "custom", label: "Custom model ID" }]}
+        value={custom ? "custom" : props.value}
+        disabled={disabled}
+        onChange={(value) => {
+          if (disabled) return;
+          if (value === "custom") {
+            setCustomSelected(true);
+            setSelectionError(null);
+          } else if (presets.some((option) => option.value === value)) {
+            const error = commit(value);
+            setSelectionError(error);
+            if (!error) setCustomSelected(false);
+          }
+        }}
+      />
+      {custom && !disabled && (
+        <>
+          <label htmlFor={`${id}-custom`} className="sr-only">
+            Custom {label.toLowerCase()} ID
+          </label>
+          <ValidatedTextInput
+            id={`${id}-custom`}
+            value={props.value}
+            onCommit={commit}
+            maxLength={200}
+            spellCheck={false}
+            autoComplete="off"
+            aria-describedby={`${id}-help`}
+          />
+        </>
+      )}
+      {!disabled && (
+        <p id={`${id}-help`} className="text-xs text-muted">
+          Use a model ID for {LLM_PROVIDER_LABELS[props.provider]}. Presets do not verify account
+          access. Custom IDs are allowed; known foreign-provider IDs are rejected.
+        </p>
+      )}
+    </SettingRow>
+  );
+}
+
 export function AiSection() {
   const llm = useSettings((s) => s.settings.llm);
   const research = useSettings((s) => s.settings.research);
   const agents = useSettings((s) => s.settings.agents);
-  const [secrets, setSecrets] = useState<SecretStatus | null>(null);
-  const [secretsError, setSecretsError] = useState<string | null>(null);
+  // Keep older settings readable without offering the unsupported provider to new users.
+  const researchProviderOptions =
+    research.provider === "anthropic_web_search"
+      ? [
+          ...RESEARCH_PROVIDER_OPTIONS,
+          {
+            value: "anthropic_web_search",
+            label: "Claude web search (legacy · unsupported)",
+          },
+        ]
+      : RESEARCH_PROVIDER_OPTIONS;
+  const [providerError, setProviderError] = useState<string | null>(null);
+  const [credentials] = useState(() => createAiCredentialsController(api, llm.provider));
+  const credentialState = useSyncExternalStore(
+    credentials.subscribe,
+    credentials.getSnapshot,
+    credentials.getSnapshot,
+  );
+  const matchingProvider = credentialState.provider === llm.provider;
+  const secrets = matchingProvider ? credentialState.secrets : null;
+  const secretsPending =
+    !matchingProvider || !!credentialState.pending || (!secrets && !credentialState.error);
+  const secretName = llm.provider === "mock" ? null : LLM_SECRET_NAMES[llm.provider];
+  const keyLabel = llm.provider === "anthropic" ? "Anthropic" : LLM_PROVIDER_LABELS[llm.provider];
   const update = settingsStore.getState().update;
 
   useEffect(() => {
-    let active = true;
-    const loadSecrets = () => {
-      api.settings
-        .secrets()
-        .then((res) => {
-          if (active) {
-            setSecrets(res);
-            setSecretsError(null);
-          }
-        })
-        .catch((err: unknown) => {
-          if (active) {
-            setSecretsError(
-              err instanceof ReqflowError && err.code === "not_implemented"
-                ? "Key storage isn't built yet (WS1). For development, put keys in apps/desktop/.env."
-                : `Couldn't read the key status: ${err instanceof Error ? err.message : String(err)}`,
-            );
-          }
-        });
-    };
-    loadSecrets();
+    credentials.activate();
+    return () => credentials.deactivate();
+  }, [credentials]);
+  useEffect(() => {
+    credentials.selectProvider(llm.provider);
+    void credentials.refresh();
+    setProviderError(null);
+  }, [credentials, llm.provider]);
 
-    // Listen for custom event or provide a callback to re-fetch when secrets change?
-    // The instructions say "api.settings.setSecret(`setup:${id}`, value) then clear the input"
-    // I can just re-fetch in the component when save/remove key happens.
-
-    return () => {
-      active = false;
-    };
-  }, []);
+  const credentialCurrent = () =>
+    matchingProvider && settingsStore.getState().settings.llm.provider === llm.provider;
 
   const refreshSecrets = () => {
-    api.settings
-      .secrets()
-      .then(setSecrets)
-      .catch(() => {});
+    void credentials.refresh();
   };
 
   const [setupErrors, setSetupErrors] = useState<Record<string, string>>({});
@@ -139,32 +217,52 @@ export function AiSection() {
         <p className="mb-4 text-xs text-muted">
           Used by the AI Splitter and challenge answers, and by agents set to Default AI.
         </p>
-        <SettingRow label="Provider">
+        <SettingRow label="Provider" error={providerError}>
+          <label htmlFor="llm-provider" className="sr-only">
+            AI provider
+          </label>
           <Select
+            id="llm-provider"
             options={LLM_PROVIDER_OPTIONS}
             value={llm.provider}
             onChange={(value) => {
               const provider = LlmProvider.safeParse(value);
-              if (provider.success) update("llm", { provider: provider.data });
+              if (!provider.success) return;
+              try {
+                const next = switchLlmProvider(
+                  settingsStore.getState().settings.llm,
+                  provider.data,
+                );
+                const error = update("llm", next);
+                setProviderError(error);
+                if (!error) credentials.selectProvider(provider.data);
+              } catch {
+                setProviderError(
+                  "Current model IDs must have 1–200 characters before switching providers.",
+                );
+              }
             }}
           />
         </SettingRow>
-        <SettingRow label="Quality model">
-          <ValidatedTextInput
-            aria-label="Quality model"
-            value={llm.model}
-            onCommit={(model) => update("llm", { model: model.trim() })}
-          />
-        </SettingRow>
-        <SettingRow label="Fast model">
-          <ValidatedTextInput
-            aria-label="Fast model"
-            value={llm.fastModel}
-            onCommit={(fastModel) => update("llm", { fastModel: fastModel.trim() })}
-          />
-        </SettingRow>
-        <SettingRow label="Temperature">
+        <ModelSelection
+          key={`${llm.provider}-quality`}
+          provider={llm.provider}
+          tier="quality"
+          value={llm.model}
+        />
+        <ModelSelection
+          key={`${llm.provider}-fast`}
+          provider={llm.provider}
+          tier="fast"
+          value={llm.fastModel}
+        />
+        <SettingRow label="Temperature" description={temperatureHelp(llm)}>
+          <label htmlFor="llm-temperature" className="sr-only">
+            Temperature
+          </label>
           <Slider
+            id="llm-temperature"
+            disabled={llm.provider === "mock"}
             value={llm.temperature}
             onChange={(temperature) => update("llm", { temperature })}
             min={0}
@@ -172,6 +270,11 @@ export function AiSection() {
             step={0.05}
           />
         </SettingRow>
+        <p className="mt-2 text-xs text-muted">
+          Switching live providers remembers each provider's quality and fast model IDs. Mock keeps
+          them inactive; it never makes paid model calls. Model selection does not start a run or
+          enable web research.
+        </p>
       </div>
 
       <div className="flex flex-col gap-4">
@@ -493,8 +596,12 @@ export function AiSection() {
       <div className="flex flex-col">
         <h3 className="mb-2 mt-4 text-sm font-semibold text-ink">Web research</h3>
         <SettingRow label="Provider">
+          <label htmlFor="web-research-provider" className="sr-only">
+            Web research provider
+          </label>
           <Select
-            options={RESEARCH_PROVIDER_OPTIONS}
+            id="web-research-provider"
+            options={researchProviderOptions}
             value={research.provider}
             onChange={(value) => {
               const provider = ResearchProvider.safeParse(value);
@@ -502,6 +609,17 @@ export function AiSection() {
             }}
           />
         </SettingRow>
+        <p className="mt-2 text-xs text-muted">
+          Off blocks web search. Select Firecrawl (recommended) or Tavily here, then configure and
+          enable it in Research APIs &amp; Zugänge. No automatic fallback is used. Other research
+          providers are controlled independently by their own access settings.
+        </p>
+        {research.provider === "anthropic_web_search" && (
+          <p role="alert" className="mt-2 text-sm text-muted">
+            Claude web search is a legacy setting and is unsupported. Select Firecrawl, Tavily, or
+            Off before running web research.
+          </p>
+        )}
         <SettingRow label="Max results per search">
           <NumberInput
             value={research.maxResultsPerQuery}
@@ -522,36 +640,101 @@ export function AiSection() {
         />
       </div>
 
+      <div className="rounded-lg border border-line bg-panel-2 p-3 text-sm text-muted">
+        <h3 className="font-medium text-ink">Optional Mastra query planning</h3>
+        <p className="mt-1">
+          {llm.provider === "mock"
+            ? "Mock is offline and never makes paid model calls. For live planning, select a provider and configure its matching credential: Anthropic key, OpenAI key, or Google Gemini key."
+            : `Requires a ${keyLabel} key for the selected ${LLM_PROVIDER_LABELS[llm.provider]} provider.`}{" "}
+          Also requires the Research block's explicit query-planning toggle (off by default).
+          Enabling it may make paid model calls during a run with a live provider and the block's
+          planning model. Custom planning models must match that provider. It only plans queries and
+          cannot enable providers, bypass missing credentials or approval, or create source
+          evidence. Saving a key or choosing an AI model does not enable planning.
+        </p>
+      </div>
+
       <div className="flex flex-col">
         <h3 className="mb-2 mt-4 text-sm font-semibold text-ink">API keys</h3>
-        {secretsError ? (
-          <div className="rounded-lg border border-line bg-panel-2 p-3 text-sm text-muted">
-            {secretsError}
+        {matchingProvider && credentialState.error && (
+          <div
+            role="alert"
+            className="rounded-lg border border-line bg-danger-soft p-3 text-sm text-danger"
+          >
+            {credentialState.error}
           </div>
-        ) : !secrets ? (
-          <div className="text-sm text-muted">Checking keys…</div>
-        ) : (
-          (Object.keys(SECRET_LABELS) as FixedSecretName[]).map((name) => {
-            const status = secrets[name];
-            if (!status) return null;
-            return (
-              <SettingRow key={name} label={SECRET_LABELS[name]}>
-                <span className={status.configured ? "text-sm text-ok" : "text-sm text-muted"}>
-                  {status.configured
-                    ? `Configured (${status.source === "env" ? ".env file" : "OS keychain"})`
-                    : "Not set"}
-                </span>
-              </SettingRow>
-            );
-          })
         )}
+        {matchingProvider && credentialState.notice && (
+          <p role="status" className="mt-2 text-sm text-ink">
+            {credentialState.notice}
+          </p>
+        )}
+        {secretsPending && (
+          <div role="status" className="text-sm text-muted">
+            Updating credential status…
+          </div>
+        )}
+        {secretName ? (
+          <SettingRow label={LLM_PROVIDER_LABELS[llm.provider]}>
+            <CredentialInput
+              key={secretName}
+              id={secretName}
+              label={`${keyLabel} API key`}
+              configured={secrets?.[secretName].configured}
+              source={secrets?.[secretName].source}
+              draft={matchingProvider ? credentialState.draft : ""}
+              disabled={secretsPending || !secrets}
+              onDraft={(value) => {
+                if (credentialCurrent()) credentials.setDraft(value);
+              }}
+              onSave={() => {
+                if (credentialCurrent()) void credentials.saveSecret();
+              }}
+              onRemove={() => {
+                if (credentialCurrent()) void credentials.removeSecret();
+              }}
+            />
+            <p className="text-xs text-muted">
+              Drafts also clear when switching providers. Other providers' saved keys are not
+              removed.
+            </p>
+          </SettingRow>
+        ) : (
+          <p className="mt-2 text-sm text-muted">
+            Mock needs no API key. Select a live provider to manage its key.
+          </p>
+        )}
+        <SettingRow label="Tavily">
+          <span className="text-sm text-muted">
+            {!secrets
+              ? "Status unavailable"
+              : secrets.tavily_api_key.configured
+                ? `Configured (${secrets.tavily_api_key.source === "env" ? "environment" : "OS keychain"})`
+                : "Not set"}
+          </span>
+          <p className="text-xs text-muted">Manage this key in Research APIs &amp; Zugänge.</p>
+        </SettingRow>
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={secretsPending}
+          onClick={() => {
+            void credentials.refresh();
+          }}
+        >
+          Reload credential status
+        </Button>
       </div>
 
       <div className="mt-4 flex gap-3">
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => settingsStore.getState().resetSection("llm")}
+          onClick={() => {
+            credentials.selectProvider("mock");
+            settingsStore.getState().resetSection("llm");
+            setProviderError(null);
+          }}
         >
           Reset AI
         </Button>

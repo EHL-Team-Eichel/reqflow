@@ -39,6 +39,12 @@ export async function previewBlock(
       `${spec.label} takes inputs, so its data only exists inside a run`,
     );
   }
+  if (kind === "research") {
+    throw new ReqflowError(
+      "not_implemented",
+      "Research collection is unavailable in preview; run the flow to apply access gates, budgets and provenance persistence.",
+    );
+  }
   if (!registry.has(kind)) {
     throw new ReqflowError("not_implemented", `The ${spec.label} block isn't built yet`);
   }

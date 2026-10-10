@@ -5,6 +5,7 @@ import { PersistenceBanner } from "@/components/settings/PersistenceBanner";
 import { AppSection } from "@/components/settings/sections/AppSection";
 import { ParametersSection } from "@/components/settings/sections/ParametersSection";
 import { AiSection } from "@/components/settings/sections/AiSection";
+import { ResearchApisSection } from "@/components/settings/sections/ResearchApisSection";
 import { CollaborationSection } from "@/components/settings/sections/CollaborationSection";
 import { AboutSection } from "@/components/settings/sections/AboutSection";
 import { AppIcon, SparklesIcon, UsersIcon, InfoIcon } from "@/components/settings/icons";
@@ -28,6 +29,12 @@ const NAV_ITEMS: readonly NavItem[] = [
     label: "AI & research",
     hint: "Models, domains",
     icon: <SparklesIcon className="size-5" />,
+  },
+  {
+    id: "research-apis",
+    label: "Research APIs & Zugänge",
+    hint: "Credentials, approvals, tests",
+    icon: <SlidersIcon className="size-5" />,
   },
   {
     id: "collaboration",
@@ -56,6 +63,9 @@ export function SettingsPage() {
       break;
     case "ai":
       content = <AiSection />;
+      break;
+    case "research-apis":
+      content = <ResearchApisSection />;
       break;
     case "collaboration":
       content = <CollaborationSection />;

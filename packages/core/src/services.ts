@@ -2,6 +2,20 @@ import type { z } from "zod";
 import type { AuditEvent, AuditEventInput } from "./audit";
 import type { WriterRole } from "./reasoning";
 import type { ApiProvider, ReasoningEffort } from "./settings";
+import type { ResearchRequest, ResearchDataset } from "./research";
+
+export interface ResearchCollector {
+  collect(
+    request: ResearchRequest,
+    context: {
+      runId: string;
+      signal: AbortSignal;
+      log(message: string): void;
+      progress(fraction: number, message?: string): void;
+      planQueries?: boolean;
+    },
+  ): Promise<ResearchDataset>;
+}
 
 /**
  * Service interfaces handed to blocks via BlockContext (@reqflow/engine). Implementations live

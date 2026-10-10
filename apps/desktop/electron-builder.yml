@@ -7,9 +7,14 @@ directories:
   output: release
   buildResources: build
 files:
-  - out/**
+  - out/main/**
+  - out/preload/**
+  - out/renderer/**
   - package.json
 asar: true
+asarUnpack:
+  - out/main/research-xlsx-worker.js
+  - out/main/chunks/**
 npmRebuild: false # no native modules: everything is bundled and SQLite is built into Electron's Node
 win:
   target: [nsis]

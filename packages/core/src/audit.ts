@@ -44,6 +44,7 @@ export const AuditAction = z.enum([
   "run.routing_reviewed",
   "run.completed",
   "run.failed",
+  "run.cancelled",
   "settings.changed",
   "export.created",
 ]);

@@ -18,3 +18,5 @@ export * from "./settings";
 export * from "./source";
 export * from "./splitter-report";
 export * from "./workflow";
+export * from "./research";
+export { SECRET_NAMES, SecretName } from "./secrets";

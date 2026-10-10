@@ -21,8 +21,10 @@ export function toIpcError(err: unknown): ApiError["error"] {
   if (err instanceof ZodError) {
     return { code: "invalid_input", message: "Input failed validation", details: err.issues };
   }
-  if (err instanceof Error) return { code: "internal", message: err.message };
-  return { code: "internal", message: String(err) };
+  return {
+    code: "internal",
+    message: "Internal operation failed. Sensitive error details are not exposed.",
+  };
 }
 
 /** Pure (Electron-free) so it can be unit-tested: route one IPC call to its handler. */
@@ -46,7 +48,7 @@ export async function dispatch(
     return { ok: true, value: await fn.apply(ns, args) };
   } catch (err) {
     const error = toIpcError(err);
-    if (error.code === "internal") console.error(`[ipc] ${namespace}.${method} failed:`, err);
+    if (error.code === "internal") console.error(`[ipc] ${namespace}.${method} failed (internal)`);
     return { ok: false, error };
   }
 }

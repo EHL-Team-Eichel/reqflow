@@ -2,12 +2,31 @@ import { z } from "zod";
 import { AGENT_ROLES, AgentRole } from "./reasoning";
 import { ProductScope } from "./scope";
 import { PriorityThresholds, ScoreWeights } from "./scoring";
+import { ResearchApiSettings, DEFAULT_RESEARCH_APIS } from "./research";
 
 /** "mock" returns canned, schema-valid output so the app runs offline and in tests. */
-export const LlmProvider = z.enum(["anthropic", "mock"]);
+export const LlmProvider = z.enum(["anthropic", "openai", "google", "mock"]);
 export type LlmProvider = z.infer<typeof LlmProvider>;
 
-export const ResearchProvider = z.enum(["anthropic_web_search", "tavily", "off"]);
+export const LiveLlmProvider = z.enum(["anthropic", "openai", "google"]);
+export type LiveLlmProvider = z.infer<typeof LiveLlmProvider>;
+export const LlmModels = z.object({
+  model: z.string().trim().min(1).max(200),
+  fastModel: z.string().trim().min(1).max(200),
+});
+export type LlmModels = z.infer<typeof LlmModels>;
+export const LLM_MODEL_DEFAULTS: Record<LiveLlmProvider, LlmModels> = {
+  anthropic: { model: "claude-opus-5-5", fastModel: "claude-haiku-5-5" },
+  openai: { model: "gpt-4.1-2025-04-14", fastModel: "gpt-4.1-mini-2025-04-14" },
+  google: { model: "gemini-3.8-flash", fastModel: "gemini-3.5-flash-lite" },
+};
+export const LLM_SECRET_NAMES = {
+  anthropic: "anthropic_api_key",
+  openai: "openai_api_key",
+  google: "google_api_key",
+} as const;
+
+export const ResearchProvider = z.enum(["firecrawl", "anthropic_web_search", "tavily", "off"]);
 export type ResearchProvider = z.infer<typeof ResearchProvider>;
 
 export const ThemePreference = z.enum(["system", "light", "dark"]);
@@ -181,12 +200,15 @@ export const Settings = z.object({
     fastModel: z.string().min(1), // bulk tier: per-record signal extraction
     temperature: z.number().min(0).max(1),
     outputLanguage: OutputLanguage,
+    /** Remember each provider's custom models; old settings without profiles remain valid. */
+    modelProfiles: z.partialRecord(LiveLlmProvider, LlmModels).optional(),
   }),
   research: z.object({
     provider: ResearchProvider,
     maxResultsPerQuery: z.number().int().min(1).max(50),
     allowedDomains: z.array(z.string()), // empty = any
     blockedDomains: z.array(z.string()),
+    apis: ResearchApiSettings,
   }),
   scoring: z.object({
     weights: ScoreWeights,
@@ -238,6 +260,7 @@ export const DEFAULT_SETTINGS: Settings = {
     maxResultsPerQuery: 8,
     allowedDomains: [],
     blockedDomains: [],
+    apis: DEFAULT_RESEARCH_APIS,
   },
   scoring: {
     weights: {
