@@ -8,6 +8,7 @@ import { BATCH_6_MODELS } from "./batch6";
 import { BATCH_7_MODELS } from "./batch7";
 import { BATCH_8_MODELS } from "./batch8";
 import { BATCH_9_MODELS } from "./batch9";
+import { BATCH_10_MODELS } from "./batch10";
 
 export const VEHICLE_MODELS: VehicleModel[] = [
   ...BATCH_1_MODELS,
@@ -19,6 +20,7 @@ export const VEHICLE_MODELS: VehicleModel[] = [
   ...BATCH_7_MODELS,
   ...BATCH_8_MODELS,
   ...BATCH_9_MODELS,
+  ...BATCH_10_MODELS,
 ];
 
 const MODELS_MAP = new Map<string, VehicleModel>(VEHICLE_MODELS.map((m) => [m.id, m]));

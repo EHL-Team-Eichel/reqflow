@@ -240,6 +240,8 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
   retains the same 12 documented stale marker/menu assertions (32 screenshots). Final checks
   run in an isolated checkout because other sessions are updating this branch concurrently.
 
+- 2026-10-11: Implemented BMW models 91-100 (2020 M8 Coupé, 2020 M8 Competition Coupé, 2020 M8 Pride Convertible, 2014 M235i Coupe F22, 2019 M2 Competition F87, 2023 M2 M-Performance G87, 2023 M2 G87 Coupé, 2021 325LI G28, 2015 3.0 CSL Hommage Concept, 2023 M3 Touring G81). Added central stacked M Performance exhaust, 3.0 CSL Hommage giant batmobile aero and G81 production M Touring package.
+
 - 2026-10-11: Implemented BMW models 81-90 (2009 128i Coupe E82, 2021 M5 Competition F90 LCI, 2022 G82 M4 ADRO Carbon Widebody, 2021 M4 Competition G82, 2021 M4 G82 Zacoe Carbon Kit, 2015 X6 F16, 2015 X5 F15, 2016 X6 M F86, 2016 X5 M F85, 2019 Z4 M40i G29). Added ADRO aerodynamic redesign, ZACOE multi-tier splitters, F85/F86 M V8 power plants and Z4 roadster soft-top.
 
 - 2026-10-11: Implemented BMW models 71-80 (1990 E30 M3 Sport Evolution, 2003 M3 E46 Coupé, 2005 M6 Coupé E63 V10, 2013 M6 Coupe F13, 2018 M5 F90, 2025 M5 G99 Touring, 2025 M5 Sedan G90, 2014 5-Series Gran Turismo F07, 2006 Z4 M Coupe E86, 2005 M3 E46 GTR NFS Most Wanted). Added NFS hero livery aero, V10 carbon roof styling, G99 M Hybrid super-estate and Sport Evo homologation splitters.
