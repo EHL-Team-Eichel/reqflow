@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4KMWRK0Z5V4D4GVXSB0HPP9",
   "strategy": "manual-commit",
   "branch": "ws6-research",
-  "checkpoints_count": 12,
+  "checkpoints_count": 13,
   "files_touched": [
     ".gitignore",
     ".prettierignore",
@@ -33,6 +33,7 @@
     "apps/desktop/tsconfig.web.json",
     "docs/STATUS.md",
     "docs/research/README.md",
+    "docs/research/exports.md",
     "docs/research/http.md",
     "docs/research/runtime.md",
     "docs/research/settings.md",
@@ -43,8 +44,12 @@
     "packages/blocks/src/index.ts",
     "packages/blocks/src/research/data-budget.test.ts",
     "packages/blocks/src/research/data-budget.ts",
+    "packages/blocks/src/research/export.test.ts",
+    "packages/blocks/src/research/export.ts",
     "packages/blocks/src/research/index.test.ts",
     "packages/blocks/src/research/index.ts",
+    "packages/blocks/src/research/raw.test.ts",
+    "packages/blocks/src/research/raw.ts",
     "packages/blocks/src/research/runtime.test.ts",
     "packages/blocks/src/research/runtime.ts",
     "packages/core/src/audit.ts",
@@ -135,13 +140,20 @@
       "compact_transcript": "/10/transcript.jsonl",
       "content_hash": "/10/content_hash.txt",
       "prompt": "/10/prompt.txt"
+    },
+    {
+      "metadata": "/11/metadata.json",
+      "transcript": "/11/full.jsonl",
+      "compact_transcript": "/11/transcript.jsonl",
+      "content_hash": "/11/content_hash.txt",
+      "prompt": "/11/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 438,
-    "cache_creation_tokens": 711186,
-    "cache_read_tokens": 9514553,
-    "output_tokens": 68113,
-    "api_call_count": 146
+    "input_tokens": 513,
+    "cache_creation_tokens": 801737,
+    "cache_read_tokens": 10946324,
+    "output_tokens": 83386,
+    "api_call_count": 171
   }
 }
