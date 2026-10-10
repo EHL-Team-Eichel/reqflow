@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { CarViewer, type CameraPreset, type CarView } from "@/components/car/CarViewer";
 import { PartPanel } from "@/components/car/PartPanel";
-import { useCarRequirements, type RequirementSource } from "@/components/car/useCarRequirements";
+import { useCarRequirements } from "@/components/car/useCarRequirements";
 import { Segmented } from "@/components/settings/Segmented";
 import { Button } from "@/components/ui/Button";
 import { MStripe } from "@/components/ui/MStripe";
@@ -11,10 +11,6 @@ import { useSettings } from "@/lib/settings";
 const VIEWS = [
   { value: "exterior", label: "Exterior" },
   { value: "interior", label: "Interior" },
-] as const;
-const SOURCES = [
-  { value: "app", label: "From Add to Car" },
-  { value: "sample", label: "Synthetic sample" },
 ] as const;
 const PRESETS: { value: CameraPreset; label: string }[] = [
   { value: "front", label: "Front" },
@@ -31,19 +27,16 @@ const PRESETS: { value: CameraPreset; label: string }[] = [
 export function CarPage() {
   const scope = useSettings((s) => s.settings.defaultScope);
   const [view, setView] = useState<CarView>("exterior");
-  const [source, setSource] = useState<RequirementSource>("app");
   const [selected, setSelected] = useState<string | null>(null);
   const [preset, setPreset] = useState<CameraPreset>("front");
   const [presetNonce, setPresetNonce] = useState(0);
-  const data = useCarRequirements(source);
+  const data = useCarRequirements("app");
 
   const emptyHint =
     data.error ??
     (data.loading
       ? "Loading requirements…"
-      : source === "app"
-        ? "Run a flow with an Add to Car block, or switch to the synthetic sample to try it."
-        : "");
+      : "Run a flow with an Add to Car block to see requirements here.");
 
   return (
     <div className="flex h-full gap-2">
@@ -97,19 +90,7 @@ export function CarPage() {
           </p>
         </div>
       </Panel>
-      <Panel
-        title="Parts & requirements"
-        actions={
-          <Segmented
-            options={SOURCES}
-            value={source}
-            onChange={setSource}
-            testIdPrefix="car-source-"
-          />
-        }
-        className="w-[26rem] shrink-0"
-        testId="car-side"
-      >
+      <Panel title="Parts & requirements" className="w-[26rem] shrink-0" testId="car-side">
         <PartPanel
           selected={selected}
           byPart={data.byPart}

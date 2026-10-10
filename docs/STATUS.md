@@ -220,6 +220,17 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 **Log**
 
+- 2026-10-10: Removed the Car tab's top-right synthetic-sample source control; the panel now
+  uses flow requirements only and its empty state no longer offers the removed sample.
+  Added two regressions. Typecheck and all 285 tests pass (25 skipped); reviewed `car-3d.png`.
+  Smoke generated 29 screenshots but fails seven obsolete sample-control assertions.
+  **WS1 follow-up:** update `src/main/smoke.ts` to test flow requirements without the removed
+  `car-source-sample` / `car-source-app` controls. Left that WS1-owned script unchanged.
+
+- 2026-10-10: OpenCode claimed removal of the Car tab's top-right synthetic-sample toggle.
+  Keep flow requirements as the source, update the empty-state hint, and leave existing model
+  changes untouched. Add a focused regression and verify before committing/pushing this slice.
+
 - 2026-10-10: Completed STL-guided sketch refinement. Traced the supplied sedan's roof,
   bonnet, shoulders and rear deck into smooth procedural curves; fitted all four tyres,
   arches, liners and axle components to its normalized wheel stations. Projected strokes
