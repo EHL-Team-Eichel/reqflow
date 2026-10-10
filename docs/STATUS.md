@@ -147,10 +147,13 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 - [ ] Polish: "Tidy up" auto-layout, multi-select actions, minimap colours per block group.
 - [x] Fix direct Raw → HIL report input preview (merged in PR #4 and verified).
 - [x] Save and execute the current flow so Add to Car publishes proposed requirements; expose status, block logs and cancellation (PR #8).
+- [x] Explicit Start button for the full workflow, including inner workplaces; prevent duplicate runs
+      and preserve HIL pauses (PR #10, verified on merged main).
 
 **Log**
 
-- 2026-10-10: Start-button slice complete and verified on `ws2-start-flow`, PR #10. WS2 released for
+- 2026-10-10: Start-button slice merged in PR #10 (`5663120`) and reverified on integrated main:
+  `npm run check` (228 passed, 24 skipped), `npm run smoke` (29 screenshots). WS2 released for
   its remaining checklist (per-node status/counts, save/load/autosave, run outputs and human review/resume).
   Explicit **Start** button replaces Save & run, with a play icon, full-root/inner-flow
   explanation, disabled empty/starting/running/HIL states and visible progress labels. Kept existing
