@@ -28,6 +28,8 @@ export interface PartAssignment {
   /** A part id from CAR_PARTS, or WHOLE_CAR.id. */
   partId: string;
   confidence: Confidence;
+  /** Winning part's share of all weighted keyword matches (0 if none). Not a probability. */
+  confidencePercent: number;
   /** One sentence a PM can read: why this part. */
   reason: string;
   score: number;
@@ -130,6 +132,7 @@ export function classifyRequirement(req: Classifiable): PartAssignment {
       return {
         partId: fallback,
         confidence: "low",
+        confidencePercent: 0,
         reason: `No part named in the text; placed by its category alone.`,
         score: 0,
         matches: [],
@@ -139,6 +142,7 @@ export function classifyRequirement(req: Classifiable): PartAssignment {
     return {
       partId: WHOLE_CAR.id,
       confidence: "low",
+      confidencePercent: 0,
       reason: "No part named in the text, and its category doesn't point at a single part.",
       score: 0,
       matches: [],
@@ -160,6 +164,9 @@ export function classifyRequirement(req: Classifiable): PartAssignment {
   return {
     partId: best.partId,
     confidence,
+    confidencePercent: Math.round(
+      (100 * best.score) / ranked.reduce((total, part) => total + part.score, 0),
+    ),
     reason: !tied
       ? `Named in ${where}: ${terms}.`
       : fitsCategory(best.partId) && !fitsCategory(ranked[1]!.partId)

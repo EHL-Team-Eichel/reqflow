@@ -1,30 +1,12 @@
-import { CATEGORY_LABELS, type Priority } from "@reqflow/core";
+import { useState } from "react";
 import { cx } from "@/lib/cx";
 import { XIcon } from "@/components/ui/icons";
-import { label, type ClassifiedRequirement, type Confidence } from "./classify";
+import { RequirementCard } from "../requirements/RequirementCard";
+import { RequirementDialog } from "../requirements/RequirementDialog";
+import { label, type ClassifiedRequirement } from "./classify";
 import { PART_GROUP_LABELS, PARTS_BY_ID, WHOLE_CAR } from "./parts";
 import { menuCount, PART_SUBCLASSES, subclassParts } from "./partMenu";
 import { MENU_GROUPS, type MarkerMenuState } from "./markerMenu";
-
-const PRIORITY_LABELS: Record<Priority, string> = {
-  must: "Must",
-  should: "Should",
-  could: "Could",
-  wont: "Won't",
-};
-const CONFIDENCE_LABELS: Record<Confidence, string> = {
-  high: "high confidence",
-  medium: "medium confidence",
-  low: "low confidence — check it",
-};
-const STATUS_LABELS: Record<string, string> = {
-  proposed: "Proposed",
-  in_review: "In review",
-  challenged: "Challenged",
-  approved: "Approved",
-  rejected: "Rejected",
-  deferred: "Deferred",
-};
 
 interface Props {
   selected: string | null;
@@ -39,7 +21,7 @@ interface Props {
 
 /** Right-hand side of the Car tab: the selected part and its requirements, or the part index. */
 export function PartPanel(props: Props) {
-  if (props.selected) return <PartDetail {...props} partId={props.selected} />;
+  if (props.selected) return <PartDetail key={props.selected} {...props} partId={props.selected} />;
   return <PartIndex {...props} />;
 }
 
@@ -162,6 +144,7 @@ function PartRow(props: {
 }
 
 function PartDetail({ partId, byPart, emptyHint, onSelect }: Props & { partId: string }) {
+  const [opened, setOpened] = useState<ClassifiedRequirement | null>(null);
   const part = PARTS_BY_ID.get(partId);
   const items = byPart.get(partId) ?? [];
   return (
@@ -175,6 +158,12 @@ function PartDetail({ partId, byPart, emptyHint, onSelect }: Props & { partId: s
             {label(partId)}
           </h3>
           <p className="mt-1 text-sm text-muted">{part?.blurb ?? WHOLE_CAR.blurb}</p>
+          {items.length > 0 && (
+            <p className="mt-1 text-xs text-muted">
+              {items.length} requirement{items.length === 1 ? "" : "s"} · Click for details &
+              sources
+            </p>
+          )}
         </div>
         <button
           type="button"
@@ -196,71 +185,18 @@ function PartDetail({ partId, byPart, emptyHint, onSelect }: Props & { partId: s
             <span className="text-xs">{emptyHint}</span>
           </p>
         ) : (
-          items.map((item) => <RequirementCard key={item.requirement.id} item={item} />)
+          items.map((item) => (
+            <RequirementCard key={item.requirement.id} item={item} onOpen={() => setOpened(item)} />
+          ))
         )}
       </div>
+      {opened && (
+        <RequirementDialog
+          key={opened.requirement.id}
+          item={opened}
+          onClose={() => setOpened(null)}
+        />
+      )}
     </div>
-  );
-}
-
-function RequirementCard({ item }: { item: ClassifiedRequirement }) {
-  const { requirement: r, assignment: a } = item;
-  return (
-    <article className="rounded-lg border border-line bg-panel p-3" data-testid="car-requirement">
-      <div className="flex items-center gap-2 text-xs text-muted">
-        <span className="font-mono">{r.id}</span>
-        <span className="ml-auto">{STATUS_LABELS[r.status] ?? r.status}</span>
-      </div>
-      <h4 className="mt-1 text-sm font-medium text-ink">{r.title}</h4>
-      <p className="mt-1 text-sm text-muted">{r.description}</p>
-      <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
-        {r.priority && (
-          <Chip strong={r.priority === "must"}>
-            {PRIORITY_LABELS[r.priority]}
-            {r.score ? ` · ${Math.round(r.score.total)}` : ""}
-          </Chip>
-        )}
-        <Chip warn={r.evidenceLevel === "D" && (r.priority === "must" || r.priority === "should")}>
-          Evidence {r.evidenceLevel}
-        </Chip>
-        <Chip>{CATEGORY_LABELS[r.category]}</Chip>
-      </div>
-      {r.targets.length > 0 && (
-        <ul className="mt-2 space-y-0.5 text-xs text-muted">
-          {r.targets.map((t) => (
-            <li key={t.metric}>
-              <span className="text-ink">{t.metric}:</span> {t.target}
-            </li>
-          ))}
-        </ul>
-      )}
-      <p
-        className="mt-2 border-t border-line pt-2 text-xs text-muted"
-        data-testid="car-classifier-reason"
-      >
-        <span className="font-medium text-ink">Auto-classified</span> (
-        {CONFIDENCE_LABELS[a.confidence]}): {a.reason}
-        {a.alternatives.length > 0 && (
-          <> Could also be: {a.alternatives.map((x) => label(x.partId)).join(", ")}.</>
-        )}
-      </p>
-    </article>
-  );
-}
-
-function Chip(props: { children: React.ReactNode; strong?: boolean; warn?: boolean }) {
-  return (
-    <span
-      className={cx(
-        "rounded-full border px-2 py-0.5",
-        props.strong
-          ? "border-transparent bg-brand-fill text-white"
-          : props.warn
-            ? "border-transparent bg-warn-soft text-warn"
-            : "border-line text-muted",
-      )}
-    >
-      {props.children}
-    </span>
   );
 }

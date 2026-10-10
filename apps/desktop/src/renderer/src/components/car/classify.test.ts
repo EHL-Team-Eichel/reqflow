@@ -48,6 +48,28 @@ describe("classifyRequirement", () => {
       req("Sharper head-up display", "As readable as the central screen."),
     );
     expect(a.partId).toBe("hud");
+    expect(a.confidencePercent).toBe(60);
+  });
+
+  it("expresses confidence as the winning part's share of every weighted match", () => {
+    const a = classifyRequirement(
+      req("Front seats", "Rear seats, head-up display, kidney grille, wheels"),
+    );
+    expect(a.partId).toBe("front_seats");
+    expect(a.alternatives).toHaveLength(3);
+    // All four alternatives count, not only the three shown in the explanation.
+    expect(a.confidencePercent).toBe(27);
+  });
+
+  it("keeps numeric confidence bounded and reproducible", () => {
+    for (const requirement of fixtureRequirements) {
+      const a = classifyRequirement(requirement);
+      expect(a.confidencePercent).toBeGreaterThanOrEqual(0);
+      expect(a.confidencePercent).toBeLessThanOrEqual(100);
+      expect(Number.isInteger(a.confidencePercent)).toBe(true);
+      expect(classifyRequirement(requirement)).toEqual(a);
+    }
+    expect(classifyRequirement(req("Ventilated front seats")).confidencePercent).toBe(100);
   });
 
   it("matches German words with umlauts", () => {
@@ -79,19 +101,25 @@ describe("classifyRequirement", () => {
     const a = classifyRequirement(
       req("Feels special", "Customers want it to feel special.", "infotainment_digital"),
     );
-    expect(a).toMatchObject({ partId: "curved_display", confidence: "low", matches: [] });
+    expect(a).toMatchObject({
+      partId: "curved_display",
+      confidence: "low",
+      confidencePercent: 0,
+      matches: [],
+    });
   });
 
   it("never guesses: no words and an ambiguous category → whole car", () => {
     const a = classifyRequirement(
       req("Sensible package bundles", "Fewer bundles.", "variants_packages"),
     );
-    expect(a).toMatchObject({ partId: WHOLE_CAR.id, confidence: "low" });
+    expect(a).toMatchObject({ partId: WHOLE_CAR.id, confidence: "low", confidencePercent: 0 });
   });
 
   it("marks a tie as low confidence and lets the category decide", () => {
     const a = classifyRequirement(req("Seats and screens", "x", "infotainment_digital"));
     expect(a.confidence).toBe("low");
+    expect(a.confidencePercent).toBe(50);
     expect(a.partId).toBe("curved_display");
     expect(a.reason).toMatch(/category decided/);
   });

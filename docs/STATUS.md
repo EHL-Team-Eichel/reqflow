@@ -220,6 +220,24 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 **Log**
 
+- 2026-10-10: Compact requirement review complete on `ws3-compact-requirements`: bounded cards
+  show the short requirement, up to two targets, priority/status and percentage part-placement
+  confidence, with weak-evidence/conflict warnings retained. Clicking opens validated IPC details:
+  description, acceptance criteria, score rationale/factors, findings, verbatim excerpts, original
+  records, source metadata/links, assumptions, uncertainties and version snapshots. The percentage
+  is weighted keyword-match share, explicitly not evidence certainty or a calibrated probability.
+  Typecheck and 416 tests pass (25 skipped); isolated synthetic Electron probe passed 19-card
+  scrolling, exact-id details, focus trap/restore, Escape, error/retry and light/dark rendering.
+  Reviewed six screenshots under `apps/desktop/out/smoke/compact-*.png`. Shared smoke still has
+  12 stale collapsed-menu assertions; WS1/WS0 should open relevant classes before point checks
+  and move classifier-explanation checks inside the clicked requirement dialog. Main/core and
+  pre-existing documentation reordering remain untouched. Requested slice complete.
+
+- 2026-10-10: OpenCode claimed compact requirement summaries and click-through details on
+  `ws3-compact-requirements`: short title, key targets, priority/status and percentage part-placement
+  confidence; load full requirements and linked evidence via existing IPC. Preserve car/model work
+  and pre-existing handoff reordering. Verify the focused renderer slice before committing.
+
 - 2026-10-10: OpenCode claimed collapsed-on-load, menu-driven markers: opening a class
   activates its parts, subclasses narrow focus, >8 markers become blue dots and <=8 keep
   text/counts. Preserve concurrent component/model, visibility and shared smoke work.
