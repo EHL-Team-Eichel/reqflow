@@ -13,7 +13,12 @@ import {
   type WorkflowRun,
 } from "@reqflow/core";
 import { fixtureRecords, fixtureSources } from "@reqflow/core/fixtures";
-import { createDatabase, createFileStore, seedFixtures } from "@reqflow/db";
+import {
+  createDatabase,
+  createFileStore,
+  seedFixtures,
+  SqliteReasoningRepository,
+} from "@reqflow/db";
 import { BlockRegistry, defineBlock } from "@reqflow/engine";
 import { createHandlers } from "./handlers";
 import { SecretsStore } from "./secrets";
@@ -125,6 +130,51 @@ describe("handlers (All IPC methods against SQLite and stores)", () => {
 
     const afterClear = await handlers.settings.setSecret("anthropic_api_key", null);
     expect(afterClear.anthropic_api_key.configured).toBe(false);
+
+    // setup:<id> secret deletion
+    const setupsInitial = await handlers.settings.get();
+    const settingsWithSetups = await handlers.settings.save({
+      ...setupsInitial,
+      agents: {
+        ...setupsInitial.agents,
+        setups: [
+          {
+            id: "test-1",
+            provider: "anthropic",
+            baseUrl: "",
+            model: "claude-3-5-sonnet-latest",
+            fastModel: "claude-haiku",
+            name: "T1",
+            effort: "low",
+            temperature: 0,
+            maxParallel: 5,
+          },
+          {
+            id: "test-2",
+            provider: "openai",
+            baseUrl: "",
+            model: "gpt-4o",
+            fastModel: "gpt-4o-mini",
+            name: "T2",
+            effort: "low",
+            temperature: 0,
+            maxParallel: 5,
+          },
+        ],
+      },
+    });
+    await handlers.settings.setSecret("setup:test-1", "key1");
+    await handlers.settings.setSecret("setup:test-2", "key2");
+
+    // Remove test-2
+    await handlers.settings.save({
+      ...settingsWithSetups,
+      agents: { ...settingsWithSetups.agents, setups: [settingsWithSetups.agents.setups[0]!] },
+    });
+
+    const finalSecrets = await handlers.settings.secrets();
+    expect(finalSecrets.setups["test-1"]?.configured).toBe(true);
+    expect(finalSecrets.setups["test-2"]).toBeUndefined();
   });
 
   it("handles workflows CRUD with validation", async () => {
@@ -455,5 +505,70 @@ describe("handlers (All IPC methods against SQLite and stores)", () => {
     expect(Math.min(...after.map((r) => seq(r.id)))).toBe(
       Math.max(...before.map((r) => seq(r.id))) + 1,
     );
+  });
+
+  it("handles reasoning traces: null when empty, returns saved trace via handlers", async () => {
+    const { handlers, secretsStore } = setup();
+
+    expect(await handlers.reasoning.forRun("run_1", "car")).toBeNull();
+    expect(await handlers.reasoning.latest("wf_1", "car")).toBeNull();
+    expect(await handlers.reasoning.forRequirement("REQ-F70-EU-001")).toBeNull();
+
+    const db = createDatabase(tempDir + "/test.db");
+    const repo = new SqliteReasoningRepository(db);
+
+    db.exec("PRAGMA foreign_keys = OFF;");
+
+    const trace = {
+      id: "rsn_1",
+      runId: "run_1",
+      blockId: "car",
+      createdAt: "2026-01-01T10:00:00.000Z",
+      scope: { vehicleLine: "1", derivative: "5", vehicleCode: "F", market: "EU", horizonYears: 5 },
+      inputs: [],
+      steps: [],
+      requirements: [
+        {
+          requirementId: "REQ-F70-EU-001",
+          title: "Syn",
+          theme: "Syn",
+          ranks: [1],
+          evidence: [],
+          thoughts: [],
+          verdict: "accepted" as const,
+          issues: [],
+          confidence: {
+            value: 0.8,
+            level: "high" as const,
+            signals: [{ key: "test", label: "Test", value: 1, weight: 1, by: "test" }],
+            method: "m",
+          },
+          contextUsed: [],
+        },
+      ],
+      heldBack: [],
+      totals: { calls: 0, inputTokens: 0, outputTokens: 0, durationMs: 5 },
+      offline: true,
+    };
+
+    await repo.save(trace);
+
+    const forRun = await handlers.reasoning.forRun("run_1", "car");
+    expect(forRun?.id).toBe("rsn_1");
+
+    // wait, latest joins with runs table, so we need a run
+    db.prepare(
+      `INSERT OR REPLACE INTO runs (id, workflow_id, workflow_version, status, scope, graph, started_by, started_at, block_runs) VALUES (?, ?, 1, 'completed', '{}', '{}', '{}', ?, '[]')`,
+    ).run("run_1", "wf_1", "2026-01-01T00:00:00.000Z");
+
+    const latest = await handlers.reasoning.latest("wf_1", "car");
+    expect(latest?.id).toBe("rsn_1");
+
+    const forReq = await handlers.reasoning.forRequirement("REQ-F70-EU-001");
+    expect(forReq?.id).toBe("rsn_1");
+
+    await expect(handlers.reasoning.forRun("invalid", "car")).rejects.toThrow();
+
+    db.close();
   });
 });

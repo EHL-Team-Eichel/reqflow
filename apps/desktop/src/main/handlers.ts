@@ -40,6 +40,7 @@ import {
   formatRequirementsMarkdown,
   removeDemoData,
   SqliteAuditLogger,
+  SqliteReasoningRepository,
   SqliteRequirementRepository,
   SqliteRunRepository,
   type LocalFileStore,
@@ -83,6 +84,19 @@ const ExportRequirementsSchema = z.object({
   format: z.enum(["json", "csv", "md"]),
 });
 
+const RunIdSchema = z.string().startsWith("run_");
+const WorkflowIdSchema = z.string().startsWith("wf_");
+const NonEmptySchema = z.string().min(1);
+
+/** Parses an IPC argument; bad input → ReqflowError("invalid_input") naming the argument. */
+function parseArg<T>(schema: z.ZodType<T>, value: unknown, name: string): T {
+  const parsed = schema.safeParse(value);
+  if (!parsed.success) {
+    throw new ReqflowError("invalid_input", `Invalid ${name}`, parsed.error.issues);
+  }
+  return parsed.data;
+}
+
 async function showElectronSaveDialog(opts: SaveDialogOptions): Promise<SaveDialogReturnValue> {
   try {
     const electron = await import("electron");
@@ -123,6 +137,7 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
   const auditLogger = new SqliteAuditLogger(db);
   const runRepo = new SqliteRunRepository(db);
   const reqRepo = new SqliteRequirementRepository(db);
+  const reasoningRepo = new SqliteReasoningRepository(db);
   const secretsStore = deps.secretsStore ?? new SecretsStore(dataDir);
 
   const configuredLlm = async (settings: Settings): Promise<LlmClient> => {
@@ -160,6 +175,9 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
         async nextSeq(scope) {
           // Counts deleted requirements too (via the audit trail): ids are never reused.
           return (await reqRepo.maxSeq(`REQ-${scope.vehicleCode}-${scope.market}-`)) + 1;
+        },
+        async saveReasoning(trace) {
+          await reasoningRepo.save(trace);
         },
       },
     },
@@ -477,6 +495,18 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
             changes.push({ path: key, before: oldSettings[key], after: saved[key] });
           }
         }
+        const oldSetups = oldSettings.agents?.setups || [];
+        const newSetups = saved.agents?.setups || [];
+        const newSetupIds = new Set(newSetups.map((s) => s.id));
+        for (const oldSetup of oldSetups) {
+          if (!newSetupIds.has(oldSetup.id)) {
+            try {
+              await secretsStore.setSecret(`setup:${oldSetup.id}` as SetupSecretName, null);
+            } catch (err) {
+              console.warn(`Failed to delete secret for removed API setup: ${err}`);
+            }
+          }
+        }
 
         if (changes.length > 0) {
           await auditLogger.record({
@@ -508,14 +538,19 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
       },
     },
     reasoning: {
-      forRun: async () => {
-        throw new ReqflowError("not_implemented", "The agents' thought process isn't stored yet");
+      forRun: async (runIdInput: unknown, blockIdInput: unknown) => {
+        const runId = parseArg(RunIdSchema, runIdInput, "runId");
+        const blockId = parseArg(NonEmptySchema, blockIdInput, "blockId");
+        return await reasoningRepo.forRun(runId, blockId);
       },
-      latest: async () => {
-        throw new ReqflowError("not_implemented", "The agents' thought process isn't stored yet");
+      latest: async (workflowIdInput: unknown, blockIdInput: unknown) => {
+        const workflowId = parseArg(WorkflowIdSchema, workflowIdInput, "workflowId");
+        const blockId = parseArg(NonEmptySchema, blockIdInput, "blockId");
+        return await reasoningRepo.latest(workflowId, blockId);
       },
-      forRequirement: async () => {
-        throw new ReqflowError("not_implemented", "The agents' thought process isn't stored yet");
+      forRequirement: async (requirementIdInput: unknown) => {
+        const reqId = parseArg(NonEmptySchema, requirementIdInput, "requirementId");
+        return await reasoningRepo.forRequirement(reqId);
       },
     },
     exports: {
