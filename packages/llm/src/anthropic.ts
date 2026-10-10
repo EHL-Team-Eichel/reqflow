@@ -61,16 +61,19 @@ export function anthropicClient(o: AnthropicOptions): LlmClient {
   ): Promise<{ text: string; model: string; usage?: LlmUsage; thinking?: string }> {
     const model = request.tier === "fast" ? o.fastModel || o.model : o.model;
     const effort = request.effort ?? o.effort;
+    // Only Haiku can switch thinking off; "off" on Opus or Sonnet still thinks, at low effort.
+    const thinks = !(effort === "off" && /haiku/i.test(model));
+    const budget: ReasoningEffort = effort === "off" && thinks ? "low" : effort;
     const body: Record<string, unknown> = {
       model,
-      max_tokens: Math.min(64_000, (request.maxTokens ?? 4096) + HEADROOM[effort]),
+      max_tokens: Math.min(64_000, (request.maxTokens ?? 4096) + HEADROOM[budget]),
       messages: [{ role: "user", content: request.prompt }],
     };
     if (request.system) {
       body.system = [{ type: "text", text: request.system, cache_control: { type: "ephemeral" } }];
     }
     const outputConfig: Record<string, unknown> = {};
-    if (effort === "off" && /haiku/i.test(model)) {
+    if (!thinks) {
       body.thinking = { type: "disabled" };
       body.temperature = o.temperature;
     } else if (effort === "off") {
@@ -97,7 +100,7 @@ export function anthropicClient(o: AnthropicOptions): LlmClient {
         body,
         signal: request.signal,
         fetch: o.fetch ?? fetch,
-        timeoutMs: o.timeoutMs ?? TIMEOUT_MS[effort],
+        timeoutMs: o.timeoutMs ?? TIMEOUT_MS[budget],
         provider: "Anthropic",
         sleep: o.sleep,
       });

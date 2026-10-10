@@ -81,6 +81,8 @@ describe("anthropic client", () => {
     expect(opusOff.thinking).toBeUndefined();
     expect(opusOff.temperature).toBeUndefined();
     expect(opusOff.output_config.effort).toBe("low");
+    expect(opusOff.max_tokens).toBe(4096 + 8000); // still thinks, so it gets thinking headroom
+    expect(haikuOff.max_tokens).toBe(4096);
     expect(opusHigh.thinking).toEqual({ type: "adaptive", display: "summarized" });
     expect(opusHigh.temperature).toBeUndefined();
     expect(opusHigh.output_config).toMatchObject({
@@ -254,6 +256,42 @@ describe("openai-compatible client", () => {
     expect(f.requests[0]!.body.response_format.type).toBe("json_schema");
     expect(f.requests[1]!.body.response_format).toEqual({ type: "json_object" });
     expect(f.requests[1]!.body.messages[0].content).toContain("JSON Schema");
+  });
+});
+
+describe("openai client", () => {
+  it("never sends temperature to OpenAI, whose current models reason by default", async () => {
+    const f = fakeFetch(
+      {
+        body: {
+          model: "m",
+          choices: [{ finish_reason: "stop", message: { content: '{"ok":true}' } }],
+        },
+      },
+      {
+        body: {
+          model: "m",
+          choices: [{ finish_reason: "stop", message: { content: '{"ok":true}' } }],
+        },
+      },
+    );
+    const make = (provider: "openai" | "gemini") =>
+      openAiClient({
+        provider,
+        baseUrl: "https://x.test/v1",
+        apiKey: "k",
+        model: "m",
+        fastModel: "",
+        effort: "off",
+        temperature: 0.3,
+        fetch: f.fetch,
+      });
+    await make("openai").generateObject({ prompt: "p", schema });
+    await make("gemini").generateObject({ prompt: "p", schema });
+    expect(f.requests[0]!.body.temperature).toBeUndefined();
+    expect(f.requests[0]!.body.max_completion_tokens).toBe(4096);
+    expect(f.requests[1]!.body.temperature).toBe(0.3);
+    expect(f.requests[1]!.body.max_tokens).toBe(4096);
   });
 });
 

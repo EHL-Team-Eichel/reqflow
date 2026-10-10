@@ -174,7 +174,8 @@ export function openAiClient(o: {
 
     if (reqEffort !== "off") {
       body.reasoning_effort = reqEffort;
-    } else {
+    } else if (o.provider !== "openai") {
+      // OpenAI's current models reason by default and reject sampling parameters; others take it.
       body.temperature = o.temperature;
     }
 
