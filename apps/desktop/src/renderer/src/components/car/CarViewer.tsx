@@ -4,6 +4,7 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { cx } from "@/lib/cx";
 import { label } from "./classify";
 import { partTag } from "./partTags";
+import { markerPresentation } from "./markerMenu";
 import { buildCar, type CarPiece } from "./model/buildCar";
 import { G60 } from "./model/body";
 import {
@@ -39,8 +40,10 @@ const PRESETS: Record<
 const UNGHOSTED_KINDS = new Set(["tyre", "rim", "metal", "accent"]);
 
 interface Props {
-  /** Requirements per part id (only parts with ≥ 1 are badged and tinted). */
+  /** Requirement counts displayed on labeled markers. */
   counts: ReadonlyMap<string, number>;
+  /** All parts in the active menu class, including parts without requirements. */
+  markerParts: readonly string[];
   selected: string | null;
   view: CarView;
   preset: CameraPreset;
@@ -51,7 +54,7 @@ interface Props {
 
 /**
  * The 3D car: drag to orbit, scroll to zoom, right-drag to pan. Hover shows the part's name, a click
- * selects it. Parts with requirements carry a badge with the count; badges are clickable too.
+ * selects it. The active menu class shows clickable labels/counts, or blue dots above eight parts.
  */
 export function CarViewer(props: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -415,7 +418,7 @@ export function CarViewer(props: Props) {
   // React to selection, counts and view changes without rebuilding the scene.
   useEffect(() => {
     apiRef.current?.restyle();
-  }, [props.counts, props.selected, props.view]);
+  }, [props.counts, props.selected, props.view, props.markerParts]);
 
   useEffect(() => {
     apiRef.current?.moveTo(props.preset);
@@ -432,35 +435,49 @@ export function CarViewer(props: Props) {
     );
   }
 
-  const badged = [...props.counts.entries()].filter(
-    ([id, n]) => n > 0 && anchors.has(id) && (props.view === "interior" || exteriorParts.has(id)),
+  const eligibleMarkers = new Set(
+    [...anchors.keys()].filter((id) => props.view === "interior" || exteriorParts.has(id)),
   );
+  const markers = markerPresentation(props.markerParts, eligibleMarkers);
   return (
     <div ref={hostRef} className="relative h-full w-full overflow-hidden" data-testid="car-viewer">
-      {badged.map(([partId, n]) => (
-        <button
-          key={partId}
-          type="button"
-          ref={(el) => {
-            if (el) badgeRefs.current.set(partId, el);
-            else badgeRefs.current.delete(partId);
-          }}
-          onClick={() => props.onSelect(partId)}
-          data-testid={`car-badge-${partId}`}
-          aria-label={`Review ${label(partId)}: ${n} requirement${n === 1 ? "" : "s"}`}
-          aria-pressed={props.selected === partId}
-          className={cx(
-            "absolute top-0 left-0 flex h-6 items-center gap-1.5 rounded-full border px-2 text-[11px] font-medium whitespace-nowrap shadow-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand",
-            props.selected === partId
-              ? "border-brand bg-brand-fill text-white"
-              : "border-line bg-panel text-ink hover:border-brand",
-          )}
-          style={{ visibility: "hidden" }}
-        >
-          <span>{partTag(partId)}</span>
-          <span className="text-[10px] opacity-70">{n}</span>
-        </button>
-      ))}
+      {markers.partIds.map((partId) => {
+        const n = props.counts.get(partId) ?? 0;
+        return (
+          <button
+            key={partId}
+            type="button"
+            ref={(el) => {
+              if (el) badgeRefs.current.set(partId, el);
+              else badgeRefs.current.delete(partId);
+            }}
+            onClick={() => props.onSelect(partId)}
+            data-testid={`car-badge-${partId}`}
+            data-marker-mode={markers.compact ? "dot" : "label"}
+            title={`${partTag(partId)}: ${n} requirement${n === 1 ? "" : "s"}`}
+            aria-label={`Review ${label(partId)}: ${n} requirement${n === 1 ? "" : "s"}`}
+            aria-pressed={props.selected === partId}
+            className={cx(
+              "absolute top-0 left-0 flex items-center justify-center rounded-full border shadow-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand",
+              markers.compact
+                ? "size-2.5 border-white bg-brand-fill hover:scale-150"
+                : "h-6 gap-1.5 px-2 text-[11px] font-medium whitespace-nowrap",
+              !markers.compact &&
+                (props.selected === partId
+                  ? "border-brand bg-brand-fill text-white"
+                  : "border-brand bg-panel text-ink hover:bg-brand-soft"),
+            )}
+            style={{ visibility: "hidden" }}
+          >
+            {!markers.compact && (
+              <>
+                <span>{partTag(partId)}</span>
+                <span className="text-[10px] opacity-70">{n}</span>
+              </>
+            )}
+          </button>
+        );
+      })}
       <div
         ref={tooltipRef}
         className={cx(

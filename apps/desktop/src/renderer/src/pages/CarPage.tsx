@@ -2,6 +2,12 @@ import { useState } from "react";
 import { CarViewer, type CameraPreset, type CarView } from "@/components/car/CarViewer";
 import { PartPanel } from "@/components/car/PartPanel";
 import { useCarRequirements } from "@/components/car/useCarRequirements";
+import {
+  initialMarkerMenu,
+  menuGroup,
+  menuPartIds,
+  toggleMarkerMenu,
+} from "@/components/car/markerMenu";
 import { Segmented } from "@/components/settings/Segmented";
 import { Button } from "@/components/ui/Button";
 import { MStripe } from "@/components/ui/MStripe";
@@ -28,9 +34,18 @@ export function CarPage() {
   const scope = useSettings((s) => s.settings.defaultScope);
   const [view, setView] = useState<CarView>("exterior");
   const [selected, setSelected] = useState<string | null>(null);
+  const [markerMenu, setMarkerMenu] = useState(initialMarkerMenu);
   const [preset, setPreset] = useState<CameraPreset>("front");
   const [presetNonce, setPresetNonce] = useState(0);
   const data = useCarRequirements("app");
+  const markerParts = selected ? [selected] : menuPartIds(markerMenu.active);
+
+  const onMenuToggle = (id: string) => {
+    const next = toggleMarkerMenu(markerMenu, id);
+    setMarkerMenu(next);
+    setSelected(null);
+    if (next.active) setView(menuGroup(next.active) === "exterior" ? "exterior" : "interior");
+  };
 
   const emptyHint =
     data.error ??
@@ -79,6 +94,7 @@ export function CarPage() {
         <div className="relative h-full">
           <CarViewer
             counts={data.counts}
+            markerParts={markerParts}
             selected={selected}
             view={view}
             preset={preset}
@@ -93,6 +109,8 @@ export function CarPage() {
       <Panel title="Parts & requirements" className="w-[26rem] shrink-0" testId="car-side">
         <PartPanel
           selected={selected}
+          markerMenu={markerMenu}
+          onMenuToggle={onMenuToggle}
           byPart={data.byPart}
           counts={data.counts}
           total={data.total}

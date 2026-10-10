@@ -220,6 +220,21 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 **Log**
 
+- 2026-10-10: OpenCode claimed collapsed-on-load, menu-driven markers: opening a class
+  activates its parts, subclasses narrow focus, >8 markers become blue dots and <=8 keep
+  text/counts. Preserve concurrent component/model, visibility and shared smoke work.
+
+- 2026-10-10: Menu-driven markers complete: all sections/subclasses start closed without
+  markers; opening a class shows all descendant parts even with zero requirements, opening
+  a subclass narrows focus, and closing the focused class restores its parent or clears markers.
+  >8 eligible part markers use small blue dots; <=8 use compact text/count labels. Interior and
+  Technology activation reveal the interior view. Selection/back preserves menu state.
+  Typecheck and all 386 tests pass (25 skipped); native Electron probe verified collapsed load,
+  class/subclass activation, blue-dot/label modes, close/reset, dot selection and back retention.
+  Reviewed collapsed, Exterior dots, Doors labels and Interior screenshots. Shared smoke builds
+  and generates 32 screenshots but its automatic-on-load point assertions now need WS1/WS0 to
+  open the relevant class first (12 assertion failures); left that owned script unchanged.
+
 - 2026-10-10: Expanded the car from 34 to 68 selectable parts while retaining the original
   assemblies. Added distinct front/rear motors, gearbox, battery, inverter, cooling, shafts,
   differential, brake discs/calipers and suspension components, plus individual seats,

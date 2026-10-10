@@ -2,8 +2,9 @@ import { CATEGORY_LABELS, type Priority } from "@reqflow/core";
 import { cx } from "@/lib/cx";
 import { XIcon } from "@/components/ui/icons";
 import { label, type ClassifiedRequirement, type Confidence } from "./classify";
-import { PART_GROUP_LABELS, PARTS_BY_ID, WHOLE_CAR, type PartGroup } from "./parts";
+import { PART_GROUP_LABELS, PARTS_BY_ID, WHOLE_CAR } from "./parts";
 import { menuCount, PART_SUBCLASSES, subclassParts } from "./partMenu";
+import { MENU_GROUPS, type MarkerMenuState } from "./markerMenu";
 
 const PRIORITY_LABELS: Record<Priority, string> = {
   must: "Must",
@@ -27,6 +28,8 @@ const STATUS_LABELS: Record<string, string> = {
 
 interface Props {
   selected: string | null;
+  markerMenu: MarkerMenuState;
+  onMenuToggle: (id: string) => void;
   byPart: ReadonlyMap<string, ClassifiedRequirement[]>;
   counts: ReadonlyMap<string, number>;
   total: number;
@@ -40,8 +43,7 @@ export function PartPanel(props: Props) {
   return <PartIndex {...props} />;
 }
 
-function PartIndex({ counts, total, emptyHint, onSelect }: Props) {
-  const groups: PartGroup[] = ["exterior", "interior", "technology"];
+function PartIndex({ counts, total, emptyHint, onSelect, markerMenu, onMenuToggle }: Props) {
   const whole = counts.get(WHOLE_CAR.id) ?? 0;
   return (
     <div className="flex h-full flex-col" data-testid="car-part-index">
@@ -57,11 +59,25 @@ function PartIndex({ counts, total, emptyHint, onSelect }: Props) {
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
         <PartRow id={WHOLE_CAR.id} name={WHOLE_CAR.label} count={whole} onSelect={onSelect} />
-        {groups.map((g) => {
+        {MENU_GROUPS.map((g) => {
           const subclasses = PART_SUBCLASSES.filter((subclass) => subclass.group === g);
           return (
-            <details key={g} open className="mt-3" data-testid={`car-part-group-${g}`}>
-              <summary className="cursor-pointer rounded-md px-2 py-2 text-xs font-semibold tracking-wide text-ink uppercase hover:bg-panel-2 focus-visible:outline-brand">
+            <details
+              key={g}
+              open={markerMenu.expanded.has(g)}
+              className="mt-3"
+              data-testid={`car-part-group-${g}`}
+            >
+              <summary
+                onClick={(event) => {
+                  event.preventDefault();
+                  onMenuToggle(g);
+                }}
+                className={cx(
+                  "cursor-pointer rounded-md px-2 py-2 text-xs font-semibold tracking-wide uppercase hover:bg-panel-2 focus-visible:outline-brand",
+                  markerMenu.active === g ? "bg-brand-soft text-brand" : "text-ink",
+                )}
+              >
                 {PART_GROUP_LABELS[g]}
                 <MenuCount
                   count={menuCount(
@@ -72,8 +88,21 @@ function PartIndex({ counts, total, emptyHint, onSelect }: Props) {
               </summary>
               <div className="ml-3 border-l border-line pl-2">
                 {subclasses.map((subclass) => (
-                  <details key={subclass.id} open data-testid={`car-part-subclass-${subclass.id}`}>
-                    <summary className="cursor-pointer rounded-md px-2 py-1.5 text-sm font-medium text-ink hover:bg-panel-2 focus-visible:outline-brand">
+                  <details
+                    key={subclass.id}
+                    open={markerMenu.expanded.has(subclass.id)}
+                    data-testid={`car-part-subclass-${subclass.id}`}
+                  >
+                    <summary
+                      onClick={(event) => {
+                        event.preventDefault();
+                        onMenuToggle(subclass.id);
+                      }}
+                      className={cx(
+                        "cursor-pointer rounded-md px-2 py-1.5 text-sm font-medium hover:bg-panel-2 focus-visible:outline-brand",
+                        markerMenu.active === subclass.id ? "bg-brand-soft text-brand" : "text-ink",
+                      )}
+                    >
                       {subclass.label}
                       <MenuCount count={menuCount(subclass.partIds, counts)} />
                     </summary>
