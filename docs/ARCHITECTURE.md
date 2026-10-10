@@ -70,21 +70,22 @@ A workflow is a tree of **workplaces**. Each workplace holds blocks and edges. S
 are in the palette, defined once in `BLOCK_SPECS` (label, description, group, params, ports, whether
 it has an inner workplace):
 
-| Block       | Ports                                 | Inner workplace | Params (placeholders for now)                 |
-| ----------- | ------------------------------------- | --------------- | --------------------------------------------- |
-| Custom      | 1 in · 1 out                          | yes             | none                                          |
-| Raw         | no input · 1 out (data stream)        | no              | Excel upload or database, dataset, file/query |
-| Research    | no input · 1 out (same format as Raw) | yes             | question, source types, market, age, results  |
-| AI Filter   | 1 in · 1 out (kept)                   | yes             | criterion, model, min. confidence             |
-| AI Splitter | 1 in · one out **per branch**         | no              | split by, branches (list → ports), model      |
-| HIL         | 1 in · 1 out                          | no              | reviewer, instructions, approvals, edits      |
-| Add to Car  | one in **per ranking** · no output    | no              | rankings (list → ports), vehicle, market      |
+| Block       | Ports                                 | Inner workplace | Params (placeholders for now)                                                   |
+| ----------- | ------------------------------------- | --------------- | ------------------------------------------------------------------------------- |
+| Custom      | 1 in · 1 out                          | yes             | none                                                                            |
+| Raw         | no input · 1 out (data stream)        | no              | Excel upload or database, dataset, file/query                                   |
+| Research    | no input · 1 out (same format as Raw) | yes             | question, source types, market, age, results                                    |
+| AI Filter   | 1 in · 1 out (kept)                   | yes             | criterion, model, min. confidence                                               |
+| AI Splitter | 1 in · one out **per branch**         | no              | split by, branches (list → ports), model                                        |
+| HIL         | 1 in · 1 out                          | no              | reviewer, instructions, approvals, edits                                        |
+| Add to Car  | one in **per priority** + context ins | no              | priorities, contexts (Auto / Sales volumes), max. requirements, vehicle, market |
 
 - **Ports** come from `blockPorts(block)`. They can depend on params (the splitter's `branches`, Add to
-  Car's `rankings`), and port ids are positional (`out-0`, `in-2`). When params change, `setBlockParams`
+  Car's `priorities` → `in-0` "1. Priority" … and `contexts` → `ctx-0` "Context 1 · Auto" …), and port
+  ids are positional (`out-0`, `in-2`, `ctx-0`). Older flows are migrated on load (`migrateGraph`). When params change, `setBlockParams`
   removes edges on ports that no longer exist and returns them, so the editor can tell the user.
 - **Params** are declared as `ParamSpec`s (text, textarea, number, slider, select, multiselect, toggle,
-  list, file). The editor renders a form from them, and `parseBlockParams` validates strictly (unknown
+  list — free text, or one of `itemOptions` per entry — and file). The editor renders a form from them, and `parseBlockParams` validates strictly (unknown
   keys and wrong types are errors). Select options with the value `"global"` mean "use Settings →
   Global parameters".
 - **Inner workplaces** (Custom, Research, AI Filter) hold a sub-flow built from the same blocks,
@@ -96,13 +97,48 @@ it has an inner workplace):
   `setBlockParams`, `graphAt` / `updateGraphAt` (navigate the tree), `validateGraph` (everything,
   recursively). Several edges may enter one input (merged) or leave one output (fan-out).
 
+## Add to Car agents
+
+`packages/blocks/src/add-to-car/agents/`. Code does everything that must be exact; models read,
+group, write and judge. One run of the block:
+
+```
+context reader ─┐ (sales volumes summarized by code; Auto: a data profile the reader explains)
+analysts (map) ─┴→ synthesizer (themes) → code picks themes → architect ⇄ critic → judge → code
+```
+
+- **Analysts** read the priority inputs in batches (≤ 50 records, ≤ 14k chars, one input per batch)
+  and return signals with record refs and quotes. Code checks every quote against the record
+  (`findVerbatim`; a quote that isn't verbatim becomes the record's opening words) and turns signals
+  into `Finding`s. Upstream findings are reused as they are.
+- **Synthesizer** groups signals into themes (per category when there are many, then a merge pass).
+  **Code** picks the themes: most important input first, then evidence weight (mentions ÷ rank);
+  single comments and themes below `maxRequirements` are listed as held back, never dropped silently.
+- **Architect** writes one requirement per theme from its strongest signals and the context briefs;
+  the **critic** reviews it (accept / one rewrite / reject) and scores the six factors.
+- **Judge** answers four typed questions (backed by evidence? customer-facing? still wanted at launch?
+  testable?) through a `DecisionClient`: TypeSafe Jev (a "System 1" decision model with calibrated
+  probabilities) or any LLM answering the same questions.
+- **Code** assigns ids, priority from the input rank (first third of n inputs must, then should,
+  then could), the critic's weighted score, evidence level A–D, and the confidence: a weighted
+  geometric mean of the judge's answers, evidence breadth, the critic's verdict and conflicts.
+- Everything is recorded in a `ReasoningTrace` (`packages/core/src/reasoning.ts`), stored by run and
+  block (`reasoning_traces`) and shown in the thought-process view (block button, inspector, Car → Why?).
+- Each role runs on an API setup (Settings → AI → Agents; `apps/desktop/src/main/agents.ts`). Providers
+  live in `packages/llm`: Claude (adaptive thinking by effort, summarized thinking kept for the trace),
+  OpenAI / Gemini / OpenAI-compatible Chat Completions, TypeSafe Jev, and the offline mock, which runs
+  the same pipeline by rules and marks everything "[Offline]".
+- `npm run eval:f70` runs the agents on BMW's F70 files with the user's setups and prints numbers only;
+  the full output goes to `data/raw/eval/` (gitignored).
+
 ## Data flow: one envelope per port
 
 Every port carries a `PipelineData` envelope (`sources, records, findings, themes, requirements`).
 Raw and Research emit sources and records (the "unified data stream"). Later blocks enrich the same
 envelope: AI Filter keeps matching items (and extracts evidence-linked findings), AI Splitter routes
-items to one branch each, HIL passes on what the reviewer approved, and Add to Car turns what arrives
-into requirements; the input it arrives on sets the ranking. Several edges into one input are combined
+items to one branch each, HIL passes on what the reviewer approved, and Add to Car's agents turn what
+arrives on its priority inputs into requirements (the input it arrives on sets the ranking; context
+inputs are background only, see "Add to Car agents"). Several edges into one input are combined
 with `mergePipelineData` (concatenate, de-duplicate by `id`, later edge wins).
 
 ```ts
