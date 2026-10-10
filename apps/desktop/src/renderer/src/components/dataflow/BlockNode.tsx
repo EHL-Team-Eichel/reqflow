@@ -4,7 +4,7 @@ import type { BlockFlowNode } from "./flow";
 import { BlockIcon } from "./BlockIcon";
 import { GROUP_STYLE } from "./groups";
 import { dataflowStore } from "./store";
-import { isBoundaryBlockKind, isPaletteBlockKind, type ParamSpec } from "@reqflow/core";
+import { isBoundaryBlockKind, isPaletteBlockKind } from "@reqflow/core";
 import { ExpandIcon, ReportIcon } from "@/components/ui/icons";
 import { useSettings } from "@/lib/settings";
 import { cx } from "@/lib/cx";
@@ -63,12 +63,12 @@ export const BlockNode = memo(function BlockNode({ data, selected }: NodeProps<B
         </div>
 
         <div className="flex shrink-0 items-center gap-1">
-          {block.kind === "hil" && (
+          {(block.kind === "hil" || block.kind === "ai_splitter") && (
             <button
               type="button"
               data-testid="block-report"
               className="nodrag shrink-0 rounded-md p-1 text-muted hover:bg-panel-2 hover:text-ink"
-              aria-label={`Open the review report of ${block.label}`}
+              aria-label={`Open the ${block.kind === "ai_splitter" ? "scores and routing" : "review"} report of ${block.label}`}
               onClick={(e) => {
                 e.stopPropagation();
                 dataflowStore.getState().openReport(block.id);

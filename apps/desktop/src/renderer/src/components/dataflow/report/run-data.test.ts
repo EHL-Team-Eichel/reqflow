@@ -83,6 +83,28 @@ describe("saved HIL review data", () => {
     expect(await loadRunData(run, rawStep, output)).toEqual(fixturePipelineData);
   });
 
+  it("re-reads only the HIL's saved connected port after a persisted routing correction", async () => {
+    const splitter = createBlock("ai_splitter", {
+      id: "corrected-splitter",
+      position: { x: 0, y: 0 },
+    });
+    const snapshot = connect(
+      { blocks: [splitter, hil], edges: [] },
+      { source: splitter.id, sourcePort: "out-1", target: hil.id, targetPort: "in" },
+    );
+    const paused = { ...run, graph: snapshot };
+    const selected = traceLineage(snapshot, [], hil.id).steps[0]!;
+    const output = vi
+      .fn()
+      .mockResolvedValueOnce({ "out-0": fixturePipelineData, "out-1": emptyPipelineData() })
+      .mockResolvedValueOnce({ "out-0": emptyPipelineData(), "out-1": fixturePipelineData });
+    expect(await loadRunData(paused, selected, output)).toEqual(emptyPipelineData());
+    expect(await loadRunData(paused, selected, output)).toEqual(fixturePipelineData);
+    expect(
+      output.mock.calls.every((call) => call[0] === paused.id && call[1] === splitter.id),
+    ).toBe(true);
+  });
+
   it("surfaces missing ports, read failures and invalid output instead of samples", async () => {
     const output = vi.fn().mockResolvedValue({ wrong: fixturePipelineData });
     await expect(loadRunData(run, step, output)).rejects.toThrow('missing port "out"');

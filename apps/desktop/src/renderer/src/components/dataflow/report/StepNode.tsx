@@ -95,14 +95,14 @@ export const StepNode = memo(function StepNode({ data }: NodeProps<Node<StepNode
             type="button"
             data-testid="step-data"
             className="nodrag flex flex-1 items-center justify-center gap-1.5 rounded bg-panel-2 py-1 text-xs font-medium text-ink hover:bg-line"
-            aria-label={`See the data at ${step.block.label}`}
+            aria-label={`See ${step.block.kind === "ai_splitter" ? "scores, routing and data" : "the data"} at ${step.block.label}`}
             onClick={(e) => {
               e.stopPropagation();
               onShowData(step.block.id);
             }}
           >
             <TableIcon className="size-4" />
-            Data
+            {step.block.kind === "ai_splitter" ? "Scores / data" : "Data"}
           </button>
           <button
             type="button"
