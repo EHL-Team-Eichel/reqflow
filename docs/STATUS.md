@@ -65,7 +65,7 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 ## WS1 — Engine, persistence & main process
 
-**Status:** open · **Owner:** — · **Branch:** —
+**Status:** in progress · **Owner:** OpenCode (Gemini 3.8 Flash) · **Branch:** ws1-blocks
 **Unblocks:** everyone. Do tasks 1–4 first; they are small and make the UIs real.
 
 **Tasks**
