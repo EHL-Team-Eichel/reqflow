@@ -130,7 +130,7 @@ export const BLOCK_SPECS: { readonly [K in PaletteBlockKind]: BlockSpec & { kind
   raw: {
     kind: "raw",
     label: "Raw",
-    description: "Brings in raw data from an Excel file or a database as one unified data stream.",
+    description: "Brings in Excel, CSV, Research JSON or SQLite data as one unified stream.",
     group: "source",
     hasInnerWorkplace: false,
     params: [
@@ -140,7 +140,7 @@ export const BLOCK_SPECS: { readonly [K in PaletteBlockKind]: BlockSpec & { kind
         type: "select",
         default: "excel",
         options: [
-          { value: "excel", label: "Excel upload" },
+          { value: "excel", label: "File upload" },
           { value: "database", label: "Database" },
         ],
       },
@@ -159,10 +159,10 @@ export const BLOCK_SPECS: { readonly [K in PaletteBlockKind]: BlockSpec & { kind
       },
       {
         key: "file",
-        label: "Excel or CSV file",
+        label: "Excel, CSV or Research JSON file",
         type: "file",
-        accept: [".xlsx", ".csv"],
-        help: "Old .xls files: save them as .xlsx or .csv first.",
+        accept: [".xlsx", ".csv", ".json"],
+        help: "Research JSON keeps original evidence and provenance. Save old .xls files as .xlsx or .csv first.",
         visibleWhen: { key: "source", equals: "excel" },
       },
       {
@@ -292,7 +292,7 @@ export const BLOCK_SPECS: { readonly [K in PaletteBlockKind]: BlockSpec & { kind
   ai_splitter: {
     kind: "ai_splitter",
     label: "AI Splitter",
-    description: "Sorts every item into one of several branches. Each branch is its own output.",
+    description: "Analyzes raw data into customer-priority bands, car parts or custom groups.",
     group: "ai",
     hasInnerWorkplace: true,
     params: [
@@ -300,8 +300,10 @@ export const BLOCK_SPECS: { readonly [K in PaletteBlockKind]: BlockSpec & { kind
         key: "splitBy",
         label: "Split by",
         type: "select",
-        default: "priority",
+        default: "customer_priority",
         options: [
+          { value: "customer_priority", label: "Customer priority (raw feedback)" },
+          { value: "car_parts", label: "Car parts (AI-discovered)" },
           { value: "priority", label: "Priority" },
           { value: "category", label: "Requirement category" },
           { value: "sentiment", label: "Sentiment" },
@@ -312,7 +314,7 @@ export const BLOCK_SPECS: { readonly [K in PaletteBlockKind]: BlockSpec & { kind
         key: "branches",
         label: "Branches (one output each)",
         type: "list",
-        default: ["Must have", "Should have", "Could have"],
+        default: ["High", "Medium", "Low"],
         minItems: 2,
         maxItems: 10,
         itemPlaceholder: "Branch name",

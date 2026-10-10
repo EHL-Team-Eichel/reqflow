@@ -8,6 +8,7 @@ import type {
   ProductScope,
   Requirement,
   Settings,
+  SplitterReport,
   WebSearch,
 } from "@reqflow/core";
 
@@ -46,12 +47,14 @@ export type BlockInputs = Record<string, PipelineData>;
 
 export type BlockResult =
   /** Exactly one entry per output port id (`blockPorts(block).outputs`). Sinks return `{}`. */
-  | { status: "ok"; outputs: Record<string, PipelineData> }
+  | { status: "ok"; outputs: Record<string, PipelineData>; splitterReport?: SplitterReport }
   /** Only HIL pauses. The engine marks the run `waiting_for_review` and re-runs the block on resume. */
   | { status: "paused"; message: string };
 
 export interface BlockImplementation<K extends PaletteBlockKind = PaletteBlockKind> {
   kind: K;
+  /** Rebuild analytical outputs after a human route correction, without another model call. */
+  reroute?(input: PipelineData, report: SplitterReport): Record<string, PipelineData>;
   /**
    * `params` are already validated with `parseBlockParams(kind, …)`. Must be deterministic given
    * (inputs, params, LLM output) and must throw on bad input: no silent skips.

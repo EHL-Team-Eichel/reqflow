@@ -24,6 +24,24 @@ export interface Connection {
   targetPort: string;
 }
 
+/** All reachable consumers, used by execution and read-only human-review availability checks. */
+export function getDownstreamBlockIds(graph: WorkflowGraph, blockId: string): Set<string> {
+  const downstream = new Set<string>();
+  const adj = new Map<string, string[]>();
+  for (const block of graph.blocks) adj.set(block.id, []);
+  for (const edge of graph.edges) adj.get(edge.source)?.push(edge.target);
+  const queue = [blockId];
+  while (queue.length) {
+    for (const next of adj.get(queue.shift()!) ?? []) {
+      if (!downstream.has(next)) {
+        downstream.add(next);
+        queue.push(next);
+      }
+    }
+  }
+  return downstream;
+}
+
 export type ConnectionCheck = { ok: true } | { ok: false; reason: string };
 
 export interface GraphIssue {

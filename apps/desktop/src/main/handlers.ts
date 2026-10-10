@@ -40,7 +40,7 @@ import {
   type LocalFileStore,
 } from "@reqflow/db";
 import { BlockRegistry, WorkflowExecutor } from "@reqflow/engine";
-import { createLlmClient } from "@reqflow/llm";
+import { createMastraLlmClient } from "@reqflow/llm";
 import { ReqflowError } from "./dispatch";
 import { previewBlock } from "./preview";
 import { SecretsStore } from "./secrets";
@@ -123,7 +123,7 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
       settings.llm.provider === "anthropic"
         ? ((await secretsStore.getSecret("anthropic_api_key")) ?? undefined)
         : undefined;
-    return createLlmClient(settings.llm, { apiKey });
+    return createMastraLlmClient(settings.llm, { apiKey });
   };
   const activeLlm: LlmClient = deps.llm ?? {
     generateObject: async (request) =>
@@ -161,6 +161,9 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
       },
       async getBlockOutput(runId, blockId) {
         return await runRepo.getBlockOutput(runId, blockId);
+      },
+      async saveSplitterReview(run, blockId, outputs, event) {
+        await runRepo.saveSplitterReview(run, blockId, outputs, event);
       },
     },
     onUpdate: (run) => {
@@ -261,6 +264,15 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
         await runRepo.update(resumed);
         deps.pushRunUpdate?.(resumed);
         return resumed;
+      },
+      reviewSplitter: async (runId, blockId, review) => {
+        const reviewer = loadSettings(dataDir).review.reviewer;
+        return executor.reviewSplitter(
+          z.string().startsWith("run_").parse(runId),
+          z.string().min(1).parse(blockId),
+          review,
+          { type: "human", ...reviewer },
+        );
       },
       cancel: async (runId: string) => {
         const rId = z.string().min(1).parse(runId);

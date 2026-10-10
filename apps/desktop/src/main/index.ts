@@ -94,7 +94,7 @@ void app.whenReady().then(() => {
         const options: Electron.OpenDialogOptions = {
           title: "Choose an Excel or CSV file",
           properties: ["openFile"],
-          filters: [{ name: "Spreadsheets", extensions: ["xlsx", "csv"] }],
+          filters: [{ name: "Datasets", extensions: ["xlsx", "csv", "json"] }],
         };
         const parent = BrowserWindow.getFocusedWindow();
         const result = parent

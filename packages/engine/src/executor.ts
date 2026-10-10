@@ -8,7 +8,13 @@ import {
   validateGraph,
   withSplitterWorkplaces,
   WorkflowRun,
-  type Actor,
+  SplitterReport,
+  SplitterReview,
+  graphAt,
+  getDownstreamBlockIds,
+  walkBlocks,
+  Actor,
+  type AuditEventInput,
   type AuditLogger,
   type BlockParams,
   type BlockRun,
@@ -42,6 +48,12 @@ export interface BlockOutputStore {
     outputs: Record<string, PipelineData>,
   ): Promise<void>;
   getBlockOutput(runId: string, blockId: string): Promise<Record<string, PipelineData> | null>;
+  saveSplitterReview?(
+    run: WorkflowRun,
+    blockId: string,
+    outputs: Record<string, PipelineData>,
+    event: AuditEventInput,
+  ): Promise<void>;
 }
 
 export interface WorkflowExecutorOptions {
@@ -124,32 +136,13 @@ function executableBlocks(graph: WorkflowGraph): WorkflowBlock[] {
   ]);
 }
 
-export function getDownstreamBlockIds(graph: WorkflowGraph, failedBlockId: string): Set<string> {
-  const downstream = new Set<string>();
-  const adj = new Map<string, string[]>();
-
-  for (const b of graph.blocks) adj.set(b.id, []);
-  for (const e of graph.edges) adj.get(e.source)?.push(e.target);
-
-  const queue = [failedBlockId];
-  while (queue.length > 0) {
-    const curr = queue.shift()!;
-    const neighbors = adj.get(curr) ?? [];
-    for (const next of neighbors) {
-      if (!downstream.has(next)) {
-        downstream.add(next);
-        queue.push(next);
-      }
-    }
-  }
-
-  return downstream;
-}
+export { getDownstreamBlockIds } from "@reqflow/core";
 
 export class WorkflowExecutor {
   private readonly runs = new Map<string, WorkflowRun>();
   private readonly activeControllers = new Map<string, AbortController>();
   private readonly memoryOutputs = new Map<string, Map<string, Record<string, PipelineData>>>();
+  private readonly reviewingRuns = new Set<string>();
   private readonly pausedRuns = new Map<
     string,
     {
@@ -436,6 +429,16 @@ export class WorkflowExecutor {
           }
 
           blockOutputs = result.outputs;
+          if (result.splitterReport) {
+            const report = SplitterReport.parse(result.splitterReport);
+            if (
+              block.kind !== "ai_splitter" ||
+              report.runId !== run.id ||
+              report.blockId !== block.id
+            )
+              throw new EngineError("Analytical report does not match the executing block/run.");
+            blockRun.splitterReport = report;
+          }
         }
 
         blockRun.status = "succeeded";
@@ -502,6 +505,8 @@ export class WorkflowExecutor {
   }
 
   async resume(runId: string): Promise<WorkflowRun> {
+    if (this.reviewingRuns.has(runId))
+      throw new EngineError("Wait for the routing correction to finish.");
     const run = this.getRun(runId);
     if (run.status !== "waiting_for_review") {
       throw new EngineError(
@@ -525,6 +530,8 @@ export class WorkflowExecutor {
   }
 
   async cancel(runId: string): Promise<WorkflowRun> {
+    if (this.reviewingRuns.has(runId))
+      throw new EngineError("Wait for the routing correction to finish.");
     const run = this.getRun(runId);
     const controller = this.activeControllers.get(runId);
     if (controller) {
@@ -535,5 +542,143 @@ export class WorkflowExecutor {
     run.finishedAt = new Date().toISOString();
     this.emitUpdate(run);
     return run;
+  }
+
+  async reviewSplitter(
+    runId: string,
+    blockId: string,
+    input: SplitterReview,
+    actor: Extract<Actor, { type: "human" }>,
+  ): Promise<WorkflowRun> {
+    if (this.reviewingRuns.has(runId))
+      throw new EngineError("Another routing correction is in progress.");
+    const review = SplitterReview.parse(input);
+    if (Actor.parse(actor).type !== "human")
+      throw new EngineError("Only a human reviewer can correct routes.");
+    const run = this.getRun(runId);
+    const paused = this.pausedRuns.get(runId);
+    if (run.status !== "waiting_for_review" || !paused)
+      throw new EngineError("Routing corrections require an active paused HIL run.");
+    const placed = [...walkBlocks(run.graph)].find((step) => step.block.id === blockId);
+    const gate = [...walkBlocks(run.graph)].find((step) => step.block.id === paused.pausedBlockId);
+    if (
+      !placed ||
+      placed.block.kind !== "ai_splitter" ||
+      !gate ||
+      gate.block.kind !== "hil" ||
+      gate.block.params.allowEdits !== true
+    )
+      throw new EngineError("Routing corrections require an editable HIL gate and an AI Splitter.");
+    if (JSON.stringify(placed.path) !== JSON.stringify(gate.path))
+      throw new EngineError("Correct routes at a HIL on the same workplace as the splitter.");
+    const graph = graphAt(run.graph, placed.path);
+    if (!graph.edges.some((edge) => edge.source === blockId && edge.target === gate.block.id))
+      throw new EngineError(
+        "Correct routes before intermediate transformations, at a directly connected HIL.",
+      );
+    const downstream = getDownstreamBlockIds(graph, blockId);
+    if (run.blockRuns.some((br) => downstream.has(br.blockId) && br.status === "succeeded"))
+      throw new EngineError(
+        "Routing cannot be changed after downstream blocks consumed these outputs. Start a new run.",
+      );
+    const blockRun = run.blockRuns.find((br) => br.blockId === blockId);
+    const report = blockRun?.splitterReport;
+    if (
+      !blockRun ||
+      blockRun.status !== "succeeded" ||
+      !report ||
+      report.input.primaryLayer !== "records"
+    )
+      throw new EngineError("This splitter has no completed raw-record analytical report.");
+    if (report.reviews.length !== review.expectedVersion)
+      throw new EngineError("Review version changed; reload the run before correcting routes.");
+    const changes = new Map(review.changes.map((change) => [change.itemId, change.toPortId]));
+    if (changes.size !== review.changes.length)
+      throw new EngineError("A routing correction contains duplicate item IDs.");
+    const assignments = new Map(report.assignments.map((a) => [a.itemId, a]));
+    for (const [id, port] of changes) {
+      const assignment = assignments.get(id);
+      if (!assignment || !report.branches.some((branch) => branch.portId === port))
+        throw new EngineError("Choose an item and output from the saved report.");
+      if (assignment.outputPortId === port) throw new EngineError("Choose a different output.");
+    }
+    const reroute = this.options.registry.get("ai_splitter").reroute;
+    if (!reroute)
+      throw new EngineError("This splitter does not support human routing corrections.");
+    this.reviewingRuns.add(runId);
+    try {
+      const parts: PipelineData[] = [];
+      for (const edge of graph.edges.filter((edge) => edge.target === blockId)) {
+        const outputs = await this.getBlockOutput(runId, edge.source);
+        const data = outputs?.[edge.sourcePort];
+        if (!data)
+          throw new EngineError("Saved upstream evidence is unavailable; routing was not changed.");
+        parts.push(data);
+      }
+      const nextReport = SplitterReport.parse({
+        ...report,
+        assignments: report.assignments.map((assignment) =>
+          changes.has(assignment.itemId)
+            ? {
+                ...assignment,
+                outputPortId: changes.get(assignment.itemId)!,
+              }
+            : assignment,
+        ),
+        reviews: [
+          ...report.reviews,
+          {
+            version: review.expectedVersion + 1,
+            at: new Date().toISOString(),
+            actor,
+            rationale: review.rationale,
+            changes: review.changes.map((change) => ({
+              ...change,
+              fromPortId: assignments.get(change.itemId)!.outputPortId,
+            })),
+          },
+        ],
+      });
+      nextReport.branches = nextReport.branches.map((branch) => ({
+        ...branch,
+        primaryItemCount: nextReport.assignments.filter((a) => a.outputPortId === branch.portId)
+          .length,
+      }));
+      const outputs = reroute(mergePipelineData(...parts), nextReport);
+      const next = WorkflowRun.parse(run);
+      next.blockRuns.find((br) => br.blockId === blockId)!.splitterReport = nextReport;
+      const counts = { sources: 0, records: 0, findings: 0, themes: 0, requirements: 0 };
+      for (const output of Object.values(outputs)) {
+        const current = countPipelineData(output);
+        for (const key of Object.keys(counts) as (keyof typeof counts)[])
+          counts[key] += current[key];
+      }
+      next.blockRuns.find((br) => br.blockId === blockId)!.counts = counts;
+      const event: AuditEventInput = {
+        actor,
+        action: "run.routing_reviewed",
+        entityType: "run",
+        entityId: runId,
+        runId,
+        blockId,
+        rationale: review.rationale,
+        changes: nextReport.reviews.at(-1)!.changes.map((change) => ({
+          path: `splitter.${blockId}.routes.${change.itemId}`,
+          before: change.fromPortId,
+          after: change.toPortId,
+        })),
+      };
+      if (this.options.outputStore?.saveSplitterReview) {
+        await this.options.outputStore.saveSplitterReview(next, blockId, outputs, event);
+        this.memoryOutputs.get(runId)!.set(blockId, outputs);
+      } else {
+        await this.options.services.audit.record(event);
+        await this.saveOutput(runId, blockId, outputs);
+      }
+      this.emitUpdate(next);
+      return this.getRun(runId);
+    } finally {
+      this.reviewingRuns.delete(runId);
+    }
   }
 }

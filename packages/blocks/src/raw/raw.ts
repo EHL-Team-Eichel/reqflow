@@ -4,6 +4,7 @@ import { readDatabase } from "./database";
 import { usageFindings } from "./findings";
 import { readSpreadsheet } from "./read";
 import { tableToRecords, type RawDataset } from "./records";
+import { isResearchJsonFile, parseResearchJson } from "./research-json";
 import { toTable } from "./table";
 
 /** Mirrors BLOCK_SPECS.raw.params (validated by parseBlockParams before use). */
@@ -18,9 +19,9 @@ interface RawParams {
 }
 
 /**
- * The Raw block: an uploaded Excel/CSV file or a SQLite query → one Source, one SourceRecord per row,
- * and deterministic usage findings for equipment and sales data. Everything it skips or assumes is
- * written to the block log; malformed input fails with the row or column named.
+ * The Raw block: Excel/CSV or SQLite rows with deterministic usage findings, or an imported
+ * Research JSON envelope with its original source metadata and provenance. Everything it skips or
+ * assumes is written to the block log; malformed input fails with the row or column named.
  */
 export const rawBlock = defineBlock({
   kind: "raw",
@@ -34,8 +35,32 @@ export const rawBlock = defineBlock({
     let sheet: string | undefined;
 
     if (p.source === "excel") {
-      if (!p.file) throw new Error("Choose an Excel or CSV file in the block's parameters");
+      if (!p.file)
+        throw new Error("Choose an Excel or CSV file (or Research JSON) in the block's parameters");
       const file = await ctx.files.get(p.file.fileId);
+      if (isResearchJsonFile(file)) {
+        ctx.signal.throwIfAborted();
+        // JSON already carries source kinds, locators and scope; dataset/sheet do not override it.
+        const out = parseResearchJson(file.bytes);
+        const actor = { type: "ai", component: "raw", model: "deterministic" } as const;
+        const run = ctx.runId.startsWith("run_") ? { runId: ctx.runId, blockId: ctx.blockId } : {};
+        for (const source of out.sources) {
+          await ctx.audit.record({
+            actor,
+            action: "source.ingested",
+            entityType: "source",
+            entityId: source.id,
+            rationale:
+              "Imported existing Research JSON evidence; no content was derived or changed.",
+            ...run,
+          });
+        }
+        ctx.log(
+          `Imported Research JSON: ${out.sources.length} source(s), ${out.records.length} record(s), ` +
+            `${out.findings.length} finding(s), ${out.themes.length} theme(s), ${out.requirements.length} requirement(s).`,
+        );
+        return { status: "ok", outputs: { out } };
+      }
       const read = await readSpreadsheet(file.name, file.bytes, p.sheet);
       notes.push(...read.notes);
       rows = read.rows;
