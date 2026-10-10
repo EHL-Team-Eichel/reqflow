@@ -101,7 +101,7 @@ export function ParametersSection() {
           <ValidatedTextInput
             aria-label="Derivative"
             value={scope.derivative ?? ""}
-            placeholder="e.g. Sedan"
+            placeholder="e.g. 5-door"
             onCommit={(v) =>
               settingsStore.getState().update("defaultScope", { derivative: v.trim() || undefined })
             }

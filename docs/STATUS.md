@@ -26,19 +26,33 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
   refused with a reason), inspector with placeholder parameters, splitter branches and Add to Car
   rankings become ports, Custom/Research/AI Filter open into inner workplaces (breadcrumb back),
   delete with confirmation. The flow lives in memory: **not saved yet** and **nothing runs yet**.
+- **HIL block (finalized):** double-click opens the review report: a flow chart of how the data was
+  collected (lineage across inner workplaces) and a table icon on every step to see the data there
+  (synthetic sample until flows run). Runtime logic (pause until reviewed, then pass on) is built and
+  tested; it runs once the executor exists.
+- **Raw block (built, WS5):** reads `.xlsx` (any sheet), CSV (`,` `;` tab, UTF-8 or Windows-1252, German
+  number formats) and read-only SQLite queries into one source + one record per row, with
+  deterministic usage findings from take rates and sales volumes. "Choose file…" opens the native
+  dialog (`files.import`); "Preview data" in the inspector and the HIL report show the real parsed
+  data (`blocks.preview`). Synthetic samples in `data/samples/`. Also reads BMW's real exports
+  (feedback, customer studies, sales volumes; see the WS5 log for their shapes) when they're in
+  `data/raw/`; the PDF option list is refused for now.
 - **Car:** placeholder (car icon + global vehicle/market from Settings).
 - **Settings:** App, Global parameters, AI & research, Collaboration, About. Changes are validated and
   apply live (theme, grid, minimap). **Not saved to disk yet** (`settings.save` is WS1).
 - **Contract:** domain schemas, block specs (`core/src/blocks.ts`), graph rules (`core/src/graph.ts`),
-  IPC API, scoring formula, synthetic 5 Series EU fixtures, block registry, default template.
-  **No block implementation, executor or storage exists yet.** Built IPC methods: `app.info`,
-  `templates.list`; every other method answers `not_implemented`.
+  IPC API, scoring formula, synthetic F70 EU fixtures, block registry, default template.
+  Built block implementations: Raw, HIL. **No executor or database exists yet**, so flows don't run.
+  Built IPC methods: `app.info`, `templates.list`, `blocks.preview`, `files.import`; every other
+  method answers `not_implemented`.
 - Repo is public, and Entire is enabled (checkpoints are pushed with every `git push`).
 
 ## Open questions for the humans
 
-- Demo scope is 5 Series Sedan · EU. Confirm it once BMW's datasets arrive.
-- BMW datasets: not received yet (they go into `data/raw/`, which is gitignored).
+- Demo scope: **1 Series (F70) · EU · 5 years** (decided 2026-10-10: BMW's data is for the F70).
+  Today's F70 has combustion engines only. Should range and charging be in scope for the successor?
+- BMW datasets: received 2026-10-10, local only in `data/raw/` (gitignored, also by file name).
+  **Transcripts are public:** inspect them with scripts that print structure and counts, never values.
 
 ---
 
@@ -55,6 +69,14 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 **Log**
 
+- 2026-10-10 night: Demo scope switched to the 1 Series F70 · EU (default settings, fixtures renamed to
+  `sample-f70-eu.ts` with `REQ-F70-EU-…` ids, docs). `data/samples/` stays 5 Series on purpose: it
+  tests the parser, and a second series shows the Raw block isn't tied to one car.
+- 2026-10-10 night: Did WS5 (Raw block) in this session, see the WS5 section. Also built two WS1 pieces
+  it needed: `files.import` with a file store (`packages/db/src/files.ts`) and `blocks.preview`.
+- 2026-10-10 night: Finalized the HIL block (t/f/1/1): `core/src/lineage.ts` (`traceLineage`), review
+  report UI (`components/dataflow/report/`), runtime in `packages/blocks/src/hil/hil.ts`. PRODUCT.md
+  now lists every block's spec and state. Verify: `npm run check && npm run smoke`.
 - 2026-10-10 late: Switched the visual system to the BMW M colorway (see ARCHITECTURE.md → Renderer state).
   Wrote ordered task lists for every workstream in this file.
 - 2026-10-10 evening: Built the app structure from the team's sketch: bottom tabs, Data Flow editor
@@ -77,14 +99,17 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 - [ ] `workflows.list/get/save/remove`: store the block tree; `save` assigns a `wf_…` id, bumps
       `version`, sets timestamps and rejects graphs where `validateGraph` reports issues
       (`invalid_input` with the issues as details).
-- [ ] `files.import()`: native open dialog (`.xlsx`, `.xls`, `.csv`), copy into `<dataDir>/uploads/`,
-      return `StoredFileInfo`. The Raw block's "Choose file…" button already calls it.
+- [x] `files.import()` + file store (`packages/db/src/files.ts`), done in the WS5 session: native
+      dialog (`.xlsx`, `.csv`), copy into `<dataDir>/uploads/`, ids validated against path tricks.
+- [x] `blocks.preview` (`apps/desktop/src/main/preview.ts`): runs a block without inputs on its own.
 - [ ] Read-only `requirements.list/get` and `audit.list` serving `@reqflow/core/fixtures`, so WS3
       works against real IPC before the database exists.
 - [ ] Executor in `packages/engine` (ARCHITECTURE.md → Engine semantics) with tests on fake blocks:
       topological order per workplace, merge per input port, splitter fan-out, inner workplaces via
       boundary blocks, failure → downstream `skipped`, cancel via `AbortSignal`.
-- [ ] HIL block (`packages/blocks/src/hil/`): pause → run `waiting_for_review`; `runs.resume` re-runs it with `ctx.resumed`.
+- [x] HIL block implementation (`packages/blocks/src/hil/hil.ts`, done by WS0): pauses with a message, passes data on when `ctx.resumed`.
+- [ ] Executor support for HIL: `{ status: "paused" }` → run `waiting_for_review`; `runs.resume` checks the
+      required approvals and re-runs the block with `ctx.resumed = true`.
 - [ ] `runs.start/get/list/blockOutput/resume/cancel` handlers; push every change via `IPC_EVENTS.runUpdate`;
       wire `BlockContext` (llm, web, files, audit, `car.add`).
 - [ ] SQLite in `packages/db` (`node:sqlite`): versioned requirements, append-only audit log,
@@ -113,6 +138,10 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 - [ ] Run button and live status on every block (`api.runs.start`, `api.runs.onUpdate`): status dot,
       counts, logs; a "waiting for review" banner linking to the Car tab. Mock with `fixtureRun` until WS1.
 - [ ] Output inspector: click a finished block → `api.runs.blockOutput()` per port.
+- [ ] HIL report with real data for steps that need a run: Raw steps already show their real data
+      (`blocks.preview`); for the others, replace the "no run yet" state in
+      `components/dataflow/report/DataPanel.tsx` with the step's data from the latest run (`api.runs.blockOutput`; for the HIL itself merge what
+      its incoming edges carried with `mergePipelineData`). Keep the synthetic sample as an explicit option.
 - [ ] Polish: "Tidy up" auto-layout, multi-select actions, minimap colours per block group.
 
 **Log**
@@ -159,22 +188,52 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 ## WS5 — Raw block (BMW data ingestion)
 
-**Status:** open · **Owner:** — · **Branch:** —
-**Depends on:** WS1 `files.import` for the UI path; parsing and tests can start now.
+**Status:** review · **Owner:** Claude Code (lead session) · **Branch:** `main`
+**Depends on:** nothing left; next real step needs BMW's files.
 
 **Tasks**
 
-- [ ] Synthetic sample files in `data/samples/` that mimic BMW's formats (customer feedback, equipment
-      take rates, sales volumes, customer study). Synthetic only, never real data.
-- [ ] Parser: `.xlsx` / `.csv` → `Source` + `SourceRecord[]` with row locators and language. Add the
-      parsing library to `packages/blocks/package.json` only.
-- [ ] `raw` implementation in `packages/blocks/src/raw/` honouring `source`, `dataset`, `file`, `sheet`;
-      errors name the bad row or column; nothing is dropped silently.
-- [ ] Deterministic `usage_pattern` findings from structured datasets (take rates, volumes), with evidence.
-- [ ] Database source (params exist): read-only SQLite/Postgres if time allows; never store passwords in params.
-- [ ] When BMW's data arrives in `data/raw/`: adapt the mappings and describe the formats in your log (no data in git).
+- [x] Synthetic sample files in `data/samples/` (generator `generate.ts`, README with what each one tests).
+- [x] Parser: `.xlsx` via `read-excel-file` (pinned 9.3.10), CSV via our own RFC 4180 reader
+      (delimiter detection, BOM, Windows-1252 fallback); legacy `.xls` refused with a fix.
+- [x] `raw` implementation (`packages/blocks/src/raw/raw.ts`): header detection, blank/duplicate
+      columns renamed, empty rows skipped **and reported**, stray values fail naming the row,
+      deterministic ids, output validated with `PipelineData`, audit events.
+- [x] Usage findings: take rate ≥ 70 % / ≤ 15 % (equipment), volume change ≥ 10 % (sales), each
+      citing its rows verbatim; thresholds are constants in `findings.ts`.
+- [x] Database source: read-only SQLite, one SELECT only; other databases fail with a clear message.
+- [x] BMW's data in `data/raw/`: feedback, studies and sales read correctly (shapes in the log);
+      tests on the real files run locally when they're present (`raw.test.ts`, "BMW …" suites).
+- [ ] F70 option list (PDF): needs a PDF table reader (e.g. pdfjs) in the Raw block, or BMW's
+      list as Excel. Refused with a clear message until then.
+- [ ] Customer study findings: per question, how the F70 scores against the other models in the
+      same market (deterministic, like the take-rate findings), with the study rows as evidence.
+- [ ] If BMW's headers can't be matched automatically: add an optional column-mapping param
+      (contract change via WS0).
+- [ ] Large exports (≈100k rows): measure preview time and IPC payload; page the preview if needed.
+- [ ] PostgreSQL / SQL Server sources, if the demo needs them (credentials in the keychain, never in params).
 
 **Log**
+
+- 2026-10-10 night: Raw block built and verified: `npx vitest run packages/blocks` (23 tests on the
+  samples, incl. SQLite) and `npm run smoke` (imports the samples, previews them over IPC, drives a
+  SQLite Raw block through the UI and opens its data in the HIL report). Column synonyms are
+  guesses until BMW's real files arrive.
+- 2026-10-10 night: Adapted to BMW's real files (shapes only, no data here):
+  - **Feedback** (`.xlsx`, one sheet): one row per (feedback × classification), so the same ID and
+    comment repeat; the rows are merged into one record per ID, and the differing classification
+    columns become lists. Comment column `Customer Feedback`, market `Country` (2-letter codes),
+    texts in English.
+  - **Customer studies** (`.xlsx`, one sheet per region): report layout. Title rows, a row of market
+    labels over the vehicle columns, the first question in the header's first cell, then a title-only
+    row per question with figure rows below. Read as a `Section` column + one record per figure row.
+  - **Sales volumes** (`.xlsx`, one sheet per vehicle): one row per market, one `volume_<year>`
+    column per year, including a future plan year. Read as one series per row; plan years are worded
+    as plans.
+  - **Option list**: PDF, not readable yet.
+  - Also: PDFs are refused instead of being read as text; `FileStore.remove()`. Verify: `npm run check`
+    (the "BMW …" suites run only where `data/raw/` has the files) and `npm run smoke` (previews them
+    over IPC, then deletes the imported copies).
 
 ## WS6 — Research block
 

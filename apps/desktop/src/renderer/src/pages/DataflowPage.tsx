@@ -28,6 +28,8 @@ function WorkplaceActions() {
   );
 }
 
+import { HilReport } from "@/components/dataflow/report/HilReport";
+
 export function DataflowPage() {
   const canvasRef = useRef<HTMLDivElement>(null);
 
@@ -47,6 +49,7 @@ export function DataflowPage() {
           <Workplace canvasRef={canvasRef} />
         </Panel>
       </div>
+      <HilReport />
     </ReactFlowProvider>
   );
 }

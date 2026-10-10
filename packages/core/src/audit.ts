@@ -79,7 +79,7 @@ export const AuditEvent = z.object({
   changes: z.array(FieldChange),
   rationale: z.string().optional(),
   runId: z.string().startsWith("run_").optional(),
-  nodeId: z.string().optional(),
+  blockId: z.string().optional(), // the block that acted, when it happened inside a run
 });
 export type AuditEvent = z.infer<typeof AuditEvent>;
 

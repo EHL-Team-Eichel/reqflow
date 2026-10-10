@@ -19,9 +19,9 @@ import {
 } from "../index";
 
 export const fixtureScope: ProductScope = {
-  vehicleLine: "5 Series",
-  derivative: "Sedan",
-  vehicleCode: "5S",
+  vehicleLine: "1 Series",
+  derivative: "5-door",
+  vehicleCode: "F70",
   market: "EU",
   horizonYears: 5,
 };
@@ -36,13 +36,13 @@ export const fixtureSources: Source[] = [
     retrievedAt: "2026-10-10T08:00:00.000Z",
     reliability: "high",
     market: "EU",
-    vehicleLine: "5 Series",
+    vehicleLine: "1 Series",
   },
   {
     id: "src_study01",
     kind: "customer_study",
     origin: "bmw_internal",
-    title: "Long-term EV satisfaction study",
+    title: "Compact premium customer study (incl. EV owners)",
     uri: "file_study01",
     retrievedAt: "2026-10-10T08:05:00.000Z",
     reliability: "high",
@@ -57,7 +57,7 @@ export const fixtureSources: Source[] = [
     retrievedAt: "2026-10-10T08:10:00.000Z",
     reliability: "high",
     market: "EU",
-    vehicleLine: "5 Series",
+    vehicleLine: "1 Series",
   },
   {
     id: "src_sales01",
@@ -68,13 +68,13 @@ export const fixtureSources: Source[] = [
     retrievedAt: "2026-10-10T08:15:00.000Z",
     reliability: "high",
     market: "EU",
-    vehicleLine: "5 Series",
+    vehicleLine: "1 Series",
   },
   {
     id: "src_comp01",
     kind: "competitor",
     origin: "web",
-    title: "Competitor A — premium EV sedan specs",
+    title: "Competitor A — premium compact EV specs",
     uri: "https://example.com/competitor-a",
     publisher: "Auto specs portal (synthetic)",
     retrievedAt: "2026-10-10T08:20:00.000Z",
@@ -84,8 +84,8 @@ export const fixtureSources: Source[] = [
     id: "src_rev01",
     kind: "review",
     origin: "web",
-    title: "Test drive impressions 5S",
-    uri: "https://example.com/reviews/5s",
+    title: "Test drive impressions 1 Series",
+    uri: "https://example.com/reviews/1-series",
     publisher: "Auto review portal (synthetic)",
     retrievedAt: "2026-10-10T08:25:00.000Z",
     reliability: "medium",
@@ -186,8 +186,8 @@ export const fixtureRecords: SourceRecord[] = [
   {
     id: "rec_sales001",
     sourceId: "src_sales01",
-    text: "region: EU; derivative: Sedan EV; volume: 45000",
-    fields: { region: "EU", derivative: "Sedan EV", volume: 45000 },
+    text: "region: EU; derivative: 120; volume: 45000",
+    fields: { region: "EU", derivative: "120", volume: 45000 },
     locator: "row 2",
   },
   {
@@ -557,14 +557,14 @@ function scoreWith(factors: FactorInput): ScoreBreakdown {
 
 const AI_DERIVE = {
   type: "ai",
-  component: "requirements.derive",
+  component: "ai_splitter",
   model: "claude-opus-5-5",
 } as const;
 
 const score001 = scoreWith({
   customer_impact: {
     value: 4,
-    note: "Long-distance comfort for adult passengers is a core 5 Series use case",
+    note: "Many buyers use the 1 Series as their only car, so adults ride in the back on long trips",
   },
   evidence_strength: {
     value: 2,
@@ -572,7 +572,7 @@ const score001 = scoreWith({
   },
   competitive_gap: { value: 3, note: "Rear space is average for the segment" },
   trend_momentum: { value: 2, note: "Stable need, no strong trend either way" },
-  brand_fit: { value: 4, note: "Business-sedan comfort is part of the brand promise" },
+  brand_fit: { value: 4, note: "Premium comfort in a compact car is part of the brand promise" },
   ease: { value: 1, note: "Rough estimate: large effort (affects vehicle package)" },
 });
 const score002 = scoreWith({
@@ -613,16 +613,16 @@ const score005 = scoreWith({
 
 export const fixtureRequirements: Requirement[] = [
   {
-    id: "REQ-5S-EU-001",
+    id: "REQ-F70-EU-001",
     version: 1,
     title: "Comfortable rear seats for adults on long trips",
     description:
-      "Adults up to 1.90 m can sit behind a driver of the same height on a 3-hour trip without knee contact or feeling cramped.",
+      "Adults up to 1.80 m can sit behind a driver of the same height on a 3-hour trip without knee contact or feeling cramped.",
     category: "space_practicality",
     scope: fixtureScope,
     targets: [
       {
-        metric: "Rear knee clearance, 1.90 m behind 1.90 m",
+        metric: "Rear knee clearance, 1.80 m behind 1.80 m",
         target: "No knee contact with the front seatback",
         acceptance:
           "Seating clinic: ≥ 80 % of tall adults rate rear space 'comfortable' for a 3 h trip",
@@ -637,7 +637,9 @@ export const fixtureRequirements: Requirement[] = [
       "Should (56): high customer impact and brand fit; held back by weak evidence (single source) and large effort.",
     evidenceLevel: "C",
     kano: "performance",
-    assumptions: ["Rear-seat use by adults stays common for the business-sedan customer in 2031"],
+    assumptions: [
+      "Adults in the rear stay common for 1 Series buyers who use it as a family car in 2031",
+    ],
     uncertainties: [
       "Single comment — share of customers affected is unknown until the full dataset is analysed",
     ],
@@ -648,16 +650,16 @@ export const fixtureRequirements: Requirement[] = [
     runId: "run_demo0001",
   },
   {
-    id: "REQ-5S-EU-002",
+    id: "REQ-F70-EU-002",
     version: 1,
     title: "Confident but not ostentatious front design",
     description:
-      "The front keeps a clearly recognisable kidney grille but reads as confident rather than ostentatious to classic 5 Series buyers.",
+      "The front keeps a clearly recognisable kidney grille but reads as confident rather than ostentatious to current 1 Series buyers.",
     category: "exterior_design",
     scope: fixtureScope,
     targets: [
       {
-        metric: "Design acceptance among current 5 Series owners",
+        metric: "Design acceptance among current 1 Series owners",
         target: "≥ 70 % positive, ≤ 15 % strongly negative",
         acceptance: "Design clinic with current owners and conquest buyers",
       },
@@ -680,7 +682,7 @@ export const fixtureRequirements: Requirement[] = [
     runId: "run_demo0001",
   },
   {
-    id: "REQ-5S-EU-003",
+    id: "REQ-F70-EU-003",
     version: 1,
     title: "Climate controls usable without looking away",
     description:
@@ -714,7 +716,7 @@ export const fixtureRequirements: Requirement[] = [
     runId: "run_demo0001",
   },
   {
-    id: "REQ-5S-EU-004",
+    id: "REQ-F70-EU-004",
     version: 2,
     title: "Coffee-stop fast charging, also in winter",
     description:
@@ -742,7 +744,10 @@ export const fixtureRequirements: Requirement[] = [
       "Score suggests should (60): strong evidence and competitive gap, low ease. Raised to must by the PM (see audit trail).",
     evidenceLevel: "A",
     kano: "performance",
-    assumptions: ["≥ 300 kW chargers are common on EU highways by 2031"],
+    assumptions: [
+      "The successor offers an electrified variant (today's F70 has combustion engines only)",
+      "≥ 300 kW chargers are common on EU highways by 2031",
+    ],
     uncertainties: ["Pace of the charging-network rollout (only a low-reliability source so far)"],
     status: "approved",
     createdBy: AI_DERIVE,
@@ -751,7 +756,7 @@ export const fixtureRequirements: Requirement[] = [
     runId: "run_demo0001",
   },
   {
-    id: "REQ-5S-EU-005",
+    id: "REQ-F70-EU-005",
     version: 1,
     title: "Seat ventilation as standard",
     description:
@@ -1038,29 +1043,29 @@ export const fixtureAuditEvents: AuditEvent[] = [
     entityType: "source",
     entityId: "src_feedback01",
     runId: RUN,
-    nodeId: "src-1",
+    blockId: "raw-feedback",
     changes: [],
   },
   {
     id: "aud_0003",
     at: "2026-10-10T08:52:00.000Z",
-    actor: { type: "ai", component: "analysis.extract_signals", model: "claude-haiku-5-5" },
+    actor: { type: "ai", component: "ai_filter", model: "claude-haiku-5-5" },
     action: "finding.extracted",
     entityType: "finding",
     entityId: "fnd_rearspace",
     runId: RUN,
-    nodeId: "ext-1",
+    blockId: "filter-scope",
     changes: [],
   },
   {
     id: "aud_0004",
     at: "2026-10-10T08:53:00.000Z",
-    actor: { type: "ai", component: "analysis.scope_filter", model: "claude-haiku-5-5" },
+    actor: { type: "ai", component: "ai_filter", model: "claude-haiku-5-5" },
     action: "finding.excluded",
     entityType: "finding",
     entityId: "fnd_pricing",
     runId: RUN,
-    nodeId: "ext-1",
+    blockId: "filter-scope",
     changes: [{ path: "inScope", before: true, after: false }],
     rationale:
       "Pricing / business case is out of scope (briefing); requirements cover customer-facing product attributes only.",
@@ -1071,20 +1076,20 @@ export const fixtureAuditEvents: AuditEvent[] = [
     actor: AI_DERIVE,
     action: "requirement.proposed",
     entityType: "requirement",
-    entityId: "REQ-5S-EU-004",
+    entityId: "REQ-F70-EU-004",
     runId: RUN,
-    nodeId: "req-1",
+    blockId: "split-rank",
     changes: [],
   },
   {
     id: "aud_0006",
     at: "2026-10-10T08:59:00.000Z",
-    actor: { type: "ai", component: "prioritization.score", model: "deterministic" },
+    actor: { type: "ai", component: "ai_splitter", model: "deterministic" },
     action: "requirement.scored",
     entityType: "requirement",
-    entityId: "REQ-5S-EU-004",
+    entityId: "REQ-F70-EU-004",
     runId: RUN,
-    nodeId: "sco-1",
+    blockId: "split-rank",
     changes: [
       { path: "score.total", before: null, after: score004.total },
       { path: "priority", before: null, after: score004.suggestedPriority },
@@ -1098,7 +1103,7 @@ export const fixtureAuditEvents: AuditEvent[] = [
     entityType: "run",
     entityId: RUN,
     runId: RUN,
-    nodeId: "rev-1",
+    blockId: "hil-pm",
     changes: [{ path: "status", before: "running", after: "waiting_for_review" }],
   },
   {
@@ -1107,7 +1112,7 @@ export const fixtureAuditEvents: AuditEvent[] = [
     actor: PM,
     action: "requirement.viewed",
     entityType: "requirement",
-    entityId: "REQ-5S-EU-004",
+    entityId: "REQ-F70-EU-004",
     runId: RUN,
     changes: [],
   },
@@ -1117,7 +1122,7 @@ export const fixtureAuditEvents: AuditEvent[] = [
     actor: PM,
     action: "requirement.edited",
     entityType: "requirement",
-    entityId: "REQ-5S-EU-004",
+    entityId: "REQ-F70-EU-004",
     runId: RUN,
     changes: [
       {
@@ -1143,7 +1148,7 @@ export const fixtureAuditEvents: AuditEvent[] = [
     actor: PM,
     action: "requirement.challenged",
     entityType: "requirement",
-    entityId: "REQ-5S-EU-002",
+    entityId: "REQ-F70-EU-002",
     runId: RUN,
     changes: [{ path: "status", before: "proposed", after: "challenged" }],
     rationale:
@@ -1152,10 +1157,10 @@ export const fixtureAuditEvents: AuditEvent[] = [
   {
     id: "aud_0011",
     at: "2026-10-10T09:13:00.000Z",
-    actor: { type: "ai", component: "requirements.answer_challenge", model: "claude-opus-5-5" },
+    actor: { type: "ai", component: "add_to_car", model: "claude-opus-5-5" },
     action: "requirement.challenge_answered",
     entityType: "requirement",
-    entityId: "REQ-5S-EU-002",
+    entityId: "REQ-F70-EU-002",
     runId: RUN,
     changes: [{ path: "status", before: "challenged", after: "in_review" }],
     rationale:
@@ -1167,7 +1172,7 @@ export const fixtureAuditEvents: AuditEvent[] = [
     actor: PM,
     action: "requirement.status_changed",
     entityType: "requirement",
-    entityId: "REQ-5S-EU-004",
+    entityId: "REQ-F70-EU-004",
     runId: RUN,
     changes: [
       { path: "status", before: "proposed", after: "approved" },
@@ -1182,7 +1187,7 @@ export const fixtureAuditEvents: AuditEvent[] = [
     actor: PM,
     action: "requirement.status_changed",
     entityType: "requirement",
-    entityId: "REQ-5S-EU-005",
+    entityId: "REQ-F70-EU-005",
     runId: RUN,
     changes: [{ path: "status", before: "proposed", after: "rejected" }],
     rationale:
@@ -1194,7 +1199,7 @@ export const fixtureAuditEvents: AuditEvent[] = [
     actor: PM,
     action: "requirement.challenged",
     entityType: "requirement",
-    entityId: "REQ-5S-EU-003",
+    entityId: "REQ-F70-EU-003",
     runId: RUN,
     changes: [{ path: "status", before: "proposed", after: "challenged" }],
     rationale:

@@ -8,11 +8,13 @@
  */
 import type { ApiError, RequirementDecision, RequirementEdit } from "./api";
 import type { Actor, AuditAction, AuditEntityType, AuditEvent } from "./audit";
+import type { PaletteBlockKind } from "./blocks";
 import type { RequirementCategory } from "./category";
 import type { Finding } from "./finding";
 import type { PipelineData } from "./pipeline";
 import type { DecisionStatus, EvidenceLevel, Requirement } from "./requirement";
 import type { Priority } from "./scoring";
+import type { ProductScope } from "./scope";
 import type { Settings } from "./settings";
 import type { Source, SourceRecord } from "./source";
 import type { Workflow, WorkflowRun, WorkflowTemplate } from "./workflow";
@@ -37,6 +39,17 @@ export interface StoredFileInfo {
   mimeType: string;
   sizeBytes: number;
   importedAt: string; // ISO datetime
+}
+
+/** Run one block that has no inputs (e.g. Raw) on its own, outside a flow run, to check its data. */
+export interface BlockPreviewRequest {
+  kind: PaletteBlockKind;
+  params: Record<string, unknown>;
+  scope: ProductScope; // the global vehicle and market (Settings), for params set to "From Settings"
+}
+export interface BlockPreview {
+  outputs: Record<string, PipelineData>; // per output port id
+  logs: string[]; // what the block reported: skipped rows, assumptions, counts
 }
 
 export interface RequirementFilter {
@@ -77,6 +90,10 @@ export type SecretStatus = Record<
 export interface ReqflowApi {
   app: { info(): Promise<AppInfo> };
   templates: { list(): Promise<WorkflowTemplate[]> };
+  blocks: {
+    /** Fails with `invalid_input` for blocks that have inputs, `not_implemented` for unbuilt ones. */
+    preview(request: BlockPreviewRequest): Promise<BlockPreview>;
+  };
   workflows: {
     list(): Promise<Workflow[]>;
     get(id: string): Promise<Workflow>;
@@ -131,6 +148,7 @@ export type ReqflowHandlers = {
 export const IPC_INVOKE_METHODS = {
   app: ["info"],
   templates: ["list"],
+  blocks: ["preview"],
   workflows: ["list", "get", "save", "remove"],
   files: ["import"],
   runs: ["start", "get", "list", "blockOutput", "resume", "cancel"],

@@ -36,7 +36,7 @@ describe("main-process IPC dispatch", () => {
       error: { code: "not_implemented" },
     });
     const bad = await dispatch(handlers, "requirements", "decide", [
-      "REQ-5S-EU-001",
+      "REQ-F70-EU-001",
       { decision: "approve" },
     ]);
     expect(bad).toMatchObject({ ok: false, error: { code: "invalid_input" } });

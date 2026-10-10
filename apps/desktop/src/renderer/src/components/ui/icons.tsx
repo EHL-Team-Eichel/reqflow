@@ -70,3 +70,26 @@ export function ExpandIcon(props: IconProps) {
     </Icon>
   );
 }
+
+export function TableIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+      <path d="M3 9h18" />
+      <path d="M3 15h18" />
+      <path d="M9 3v18" />
+      <path d="M15 3v18" />
+    </Icon>
+  );
+}
+
+export function ReportIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M9 2h6a2 2 0 0 1 2 2v2h-10v-2a2 2 0 0 1 2-2z" />
+      <path d="M17 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-14a2 2 0 0 1-2-2v-14a2 2 0 0 1 2-2h2" />
+      <path d="M8 14l3-3 2 2 4-4" />
+      <path d="M17 9v0" />
+    </Icon>
+  );
+}

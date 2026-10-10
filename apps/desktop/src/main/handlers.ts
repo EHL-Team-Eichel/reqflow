@@ -1,6 +1,8 @@
 import type { AppInfo, ReqflowHandlers } from "@reqflow/core/ipc";
-import { BMW_DEFAULT_TEMPLATE } from "@reqflow/blocks";
+import { BMW_DEFAULT_TEMPLATE, createBlockRegistry } from "@reqflow/blocks";
+import type { LocalFileStore } from "@reqflow/db";
 import { ReqflowError } from "./dispatch";
+import { previewBlock } from "./preview";
 
 // Owner: WS1 (docs/WORKSTREAMS.md). Every method the UI can call is listed here; the ones not built
 // yet fail loudly with code "not_implemented" so the UI can show a clear message instead of hanging.
@@ -17,11 +19,16 @@ function notBuilt(method: string, owner = "WS1") {
 
 export interface HandlerDeps {
   appInfo: () => AppInfo;
+  files: LocalFileStore;
+  /** Shows the native open dialog; resolves to the chosen path, or null when cancelled. */
+  pickFile: () => Promise<string | null>;
 }
 
 export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
+  const registry = createBlockRegistry();
   return {
     app: { info: async () => deps.appInfo() },
+    blocks: { preview: (request) => previewBlock(registry, deps.files, request) },
     templates: { list: async () => [BMW_DEFAULT_TEMPLATE] },
     workflows: {
       list: notBuilt("workflows.list"),
@@ -29,7 +36,12 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
       save: notBuilt("workflows.save"),
       remove: notBuilt("workflows.remove"),
     },
-    files: { import: notBuilt("files.import") },
+    files: {
+      import: async () => {
+        const path = await deps.pickFile();
+        return path ? deps.files.importFile(path) : null;
+      },
+    },
     runs: {
       start: notBuilt("runs.start"),
       get: notBuilt("runs.get"),

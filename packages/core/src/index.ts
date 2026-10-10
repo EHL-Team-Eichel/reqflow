@@ -7,6 +7,7 @@ export * from "./finding";
 export * from "./graph";
 export * from "./ids";
 export * from "./ipc";
+export * from "./lineage";
 export * from "./pipeline";
 export * from "./requirement";
 export * from "./scope";

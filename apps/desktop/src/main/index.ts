@@ -1,8 +1,9 @@
 import { join } from "node:path";
-import { app, BrowserWindow, shell, type IpcMainInvokeEvent } from "electron";
+import { createFileStore } from "@reqflow/db";
+import { app, BrowserWindow, dialog, shell, type IpcMainInvokeEvent } from "electron";
 import { createHandlers } from "./handlers";
 import { registerIpc } from "./ipc";
-import { dataDir, loadDevEnv } from "./paths";
+import { dataDir, loadDevEnv, uploadsDir } from "./paths";
 import { parseSmokeArg, runSmoke } from "./smoke";
 
 const smokeDir = parseSmokeArg(process.argv);
@@ -27,6 +28,9 @@ function createWindow(): BrowserWindow {
       // The smoke test renders off screen: it paints even when the display sleeps or the window
       // is covered, and never steals focus.
       offscreen: smokeDir !== null,
+      // The off-screen window is never shown, so Chromium would treat the page as hidden and
+      // throttle painting; screenshots would then lag behind the page.
+      backgroundThrottling: smokeDir === null,
     },
   });
   win.once("ready-to-show", () => {
@@ -70,8 +74,22 @@ app.on("window-all-closed", () => {
 void app.whenReady().then(() => {
   loadDevEnv();
   const dir = dataDir(smokeDir ? join(smokeDir, "data") : null);
+  const files = createFileStore(uploadsDir(dir));
   registerIpc(
     createHandlers({
+      files,
+      pickFile: async () => {
+        const options: Electron.OpenDialogOptions = {
+          title: "Choose an Excel or CSV file",
+          properties: ["openFile"],
+          filters: [{ name: "Spreadsheets", extensions: ["xlsx", "csv"] }],
+        };
+        const parent = BrowserWindow.getFocusedWindow();
+        const result = parent
+          ? await dialog.showOpenDialog(parent, options)
+          : await dialog.showOpenDialog(options);
+        return result.canceled ? null : (result.filePaths[0] ?? null);
+      },
       appInfo: () => ({
         version: app.getVersion(),
         platform: process.platform,
@@ -84,7 +102,11 @@ void app.whenReady().then(() => {
 
   const win = createWindow();
   if (smokeDir) {
-    void runSmoke(win, smokeDir).then(
+    void runSmoke(win, smokeDir, {
+      files,
+      samplesDir: join(app.getAppPath(), "../../data/samples"),
+      bmwDir: join(app.getAppPath(), "../../data/raw"),
+    }).then(
       (code) => app.exit(code),
       (err) => {
         console.error("[smoke] crashed:", err);

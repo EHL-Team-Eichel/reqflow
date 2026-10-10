@@ -88,8 +88,13 @@ export function Workplace({ canvasRef }: { canvasRef: RefObject<HTMLDivElement |
         onDragOver={handleDragOver}
         onDrop={handleDrop}
         onNodeDoubleClick={(_, node) => {
-          if (node.type === "block" && (node as BlockFlowNode).data.spec?.hasInnerWorkplace) {
-            dataflowStore.getState().openInner(node.id);
+          if (node.type === "block") {
+            const blockNode = node as BlockFlowNode;
+            if (blockNode.data.block.kind === "hil") {
+              dataflowStore.getState().openReport(node.id);
+            } else if (blockNode.data.spec?.hasInnerWorkplace) {
+              dataflowStore.getState().openInner(node.id);
+            }
           }
         }}
       >

@@ -1,6 +1,8 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { PALETTE_BLOCK_KINDS } from "@reqflow/core";
+import { DatabaseSync } from "node:sqlite";
+import { DEFAULT_SETTINGS, defaultBlockParams, PALETTE_BLOCK_KINDS } from "@reqflow/core";
+import type { LocalFileStore } from "@reqflow/db";
 import type { BrowserWindow, NativeImage } from "electron";
 
 /**
@@ -19,7 +21,11 @@ export function parseSmokeArg(argv: readonly string[]): string | null {
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const slug = (route: string) => route.replace(/^\//, "").replace(/[^a-zA-Z0-9]+/g, "-") || "root";
 
-export async function runSmoke(win: BrowserWindow, outDir: string): Promise<number> {
+export async function runSmoke(
+  win: BrowserWindow,
+  outDir: string,
+  deps: { files: LocalFileStore; samplesDir: string; bmwDir: string },
+): Promise<number> {
   mkdirSync(outDir, { recursive: true });
   const errors: string[] = [];
   const screens: { name: string; file: string }[] = [];
@@ -80,6 +86,13 @@ export async function runSmoke(win: BrowserWindow, outDir: string): Promise<numb
     wc.sendInputEvent({ type: "mouseUp", ...b, button: "left", clickCount: 1 });
     await delay(300);
   };
+  /** Sets a <select> the way React notices (native setter + change event). */
+  const setSelect = async (selector: string, value: string) => {
+    const ok = await js<boolean>(
+      `(() => { const el = document.querySelector(${JSON.stringify(selector)}); if (!el) return false; Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value").set.call(el, ${JSON.stringify(value)}); el.dispatchEvent(new Event("change", { bubbles: true })); return true; })()`,
+    );
+    check(ok, `select: no ${selector}`);
+  };
   /** Focus + select the field, then type each chunk as a separate input event. */
   const type = async (selector: string, chunks: string[]) => {
     const found = await js<boolean>(
@@ -99,13 +112,16 @@ export async function runSmoke(win: BrowserWindow, outDir: string): Promise<numb
       writeFileSync(file, (await wc.capturePage()).toPNG());
     } else {
       await delay(100); // let React commit and React Flow settle before forcing the frame
-      const seen = frames;
-      wc.invalidate();
-      const deadline = Date.now() + 3000;
-      while (frames === seen && Date.now() < deadline) await delay(20);
-      if (frames === seen || !frame) {
-        errors.push(`${name}: no frame was painted`);
-        return;
+      // Two forced frames: a frame already on its way when we start may still show the old state.
+      for (let pass = 0; pass < 2; pass++) {
+        const seen = frames;
+        wc.invalidate();
+        const deadline = Date.now() + 3000;
+        while (frames === seen && Date.now() < deadline) await delay(20);
+        if (frames === seen || !frame) {
+          errors.push(`${name}: no frame was painted`);
+          return;
+        }
       }
       writeFileSync(file, (frame as NativeImage).toPNG());
     }
@@ -126,6 +142,78 @@ export async function runSmoke(win: BrowserWindow, outDir: string): Promise<numb
     `window.reqflowBridge.invoke("not-a-channel").then(() => "allowed", () => "blocked")`,
   );
   check(blocked === "blocked", "preload allowed an unknown IPC channel");
+
+  // Raw block end to end in the packaged code: import the synthetic samples, preview them over IPC
+  // (CSV with German formatting, and an Excel workbook through the bundled reader).
+  for (const [file, dataset, minRecords] of [
+    ["equipment_take_rates.csv", "equipment_data", 17],
+    ["customer_study.xlsx", "customer_study", 7],
+  ] as const) {
+    try {
+      const info = await deps.files.importFile(join(deps.samplesDir, file));
+      const params = {
+        ...defaultBlockParams("raw"),
+        dataset,
+        file: { fileId: info.id, name: info.name },
+      };
+      const request = { kind: "raw", params, scope: DEFAULT_SETTINGS.defaultScope };
+      const res = await js<{
+        ok: boolean;
+        value?: { outputs: { out: { records: unknown[] } } };
+        error?: unknown;
+      }>(`window.reqflowBridge.invoke("reqflow:blocks.preview", ${JSON.stringify(request)})`);
+      const records = res.value?.outputs.out.records.length ?? 0;
+      check(
+        res.ok && records === minRecords,
+        `raw preview of ${file}: ${JSON.stringify(res.error ?? records)}`,
+      );
+    } catch (err) {
+      check(false, `raw preview of ${file} crashed: ${String(err)}`);
+    }
+  }
+
+  // BMW's real files, only when they are in data/raw/ (local, gitignored). Counts and pass/fail only:
+  // nothing from them is logged or screenshotted, and the imported copies are deleted afterwards.
+  const bmw = [
+    ["F70_feedback_hackathon.xlsx", "customer_feedback"],
+    ["F70_G60_G68_G70_customer_studies.xlsx", "customer_study"],
+    ["sales_volumes.xlsx", "sales_volume"],
+    ["F70_OptionList.PDF", "other"],
+  ] as const;
+  let bmwChecked = 0;
+  for (const [file, dataset] of bmw) {
+    const path = join(deps.bmwDir, file);
+    if (!existsSync(path)) continue;
+    let fileId: string | null = null;
+    try {
+      const info = await deps.files.importFile(path);
+      fileId = info.id;
+      const params = {
+        ...defaultBlockParams("raw"),
+        dataset,
+        file: { fileId: info.id, name: info.name },
+      };
+      const request = { kind: "raw", params, scope: DEFAULT_SETTINGS.defaultScope };
+      const res = await js<{
+        ok: boolean;
+        value?: { outputs: { out: { records: unknown[] } } };
+        error?: { message?: string };
+      }>(`window.reqflowBridge.invoke("reqflow:blocks.preview", ${JSON.stringify(request)})
+        .then((r) => r.ok ? { ok: true, value: { outputs: { out: { records: r.value.outputs.out.records.map(() => 0) } } } } : r)`);
+      if (file.endsWith(".PDF")) {
+        check(!res.ok && /is a PDF/.test(res.error?.message ?? ""), `BMW ${file}: PDF not refused`);
+      } else {
+        const records = res.value?.outputs.out.records.length ?? 0;
+        check(res.ok && records > 0, `BMW ${file}: ${res.ok ? "no records" : res.error?.message}`);
+      }
+      bmwChecked++;
+    } catch (err) {
+      check(false, `BMW ${file} crashed: ${String(err)}`);
+    } finally {
+      if (fileId) await deps.files.remove(fileId);
+    }
+  }
+  console.log(`smoke: BMW files in data/raw previewed: ${bmwChecked}`);
 
   // Start from a known theme (the default "system" follows the OS), dark mode comes last.
   await go("/settings");
@@ -217,6 +305,77 @@ export async function runSmoke(win: BrowserWindow, outDir: string): Promise<numb
   await drag(handle("custom", "source"), handle("ai_filter", "target")); // would close a loop
   check((await count(".react-flow__edge")) === 2, "dataflow: a loop must be refused");
   await shot("dataflow-connected");
+
+  // HIL review report: double-click the HIL block → lineage chart + data at this point.
+  await drag(handle("custom", "source"), handle("hil", "target"));
+  check((await count(".react-flow__edge")) === 3, "dataflow: custom → HIL should connect");
+  await js(
+    `document.querySelector('[data-testid="block-hil"]').dispatchEvent(new MouseEvent("dblclick", { bubbles: true }))`,
+  );
+  await delay(600);
+  check((await count('[data-testid="hil-report"]')) === 1, "report: double-click didn't open it");
+  const steps = await count('[data-testid="hil-report"] [data-testid="lineage-step"]');
+  check(steps === 4, `report: lineage should show raw → filter → custom → HIL, got ${steps} steps`);
+  check((await count('[data-testid="data-empty"]')) === 1, "report: no-data state missing");
+  check(await click('[data-testid="data-sample"]'), "report: no sample preview button");
+  await delay(300);
+  const rows = await count('[data-testid="data-table"] tbody tr');
+  check(rows > 0, "report: sample data should fill the table");
+  await shot("hil-report");
+  check(
+    await click('[data-testid="lineage-step"][data-step-id^="raw-"] [data-testid="step-data"]'),
+    "report: raw step has no data icon",
+  );
+  await delay(300);
+  check(
+    /Raw/.test(await text('[data-testid="data-panel"]')),
+    "report: data panel should switch to the Raw step",
+  );
+  check(
+    /Choose an Excel or CSV file/.test(await text('[data-testid="data-panel"]')),
+    "report: a Raw step without a file should show the block's own error (real preview path)",
+  );
+  await shot("hil-report-raw");
+  check(await click('[aria-label="Close report"]'), "report: no close button");
+  await delay(300);
+  check((await count('[data-testid="hil-report"]')) === 0, "report: didn't close");
+
+  // Raw block with real data through the UI only: a SQLite source (the file dialog can't be scripted).
+  const dbPath = join(outDir, "data", "smoke-feedback.sqlite");
+  const db = new DatabaseSync(dbPath);
+  db.exec("DROP TABLE IF EXISTS feedback; CREATE TABLE feedback (market TEXT, comment TEXT)");
+  db.exec(
+    "INSERT INTO feedback VALUES ('DE', 'Im Fond ist es für Erwachsene zu eng'), ('GB', 'Rear legroom is too tight for adults'), ('FR', 'Le coffre est trop petit')",
+  );
+  db.close();
+  check(await click('[data-testid="block-raw"]'), "raw: can't select the Raw block");
+  await delay(300);
+  await setSelect('[data-testid="inspector"] select', "database");
+  await delay(200);
+  await type('input[placeholder="/path/to/data.sqlite"]', [dbPath]);
+  await type('textarea[placeholder="SELECT * FROM customer_feedback"]', ["SELECT * FROM feedback"]);
+  check(await click('[data-testid="preview-load"]'), "raw: no preview button");
+  await delay(800);
+  const counts = await text('[data-testid="preview-counts"]');
+  check(/3 records/.test(counts), `raw: preview should read 3 records, got "${counts}"`);
+  await shot("raw-preview");
+  await js(
+    `document.querySelector('[data-testid="block-hil"]').dispatchEvent(new MouseEvent("dblclick", { bubbles: true }))`,
+  );
+  await delay(500);
+  check(
+    await click('[data-testid="lineage-step"][data-step-id^="raw-"] [data-testid="step-data"]'),
+    "report: raw step has no data icon",
+  );
+  await delay(800);
+  check(
+    (await count('[data-testid="data-real"]')) === 1,
+    "report: Raw step should show its real data",
+  );
+  check((await count('[data-testid="data-table"] tbody tr')) === 3, "report: 3 real rows expected");
+  await shot("hil-report-real");
+  check(await click('[aria-label="Close report"]'), "report: no close button");
+  await delay(300);
   await go("/settings");
   check(await click('[data-testid="settings-section-ai"]'), "settings: no ai section");
   await delay(200);

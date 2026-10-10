@@ -151,4 +151,28 @@ describe("dataflow store", () => {
       ["boundary", false],
     ]);
   });
+
+  it("opens a block's report, and reveals a block on another workplace", () => {
+    const store = createDataflowStore();
+    const custom = store.getState().addBlock("custom", at);
+    store.getState().openInner(custom);
+    const hil = store.getState().addBlock("hil", at);
+    store.getState().openReport(hil);
+    expect(store.getState().report).toEqual({ blockId: hil, path: [custom] });
+
+    store.getState().goTo(0);
+    store.getState().revealBlock([custom], hil);
+    expect(store.getState()).toMatchObject({
+      path: [custom],
+      selectedBlockIds: [hil],
+      report: null,
+    });
+
+    store.getState().openReport("missing");
+    expect(store.getState().report).toBeNull();
+    expect(store.getState().notice?.message).toMatch(/not on this workplace/);
+    store.getState().revealBlock([], "missing");
+    expect(store.getState().notice?.message).toMatch(/no longer exists/);
+    expect(store.getState().path).toEqual([custom]);
+  });
 });

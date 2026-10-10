@@ -121,9 +121,9 @@ export const DEFAULT_SETTINGS: Settings = {
     reviewer: { userId: "pm-demo", name: "Demo PM", role: "Product Manager" },
   },
   defaultScope: {
-    vehicleLine: "5 Series",
-    derivative: "Sedan",
-    vehicleCode: "5S",
+    vehicleLine: "1 Series",
+    derivative: "5-door",
+    vehicleCode: "F70",
     market: "EU",
     horizonYears: 5,
   },

@@ -55,6 +55,8 @@ export interface DataflowState {
   selectedEdgeIds: string[];
   measured: Record<string, { width: number; height: number }>; // React Flow sizes, by block id
   notice: Notice | null;
+  /** The HIL review report that is open, if any (block id + the workplace it sits on). */
+  report: { blockId: string; path: string[] } | null;
 
   /** Adds a block to the open workplace, selects it and returns its id. */
   addBlock(kind: PaletteBlockKind, position: XY): string;
@@ -71,6 +73,11 @@ export interface DataflowState {
   selectBlock(blockId: string | null): void;
   openInner(blockId: string): void;
   goTo(depth: number): void;
+  /** Opens the review report of a block on the open workplace. */
+  openReport(blockId: string): void;
+  closeReport(): void;
+  /** Opens the workplace at `path` and selects the block there (closes the report). */
+  revealBlock(path: string[], blockId: string): void;
   notify(tone: Notice["tone"], message: string): void;
   dismissNotice(): void;
 }
@@ -148,6 +155,7 @@ export function createDataflowStore(initial: WorkflowGraph = emptyGraph()) {
       selectedEdgeIds: [],
       measured: {},
       notice: null,
+      report: null,
 
       addBlock(kind, position) {
         const id = newBlockId(kind);
@@ -268,6 +276,31 @@ export function createDataflowStore(initial: WorkflowGraph = emptyGraph()) {
       goTo(depth) {
         if (depth < 0 || depth > get().path.length) return;
         set({ path: get().path.slice(0, depth), selectedBlockIds: [], selectedEdgeIds: [] });
+      },
+
+      openReport(blockId) {
+        const block = selectWorkplace(get()).blocks.find((b) => b.id === blockId);
+        if (!block) {
+          get().notify("error", `Block "${blockId}" is not on this workplace.`);
+          return;
+        }
+        set({ report: { blockId, path: [...get().path] } });
+      },
+
+      closeReport() {
+        set({ report: null });
+      },
+
+      revealBlock(path, blockId) {
+        try {
+          if (!graphAt(get().root, path).blocks.some((b) => b.id === blockId)) {
+            throw new Error(`Block "${blockId}" no longer exists.`);
+          }
+        } catch (err) {
+          get().notify("error", message(err));
+          return;
+        }
+        set({ path: [...path], selectedBlockIds: [blockId], selectedEdgeIds: [], report: null });
       },
 
       notify(tone, text) {

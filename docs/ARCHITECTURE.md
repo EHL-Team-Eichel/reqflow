@@ -142,23 +142,39 @@ UI code calls `api.<namespace>.<method>(…)` from `@/lib/api`. Main implements 
 (`invalid_input`, `not_found`, `not_implemented`, `internal`, …). Arguments must be plain data. Main
 validates every argument with the Zod schemas, because the renderer counts as untrusted input.
 
-| Method                                               | Purpose                                                                                                                             |
-| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `app.info()`                                         | Version, OS, data directory (**built**)                                                                                             |
-| `templates.list()`                                   | Workflow templates (`BMW_DEFAULT_TEMPLATE`) (**built**)                                                                             |
-| `workflows.list/get/save/remove`                     | Workflow CRUD. `save` assigns the id and bumps `version`                                                                            |
-| `files.import()`                                     | Native open dialog → copies the file into the data dir → `StoredFileInfo` (`null` if cancelled). Raw's `file` param stores it       |
-| `runs.start/get/list/blockOutput/resume/cancel`      | Run lifecycle. `blockOutput` returns that block's output per port                                                                   |
-| `runs.onUpdate(listener)`                            | Push events on every status, progress or log change (no polling)                                                                    |
-| `requirements.list(filter)` · `requirements.get(id)` | Latest versions · `RequirementDetail` (findings, evidence, sources, versions)                                                       |
-| `requirements.edit(id, RequirementEdit)`             | PM edit, rationale required → new version and audit                                                                                 |
-| `requirements.decide(id, RequirementDecision)`       | Approve / reject / defer / challenge / reopen. A challenge makes the AI answer (`challenge_answered`) and returns it to `in_review` |
-| `audit.list(filter)`                                 | Audit events, ascending by time                                                                                                     |
-| `settings.get/save` · `settings.secrets/setSecret`   | `Settings` (save logs `settings.changed` with a diff) · API-key status / store a key in the keychain                                |
-| `exports.requirements({ runId, format })`            | Native save dialog → JSON / CSV / Markdown (logs `export.created`)                                                                  |
+| Method                                               | Purpose                                                                                                                                   |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `app.info()`                                         | Version, OS, data directory (**built**)                                                                                                   |
+| `templates.list()`                                   | Workflow templates (`BMW_DEFAULT_TEMPLATE`) (**built**)                                                                                   |
+| `workflows.list/get/save/remove`                     | Workflow CRUD. `save` assigns the id and bumps `version`                                                                                  |
+| `blocks.preview(request)`                            | Runs a block without inputs (Raw) on its own and returns its output and log (**built**)                                                   |
+| `files.import()`                                     | Native open dialog → copies the file into the data dir → `StoredFileInfo` (`null` if cancelled). Raw's `file` param stores it (**built**) |
+| `runs.start/get/list/blockOutput/resume/cancel`      | Run lifecycle. `blockOutput` returns that block's output per port                                                                         |
+| `runs.onUpdate(listener)`                            | Push events on every status, progress or log change (no polling)                                                                          |
+| `requirements.list(filter)` · `requirements.get(id)` | Latest versions · `RequirementDetail` (findings, evidence, sources, versions)                                                             |
+| `requirements.edit(id, RequirementEdit)`             | PM edit, rationale required → new version and audit                                                                                       |
+| `requirements.decide(id, RequirementDecision)`       | Approve / reject / defer / challenge / reopen. A challenge makes the AI answer (`challenge_answered`) and returns it to `in_review`       |
+| `audit.list(filter)`                                 | Audit events, ascending by time                                                                                                           |
+| `settings.get/save` · `settings.secrets/setSecret`   | `Settings` (save logs `settings.changed` with a diff) · API-key status / store a key in the keychain                                      |
+| `exports.requirements({ runId, format })`            | Native save dialog → JSON / CSV / Markdown (logs `export.created`)                                                                        |
 
 To add a method: add it to `ReqflowApi` **and** `IPC_INVOKE_METHODS` (the compiler enforces both),
 then implement it in `handlers.ts`.
+
+## HIL review report
+
+Double-clicking a HIL block (or its report icon) opens `components/dataflow/report/HilReport.tsx`:
+
+- **Flow chart** from `traceLineage(root, path, blockId)` (`packages/core/src/lineage.ts`): every step
+  data passes through on its way into the block. It leaves inner workplaces through their
+  `block_input` and traces through the sub-flow of upstream blocks that have blocks inside.
+- **Data at a step** (table icon on every step; the HIL itself = "data at this point"). Steps without
+  inputs (Raw) show their **real data** via `blocks.preview`. Other steps need a run, which can't happen
+  yet, so the panel says so and offers a clearly labelled **synthetic sample** (`report/sample.ts`).
+  Once runs exist, it shows `api.runs.blockOutput()` of the step (for the HIL: the merge of what its
+  incoming edges carried).
+- At run time the HIL block (`packages/blocks/src/hil/hil.ts`) pauses the run until the review is done
+  and then passes the data on unchanged; edits go through the requirement API (audited).
 
 ## Renderer state
 
@@ -198,7 +214,8 @@ then implement it in `handlers.ts`.
 - Workflows are stored whole (the block tree as JSON) and versioned on save.
 - Requirements are versioned: one row per `(id, version)`. "Current" means the max version.
 - `audit_events` is insert-only, with no update or delete code path.
-- Block outputs are stored per `(runId, blockId, port)` as JSON. Imported files are copied into `data/uploads/` inside the data dir.
+- Block outputs are stored per `(runId, blockId, port)` as JSON. Imported files are copied into `uploads/`
+  inside the data dir by the file store (`packages/db/src/files.ts`, built), metadata next to each file.
 
 ## Running, checking, packaging
 

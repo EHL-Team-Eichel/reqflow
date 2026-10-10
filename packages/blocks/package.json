@@ -12,6 +12,7 @@
   "dependencies": {
     "@reqflow/core": "*",
     "@reqflow/engine": "*",
+    "read-excel-file": "9.3.10",
     "zod": "^4.6.5"
   }
 }

@@ -40,17 +40,21 @@ a tab bar at the bottom switches between **Data Flow · Car · Settings** (⌘/C
 
 ## The building blocks
 
-| Block           | What it does                                                                                        | Ports              | Inner workplace |
-| --------------- | --------------------------------------------------------------------------------------------------- | ------------------ | --------------- |
-| **Custom**      | An empty block. Build any sub-flow inside it.                                                       | 1 in · 1 out       | yes             |
-| **Raw**         | Brings in an Excel file or a database table as one unified data stream.                             | 1 out              | no              |
-| **Research**    | Searches the web; emits a data stream in the same format as Raw.                                    | 1 out              | yes             |
-| **AI Filter**   | Keeps the items that match a criterion written in plain language.                                   | 1 in · 1 out       | yes             |
-| **AI Splitter** | Sorts every item into one branch (e.g. by priority or category). One output per branch.             | 1 in · n out       | no              |
-| **HIL**         | Human in the loop (capacitor icon): the flow waits until a person has reviewed what passes through. | 1 in · 1 out       | no              |
-| **Add to Car**  | Adds what arrives to the car's requirements. The input it arrives on sets the ranking.              | one in per ranking | no              |
+Each block is specified as **Block (params / inner workplace / inputs / outputs)**, e.g. HIL (t/f/1/1)
+= has parameters, no inner workplace, 1 input, 1 output. "n" = one port per entry of a list parameter.
+Blocks are finalized one at a time; **State** says how far each one is.
 
-Parameters are placeholders until each block is built (see `docs/WORKSTREAMS.md`). Spec and ports: `packages/core/src/blocks.ts`.
+| Block           | Spec      | What it does                                                                                                                                                                                                                                                                                                                    | State                                                                                             |
+| --------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| **Custom**      | (f/t/1/1) | An empty block. Build any sub-flow inside it.                                                                                                                                                                                                                                                                                   | placeholder                                                                                       |
+| **Raw**         | (t/f/0/1) | Brings in an Excel (.xlsx) or CSV file or a SQLite query as one unified data stream: one record per row (repeated feedback rows merged), report-style sheets read by section, plus usage findings from take rates and sales volumes. "Preview data" shows the parsed result right away.                                         | **built**: .xlsx, CSV, SQLite; reads BMW's exports; runs in a flow once the executor exists (WS1) |
+| **Research**    | (t/t/0/1) | Searches the web; emits a data stream in the same format as Raw.                                                                                                                                                                                                                                                                | placeholder params                                                                                |
+| **AI Filter**   | (t/t/1/1) | Keeps the items that match a criterion written in plain language.                                                                                                                                                                                                                                                               | placeholder params                                                                                |
+| **AI Splitter** | (t/f/1/n) | Sorts every item into one branch (e.g. by priority or category). One output per branch.                                                                                                                                                                                                                                         | placeholder params                                                                                |
+| **HIL**         | (t/f/1/1) | Human in the loop (capacitor icon). The flow waits here until a person has reviewed what arrived, then passes it on. **Double-click opens the review report:** a flow chart of how the data was collected (every step it passed through, across inner workplaces) and a table icon on every step to see the data at that point. | **finalized** — report and pause/continue logic built; runs once the executor exists (WS1)        |
+| **Add to Car**  | (t/f/n/0) | Adds what arrives to the car's requirements. The input it arrives on sets the ranking.                                                                                                                                                                                                                                          | placeholder params                                                                                |
+
+Spec and ports: `packages/core/src/blocks.ts`. Implementations: `packages/blocks/src/<block>/`.
 
 ## Default flow (template)
 
@@ -113,7 +117,9 @@ qualitative · **C** — a single source or anecdotal · **D** — rests mainly 
 
 ## Demo scenario
 
-**BMW 5 Series Sedan · EU · 5-year horizon.** This is our default. Confirm it once BMW's datasets arrive.
+**BMW 1 Series (F70) · EU · 5-year horizon**, because BMW's data is for the F70: customer feedback,
+customer studies (the F70 next to the G60/G68 5 Series and G70 7 Series), sales volumes and the option
+list. The requirements are for the F70's successor. This is the default scope in Settings.
 
 1. Open the default template, attach the BMW files to the Raw blocks, enable web research, and run.
 2. Watch the blocks fill up, then click the AI Filter to see findings with their evidence.

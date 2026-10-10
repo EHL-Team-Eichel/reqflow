@@ -16,7 +16,7 @@ Current state and handoffs: [docs/STATUS.md](docs/STATUS.md).
   for the successor** of an existing vehicle, thinking **3–5 years ahead**. The PM stays in control of
   every decision.
 - **Vehicles and markets:** the 1, 5 or 7 Series, in Europe, China or the US. Demo **one derivative in one
-  market** (ours: 5 Series Sedan, EU), but don't build a one-off.
+  market** (ours: 1 Series F70, EU), but don't build a one-off.
 - **BMW provides, per vehicle:** customer feedback, equipment data, sales volumes and a customer study.
   We may add web sources such as competitors, reviews and market or technology trends.
 - **The app must:** ingest the data and enrich it from the web → extract signals (complaints, unmet needs,
@@ -43,8 +43,11 @@ Current state and handoffs: [docs/STATUS.md](docs/STATUS.md).
    something changed elsewhere? Write it in your final report instead of editing it yourself.
 2. **`packages/core` is the contract.** Build against it and don't change it on your own. If you need a
    contract change, propose it in your final report. The lead merges contract changes.
-3. **No real data in git.** BMW files go in `data/raw/` (gitignored). Use synthetic fixtures from
-   `@reqflow/core/fixtures` until the real data arrives. Never commit or print API keys.
+3. **No real data in git, logs or transcripts.** BMW files go in `data/raw/` (gitignored). Entire
+   publishes session transcripts, so when you inspect them, print only structure and counts (sheet
+   and column names, row counts), never cell values, and never send them to delegated agents.
+   Committed tests use synthetic data (`@reqflow/core/fixtures`, `data/samples/`). Never commit or
+   print API keys.
 4. **No silent failures.** Validate inputs with the Zod schemas, throw clear errors, and never invent
    sources or evidence. Every finding needs a verbatim excerpt.
 5. **AI never decides.** Only a human sets `approved`, `rejected` or `deferred`. Every change to a

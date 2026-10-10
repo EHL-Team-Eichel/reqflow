@@ -15,6 +15,8 @@ import { BlockIcon } from "./BlockIcon";
 import { confirmDelete } from "./confirm-delete";
 import { GROUP_STYLE } from "./groups";
 import { ParamField } from "./ParamField";
+import { RawPreview } from "./RawPreview";
+import { canPreview } from "./usePreview";
 import { dataflowStore, selectInspectedBlock, useDataflow } from "./store";
 
 /** Side panel for the selected block: name, ports, inner workplace, parameters, delete. */
@@ -117,6 +119,14 @@ function BlockInspector({ block, kind }: { block: WorkflowBlock; kind: PaletteBl
             {innerCount === 0 ? "empty" : `${innerCount} block${innerCount === 1 ? "" : "s"}`}
           </Button>
         )}
+        {block.kind === "hil" && (
+          <Button
+            data-testid="inspector-open-report"
+            onClick={() => dataflowStore.getState().openReport(block.id)}
+          >
+            Open review report
+          </Button>
+        )}
         <section className="flex flex-col gap-4">
           <h3 className="text-xs font-semibold tracking-wide text-muted uppercase">Parameters</h3>
           {spec.params.length === 0 ? (
@@ -127,6 +137,7 @@ function BlockInspector({ block, kind }: { block: WorkflowBlock; kind: PaletteBl
             params.map((p) => <ParamField key={p.key} block={block} spec={p} />)
           )}
         </section>
+        {canPreview(block) && <RawPreview block={block} />}
       </div>
     </Shell>
   );
