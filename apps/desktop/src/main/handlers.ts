@@ -1,12 +1,21 @@
-import type { AppInfo, ReqflowHandlers } from "@reqflow/core/ipc";
 import { BMW_DEFAULT_TEMPLATE, createBlockRegistry } from "@reqflow/blocks";
+import type {
+  AppInfo,
+  AuditFilter,
+  ReqflowHandlers,
+  RequirementFilter,
+  WorkflowSave,
+} from "@reqflow/core/ipc";
 import type { LocalFileStore } from "@reqflow/db";
 import { ReqflowError } from "./dispatch";
+import {
+  getFixtureRequirement,
+  listFixtureAuditEvents,
+  listFixtureRequirements,
+} from "./fixture-service";
 import { previewBlock } from "./preview";
-
-// Owner: WS1 (docs/WORKSTREAMS.md). Every method the UI can call is listed here; the ones not built
-// yet fail loudly with code "not_implemented" so the UI can show a clear message instead of hanging.
-// Validate every argument with the Zod schemas from @reqflow/core — the renderer is untrusted input.
+import { loadSettings, saveSettings } from "./settings-storage";
+import { getWorkflow, listWorkflows, removeWorkflow, saveWorkflow } from "./workflow-storage";
 
 function notBuilt(method: string, owner = "WS1") {
   return async (): Promise<never> => {
@@ -22,19 +31,23 @@ export interface HandlerDeps {
   files: LocalFileStore;
   /** Shows the native open dialog; resolves to the chosen path, or null when cancelled. */
   pickFile: () => Promise<string | null>;
+  dataDir?: string;
 }
 
 export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
   const registry = createBlockRegistry();
+  const info = deps.appInfo();
+  const dataDir = deps.dataDir ?? info.dataDir;
+
   return {
     app: { info: async () => deps.appInfo() },
     blocks: { preview: (request) => previewBlock(registry, deps.files, request) },
     templates: { list: async () => [BMW_DEFAULT_TEMPLATE] },
     workflows: {
-      list: notBuilt("workflows.list"),
-      get: notBuilt("workflows.get"),
-      save: notBuilt("workflows.save"),
-      remove: notBuilt("workflows.remove"),
+      list: async () => listWorkflows(dataDir),
+      get: async (id: string) => getWorkflow(dataDir, id),
+      save: async (input: WorkflowSave) => saveWorkflow(dataDir, input),
+      remove: async (id: string) => removeWorkflow(dataDir, id),
     },
     files: {
       import: async () => {
@@ -51,15 +64,17 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
       cancel: notBuilt("runs.cancel"),
     },
     requirements: {
-      list: notBuilt("requirements.list"),
-      get: notBuilt("requirements.get"),
+      list: async (filter?: RequirementFilter) => listFixtureRequirements(filter),
+      get: async (id: string) => getFixtureRequirement(id),
       edit: notBuilt("requirements.edit"),
       decide: notBuilt("requirements.decide"),
     },
-    audit: { list: notBuilt("audit.list") },
+    audit: {
+      list: async (filter?: AuditFilter) => listFixtureAuditEvents(filter),
+    },
     settings: {
-      get: notBuilt("settings.get"),
-      save: notBuilt("settings.save"),
+      get: async () => loadSettings(dataDir),
+      save: async (settings) => saveSettings(dataDir, settings),
       secrets: notBuilt("settings.secrets"),
       setSecret: notBuilt("settings.setSecret"),
     },
