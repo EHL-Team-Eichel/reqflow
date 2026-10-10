@@ -220,6 +220,14 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 **Log**
 
+- 2026-10-11: Model-switcher requested slice complete. Isolated commit `b64563e` passes
+  root typecheck and `npm test -- --maxWorkers=4` (488 passed, 25 skipped); the unconstrained
+  parallel run hit CPU-contention timeouts. Production build and the synthetic Electron
+  switching probe pass; six final screenshots reviewed/copied to `out/smoke/powertrain-final-*`.
+  `npm run smoke` generates 32 screenshots and retains exactly the 12 previously documented
+  collapsed-menu/explanation assertions. Shared concurrent catalog, pedals, windows and orbit
+  work is preserved; the final verification excludes unstaged changes from those sessions.
+
 - 2026-10-11: Four-choice switcher implemented and reconciled with the existing catalog:
   Electric (two motors/full traction battery), Hybrid (engine/rear motor/smaller battery/fuel/
   exhaust/charge flap), H2 (fuel cell/storage/rear motor/buffer battery), Gasoline (engine/fuel/
