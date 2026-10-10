@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4KMWRK0Z5V4D4GVXSB0HPP9",
   "strategy": "manual-commit",
   "branch": "ws6-research",
-  "checkpoints_count": 8,
+  "checkpoints_count": 9,
   "files_touched": [
     ".gitignore",
     ".prettierignore",
@@ -15,6 +15,7 @@
     "apps/desktop/src/main/handlers.ts",
     "apps/desktop/src/main/index.ts",
     "apps/desktop/src/main/research/runtime.test.ts",
+    "apps/desktop/src/main/research/smoke-fixture.ts",
     "apps/desktop/src/main/research/storage.test.ts",
     "apps/desktop/src/main/smoke.ts",
     "apps/desktop/src/main/ws-bundle.test.ts",
@@ -99,13 +100,20 @@
       "compact_transcript": "/6/transcript.jsonl",
       "content_hash": "/6/content_hash.txt",
       "prompt": "/6/prompt.txt"
+    },
+    {
+      "metadata": "/7/metadata.json",
+      "transcript": "/7/full.jsonl",
+      "compact_transcript": "/7/transcript.jsonl",
+      "content_hash": "/7/content_hash.txt",
+      "prompt": "/7/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 330,
-    "cache_creation_tokens": 566573,
-    "cache_read_tokens": 5841588,
-    "output_tokens": 55109,
-    "api_call_count": 110
+    "input_tokens": 438,
+    "cache_creation_tokens": 711186,
+    "cache_read_tokens": 9514553,
+    "output_tokens": 68113,
+    "api_call_count": 146
   }
 }
