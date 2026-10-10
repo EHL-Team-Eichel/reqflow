@@ -1,0 +1,44 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4KNRCCY1F395WKMS679AM4M",
+  "strategy": "manual-commit",
+  "branch": "ws0-remove-demo-data",
+  "checkpoints_count": 5,
+  "files_touched": [
+    "apps/desktop/src/main/fixture-service.ts",
+    "apps/desktop/src/main/handlers.test.ts",
+    "apps/desktop/src/main/handlers.ts",
+    "apps/desktop/src/main/smoke.ts",
+    "apps/desktop/src/renderer/src/components/car/useCarRequirements.ts",
+    "apps/desktop/src/renderer/src/components/dataflow/report/DataPanel.tsx",
+    "apps/desktop/src/renderer/src/components/dataflow/report/HilReport.tsx",
+    "apps/desktop/src/renderer/src/components/dataflow/report/sample.test.ts",
+    "apps/desktop/src/renderer/src/components/dataflow/report/sample.ts",
+    "apps/desktop/src/renderer/src/pages/CarPage.tsx",
+    "docs/ARCHITECTURE.md",
+    "docs/STATUS.md",
+    "packages/core/src/audit.ts",
+    "packages/core/src/ipc.ts",
+    "packages/db/src/db.test.ts",
+    "packages/db/src/demo-data.ts",
+    "packages/db/src/index.ts",
+    "packages/db/src/requirements.ts",
+    "packages/db/src/seed.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 2,
+    "cache_creation_tokens": 279,
+    "cache_read_tokens": 398609,
+    "output_tokens": 1972,
+    "api_call_count": 1
+  }
+}
