@@ -6,7 +6,7 @@
  *
  * Type-only imports keep this module free of runtime deps, so the sandboxed preload can import it.
  */
-import type { ApiError, RequirementDecision, RequirementEdit } from "./api";
+import type { ApiError, RequirementDecision, RequirementEdit, HilReportRequest } from "./api";
 import type { Actor, AuditAction, AuditEntityType, AuditEvent } from "./audit";
 import type { PaletteBlockKind } from "./blocks";
 import type { RequirementCategory } from "./category";
@@ -189,6 +189,8 @@ export interface ReqflowApi {
       runId: string;
       format: "json" | "xlsx" | "csv";
     }): Promise<{ path: string } | null>;
+    /** Exports selected points only. Opens a native PDF save dialog; null means cancelled. No review/decision changes. */
+    hilReport(request: HilReportRequest): Promise<{ path: string } | null>;
   };
 }
 
@@ -214,7 +216,7 @@ export const IPC_INVOKE_METHODS = {
   research: ["agents", "providers", "configure", "test", "dataset"],
   settings: ["get", "save", "secrets", "setSecret", "testSetup"],
   reasoning: ["forRun", "latest", "forRequirement"],
-  exports: ["requirements", "research"],
+  exports: ["requirements", "research", "hilReport"],
 } as const satisfies { [N in keyof ReqflowApi]: readonly InvokeKeys<ReqflowApi[N]>[] };
 
 // Compile-time guard: adding a method to ReqflowApi without listing it above is a type error.

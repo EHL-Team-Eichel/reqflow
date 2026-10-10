@@ -163,7 +163,7 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 ## WS2 — Data Flow editor UI
 
-**Status:** open · **Owner:** — · **Branch:** —
+**Status:** review · **Owner:** OpenCode (HIL sampled PDF report) · **Branch:** `feature/hil-sample-pdf-report`
 **Depends on:** WS1 for save/load and runs. Tasks 1–3 can start now.
 
 **Tasks**
@@ -190,9 +190,12 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 - [x] Explicit Start button for the full workflow, including inner workplaces; prevent duplicate runs
       and preserve HIL pauses (PR #10, verified on merged main).
 - [x] Continue single-reviewer HIL gates after explicit review of saved run inputs; reset confirmation per run/gate and preserve Start controls (PR #12).
+- [ ] Merge sampled HIL PDF export and decision-brief report (implemented and verified on `feature/hil-sample-pdf-report`; not yet merged).
 
 **Log**
 
+- 2026-10-11: Sampled PDF export implemented in isolated `EHL-hil-report` worktree. HIL → choose step → Format-check PDF: defaults first 3 per dataset, editable checkboxes, maximum 15 total, first 50 candidates shown; native PDF save via validated `exports.hilReport`. Preserves original selected record text/fields and finding excerpts; includes scope/provenance, counts/omissions, routed/nested lineage, priority/score/targets, evidence gaps/conflicts and optional report-only PM action notes. No requirement decisions, resume or reviewer signatures added. Human authorized core IPC/main/shared-icon integration. Research mapping and future persisted-review proposals: `docs/hil-report-design.md`. Verified `npm run typecheck && npm test` (280 passed, 25 skipped), desktop smoke (native sample + rich management PDFs, 35 screenshots), changed-file Prettier and `git diff --check`; inspected PDFs and light/dark/minimum viewport screenshots. No dependencies or real BMW data used. Changes remain uncommitted/unpushed for review; other WS2 tasks remain open.
+- 2026-10-11: Claimed the HIL sampled-PDF report slice in an isolated worktree from main. Human authorized the narrow core IPC/main-process changes needed for native PDF export. Preserve existing review/resume semantics, export only explicitly selected data points, and distinguish format validation from complete evidence review. Use synthetic data only for verification; leave concurrent Add-to-Car work untouched.
 - 2026-10-10: Blocks/Templates switch and full-workflow setups merged in PR #15. Integrated current Car refinements unchanged and reverified: `npm run check` (277 passed, 10 skipped), `npm run smoke` (29 screenshots), and native synthetic template loading/replacement plus both connected workflows, explicit PM review, Car publication, and light/dark/minimum-window screenshots. Requested slice complete; WS2 released. Use Templates → Use template, configure inputs, then Start; BMW's full setup remains an explicitly labelled blueprint until its Research/AI Filter prerequisites land.
 - 2026-10-10: Blocks/Templates sidebar implemented. Two connected setups (Feedback to requirements: Raw → HIL → Car/Should; Prioritized feedback: Raw → priority Splitter → three PM gates → Car rankings) plus `templates.list()`'s BMW successor blueprint, labelled as requiring Research/AI Filter support. Loading validates/clones the full graph with fresh canonical boundary/edge ids, resets inner navigation/selection/report/measurements and old run/workflow identity, preserves the template name on save, confirms replacement, and blocks active/paused runs. Added 15 regressions. `npm run check`: 273 passed, 10 skipped; `npm run smoke`: 29 screenshots. Native synthetic probe verified view switching, replacement accept/cancel, nested-to-root loading, shared BMW graph, no auto-run, blocked replacement at HIL, named workflow saves, proposed-only Car publication, and prioritized execution with the offline mock. Light/dark and 1024×640 screenshots inspected: `workflow-template*` in `apps/desktop/out/smoke/`.
 - Request for WS1/WS0: add sidebar switching, template confirmation and configured template execution to the shared smoke runner. Next: save/load/autosave and undo/redo remain separate tasks. No core, main, engine, block or dependency changes.

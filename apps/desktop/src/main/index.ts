@@ -154,7 +154,13 @@ void app
       saveDialog: async (options) => {
         if (smokeDir) {
           const format = options.filters?.[0]?.extensions[0] ?? "json";
-          return { canceled: false, filePath: join(smokeDir, `research-export.${format}`) };
+          return {
+            canceled: false,
+            filePath: join(
+              smokeDir,
+              format === "pdf" ? "synthetic-report.pdf" : `research-export.${format}`,
+            ),
+          };
         }
         const parent = BrowserWindow.getFocusedWindow();
         return parent ? dialog.showSaveDialog(parent, options) : dialog.showSaveDialog(options);

@@ -134,7 +134,7 @@ function ReportDialog({
 
         {/* Header */}
         <div className="flex flex-col border-b border-line p-4">
-          <div className="flex items-start justify-between">
+          <div className="flex items-start justify-between gap-4">
             <div className="flex gap-4">
               <div
                 className={cx(
@@ -168,7 +168,7 @@ function ReportDialog({
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex shrink-0 items-center gap-4">
               <Button
                 variant="secondary"
                 data-testid="report-data"
@@ -272,6 +272,8 @@ function ReportDialog({
               onReviewReady={setReviewReady}
               step={currentStep}
               isTarget={currentStep.block.id === lineage.targetId}
+              gateBlock={block}
+              lineage={lineage}
             />
           </div>
         </div>

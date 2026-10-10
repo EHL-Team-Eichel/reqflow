@@ -1,6 +1,8 @@
 import type { IpcResult, ReqflowBridge } from "@reqflow/core/ipc";
 import { describe, expect, it, vi } from "vitest";
 import { createApi, ReqflowError } from "./bridge-client";
+import { emptyPipelineData, HilReportRequest } from "@reqflow/core";
+import { fixtureScope } from "@reqflow/core/fixtures";
 
 function fakeBridge(result: IpcResult<unknown>) {
   const invoke = vi.fn(async (_channel: string, ..._args: unknown[]) => result);
@@ -33,5 +35,25 @@ describe("renderer API client", () => {
     const listener = () => {};
     createApi(bridge).runs.onUpdate(listener);
     expect(onRunUpdate).toHaveBeenCalledWith(listener);
+  });
+
+  it("passes sampled report data unchanged through the allowlisted export channel", async () => {
+    const { bridge, invoke } = fakeBridge({ ok: true, value: null });
+    const request: HilReportRequest = {
+      metadata: {
+        scope: fixtureScope,
+        gate: { label: "Review", reviewer: "pm", approvalsNeeded: 1 },
+        currentStep: { label: "Review", id: "hil" },
+        lineageSteps: [{ id: "hil", label: "Review", kind: "hil", path: [] }],
+        lineageLinks: [],
+      },
+      selectedData: {
+        ...emptyPipelineData(),
+        records: [{ id: "rec_synthetic", sourceId: "src_synthetic", text: "Synthetic value" }],
+      },
+      fullCounts: { Sources: 1, Records: 10, Findings: 0, Themes: 0, Requirements: 0 },
+    };
+    await expect(createApi(bridge).exports.hilReport(request)).resolves.toBeNull();
+    expect(invoke).toHaveBeenCalledWith("reqflow:exports.hilReport", request);
   });
 });

@@ -3,6 +3,7 @@ import { existsSync, readFileSync, statSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
 import type { SaveDialogOptions, SaveDialogReturnValue } from "electron";
 import { z } from "zod";
+import { exportHilReportPdf } from "./hil-exporter";
 import {
   redactSecrets,
   assertJsonByteBudget,
@@ -879,6 +880,9 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
         });
 
         return { path: res.filePath };
+      },
+      hilReport: async (reqInput: unknown) => {
+        return exportHilReportPdf(reqInput, deps.saveDialog);
       },
     },
   };
