@@ -7,6 +7,7 @@ export * from "./db";
 export * from "./audit";
 export * from "./requirements";
 export * from "./runs";
+export * from "./reasoning";
 export * from "./formatters";
 export * from "./demo-data";
 export * from "./seed";
