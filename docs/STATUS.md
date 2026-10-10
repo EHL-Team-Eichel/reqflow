@@ -123,7 +123,7 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 ## WS2 — Data Flow editor UI
 
-**Status:** in progress · **Owner:** OpenCode (Start button session) · **Branch:** `ws2-start-flow`
+**Status:** review · **Owner:** OpenCode (Start button session) · **Branch:** `ws2-start-flow`
 **Depends on:** WS1 for save/load and runs. Tasks 1–3 can start now.
 
 **Tasks**
@@ -150,6 +150,21 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 **Log**
 
+- 2026-10-10: Explicit **Start** button replaces Save & run, with a play icon, full-root/inner-flow
+  explanation, disabled empty/starting/running/HIL states and visible progress labels. Kept existing
+  IPC execution, cancellation and human-review pause. Stale active fetches/events no longer regress
+  terminal run status; recovered live updates clear catch-up errors. Added 15 regression cases.
+  Verify: `npm run check` (228 passed, 24 real-data tests skipped) and `npm run smoke` (29 screenshots;
+  light/dark Start inspected). A synthetic-only isolated native button probe passed Raw → Custom
+  (boundary passthrough) → Add to Car while inside Custom: one run after a double click, the complete
+  root snapshot, all blocks succeeded, one proposed requirement. Raw → HIL → Add to Car paused without
+  publishing, blocked restart, then cancelled. Tab catch-up also passed. Inspected
+  `apps/desktop/out/smoke/start-{inner-completed,hil-paused,cancelled}.png`.
+  WS1/WS0 request: promote these actual Start-button scenarios into the shared `main/smoke.ts` runner;
+  its current run checks bypass the renderer button. No main/core/product changes required.
+  Setup note for WS0: generated `.opencode/plugins/entire.ts` was formatted to pass the repo gate;
+  Entire's hash check now warns hooks are out of date, though the hook logic is unchanged. Add this
+  managed file to the root formatting ignore list before regenerating it with `entire enable --force`.
 - 2026-10-10: Human activated a focused Start-button slice. Latest main already has Save & run;
   make full-workflow execution explicit with a Start button and verify its safety states and native
   execution. Working in an isolated worktree; the original checkout's documentation edits are untouched.
