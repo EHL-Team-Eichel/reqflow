@@ -51,6 +51,10 @@ app. Full spec: [PRODUCT.md](PRODUCT.md). Your task: [docs/WORKSTREAMS.md](docs/
 7. **Working in `apps/web`?** Read `apps/web/AGENTS.md` too. Next.js 16 differs from older versions,
    and its bundled docs live in `node_modules/next/dist/docs/`.
 
+8. **Sessions are tracked with [Entire](https://github.com/entireio/cli).** Commit with plain `git`.
+   Entire attaches your session to each commit as a checkpoint and pushes it on `git push`. Don't
+   remove its hooks (`.claude/settings.json`, `.git/hooks`) and never put secrets in prompts.
+
 ## Commands (repo root, Node ≥ 22.13)
 
 ```

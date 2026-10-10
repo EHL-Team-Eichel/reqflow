@@ -14,6 +14,8 @@ for the BMW challenge _AI for Product Decision Making_.
 ## Quickstart
 
 ```bash
+brew install --cask entireio/tap/entire   # once per machine: Entire records agent sessions
+entire enable --agent claude-code         # once per clone: installs Entire's git hooks
 npm install
 cp .env.example apps/web/.env.local   # optional: add ANTHROPIC_API_KEY; default provider is "mock"
 npm run dev                           # http://localhost:3000
