@@ -182,6 +182,24 @@ describe("AI model validation and temperature help", () => {
 });
 
 describe("AI selected-provider credential lifecycle", () => {
+  it("preserves sanitized API setup status alongside fixed provider keys", async () => {
+    const initial: SecretStatus = {
+      ...statuses(),
+      setups: {
+        "synthetic-agent": {
+          configured: true,
+          source: "keychain",
+          value: "must-not-retain",
+        } as import("@reqflow/core").SecretState,
+      },
+    };
+    const { controller } = setup("mock", initial);
+    await controller.refresh();
+    expect(controller.getSnapshot().secrets?.setups).toEqual({
+      "synthetic-agent": { configured: true, source: "keychain" },
+    });
+    expect(JSON.stringify(controller.getSnapshot())).not.toContain("must-not-retain");
+  });
   it.each(liveProviders)(
     "saves only the selected %s credential and clears drafts before submit",
     async (provider) => {

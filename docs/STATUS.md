@@ -25,11 +25,13 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
   HIL, Add to Car), drag or click onto the workplace, connect ports (invalid connections and loops are
   refused with a reason), inspector with placeholder parameters, splitter branches and Add to Car
   rankings become ports, Custom/Research/AI Filter open into inner workplaces (breadcrumb back),
-  delete with confirmation. The flow lives in memory: **not saved yet** and **nothing runs yet**.
+  delete with confirmation. Templates load full workflows; Start saves the graph and runs it with
+  live status/logs, cancellation and explicit human-review pauses. Editor autosave/load UI remains open.
 - **HIL block (finalized):** double-click opens the review report: a flow chart of how the data was
   collected (lineage across inner workplaces) and a table icon on every step to see the data there
-  (a Raw step's own data, a HIL's connected Raw inputs, or the saved run; no demo data). Runtime logic (pause until reviewed, then pass on) is built and
-  tested; it runs once the executor exists.
+  (a Raw step's own data, a HIL's connected Raw inputs, or the saved run; no demo data). Single-reviewer
+  gates pause execution until explicit review/continue. Selected-point PDF export is a format check,
+  not an approval; upstream splitter reports expose evidence and audited human routing corrections.
 - **Raw block (built, WS5):** reads `.xlsx` (any sheet), CSV (`,` `;` tab, UTF-8 or Windows-1252, German
   number formats) and read-only SQLite queries into one source + one record per row, with
   deterministic usage findings from take rates and sales volumes. "Choose file…" opens the native
@@ -38,14 +40,19 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
   (feedback, customer studies, sales volumes; see the WS5 log for their shapes) when they're in
   `data/raw/`; the PDF option list is refused for now.
 - **Car:** 3D car with every requirement from Add to Car placed on a part (WS3); **Reset** removes
-  all requirements (audited, ids never reused). No demo data: the car is empty until a flow runs.
+  all requirements (audited, ids never reused). Agent-generated requirements expose confidence and
+  the recorded thought process. Exterior/interior transitions are reversible. No demo data: the car
+  is empty until a flow runs. Later Car model-switcher/compact-card branches are not integrated.
 - **Settings:** App, Global parameters, AI & research, Collaboration, About. Changes are validated and
-  apply live (theme, grid, minimap). **Not saved to disk yet** (`settings.save` is WS1).
+  apply live (theme, grid, minimap) and persist. Default AI supports Anthropic/OpenAI/Google/mock;
+  agent roles can use separate API setups. Research APIs expose configuration, approval and tests.
+  Credentials stay in the main process and require OS-backed encryption, never plaintext fallback.
 - **Contract:** domain schemas, block specs (`core/src/blocks.ts`), graph rules (`core/src/graph.ts`),
   IPC API, scoring formula, synthetic F70 EU fixtures, block registry, default template.
-  Built block implementations: Raw, HIL. **No executor or database exists yet**, so flows don't run.
-  Built IPC methods: `app.info`, `templates.list`, `blocks.preview`, `files.import`; every other
-  method answers `not_implemented`.
+  Built blocks: Raw, Research, HIL, AI Splitter and Add to Car agents. Shared execution kernel and
+  SQLite persist runs, outputs, requirements, reasoning, research provenance and audits. Research
+  imports original local documents and has configured network adapters; native smoke runs offline.
+  AI Filter and remaining demo/review UI tasks are still open; live-provider verification is separate.
 - Repo is public, and Entire is enabled (checkpoints are pushed with every `git push`).
 
 ## Open questions for the humans
@@ -59,7 +66,7 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 ## WS0 — Lead / integrator
 
-**Status:** in progress · **Owner:** OpenCode (continuing Claude integration) · **Branch:** `integrate/2026-10-11`
+**Status:** review (requested integration verified locally) · **Owner:** OpenCode (continuing Claude integration) · **Branch:** `integrate/2026-10-11`
 
 **Tasks**
 
@@ -67,9 +74,11 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 - [ ] Apply contract-change requests from the sections below (`packages/core`, block params and ports).
 - [ ] Integration: run `BMW_DEFAULT_TEMPLATE` end to end with the `mock` LLM, then with Claude and the real data.
 - [ ] Demo script and rehearsal (PRODUCT.md → Demo scenario); keep PRODUCT.md and this file current.
+- [x] Complete the interrupted 2026-10-11 branch integration, preserving merge history and the human-authorized Car cutoff; verify with synthetic tests and native smoke.
 
 **Log**
 
+- 2026-10-11: Integrated Add to Car agents, Mastra splitter, Research/AI providers (including its Research ancestor), sampled HIL PDF, and `ws3-car-view-animation`. Existing WS1/WS2/older splitter branch tips are already ancestors. Excluded later Alex branches: `codex/car-model-refinements`, `ws3-compact-requirements`, `ws3-compact-requirements-entire`, `ws3-exterior-session-log`, `ws4-car-models`. Superseded parallel engine/judging experiments remain excluded: `ws1-blocks`, `ws1-engine`, `quick-ai-results`, `integrate-mastra-judge`. Resolved shared executor, secrets, provider, report and IPC conflicts without dropping human routing correction or agent setups. Native smoke now clears the actual preceding scenario canvas and queues its synthetic document. `npm run check` and `npm run smoke` passed; 51 screenshots and sample PDFs inspected. No live provider calls, real credentials or BMW files used. Local merge history only; not pushed. Windows/Linux and real-provider evaluation remain unverified.
 - 2026-10-11: Continuing the unfinished integration worktree. Preserve merged Add to Car agents and Mastra splitter, finish Research/AI providers, then merge HIL PDF and Car changes through `ws3-car-view-animation` only. Later Alex Car branches are explicitly excluded; obsolete engine/judging experiments are not reintroduced over their replacements. Synthetic-only verification, no credentials or BMW data inspected.
 - 2026-10-10 night: **Removed all demo data from the app** and added **Reset** on the Car page
   (branch `ws0-remove-demo-data`). The database is no longer seeded; on start, `removeDemoData`

@@ -1403,15 +1403,22 @@ export async function runSmoke(
 
     await go("/dataflow");
     for (const kind of PALETTE_BLOCK_KINDS) {
-      ensure(await click(`[data-testid="block-${kind}"]`), `select existing ${kind} block`);
-      await delay(100);
-      ensure(
-        await click('[data-testid="inspector-delete"]'),
-        `delete existing ${kind} through Inspector`,
-      );
-      await delay(100);
+      // Earlier scenarios replace the canvas; remove its actual blocks, including duplicates.
+      let remaining = await count(`[data-testid="block-${kind}"]`);
+      while (remaining > 0) {
+        ensure(await click(`[data-testid="block-${kind}"]`), `select existing ${kind} block`);
+        await delay(100);
+        ensure(
+          await click('[data-testid="inspector-delete"]'),
+          `delete existing ${kind} through Inspector`,
+        );
+        await delay(100);
+        const next = await count(`[data-testid="block-${kind}"]`);
+        ensure(next < remaining, `deletion removes the selected ${kind} block`);
+        remaining = next;
+      }
     }
-    ensure((await count(".react-flow__node")) === 0, "all seven earlier blocks deleted through UI");
+    ensure((await count(".react-flow__node")) === 0, "all earlier blocks deleted through UI");
     ensure(
       await click('[data-testid="palette-item-research"]'),
       "add isolated Research from palette",
@@ -1500,6 +1507,7 @@ export async function runSmoke(
       ),
       "paid query planning remains off",
     );
+    deps.queuePick(join(outDir, "original.synthetic.xlsx"));
     ensure(
       await click(await fieldSelector("Local original document")),
       "choose synthetic XLSX through renderer file import",
