@@ -1,0 +1,66 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4KTQDNJKWWJ95H96CR1Y409",
+  "session_id": "ses_ed934a25affeqvU5oK6dY3SvdF",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-10T21:15:43.229689Z",
+  "branch": "ws7-mastra-splitter",
+  "checkpoints_count": 2,
+  "save_step_count": 2,
+  "files_touched": [
+    "docs/STATUS.md"
+  ],
+  "agent": "OpenCode",
+  "model": "gpt-6.1-sol",
+  "turn_id": "5c8b468c9d3e",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 309,
+    "cache_creation_tokens": 603668,
+    "cache_read_tokens": 5532392,
+    "output_tokens": 32689,
+    "api_call_count": 104
+  },
+  "session_metrics": {
+    "turn_count": 10
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-10T21:15:43.12922Z",
+    "agent_lines": 214,
+    "agent_removed": 37,
+    "human_added": 0,
+    "human_modified": 21,
+    "human_removed": 32,
+    "total_committed": 235,
+    "total_lines_changed": 304,
+    "agent_percentage": 82.56578947368422,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 204,
+      "user_lines_removed": 0,
+      "agent_lines_added": 22460,
+      "agent_lines_removed": 1426,
+      "user_added_per_file": {
+        ".opencode/plugins/entire.ts": 204
+      }
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 6,
+      "user_lines_removed": 143,
+      "agent_lines_added": 22489,
+      "agent_lines_removed": 1428,
+      "user_added_per_file": {
+        "package-lock.json": 2,
+        "packages/blocks/package.json": 4
+      },
+      "user_removed_per_file": {
+        "package-lock.json": 136,
+        "packages/blocks/package.json": 7
+      }
+    }
+  ]
+}
