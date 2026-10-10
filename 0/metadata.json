@@ -1,0 +1,100 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4KZHBZ9GGWVW4K1X4YRHQHR",
+  "session_id": "ses_ed934a25affeqvU5oK6dY3SvdF",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-10T22:39:38.394075Z",
+  "branch": "ws7-mastra-splitter",
+  "checkpoints_count": 2,
+  "save_step_count": 6,
+  "files_touched": [
+    "docs/STATUS.md"
+  ],
+  "agent": "OpenCode",
+  "model": "gpt-6.1-sol",
+  "turn_id": "c9650ca92f4e",
+  "checkpoint_transcript_start": 141,
+  "transcript_lines_at_start": 141,
+  "compact_transcript_start": 141,
+  "token_usage": {
+    "input_tokens": 327,
+    "cache_creation_tokens": 554313,
+    "cache_read_tokens": 10413338,
+    "output_tokens": 30442,
+    "api_call_count": 110
+  },
+  "session_metrics": {
+    "turn_count": 14
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 204,
+      "user_lines_removed": 0,
+      "agent_lines_added": 22460,
+      "agent_lines_removed": 1426,
+      "user_added_per_file": {
+        ".opencode/plugins/entire.ts": 204
+      }
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 31662,
+      "agent_lines_removed": 3823
+    },
+    {
+      "checkpoint_number": 4,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 5,
+      "user_lines_added": 363,
+      "user_lines_removed": 85,
+      "agent_lines_added": 32811,
+      "agent_lines_removed": 3921,
+      "user_added_per_file": {
+        "apps/desktop/electron-builder.yml": 3,
+        "apps/desktop/src/main/handlers.ts": 41,
+        "apps/desktop/src/main/index.ts": 2,
+        "apps/desktop/src/main/requirement-integrity.test.ts": 94,
+        "apps/desktop/src/main/research/smoke-fixture.ts": 4,
+        "apps/desktop/src/main/smoke.ts": 34,
+        "docs/AGENT_ROUTING.md": 4,
+        "opencode.json": 79,
+        "packages/db/src/requirements.ts": 102
+      },
+      "user_removed_per_file": {
+        "apps/desktop/electron-builder.yml": 1,
+        "apps/desktop/src/main/handlers.ts": 36,
+        "apps/desktop/src/main/index.ts": 1,
+        "apps/desktop/src/main/research/smoke-fixture.ts": 2,
+        "apps/desktop/src/main/smoke.ts": 21,
+        "docs/AGENT_ROUTING.md": 4,
+        "packages/db/src/requirements.ts": 20
+      }
+    },
+    {
+      "checkpoint_number": 6,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 7,
+      "user_lines_added": 289,
+      "user_lines_removed": 0,
+      "agent_lines_added": 33005,
+      "agent_lines_removed": 3923,
+      "user_added_per_file": {
+        "opencode.json": 83,
+        "packages/db/src/requirements.test.ts": 206
+      }
+    }
+  ]
+}
