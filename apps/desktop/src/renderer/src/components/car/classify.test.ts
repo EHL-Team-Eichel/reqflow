@@ -55,6 +55,26 @@ describe("classifyRequirement", () => {
     expect(classifyRequirement(req("Mehr Beinfreiheit hinten")).partId).toBe("rear_seats");
   });
 
+  it.each([
+    ["Quiet front motor", "motor"],
+    ["More responsive engine", "motor"],
+    ["Rear motor response", "rear_motor"],
+    ["Smoother gearbox", "transmission"],
+    ["Larger battery pack", "battery_pack"],
+    ["Less brake disc vibration", "brake_discs"],
+    ["Adaptive dampers", "dampers"],
+    ["Adjustable driver seat", "driver_seat"],
+    ["Rear centre seat comfort", "rear_center_seat"],
+    ["Larger headrests", "headrests"],
+    ["Rear air vents", "rear_air_vents"],
+    ["Reachable gear selector", "gear_selector"],
+    ["Wireless charging tray", "wireless_charger"],
+    ["Getriebe leiser", "transmission"],
+    ["Fahrersitz bequemer", "driver_seat"],
+  ])("routes %s to its detailed component", (title, partId) => {
+    expect(classifyRequirement(req(title)).partId).toBe(partId);
+  });
+
   it("falls back to an unambiguous category with low confidence", () => {
     const a = classifyRequirement(
       req("Feels special", "Customers want it to feel special.", "infotainment_digital"),

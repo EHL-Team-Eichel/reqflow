@@ -8,10 +8,36 @@ describe("buildCar", () => {
   const car = buildCar();
 
   it("has a clickable mesh and a badge anchor for every part in the catalog", () => {
+    expect(CAR_PARTS).toHaveLength(68);
     const modelled = new Set(car.pieces.map((p) => p.partId).filter(Boolean));
     const missing = CAR_PARTS.map((p) => p.id).filter((id) => !modelled.has(id));
     expect(missing).toEqual([]);
     for (const part of CAR_PARTS) expect(car.anchors.has(part.id)).toBe(true);
+  });
+
+  it("gives detailed drive units separate meshes instead of duplicating an assembly label", () => {
+    const ids = [
+      "motor",
+      "rear_motor",
+      "transmission",
+      "battery_pack",
+      "inverter",
+      "cooling_system",
+      "drive_shafts",
+      "differential",
+    ];
+    const meshes = ids.map((id) => car.pieces.find((p) => p.partId === id)!.mesh);
+    expect(new Set(meshes).size).toBe(ids.length);
+    const front = meshes[0]!;
+    const rear = meshes[1]!;
+    expect(front.position.x).toBe(G60.frontAxleX);
+    expect(rear.position.x).toBe(G60.rearAxleX);
+    for (const id of ids) {
+      expect(car.pieces.filter((p) => p.partId === id).every((p) => p.layer === "interior")).toBe(
+        true,
+      );
+      expect(car.anchors.has(id)).toBe(true);
+    }
   });
 
   it("only uses part ids from the catalog", () => {
@@ -70,8 +96,21 @@ describe("buildCar", () => {
   });
 
   it("preserves both front seat assemblies, all three rear places and the LHD cockpit", () => {
-    const front = car.pieces.filter((p) => p.partId === "front_seats");
-    const rear = car.pieces.filter((p) => p.partId === "rear_seats");
+    const front = car.pieces.filter(
+      (p) =>
+        ["front_seats", "driver_seat", "passenger_seat", "headrests"].includes(p.partId ?? "") &&
+        Math.abs(p.mesh.position.z) === 0.38,
+    );
+    const rear = car.pieces.filter(
+      (p) =>
+        [
+          "rear_seats",
+          "rear_left_seat",
+          "rear_center_seat",
+          "rear_right_seat",
+          "headrests",
+        ].includes(p.partId ?? "") && [-0.45, 0, 0.45].includes(p.mesh.position.z),
+    );
     expect(front).toHaveLength(6); // cushions, backrests and headrests
     expect(rear).toHaveLength(9);
     for (const z of [-0.38, 0.38])
@@ -148,7 +187,16 @@ describe("buildCar", () => {
 
   it("keeps rear seat headrests inside the sloping cabin", () => {
     const vertex = new THREE.Vector3();
-    for (const { mesh } of car.pieces.filter((p) => p.partId === "rear_seats")) {
+    for (const { mesh } of car.pieces.filter(
+      (p) =>
+        [
+          "rear_seats",
+          "rear_left_seat",
+          "rear_center_seat",
+          "rear_right_seat",
+          "headrests",
+        ].includes(p.partId ?? "") && p.mesh.position.x < -0.7,
+    )) {
       const pos = mesh.geometry.getAttribute("position");
       for (let k = 0; k < pos.count; k++) {
         vertex.fromBufferAttribute(pos, k).applyMatrix4(mesh.matrixWorld);

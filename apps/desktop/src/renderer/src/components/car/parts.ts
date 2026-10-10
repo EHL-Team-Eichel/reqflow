@@ -1,4 +1,5 @@
 import type { RequirementCategory } from "@reqflow/core";
+import { COMPONENT_PARTS } from "./componentParts";
 
 /**
  * The clickable parts of the car on the Car tab. Every part has at least one mesh in the 3D model
@@ -351,7 +352,7 @@ export const CAR_PARTS: CarPart[] = [
       "bumps?",
       "potholes?",
       "road noise",
-      "damp(?:ers?|ing)",
+      "damping",
       "fahrwerk",
       "federung",
     ],
@@ -364,11 +365,6 @@ export const CAR_PARTS: CarPart[] = [
     blurb: "Electric range, battery, motors, acceleration and efficiency.",
     keywords: [
       "range",
-      "batter(?:y|ies)",
-      "kwh",
-      "electric motors?",
-      "motors?",
-      "engines?",
       "drivetrain",
       "powertrain",
       "acceleration",
@@ -376,8 +372,6 @@ export const CAR_PARTS: CarPart[] = [
       "efficiency",
       "consumption",
       "reichweite",
-      "akku",
-      "motor",
       "verbrauch",
       "hybrid",
       "phev",
@@ -418,8 +412,6 @@ export const CAR_PARTS: CarPart[] = [
     keywords: [
       "seats?",
       "front seats?",
-      "driver(?:'s)? seats?",
-      "passenger seats?",
       "seat ventilation",
       "ventilated seats?",
       "heated seats?",
@@ -427,7 +419,6 @@ export const CAR_PARTS: CarPart[] = [
       "lumbar(?: support)?",
       "massage",
       "bolsters?",
-      "headrests?",
       "seating position",
       "sitze?",
       "sitzheizung",
@@ -494,8 +485,6 @@ export const CAR_PARTS: CarPart[] = [
       "apps?",
       "carplay",
       "android auto",
-      "instrument cluster",
-      "driver display",
       "voice(?: control| assistant)?",
       "hey bmw",
       "bildschirm",
@@ -552,7 +541,6 @@ export const CAR_PARTS: CarPart[] = [
       "hvac",
       "temperature",
       "fan",
-      "vents?",
       "defrost",
       "heating",
       "heat pump",
@@ -569,19 +557,12 @@ export const CAR_PARTS: CarPart[] = [
     keywords: [
       "cent(?:re|er) console",
       "console",
-      "controller",
-      "rotary (?:controller|knob)",
       "knobs?",
       "physical (?:buttons?|controls?)",
       "buttons?",
-      "gear (?:selector|lever|shifter)",
-      "wireless charg\\p{L}*",
-      "charging pad",
-      "phone (?:tray|holder)",
-      "cup ?holders?",
+      "phone holders?",
       "storage",
       "cubby",
-      "armrest",
       "usb",
       "mittelkonsole",
       "ablagen?",
@@ -617,8 +598,6 @@ export const CAR_PARTS: CarPart[] = [
     keywords: [
       "ambient(?: light(?:ing)?)?",
       "mood light\\p{L}*",
-      "reading lights?",
-      "headliner",
       "atmosphere",
       "ambiente",
       "innenbeleuchtung",
@@ -653,6 +632,7 @@ export const CAR_PARTS: CarPart[] = [
     ],
     categories: ["driver_assistance"],
   },
+  ...COMPONENT_PARTS,
 ];
 
 /** Requirements the classifier can't place on a part land here (shown as "Whole car"). */

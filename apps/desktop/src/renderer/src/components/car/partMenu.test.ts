@@ -23,10 +23,19 @@ describe("car parts submenu", () => {
       "rear_doors",
       "door_handles",
     ]);
-    expect(PART_SUBCLASSES.find((s) => s.id === "seats")?.partIds).toEqual([
-      "front_seats",
-      "rear_seats",
-    ]);
+    expect(PART_SUBCLASSES.find((s) => s.id === "seats")?.partIds).toEqual(
+      expect.arrayContaining([
+        "front_seats",
+        "rear_seats",
+        "driver_seat",
+        "passenger_seat",
+        "rear_left_seat",
+        "rear_center_seat",
+        "rear_right_seat",
+        "headrests",
+        "seat_belts",
+      ]),
+    );
   });
 
   it("totals only the descendant requirements and treats missing counts as zero", () => {

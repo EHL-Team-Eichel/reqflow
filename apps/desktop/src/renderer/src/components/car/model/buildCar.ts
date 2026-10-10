@@ -260,9 +260,18 @@ export function buildCar(): CarModel {
         );
       }
       // Brake disc and caliper (M blue), visible through the spokes.
-      disc("brakes", "metal", "exterior", 0.19, 0.028, [axle, G60.tyreRadius, z + side * 0.01], 40);
+      disc(
+        "brake_discs",
+        "metal",
+        "exterior",
+        0.19,
+        0.028,
+        [axle, G60.tyreRadius, z + side * 0.01],
+        40,
+      );
+      disc("brakes", "metal", "exterior", 0.08, 0.03, [axle, G60.tyreRadius, z - side * 0.015]);
       box(
-        "brakes",
+        "brake_calipers",
         "accent",
         "exterior",
         [0.1, 0.16, 0.06],
@@ -271,41 +280,68 @@ export function buildCar(): CarModel {
       );
       // Suspension: damper with a coil spring round it, above the wheel centre.
       const damperZ = side * 0.6;
-      add(
-        new THREE.CylinderGeometry(0.028, 0.028, 0.36, 16),
-        "suspension",
-        "metal",
-        "interior",
-        (m) => m.position.set(axle - 0.02, 0.6, damperZ),
+      add(new THREE.CylinderGeometry(0.028, 0.028, 0.36, 16), "dampers", "metal", "interior", (m) =>
+        m.position.set(axle - 0.02, 0.6, damperZ),
       );
       add(
         new THREE.TubeGeometry(helix(0.065, 0.3, 6), 160, 0.009, 6),
-        "suspension",
+        "suspension_springs",
         "accent",
         "interior",
         (m) => m.position.set(axle - 0.02, 0.45, damperZ),
       );
       // Lower control arm towards the body.
-      box("suspension", "metal", "interior", [0.08, 0.03, 0.42], [axle, 0.33, side * 0.42], {
+      box("control_arms", "metal", "interior", [0.08, 0.03, 0.42], [axle, 0.33, side * 0.42], {
         radius: 0.012,
+      });
+      box("suspension", "metal", "interior", [0.14, 0.035, 0.14], [axle - 0.02, 0.79, damperZ], {
+        radius: 0.018,
       });
     }
   }
 
   // ---- Drivetrain: battery under the floor, a motor and drive shafts on each axle ----------------
-  box("drivetrain", "dark", "interior", [2.5, 0.11, 1.42], [-0.05, 0.255, 0], { radius: 0.03 });
+  box("battery_pack", "dark", "interior", [2.5, 0.11, 1.42], [-0.05, 0.255, 0], { radius: 0.03 });
+  // Chassis support remains the selectable home for broad drivetrain requirements.
+  box("drivetrain", "metal", "interior", [2.6, 0.035, 1.35], [-0.05, 0.18, 0], { radius: 0.012 });
   for (const axle of [G60.frontAxleX, G60.rearAxleX]) {
-    disc("drivetrain", "metal", "interior", 0.13, 0.36, [axle, 0.42, 0], 32);
+    const motorId = axle === G60.frontAxleX ? "motor" : "rear_motor";
+    disc(motorId, "metal", "interior", 0.13, 0.36, [axle, 0.42, 0], 32);
+    // End caps and raised ribs give each motor an identifiable casing.
+    for (const z of [-0.185, 0.185])
+      disc(motorId, "metal", "interior", 0.115, 0.025, [axle, 0.42, z], 28);
+    for (const z of [-0.1, 0, 0.1])
+      add(new THREE.TorusGeometry(0.133, 0.007, 6, 32), motorId, "metal", "interior", (m) =>
+        m.position.set(axle, 0.42, z),
+      );
     for (const side of SIDES) {
       add(
         new THREE.CylinderGeometry(0.022, 0.022, 0.52, 10).rotateX(Math.PI / 2),
-        "drivetrain",
+        "drive_shafts",
         "metal",
         "interior",
         (m) => m.position.set(axle, 0.39, side * 0.45),
       );
     }
   }
+  box("transmission", "metal", "interior", [0.3, 0.22, 0.25], [G60.frontAxleX - 0.24, 0.43, 0.04], {
+    radius: 0.035,
+  });
+  box("differential", "metal", "interior", [0.21, 0.18, 0.22], [G60.rearAxleX + 0.2, 0.4, 0], {
+    radius: 0.04,
+  });
+  box("inverter", "dark", "interior", [0.3, 0.12, 0.35], [G60.frontAxleX, 0.64, 0], {
+    radius: 0.025,
+  });
+  box("cooling_system", "metal", "interior", [0.07, 0.32, 0.78], [1.9, 0.57, 0], { radius: 0.012 });
+  for (const z of [-0.22, 0.22])
+    add(
+      new THREE.TorusGeometry(0.11, 0.009, 8, 32).rotateY(Math.PI / 2),
+      "cooling_system",
+      "metal",
+      "interior",
+      (m) => m.position.set(1.845, 0.57, z),
+    );
 
   // ---- Interior -------------------------------------------------------------------------------
   // Front seats: cushion, backrest leaning back, headrest.
@@ -316,7 +352,7 @@ export function buildCar(): CarModel {
       rotZ: 0.06,
     });
     cushion.userData.seatPosition = side < 0 ? "driver" : "front_passenger";
-    seatBack("front_seats", -0.43, 0.82, z, 0.5, 0.64, 0.24);
+    seatBack(side < 0 ? "driver_seat" : "passenger_seat", -0.43, 0.82, z, 0.5, 0.64, 0.24);
   }
   // Rear seats: three places on one bench.
   for (const [z, w] of [
@@ -328,7 +364,21 @@ export function buildCar(): CarModel {
       radius: 0.05,
       rotZ: 0.05,
     });
-    seatBack("rear_seats", -1.33, 0.8, z, w, 0.54, 0.3);
+    const seatId = z < 0 ? "rear_left_seat" : z > 0 ? "rear_right_seat" : "rear_center_seat";
+    seatBack(seatId, -1.33, 0.8, z, w, 0.54, 0.3);
+  }
+  // Belt straps sit on the backrests; each remains visible from the cabin view.
+  for (const [x, y, z, lean] of [
+    [-0.34, 0.83, -0.58, 0.24],
+    [-0.34, 0.83, 0.58, 0.24],
+    [-1.24, 0.81, -0.61, 0.3],
+    [-1.24, 0.81, 0.09, 0.3],
+    [-1.24, 0.81, 0.61, 0.3],
+  ] as const) {
+    box("seat_belts", "trim", "interior", [0.018, 0.48, 0.035], [x, y, z], {
+      radius: 0.006,
+      rotZ: lean,
+    });
   }
 
   function seatBack(
@@ -343,7 +393,7 @@ export function buildCar(): CarModel {
     box(partId, "seat", "interior", [0.13, h, w], [x, y, z], { radius: 0.05, rotZ: lean });
     const d = h / 2 + 0.13;
     box(
-      partId,
+      "headrests",
       "seat",
       "interior",
       [0.1, 0.17, Math.min(0.28, w - 0.1)],
@@ -388,6 +438,10 @@ export function buildCar(): CarModel {
   box("dashboard", "glow", "interior", [0.012, 0.022, 1.3], [0.535, 0.875, 0.05], {
     radius: 0.005,
   });
+  box("glovebox", "trim", "interior", [0.035, 0.14, 0.45], [0.565, 0.735, 0.46], { radius: 0.018 });
+  box("glovebox", "chrome", "interior", [0.009, 0.012, 0.09], [0.54, 0.778, 0.46], {
+    radius: 0.004,
+  });
 
   // BMW Curved Display: one curved glass panel from behind the wheel to the middle.
   {
@@ -400,6 +454,18 @@ export function buildCar(): CarModel {
       "interior",
       (m) => m.position.set(cx, 1.03, DRIVER_Z),
     );
+    for (const [partId, start, span] of [
+      ["instrument_cluster", 1.51, 0.47],
+      ["center_touchscreen", 1.06, 0.43],
+    ] as const) {
+      add(
+        new THREE.CylinderGeometry(R + 0.018, R + 0.018, 0.12, 32, 1, true, start, span),
+        partId,
+        "screen",
+        "interior",
+        (m) => m.position.set(cx, 1.03, DRIVER_Z),
+      );
+    }
     add(
       new THREE.CylinderGeometry(R + 0.012, R + 0.012, 0.145, 48, 1, true, 1.04, 0.96),
       "curved_display",
@@ -419,39 +485,51 @@ export function buildCar(): CarModel {
 
   // Climate: four air vents under the display and the climate control strip.
   for (const z of [-0.66, -0.14, 0.14, 0.66]) {
-    box("climate", "dark", "interior", [0.02, 0.045, 0.17], [0.54, 0.905, z], { radius: 0.008 });
+    box("air_vents", "dark", "interior", [0.02, 0.045, 0.17], [0.54, 0.905, z], { radius: 0.008 });
   }
   box("climate", "trim", "interior", [0.02, 0.045, 0.34], [0.54, 0.79, 0], { radius: 0.01 });
 
   // Centre console: tunnel, armrest, controller, gear selector, wireless charging tray.
   box("center_console", "trim", "interior", [0.82, 0.22, 0.26], [0.12, 0.52, 0], { radius: 0.05 });
-  box("center_console", "trim", "interior", [0.32, 0.08, 0.24], [-0.27, 0.665, 0], {
+  box("armrest", "trim", "interior", [0.32, 0.08, 0.24], [-0.27, 0.665, 0], {
     radius: 0.035,
   });
   add(
     new THREE.CylinderGeometry(0.036, 0.04, 0.035, 28),
-    "center_console",
+    "idrive_controller",
     "chrome",
     "interior",
     (m) => m.position.set(0.0, 0.645, 0),
   );
-  box("center_console", "dark", "interior", [0.07, 0.04, 0.05], [0.13, 0.65, 0], { radius: 0.012 });
-  box("center_console", "dark", "interior", [0.16, 0.012, 0.1], [0.37, 0.636, 0], {
+  box("gear_selector", "dark", "interior", [0.07, 0.04, 0.05], [0.13, 0.65, 0], { radius: 0.012 });
+  box("wireless_charger", "dark", "interior", [0.16, 0.012, 0.1], [0.37, 0.636, 0], {
     radius: 0.004,
   });
+  for (const z of [-0.065, 0.065]) {
+    add(
+      new THREE.TorusGeometry(0.032, 0.004, 8, 24).rotateX(Math.PI / 2),
+      "cup_holders",
+      "chrome",
+      "interior",
+      (m) => m.position.set(0.21, 0.638, z),
+    );
+    box("rear_air_vents", "dark", "interior", [0.025, 0.05, 0.08], [-0.305, 0.57, z], {
+      radius: 0.006,
+    });
+  }
 
   // Sound system: woofers in the doors, tweeters in the dash corners, centre speaker.
   for (const side of SIDES) {
     for (const x of [0.4, -0.8]) {
       add(
         new THREE.CylinderGeometry(0.075, 0.075, 0.03, 28).rotateX(Math.PI / 2),
-        "sound_system",
+        "door_speakers",
         "dark",
         "interior",
         (m) => m.position.set(x, 0.46, side * 0.86),
       );
     }
-    add(new THREE.CylinderGeometry(0.03, 0.03, 0.02, 20), "sound_system", "dark", "interior", (m) =>
+    add(new THREE.CylinderGeometry(0.03, 0.03, 0.02, 20), "tweeters", "dark", "interior", (m) =>
       m.position.set(0.8, 0.965, side * 0.68),
     );
   }
@@ -465,10 +543,10 @@ export function buildCar(): CarModel {
       radius: 0.004,
     });
   }
-  box("ambient_light", "volume", "interior", [0.9, 0.014, 1.15], [-0.6, 1.42, 0], {
+  box("headliner", "volume", "interior", [0.9, 0.014, 1.15], [-0.6, 1.42, 0], {
     radius: 0.006,
   });
-  box("ambient_light", "glow", "interior", [0.07, 0.016, 0.12], [-0.2, 1.41, 0], {
+  box("reading_lights", "glow", "interior", [0.07, 0.016, 0.12], [-0.2, 1.41, 0], {
     radius: 0.006,
   });
 

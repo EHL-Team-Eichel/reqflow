@@ -220,6 +220,15 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 **Log**
 
+- 2026-10-10: Expanded the car from 34 to 68 selectable parts while retaining the original
+  assemblies. Added distinct front/rear motors, gearbox, battery, inverter, cooling, shafts,
+  differential, brake discs/calipers and suspension components, plus individual seats,
+  headrests, belts, displays, vents, console controls, speakers and cabin trim. Each new part
+  has its own mesh, badge anchor, compact tag and EN/DE classification vocabulary; menu
+  subclasses cover every part exactly once. Verified typecheck, 378 tests (25 skipped),
+  UI smoke (PASS, 32 screenshots), and an isolated native Electron probe selecting all 34
+  new parts with zero requirements. Reviewed motor/driver-seat selection and detailed trunk.
+
 - 2026-10-10: Exterior-visibility slice complete: internal meshes/points are hidden and unpickable
   in Exterior, outside points appear only on unobstructed surfaces and follow visible sides when
   orbiting, and Interior restores all parts. Added 14 regressions. Human approved the narrow
