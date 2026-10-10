@@ -366,15 +366,15 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 ## WS7 — AI blocks: AI Filter, AI Splitter, Add to Car
 
-**Status:** in progress (Mastra raw splitter and transparent review) · **Owner:** Claude Code (Add to Car), OpenCode (AI Splitter) · **Branch:** `main`, `ws7-mastra-splitter`
-**Depends on:** nothing for tasks 1–2; WS8 for the splitter's priority mode.
+**Status:** review (Mastra raw splitter and transparent review) · **Owner:** Claude Code (Add to Car), OpenCode (AI Splitter) · **Branch:** `main`, `ws7-mastra-splitter`
+**Depends on:** nothing for raw-data analysis; WS8 for the legacy requirement-factor scorer integration.
 
 **Tasks**
 
-- [ ] Mastra raw-data analysis: customer-demand bands (2–10), car parts and custom instructions.
-- [ ] Research JSON import alongside existing Excel/SQLite; preserve original provenance.
-- [ ] Persist explainable score/routing reports and show review charts with evidence drill-down.
-- [ ] Verify the integrated slice and push `ws7-mastra-splitter` separately for team review.
+- [x] Mastra raw-data analysis: customer-demand bands (2–10), car parts and custom instructions.
+- [x] Research JSON import alongside existing Excel/SQLite; preserve original provenance.
+- [x] Persist explainable score/routing reports and show review charts with evidence drill-down.
+- [x] Verify the integrated slice and push `ws7-mastra-splitter` separately for team review.
 - [x] `packages/llm`: `createLlmClient(settings.llm, { apiKey })` with an `anthropic` provider (use the
       `claude-api` skill) and a deterministic `mock`; `generateObject` validates with Zod; tests use the mock.
 - [ ] AI Filter: keep items matching the criterion, extract findings with verbatim-excerpt
@@ -391,6 +391,34 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 **Log**
 
+- 2026-10-11: Mastra raw splitter and transparent review completed on `ws7-mastra-splitter`, based on
+  `origin/main` `9228fb3` (fetched again before handoff; unchanged). Several Raw/Research outputs merge
+  into its single input. JSON, SQLite and synthetic Excel integration tests cover all three raw modes.
+  Implementation commits through `9e7ad81` are pushed to `origin/ws7-mastra-splitter` for team review.
+  Analysis uses the injected `LlmClient`; the default main-process Anthropic adapter uses a standalone
+  Mastra Agent, existing model settings and secret-store key. Offline mock is clearly labelled.
+  - Discovery batches → global need consolidation → fixed grouping → evidence-linked assignments.
+    Original records route exactly once; secondary needs, context and provenance remain inspectable.
+    Customer demand uses code-calculated 70% relative frequency + 30% expressed impact, with 2–10
+    fixed-width bands. Missing impact gives a NULL score; context is not a vote. Reimports add no vote
+    or impact weight, while independent identical comments remain independent. Customer count is unknown.
+  - Versioned reports persist with the historical BlockRun. Splitter/HIL show decomposed ranking bars,
+    support/opposition/unclear balance, a source-by-need matrix and exact evidence/locator drill-down.
+    A human can correct item output routes at a directly connected editable paused HIL, before any
+    downstream consumer runs. Required rationale, optimistic version and audit are saved atomically
+    with the output snapshot; resume consumes corrected outputs. Original AI explanations, calculated
+    scores and requirement decisions stay intact. A forced final audit-insert failure proves rollback
+    of report/output writes, unchanged in-memory state and safe retry.
+  - Verification: `npm run check` passed (all workspace typechecks, 482 tests passed, 25 unavailable
+    real-data tests skipped, Prettier); `npm run smoke` passed on macOS with 36 screenshots. Inspected
+    `splitter-demand-ranking`, `splitter-source-heatmap`, `splitter-human-routing-correction`,
+    `splitter-original-evidence`, `hil-splitter-review`. Actual editor → SQLite Raw → splitter → HIL
+    smoke verifies persisted human correction, audit and resumed data. Recorded fake HTTP exercises
+    the real Mastra Agent transport; no live provider or confidential-data calls were made.
+  - Next: team reviews this separate branch, integrates its focused core/engine/main/UI additions,
+    and verifies a configured live LLM. WS8 requirement scoring and AI Filter remain the existing open
+    work. Oversized records/catalogs fail explicitly; this slice does not silently truncate them.
+    The original checkout and its active team merge were preserved.
 - 2026-10-11: Human requested implementation of the planned Mastra raw splitter, multi-dataset input,
   configurable priority-band granularity, JSON/SQL/Excel compatibility and transparent HIL graphics.
   Pulled latest main into the isolated worktree and started `ws7-mastra-splitter`; parallel work will
