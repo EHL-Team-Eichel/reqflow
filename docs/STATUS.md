@@ -220,6 +220,18 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 **Log**
 
+- 2026-10-10: Exterior-visibility slice complete: internal meshes/points are hidden and unpickable
+  in Exterior, outside points appear only on unobstructed surfaces and follow visible sides when
+  orbiting, and Interior restores all parts. Added 14 regressions. Human approved the narrow
+  shared Car smoke update (also removes obsolete sample-toggle checks). Verified this slice
+  against committed code in an isolated worktree: typecheck, 328 passing tests (25 skipped),
+  smoke PASS with 32 screenshots, light/dark visual checks and changed-file Prettier. Shared
+  checkout has concurrent component/menu edits with unrelated test failures; those stay intact.
+
+- 2026-10-10: OpenCode claimed the focused exterior-visibility slice: hide internal meshes and
+  requirement points in Exterior, occlude outside badges behind the body, preserve Interior,
+  and verify before committing/pushing only this slice. Existing model/styling edits stay intact.
+
 - 2026-10-10: Completed trunk-detail refinement: boot lid now wraps around a recessed plate
   surround, with a curved lower seam, opening handle, rear roundel and fitted low deck lip.
   Added twin rear LED strokes, four parking sensors, reflectors and diffuser ribs; all details

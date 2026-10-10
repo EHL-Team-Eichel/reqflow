@@ -7,6 +7,12 @@ import { partTag } from "./partTags";
 import { buildCar, type CarPiece } from "./model/buildCar";
 import { G60 } from "./model/body";
 import {
+  exteriorBadgeTargets,
+  isPieceVisible,
+  visibleExteriorBadgePoint,
+  type CarView,
+} from "./model/visibility";
+import {
   applyState,
   createOutlineMaterial,
   createPieceStyle,
@@ -17,7 +23,7 @@ import {
   type SketchPalette,
 } from "./model/sketch";
 
-export type CarView = "exterior" | "interior";
+export type { CarView } from "./model/visibility";
 export type CameraPreset = "front" | "side" | "rear" | "top";
 
 const PRESETS: Record<
@@ -57,6 +63,7 @@ export function CarViewer(props: Props) {
   const [hovered, setHovered] = useState<string | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
   const [anchors, setAnchors] = useState<ReadonlyMap<string, THREE.Vector3>>(new Map());
+  const [exteriorParts, setExteriorParts] = useState<ReadonlySet<string>>(new Set());
 
   useEffect(() => {
     const host = hostRef.current;
@@ -89,6 +96,13 @@ export function CarViewer(props: Props) {
     const car = buildCar();
     scene.add(car.root);
     setAnchors(car.anchors);
+    const exteriorTargets = exteriorBadgeTargets(car.pieces, car.anchors);
+    const exteriorPartsForModel = new Set(exteriorTargets.keys());
+    setExteriorParts(exteriorPartsForModel);
+    const exteriorSurfaces = car.pieces
+      .filter((piece) => isPieceVisible(piece, "exterior"))
+      .map((piece) => piece.mesh);
+    const badgeRaycaster = new THREE.Raycaster();
     const bounds = new THREE.Box3().setFromObject(car.root);
     const corners: THREE.Vector3[] = [];
     for (const x of [bounds.min.x, bounds.max.x]) {
@@ -179,12 +193,17 @@ export function CarViewer(props: Props) {
 
     const restyle = () => {
       const { counts, selected, view } = propsRef.current;
+      if (view === "exterior" && hoveredPart && !exteriorPartsForModel.has(hoveredPart)) {
+        hoveredPart = null;
+        setHovered(null);
+      }
       scene.background = palette.background;
       outline.uniforms.color!.value.copy(palette.ink);
       sketchMat.color.copy(palette.ink);
       sketchMat.opacity = view === "interior" ? 0.08 : 0.35;
       pickable.length = 0;
       for (const piece of car.pieces) {
+        piece.mesh.visible = isPieceVisible(piece, view);
         const state: PartState =
           piece.partId && piece.partId === selected
             ? "selected"
@@ -198,8 +217,11 @@ export function CarViewer(props: Props) {
         const canPick = applyState(piece, styles.get(piece)!, state, ghost, palette);
         const hull = outlines.get(piece);
         if (hull) hull.visible = !ghost;
-        if (canPick) pickable.push(piece.mesh);
+        // Non-interactive surfaces (wheel-well shields) must still block clicks behind them.
+        if (piece.mesh.visible && (canPick || (!ghost && piece.partId === null)))
+          pickable.push(piece.mesh);
       }
+      needsPick = true;
       dirty = true;
     };
 
@@ -341,8 +363,20 @@ export function CarViewer(props: Props) {
       // Badges follow their anchors.
       const { clientWidth: w, clientHeight: h } = host;
       for (const [partId, badge] of badgeRefs.current) {
-        const anchor = car.anchors.get(partId);
-        if (!anchor) continue;
+        const anchor =
+          propsRef.current.view === "exterior"
+            ? visibleExteriorBadgePoint(
+                partId,
+                exteriorTargets.get(partId) ?? [],
+                camera,
+                exteriorSurfaces,
+                badgeRaycaster,
+              )
+            : car.anchors.get(partId);
+        if (!anchor) {
+          badge.style.visibility = "hidden";
+          continue;
+        }
         v.copy(anchor).project(camera);
         const visible = v.z > -1 && v.z < 1 && Math.abs(v.x) < 1.05 && Math.abs(v.y) < 1.05;
         badge.style.visibility = visible ? "visible" : "hidden";
@@ -398,7 +432,9 @@ export function CarViewer(props: Props) {
     );
   }
 
-  const badged = [...props.counts.entries()].filter(([id, n]) => n > 0 && anchors.has(id));
+  const badged = [...props.counts.entries()].filter(
+    ([id, n]) => n > 0 && anchors.has(id) && (props.view === "interior" || exteriorParts.has(id)),
+  );
   return (
     <div ref={hostRef} className="relative h-full w-full overflow-hidden" data-testid="car-viewer">
       {badged.map(([partId, n]) => (

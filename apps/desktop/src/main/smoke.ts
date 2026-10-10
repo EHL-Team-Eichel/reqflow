@@ -532,9 +532,48 @@ export async function runSmoke(
     (await count('[data-testid^="car-part-"]')) >= 30,
     "car: part index should list every part",
   );
-  check(await click('[data-testid="car-source-sample"]'), "car: no sample source option");
   await delay(400);
-  check((await count('[data-testid^="car-badge-"]')) >= 4, "car: sample should badge ≥ 4 parts");
+  const internalBadges = [
+    "front_seats",
+    "rear_seats",
+    "steering_wheel",
+    "curved_display",
+    "hud",
+    "dashboard",
+    "climate",
+    "center_console",
+    "sound_system",
+    "ambient_light",
+    "luggage",
+    "drivetrain",
+    "suspension",
+  ]
+    .map((id) => `[data-testid="car-badge-${id}"]`)
+    .join(", ");
+  const badgeVisible = (id: string) =>
+    js<boolean>(
+      `(() => { const el = document.querySelector('[data-testid="car-badge-${id}"]'); return !!el && getComputedStyle(el).visibility === "visible"; })()`,
+    );
+  check((await count(internalBadges)) === 0, "car: Exterior must hide all internal points");
+  check(await badgeVisible("kidney_grille"), "car: visible front design should have a point");
+  check(await click('[data-testid="car-badge-kidney_grille"]'), "car: no front-design point");
+  await delay(400);
+  check(
+    (await text('[data-testid="car-part-title"]')) === "Kidney grille & front design",
+    "car: exterior point should select the front design",
+  );
+  check(
+    (await count('[data-testid="car-requirement"]')) >= 1,
+    "car: front design has no requirement",
+  );
+  await shot("car-exterior-points");
+  check(await click('[data-testid="car-view-interior"]'), "car: no interior view");
+  await delay(400);
+  check(
+    (await count('[data-testid^="car-badge-"]')) >= 4,
+    "car: Interior should restore internal points",
+  );
+  check(await badgeVisible("rear_seats"), "car: Interior must show the rear-seat point");
   check(await click('[data-testid="car-badge-rear_seats"]'), "car: no badge on the rear seats");
   await delay(400);
   check(
@@ -550,9 +589,22 @@ export async function runSmoke(
     "car: classifier should explain itself",
   );
   await shot("car-part-selected");
+  check(await click('[data-testid="car-view-exterior"]'), "car: no exterior view");
+  await delay(400);
+  check(
+    (await count(internalBadges)) === 0,
+    "car: selection must not reveal internal points in Exterior",
+  );
+  await shot("car-exterior-selected-interior");
   for (const view of ["side", "rear", "top"]) {
     check(await click(`[data-testid="car-camera-${view}"]`), `car: no ${view} camera`);
     await delay(900);
+    check((await count(internalBadges)) === 0, `car: ${view} Exterior must hide internal points`);
+    if (view === "rear")
+      check(
+        !(await badgeVisible("kidney_grille")),
+        "car: rear view must occlude the front-design point",
+      );
     await shot(`car-${view}`);
   }
   check(await click('[data-testid="car-camera-side"]'), "car: no side camera");
@@ -578,7 +630,6 @@ export async function runSmoke(
   await delay(900);
   await shot("car-interior");
   check(await click('[data-testid="car-view-exterior"]'), "car: no exterior view");
-  check(await click('[data-testid="car-source-app"]'), "car: no app source option");
 
   // 4. Settings: every section, then dark mode across pages.
   await go("/settings");
@@ -598,8 +649,21 @@ export async function runSmoke(
   await shot("settings-dark");
   for (const route of ["/dataflow", "/car"]) {
     await go(route);
+    if (route === "/car") {
+      for (let i = 0; i < 40 && (await count('[data-testid="car-badge-kidney_grille"]')) === 0; i++)
+        await delay(100);
+      check((await count(internalBadges)) === 0, "car: dark Exterior must hide internal points");
+      check(await badgeVisible("kidney_grille"), "car: dark Exterior must retain visible points");
+    }
     await shot(`${slug(route)}-dark`);
   }
+  check(await click('[data-testid="car-view-interior"]'), "car: no dark interior view");
+  await delay(400);
+  check(await badgeVisible("rear_seats"), "car: dark Interior must restore internal points");
+  await shot("car-interior-dark");
+  check(await click('[data-testid="car-view-exterior"]'), "car: no dark exterior view");
+  await delay(400);
+  check((await count(internalBadges)) === 0, "car: dark Exterior must hide internal points again");
 
   const report = { ok: errors.length === 0, platform: process.platform, errors, screens };
   writeFileSync(join(outDir, "report.json"), JSON.stringify(report, null, 2));
