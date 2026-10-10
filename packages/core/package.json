@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./ipc": "./src/ipc.ts",
     "./fixtures": "./src/fixtures/index.ts"
   },
   "scripts": {

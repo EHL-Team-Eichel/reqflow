@@ -1,0 +1,28 @@
+# Installers for Windows (NSIS), macOS (DMG) and Linux (AppImage).
+# Build each on its own OS (CI matrix: .github/workflows/ci.yml). Output: apps/desktop/release/
+appId: io.github.ehl-team-eichel.reqflow
+productName: ReqFlow
+copyright: Copyright © 2026 EHL Team Eichel
+directories:
+  output: release
+  buildResources: build
+files:
+  - out/**
+  - package.json
+asar: true
+npmRebuild: false # no native modules: everything is bundled and SQLite is built into Electron's Node
+win:
+  target: [nsis]
+  artifactName: ${productName}-${version}-win-${arch}.${ext}
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+mac:
+  target: [dmg]
+  category: public.app-category.productivity
+  identity: null # unsigned hackathon builds (see docs/ARCHITECTURE.md → Packaging)
+  artifactName: ${productName}-${version}-mac-${arch}.${ext}
+linux:
+  target: [AppImage]
+  category: Office
+  artifactName: ${productName}-${version}-linux-${arch}.${ext}

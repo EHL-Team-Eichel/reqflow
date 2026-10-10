@@ -1,0 +1,39 @@
+{
+  "name": "@reqflow/desktop",
+  "productName": "ReqFlow",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ReqFlow — customer requirements workbench (desktop app)",
+  "author": "EHL Team Eichel",
+  "main": "./out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "start": "electron-vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "smoke": "electron-vite build && electron . --smoke=out/smoke",
+    "package": "electron-vite build && electron-builder --publish never",
+    "package:dir": "electron-vite build && electron-builder --dir --publish never"
+  },
+  "devDependencies": {
+    "@reqflow/core": "*",
+    "@reqflow/db": "*",
+    "@reqflow/engine": "*",
+    "@reqflow/llm": "*",
+    "@reqflow/nodes": "*",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^5.2.0",
+    "@xyflow/react": "^12.12.0",
+    "electron": "44.7.0",
+    "electron-builder": "^26.15.3",
+    "electron-vite": "^5.0.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-router": "^8.4.0",
+    "tailwindcss": "^4.3.3",
+    "vite": "^7.3.7",
+    "zod": "^4.6.5"
+  }
+}

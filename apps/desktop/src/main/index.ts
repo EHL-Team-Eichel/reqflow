@@ -1,0 +1,94 @@
+import { join } from "node:path";
+import { app, BrowserWindow, shell, type IpcMainInvokeEvent } from "electron";
+import { createHandlers } from "./handlers";
+import { registerIpc } from "./ipc";
+import { dataDir, loadDevEnv } from "./paths";
+import { parseSmokeArg, runSmoke } from "./smoke";
+
+const smokeDir = parseSmokeArg(process.argv);
+
+// One instance per user: two processes writing the same SQLite file would corrupt the audit trail.
+if (!smokeDir && !app.requestSingleInstanceLock()) app.quit();
+
+function createWindow(): BrowserWindow {
+  const win = new BrowserWindow({
+    width: 1440,
+    height: 900,
+    minWidth: 1024,
+    minHeight: 640,
+    title: "ReqFlow",
+    show: false,
+    autoHideMenuBar: true,
+    webPreferences: {
+      preload: join(__dirname, "../preload/index.js"),
+      contextIsolation: true,
+      sandbox: true,
+      nodeIntegration: false,
+    },
+  });
+  win.once("ready-to-show", () => (smokeDir ? win.showInactive() : win.show()));
+
+  // The window never navigates away from the app; http(s) links open in the user's browser.
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (/^https?:\/\//.test(url)) void shell.openExternal(url);
+    return { action: "deny" };
+  });
+  win.webContents.on("will-navigate", (event, url) => {
+    const current = new URL(win.webContents.getURL());
+    const next = new URL(url);
+    if (next.origin !== current.origin || next.pathname !== current.pathname)
+      event.preventDefault();
+  });
+
+  const devUrl = process.env.ELECTRON_RENDERER_URL;
+  if (!app.isPackaged && devUrl) void win.loadURL(devUrl);
+  else void win.loadFile(join(__dirname, "../renderer/index.html"));
+  return win;
+}
+
+const isTrustedSender = (event: IpcMainInvokeEvent): boolean =>
+  BrowserWindow.fromWebContents(event.sender) !== null &&
+  event.senderFrame === event.sender.mainFrame;
+
+app.on("second-instance", () => {
+  const [win] = BrowserWindow.getAllWindows();
+  if (win) {
+    if (win.isMinimized()) win.restore();
+    win.focus();
+  }
+});
+
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") app.quit();
+});
+
+void app.whenReady().then(() => {
+  loadDevEnv();
+  const dir = dataDir(smokeDir ? join(smokeDir, "data") : null);
+  registerIpc(
+    createHandlers({
+      appInfo: () => ({
+        version: app.getVersion(),
+        platform: process.platform,
+        dataDir: dir,
+        isPackaged: app.isPackaged,
+      }),
+    }),
+    isTrustedSender,
+  );
+
+  const win = createWindow();
+  if (smokeDir) {
+    void runSmoke(win, smokeDir).then(
+      (code) => app.exit(code),
+      (err) => {
+        console.error("[smoke] crashed:", err);
+        app.exit(1);
+      },
+    );
+  }
+
+  app.on("activate", () => {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
+});

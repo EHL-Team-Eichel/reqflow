@@ -15,8 +15,6 @@ next-env.d.ts
 # BMW-provided data is confidential: keep it local
 data/raw/*
 !data/raw/.gitkeep
-data/uploads/*
-!data/uploads/.gitkeep
 data/*.db
 data/*.db-*
 
@@ -28,3 +26,6 @@ data/*.db-*
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# Electron build output
+release/

@@ -98,3 +98,21 @@ export const WorkflowRun = z.object({
   error: z.string().optional(),
 });
 export type WorkflowRun = z.infer<typeof WorkflowRun>;
+
+/** One palette entry in the editor (served by `nodes.catalog()`). */
+export interface NodeCatalogEntry {
+  type: string;
+  label: string;
+  description: string;
+  category: NodeCategory;
+  consumes: DataKey[];
+  produces: DataKey[];
+  configJsonSchema: unknown; // JSON Schema generated from the node's configSchema
+}
+
+/** A ready-made graph the editor can instantiate ("New from template"). */
+export interface WorkflowTemplate {
+  name: string;
+  description: string;
+  graph: WorkflowGraph;
+}

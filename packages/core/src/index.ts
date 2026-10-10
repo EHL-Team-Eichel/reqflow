@@ -4,6 +4,7 @@ export * from "./audit";
 export * from "./category";
 export * from "./finding";
 export * from "./ids";
+export * from "./ipc";
 export * from "./pipeline";
 export * from "./requirement";
 export * from "./scope";

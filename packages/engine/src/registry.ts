@@ -1,17 +1,6 @@
-import type { DataKey, NodeCategory } from "@reqflow/core";
+import type { NodeCatalogEntry } from "@reqflow/core";
 import { z } from "zod";
 import type { NodeDefinition } from "./node";
-
-/** What GET /api/nodes returns for the editor palette and config forms. */
-export interface NodeCatalogEntry {
-  type: string;
-  label: string;
-  description: string;
-  category: NodeCategory;
-  consumes: DataKey[];
-  produces: DataKey[];
-  configJsonSchema: unknown; // JSON Schema generated from configSchema
-}
 
 export class NodeRegistry {
   private readonly defs = new Map<string, NodeDefinition>();

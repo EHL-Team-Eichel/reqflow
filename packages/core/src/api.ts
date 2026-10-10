@@ -2,7 +2,7 @@ import { z } from "zod";
 import { DecisionStatus, Requirement } from "./requirement";
 import { Priority } from "./scoring";
 
-/** Request/response shapes shared by the UI and the route handlers (endpoint list: docs/ARCHITECTURE.md). */
+/** Request shapes validated in the main process (method list: ./ipc.ts). */
 
 export const DecisionKind = z.enum(["approve", "reject", "defer", "challenge", "reopen"]);
 export type DecisionKind = z.infer<typeof DecisionKind>;
@@ -15,7 +15,7 @@ export const DECISION_TO_STATUS: Record<DecisionKind, DecisionStatus> = {
   reopen: "in_review",
 };
 
-/** POST /api/requirements/:id/decision — every human decision needs a rationale. */
+/** `requirements.decide(id, …)` — every human decision needs a rationale. */
 export const RequirementDecision = z.object({
   decision: DecisionKind,
   rationale: z.string().trim().min(3),
@@ -23,7 +23,7 @@ export const RequirementDecision = z.object({
 });
 export type RequirementDecision = z.infer<typeof RequirementDecision>;
 
-/** PATCH /api/requirements/:id — PM edits content; bumps version, audited field by field. */
+/** `requirements.edit(id, …)` — PM edits content; bumps version, audited field by field. */
 export const RequirementEdit = Requirement.pick({
   title: true,
   description: true,
@@ -43,7 +43,7 @@ export const RequirementEdit = Requirement.pick({
   });
 export type RequirementEdit = z.infer<typeof RequirementEdit>;
 
-/** Uniform error body for every non-2xx API response. */
+/** Uniform error shape returned over IPC (see IpcResult in ./ipc.ts). */
 export const ApiError = z.object({
   error: z.object({
     code: z.string(),

@@ -26,11 +26,16 @@ car requirements**. A product manager then reviews, challenges and decides on th
 
 ## The app — three pages (plus the audit trail)
 
+A **native desktop app for Windows, macOS and Linux**, not a web app. Everything runs locally on
+the PM's machine. BMW files are imported through the system file dialog, results are exported
+through the save dialog, and API keys are stored in the OS keychain. Only the AI and web-research
+calls leave the machine.
+
 | Page                      | What the user does                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Workflow**              | Drag nodes onto a canvas and connect them (BMW datasets, web research, AI analysis steps, scoring, a PM-review gate, publish), then run the workflow. Each node shows its status, item counts and logs, and you can click a node to see the data it produced. A run **pauses at the review gate**.                                                                                                                                             |
 | **Requirements** (output) | Shows the result: what the next car should offer. Each requirement has an ID, title, description, measurable targets, category, score breakdown, priority with rationale, evidence level, assumptions, uncertainties, conflicting evidence and status. A detail view goes from requirement → findings → verbatim evidence → source. The PM can **approve / reject / defer / edit / challenge** each one, and must give a rationale every time. |
-| **Settings**              | Choose the AI provider and models, the web research provider and allowed domains, the prioritization weights and thresholds, the default scope (vehicle line, derivative, market, horizon) and the reviewer identity.                                                                                                                                                                                                                          |
+| **Settings**              | Choose the AI provider and models, the web research provider and allowed domains, the prioritization weights and thresholds, the default scope (vehicle line, derivative, market, horizon) and the reviewer identity. API keys are entered here and stored in the OS keychain.                                                                                                                                                                 |
 | **Audit trail**           | A chronological, append-only log: who or what (AI model, PM, system) changed what, when, from what to what, and why. Filterable down to one requirement.                                                                                                                                                                                                                                                                                       |
 
 ## Pipeline (default workflow template)
@@ -111,5 +116,6 @@ qualitative · **C** — a single source or anecdotal · **D** — rests mainly 
 
 ## Non-goals for the hackathon
 
-Authentication and roles (one demo reviewer identity), multi-user live collaboration, production
-deployment and real-time streaming. Any of these can be mocked if the demo needs them.
+Authentication and roles (one demo reviewer identity), multi-user live collaboration and sync between
+machines, web and mobile versions, signed installers and auto-update. Any of these can be mocked if the
+demo needs them.

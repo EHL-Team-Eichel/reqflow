@@ -2,8 +2,8 @@
 
 ## What we're building
 
-**ReqFlow** is a hackathon prototype for the BMW challenge _"AI for Product Decision Making"_. An
-n8n-style **workflow** turns customer and market data into prioritized, evidence-linked car
+**ReqFlow** is a hackathon prototype for the BMW challenge _"AI for Product Decision Making"_: a
+**native desktop app for Windows, macOS and Linux** (Electron, not a web app). An n8n-style **workflow** turns customer and market data into prioritized, evidence-linked car
 requirements. A PM reviews them on a **Requirements** page, and a **Settings** page configures the
 app. Full spec: [PRODUCT.md](PRODUCT.md). Your task: [docs/WORKSTREAMS.md](docs/WORKSTREAMS.md).
 
@@ -47,20 +47,23 @@ app. Full spec: [PRODUCT.md](PRODUCT.md). Your task: [docs/WORKSTREAMS.md](docs/
 5. **AI never decides.** Only a human sets `approved`, `rejected` or `deferred`. Every change to a
    requirement writes an AuditEvent.
 6. **Prove it works.** Add colocated `*.test.ts` files. Before you report done, run
-   `npm run typecheck && npm test` from the repo root. For UI work, also load the page and check it.
-7. **Working in `apps/web`?** Read `apps/web/AGENTS.md` too. Next.js 16 differs from older versions,
-   and its bundled docs live in `node_modules/next/dist/docs/`.
-
+   `npm run typecheck && npm test` from the repo root. For UI work, also run `npm run smoke` and look at
+   the screenshots in `apps/desktop/out/smoke/`.
+7. **Respect the process split.** UI code (renderer) has no Node, no `fs` and no network. It talks to the
+   main process only through `api` from `@/lib/api` (contract: `packages/core/src/ipc.ts`). Data, AI
+   calls, files and API keys live in the main process. Build paths with `node:path` so they work on Windows.
 8. **Sessions are tracked with [Entire](https://github.com/entireio/cli).** Commit with plain `git`.
    Entire attaches your session to each commit as a checkpoint and pushes it on `git push`. Don't
    remove its hooks (`.claude/settings.json`, `.git/hooks`) and never put secrets in prompts.
 
-## Commands (repo root, Node ≥ 22.13)
+## Commands (repo root, Node ≥ 22.13; works on Windows, macOS, Linux)
 
 ```
 npm install          # once
-npm run dev          # web app on http://localhost:3000
+npm run dev          # opens the desktop app with hot reload
+npm run smoke        # builds, screenshots every screen, checks the IPC bridge
 npm test             # vitest, all packages
 npm run typecheck    # all workspaces
 npm run format       # prettier
+npm run package      # installer for your OS → apps/desktop/release/
 ```

@@ -23,4 +23,4 @@ export function createNodeRegistry(): NodeRegistry {
 }
 
 export { ALL_NODE_TYPES, NODE_TYPES, type NodeType } from "./types";
-export { BMW_DEFAULT_TEMPLATE, type WorkflowTemplate } from "./templates/bmw-default";
+export { BMW_DEFAULT_TEMPLATE } from "./templates/bmw-default";

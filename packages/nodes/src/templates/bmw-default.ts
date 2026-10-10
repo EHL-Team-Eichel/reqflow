@@ -1,11 +1,5 @@
-import type { WorkflowGraph } from "@reqflow/core";
+import type { WorkflowTemplate } from "@reqflow/core";
 import { NODE_TYPES } from "../types";
-
-export interface WorkflowTemplate {
-  name: string;
-  description: string;
-  graph: WorkflowGraph;
-}
 
 const COL = 300; // horizontal spacing on the canvas
 const ROW = 140;

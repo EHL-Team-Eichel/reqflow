@@ -10,8 +10,8 @@ export const ResearchProvider = z.enum(["anthropic_web_search", "tavily", "off"]
 export type ResearchProvider = z.infer<typeof ResearchProvider>;
 
 /**
- * Everything the Settings page edits. API keys are NOT settings — they live in .env.local
- * and the server only reports whether one is configured.
+ * Everything the Settings page edits. API keys are NOT settings — they are stored encrypted in the
+ * OS keychain by the main process (`settings.setSecret`); the UI only learns whether one is configured.
  */
 export const Settings = z.object({
   llm: z.object({

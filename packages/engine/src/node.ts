@@ -39,7 +39,7 @@ export interface NodeDefinition<C extends z.ZodType = z.ZodType> {
   category: NodeCategory;
   consumes: DataKey[]; // editor warns if no upstream node produces these
   produces: DataKey[];
-  configSchema: C; // drives the config form (served as JSON Schema by GET /api/nodes)
+  configSchema: C; // drives the config form (served as JSON Schema by api.nodes.catalog())
   /** Must be deterministic given (input, config, LLM output) and must throw on bad input — no silent skips. */
   run(input: PipelineData, config: z.infer<C>, ctx: NodeContext): Promise<NodeResult>;
 }

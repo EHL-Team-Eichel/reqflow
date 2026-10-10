@@ -2,7 +2,7 @@
   "name": "reqflow",
   "private": true,
   "type": "module",
-  "description": "AI-assisted customer-requirements workbench for BMW product managers (hackathon prototype).",
+  "description": "AI-assisted customer-requirements workbench for BMW product managers — desktop app for Windows, macOS and Linux (hackathon prototype).",
   "workspaces": [
     "packages/*",
     "apps/*"
@@ -11,8 +11,10 @@
     "node": ">=22.13"
   },
   "scripts": {
-    "dev": "npm run dev -w @reqflow/web",
-    "build": "npm run build -w @reqflow/web",
+    "dev": "npm run dev -w @reqflow/desktop",
+    "build": "npm run build -w @reqflow/desktop",
+    "smoke": "npm run smoke -w @reqflow/desktop",
+    "package": "npm run package -w @reqflow/desktop",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -25,5 +27,11 @@
     "prettier": "^3.9.10",
     "typescript": "~6.0.3",
     "vitest": "^5.0.3"
+  },
+  "allowScripts": {
+    "electron-winstaller@5.4.0": true,
+    "esbuild@0.25.12": true,
+    "esbuild@0.28.2": true,
+    "fsevents@2.3.3": true
   }
 }
