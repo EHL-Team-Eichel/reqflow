@@ -474,7 +474,13 @@ export function bodyPanel(q: Quad): string | null {
 
   if (q.seg <= 4) {
     if (q.x > 1.91) return "front_bumper";
-    if (q.x < -2.03) return q.y < 0.93 ? "rear_bumper" : az < 0.8 ? "trunk_lid" : "body";
+    if (q.x < -2.03) {
+      // The boot lid wraps down the rear face around the plate. Its lower edge
+      // curves up at the corners, giving the lid a readable outline above the bumper.
+      const lidBottom = 0.69 + 0.13 * (az / 0.72) ** 4;
+      if (q.x < -2.25 && az < 0.72 && q.y > lidBottom) return "trunk_lid";
+      return q.y < 0.93 ? "rear_bumper" : az < 0.8 ? "trunk_lid" : "body";
+    }
     // Dark sill trim between the wheels makes the body read lower, like on the real car.
     if (q.seg === 1 && q.x < 1.12 && q.x > -0.96) return "body:dark";
     if (q.seg >= 2) {

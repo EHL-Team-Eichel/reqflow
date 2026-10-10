@@ -157,6 +157,38 @@ describe("buildCar", () => {
     }
   });
 
+  it("keeps the detailed trunk selectable and its lip fitted to the rear deck", () => {
+    const detail = (name: string) =>
+      car.pieces.filter((p) => p.mesh.geometry.userData.detail === name);
+    for (const name of [
+      "plate_recess",
+      "plate_surround",
+      "rear_roundel",
+      "trunk_handle",
+      "trunk_lip",
+    ]) {
+      const pieces = detail(name);
+      expect(pieces).toHaveLength(1);
+      expect(pieces[0]!.partId).toBe("trunk_lid");
+      expect(pieces[0]!.layer).toBe("exterior");
+    }
+    expect(detail("rear_led")).toHaveLength(4);
+    expect(detail("rear_reflector")).toHaveLength(2);
+    expect(detail("parking_sensor")).toHaveLength(4);
+    expect(detail("diffuser_rib")).toHaveLength(5);
+    const lid = car.pieces.find((p) => p.partId === "trunk_lid" && p.kind === "paint")!.mesh;
+    expect(lid.geometry.boundingBox!.min.y).toBeLessThan(0.8);
+    const targets = car.pieces.filter((p) => p.kind === "paint").map((p) => p.mesh);
+    const raycaster = new THREE.Raycaster();
+    const lip = detail("trunk_lip")[0]!.mesh.geometry.getAttribute("position");
+    for (let i = 0; i < lip.count; i++) {
+      raycaster.set(new THREE.Vector3(lip.getX(i), 3, lip.getZ(i)), new THREE.Vector3(0, -1, 0));
+      const surface = raycaster.intersectObjects(targets, false)[0];
+      expect(surface).toBeDefined();
+      expect(lip.getY(i) - surface!.point.y).toBeCloseTo(0.017, 4);
+    }
+  });
+
   it("welds projected grille centres and seams without collapsed triangles", () => {
     const patches = car.pieces.filter((p) => p.partId === "kidney_grille");
     const a = new THREE.Vector3();

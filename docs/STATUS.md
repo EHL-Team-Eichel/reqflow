@@ -220,6 +220,18 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 **Log**
 
+- 2026-10-10: Completed trunk-detail refinement: boot lid now wraps around a recessed plate
+  surround, with a curved lower seam, opening handle, rear roundel and fitted low deck lip.
+  Added twin rear LED strokes, four parking sensors, reflectors and diffuser ribs; all details
+  retain existing part IDs, and seats/interior stay intact. Added a regression for detail
+  membership and lip clearance. Typecheck and all 328 tests pass (25 skipped); formatting and
+  diff checks pass. Reviewed rear/top native screenshots. Smoke renders all 29 screenshots
+  but retains the seven obsolete sample-toggle failures already recorded above (WS1 follow-up).
+
+- 2026-10-10: Claimed trunk-detail refinement: clearer boot-lid panel, a subtle deck lip,
+  rear plate recess/handle/roundel, lamp signatures and bumper details. Preserve existing
+  part IDs and cabin forms; verify and push this model-only follow-up.
+
 - 2026-10-10: Compact car-point tags complete: short labels (e.g. Grille, Display, Rear seats)
   plus a small count replace number-only points and long hover names. Removed the long native
   hover tooltip; full accessible names remain. Point clicks still select the detailed side-panel

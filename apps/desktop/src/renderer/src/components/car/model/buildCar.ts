@@ -505,9 +505,13 @@ function addBodyDetails(
     vSeg: number,
     view: View,
     lift?: number,
+    detail?: string,
   ) => {
     const geo = projectPatch(targets, shape, uSeg, vSeg, view, lift);
-    if (geo) add(geo, partId, kind, "exterior");
+    if (geo) {
+      if (detail) geo.userData.detail = detail;
+      add(geo, partId, kind, "exterior");
+    }
   };
 
   for (const s of SIDES) {
@@ -672,6 +676,50 @@ function addBodyDetails(
       3,
       side,
     );
+    // Slim paired LED strokes inside the rear lamp housing.
+    for (const y of [0.998, 1.017]) {
+      put(
+        "taillights",
+        "glow",
+        rear,
+        band(
+          s * 0.335,
+          s * 0.855,
+          (u) => y + 0.012 * u,
+          (u) => y + 0.006 + 0.012 * u,
+        ),
+        32,
+        1,
+        "rear",
+        0.009,
+        "rear_led",
+      );
+    }
+    // Reflectors and flush parking sensors in the bumper, without adding new parts.
+    put(
+      "rear_bumper",
+      "tail",
+      rear,
+      superellipse(s * 0.742, 0.465, 0.081, 0.019, 5),
+      28,
+      2,
+      "rear",
+      0.005,
+      "rear_reflector",
+    );
+    for (const z of [0.29, 0.64]) {
+      put(
+        "rear_bumper",
+        "chrome",
+        rear,
+        superellipse(s * z, 0.58, 0.014, 0.014, 2, 0.82, 1),
+        20,
+        1,
+        "rear",
+        0.005,
+        "parking_sensor",
+      );
+    }
     // Flush door handles on both doors.
     for (const [x, y] of [
       [-0.1, 0.95],
@@ -682,6 +730,88 @@ function addBodyDetails(
   }
   put("front_bumper", "dark", front, superellipse(0, 0.355, 0.535, 0.06, 5), 64, 4, "front");
   put("rear_bumper", "dark", rear, superellipse(0, 0.36, 0.66, 0.065, 5), 48, 3, "rear");
+  for (const z of [-0.42, -0.21, 0, 0.21, 0.42]) {
+    put(
+      "rear_bumper",
+      "chrome",
+      rear,
+      band(
+        z - 0.007,
+        z + 0.007,
+        () => 0.319,
+        () => 0.397,
+      ),
+      1,
+      8,
+      "rear",
+      0.01,
+      "diffuser_rib",
+    );
+  }
+
+  // A low deck lip follows the curved rear corners, rather than floating above them.
+  const lip = projectPatch(
+    rear,
+    (u, v) => {
+      const z = (u - 0.5) * 1.42;
+      return [-2.445 + 0.07 * v + 0.11 * (z / 0.71) ** 4, z];
+    },
+    64,
+    3,
+    "top",
+    0.005,
+  );
+  if (lip) {
+    const positions = lip.getAttribute("position");
+    for (let i = 0; i < positions.count; i++) positions.setY(i, positions.getY(i) + 0.012);
+    lip.computeVertexNormals();
+    lip.userData.detail = "trunk_lip";
+    add(lip, "trunk_lid", "chrome", "exterior");
+  }
+  put(
+    "trunk_lid",
+    "dark",
+    rear,
+    superellipse(0, 0.803, 0.292, 0.087, 5),
+    48,
+    4,
+    "rear",
+    0.005,
+    "plate_recess",
+  );
+  put(
+    "trunk_lid",
+    "chrome",
+    rear,
+    superellipse(0, 0.803, 0.254, 0.061, 5),
+    48,
+    3,
+    "rear",
+    0.009,
+    "plate_surround",
+  );
+  put(
+    "trunk_lid",
+    "chrome",
+    rear,
+    superellipse(0, 0.969, 0.031, 0.031, 2, 0.74, 1),
+    32,
+    1,
+    "rear",
+    0.009,
+    "rear_roundel",
+  );
+  put(
+    "trunk_lid",
+    "dark",
+    rear,
+    superellipse(0, 0.919, 0.088, 0.01, 5),
+    32,
+    2,
+    "rear",
+    0.007,
+    "trunk_handle",
+  );
   // Small roundel above the grille, sharing the bonnet's existing part id.
   put(
     "hood",
