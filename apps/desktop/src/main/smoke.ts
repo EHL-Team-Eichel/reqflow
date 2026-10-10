@@ -116,11 +116,11 @@ export async function runSmoke(win: BrowserWindow, outDir: string): Promise<numb
   const info = await js<{ ok?: boolean }>(`window.reqflowBridge.invoke("reqflow:app.info")`);
   check(info?.ok === true, `app.info failed: ${JSON.stringify(info)}`);
   const unbuilt = await js<{ ok?: boolean; error?: { code?: string } }>(
-    `window.reqflowBridge.invoke("reqflow:audit.list")`,
+    `window.reqflowBridge.invoke("reqflow:runs.get", "run_unbuilt")`,
   );
   check(
     unbuilt?.ok === false && !!unbuilt.error?.code,
-    `audit.list should return a structured error, got ${JSON.stringify(unbuilt)}`,
+    `runs.get should return a structured error, got ${JSON.stringify(unbuilt)}`,
   );
   const blocked = await js<string>(
     `window.reqflowBridge.invoke("not-a-channel").then(() => "allowed", () => "blocked")`,

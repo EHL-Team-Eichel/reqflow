@@ -72,6 +72,7 @@ void app.whenReady().then(() => {
   const dir = dataDir(smokeDir ? join(smokeDir, "data") : null);
   registerIpc(
     createHandlers({
+      dataDir: dir,
       appInfo: () => ({
         version: app.getVersion(),
         platform: process.platform,

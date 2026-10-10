@@ -70,16 +70,16 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 **Tasks**
 
-- [ ] `settings.get` / `settings.save` in `apps/desktop/src/main/`: one JSON file in the data dir, written
+- [x] `settings.get` / `settings.save` in `apps/desktop/src/main/`: one JSON file in the data dir, written
       atomically (temp file + rename), validated with `Settings`; on load, fill sections missing from older
       files with `DEFAULT_SETTINGS`. Done when the Settings page's "not saved" banner disappears and a
       change survives a restart (add a test for the load/merge/save logic).
-- [ ] `workflows.list/get/save/remove`: store the block tree; `save` assigns a `wf_…` id, bumps
+- [x] `workflows.list/get/save/remove`: store the block tree; `save` assigns a `wf_…` id, bumps
       `version`, sets timestamps and rejects graphs where `validateGraph` reports issues
       (`invalid_input` with the issues as details).
-- [ ] `files.import()`: native open dialog (`.xlsx`, `.xls`, `.csv`), copy into `<dataDir>/uploads/`,
+- [x] `files.import()`: native open dialog (`.xlsx`, `.xls`, `.csv`), copy into `<dataDir>/uploads/`,
       return `StoredFileInfo`. The Raw block's "Choose file…" button already calls it.
-- [ ] Read-only `requirements.list/get` and `audit.list` serving `@reqflow/core/fixtures`, so WS3
+- [x] Read-only `requirements.list/get` and `audit.list` serving `@reqflow/core/fixtures`, so WS3
       works against real IPC before the database exists.
 - [ ] Executor in `packages/engine` (ARCHITECTURE.md → Engine semantics) with tests on fake blocks:
       topological order per workplace, merge per input port, splitter fan-out, inner workplaces via
@@ -93,6 +93,8 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 - [ ] Extend `apps/desktop/src/main/smoke.ts` for each new capability (e.g. save a flow, restart, reload it).
 
 **Log**
+
+- Slice 1: Implemented `settings.get/save` with atomic file storage & missing-section fallback; `workflows.list/get/save/remove` with block tree storage and `validateGraph` checking; `files.import` with native open dialog & copy to uploads; read-only fixture handlers for `requirements.list/get` and `audit.list`. All unit tests and smoke tests passing.
 
 ## WS2 — Data Flow editor UI
 
