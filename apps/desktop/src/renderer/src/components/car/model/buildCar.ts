@@ -10,7 +10,9 @@ import {
   ringIndexOf,
   smoothPanelEdges,
   RING,
+  STATIONS,
   topLine,
+  quadAt,
 } from "./body";
 
 /**
@@ -120,8 +122,14 @@ export function buildCar(): CarModel {
 
   // ---- Body ------------------------------------------------------------------------------
   const grid = buildBodyGrid();
-  smoothPanelEdges(grid, bodyPanel);
-  for (const [key, geometry] of panelGeometries(grid, bodyPanel)) {
+  // Freeze panel membership before relaxing their shared edges. Reclassifying moved
+  // vertices would reintroduce steps and small disconnected islands at window corners.
+  const panelKeys = Array.from({ length: (STATIONS - 1) * RING }, (_, k) =>
+    bodyPanel(quadAt(grid, Math.floor(k / RING), k % RING)),
+  );
+  const assignPanel = (q: Parameters<typeof bodyPanel>[0]) => panelKeys[q.i * RING + q.j]!;
+  smoothPanelEdges(grid, assignPanel);
+  for (const [key, geometry] of panelGeometries(grid, assignPanel)) {
     const [panel, finish] = key.split(":") as [string, string | undefined];
     const partId = panel === "underbody" ? "body" : panel;
     add(geometry, partId, (finish as PieceKind | undefined) ?? "paint", "exterior");
@@ -129,10 +137,13 @@ export function buildCar(): CarModel {
   addBodyDetails(pieces, add);
   const sketchLines = [
     // Shoulder line at door-handle height, and the sill line between the wheels.
-    featureLine(grid, ringIndexOf(4), (x) => x < 2.0 && x > -2.0),
-    featureLine(grid, RING - ringIndexOf(4), (x) => x < 2.0 && x > -2.0),
-    featureLine(grid, ringIndexOf(2), (x) => x < 1.1 && x > -0.95),
-    featureLine(grid, RING - ringIndexOf(2), (x) => x < 1.1 && x > -0.95),
+    featureLine(grid, ringIndexOf(4), (x) => x < 1.86 && x > -2.0),
+    featureLine(grid, RING - ringIndexOf(4), (x) => x < 1.86 && x > -2.0),
+    featureLine(grid, ringIndexOf(2), (x) => x < 0.92 && x > -0.95),
+    featureLine(grid, RING - ringIndexOf(2), (x) => x < 0.92 && x > -0.95),
+    // Two bonnet creases converge towards the kidneys.
+    featureLine(grid, ringIndexOf(7), (x) => x > 0.9 && x < 2.09),
+    featureLine(grid, RING - ringIndexOf(7), (x) => x > 0.9 && x < 2.09),
   ];
 
   // Wheel arch liners (not a part; they hide the inside of the body behind the wheels).
@@ -147,6 +158,9 @@ export function buildCar(): CarModel {
         "exterior",
         (m) => m.position.set(axle, G60.tyreRadius, side * 0.78),
       );
+      // Inner splash shield closes the wheel well behind the brakes. It stops
+      // suspension outlines leaking through the gap above the tyre in exterior view.
+      disc(null, "liner", "exterior", 0.423, 0.006, [axle, G60.tyreRadius, side * 0.68]);
     }
   }
 
@@ -178,8 +192,8 @@ export function buildCar(): CarModel {
       bevelSegments: 2,
     }).translate(0, 0, -0.02);
     add(geo, "antenna", "paint", "exterior", (m) => {
-      m.position.set(-1.2, topLine(-1.2) - 0.004, 0);
-      m.rotation.z = 0.28;
+      m.position.set(-1.03, topLine(-1.03) - 0.004, 0);
+      m.rotation.z = 0.12;
     });
   }
 
@@ -300,7 +314,7 @@ export function buildCar(): CarModel {
       radius: 0.05,
       rotZ: 0.05,
     });
-    seatBack("rear_seats", -1.33, 0.86, z, w, 0.6, 0.3);
+    seatBack("rear_seats", -1.33, 0.8, z, w, 0.54, 0.3);
   }
 
   function seatBack(
@@ -384,7 +398,7 @@ export function buildCar(): CarModel {
   // Head-up display: the unit in the dash and its image in the windscreen.
   box("hud", "dark", "interior", [0.2, 0.04, 0.28], [0.72, 0.975, DRIVER_Z], { radius: 0.015 });
   add(new THREE.PlaneGeometry(0.3, 0.085), "hud", "glow", "interior", (m) => {
-    m.position.set(0.47, 1.17, DRIVER_Z);
+    m.position.set(0.37, 1.13, DRIVER_Z);
     m.rotation.set(0, -Math.PI / 2, 0, "YXZ");
     m.rotateX(-0.15);
   });
@@ -484,56 +498,136 @@ function addBodyDetails(
 
   for (const s of SIDES) {
     const side: View = s < 0 ? "left" : "right";
-    // Kidney grille: dark fill with an illuminated contour.
-    put(
-      "kidney_grille",
-      "dark",
-      front,
-      superellipse(s * 0.175, 0.615, 0.15, 0.135, 4, 0, 0.9),
-      48,
-      4,
-      "front",
-    );
-    put(
-      "kidney_grille",
-      "glow",
-      front,
-      superellipse(s * 0.175, 0.615, 0.15, 0.135, 4, 0.9, 1),
-      48,
-      1,
-      "front",
-      0.005,
-    );
+    for (const axle of [G60.frontAxleX, G60.rearAxleX]) {
+      put(
+        "body",
+        "chrome",
+        sides,
+        (u, v) => {
+          const angle = -0.4 + u * (Math.PI + 0.8);
+          const radius = G60.archRadius + 0.013 + 0.004 * v;
+          return [axle + Math.cos(angle) * radius, G60.tyreRadius + Math.sin(angle) * radius];
+        },
+        64,
+        1,
+        side,
+        0.003,
+      );
+    }
+    // Broad, slightly angular kidneys with a narrow central bridge and vertical slats.
+    const kidney = (r0: number, r1: number) => {
+      const curve = new THREE.CatmullRomCurve3(
+        [
+          [-0.95, 0.68],
+          [-0.72, 0.94],
+          [0.7, 1],
+          [0.98, 0.67],
+          [0.9, -0.65],
+          [0.62, -0.96],
+          [-0.76, -0.89],
+          [-0.98, -0.6],
+        ].map(([a, b]) => new THREE.Vector3(a, b, 0)),
+        true,
+        "centripetal",
+        0.2,
+      );
+      return (u: number, v: number): [number, number] => {
+        const p = curve.getPoint(u);
+        const r = r0 + (r1 - r0) * v;
+        return [s * (0.205 + p.x * 0.182 * r), 0.632 + p.y * 0.151 * r];
+      };
+    };
+    put("kidney_grille", "dark", front, kidney(0, 0.9), 48, 4, "front");
+    put("kidney_grille", "glow", front, kidney(0.9, 1), 48, 1, "front", 0.005);
+    for (const z of [0.095, 0.15, 0.205, 0.26, 0.315]) {
+      put(
+        "kidney_grille",
+        "chrome",
+        front,
+        band(
+          s * (z - 0.003),
+          s * (z + 0.003),
+          () => 0.527,
+          () => 0.741,
+        ),
+        1,
+        10,
+        "front",
+        0.008,
+      );
+    }
     // Slim headlights at the top of the face, wrapping round the corner.
     put(
       "headlights",
       "lamp",
       front,
       band(
-        s * 0.37,
+        s * 0.42,
         s * 0.86,
-        (u) => 0.752 + 0.032 * u,
-        (u) => 0.81 + 0.012 * u,
+        (u) => 0.755 + 0.025 * u,
+        (u) => 0.825 + 0.003 * u,
       ),
       28,
       3,
       "front",
     );
-    // Daytime running light: a thin bright line along the top of each headlight.
+    // Twin LED signatures, each with a short horizontal foot and an upright stroke.
     put(
       "headlights",
       "glow",
       front,
       band(
-        s * 0.4,
-        s * 0.84,
-        (u) => 0.797 + 0.014 * u,
-        (u) => 0.806 + 0.012 * u,
+        s * 0.49,
+        s * 0.58,
+        () => 0.785,
+        () => 0.794,
       ),
       28,
       1,
       "front",
       0.007,
+    );
+    for (const z of [0.58, 0.745]) {
+      put(
+        "headlights",
+        "glow",
+        front,
+        band(
+          s * (z - 0.012),
+          s * z,
+          (u) => 0.79 + 0.019 * u,
+          (u) => 0.802 + 0.019 * u,
+        ),
+        3,
+        1,
+        "front",
+        0.009,
+      );
+    }
+    put(
+      "headlights",
+      "glow",
+      front,
+      band(
+        s * 0.655,
+        s * 0.745,
+        () => 0.79,
+        () => 0.799,
+      ),
+      8,
+      1,
+      "front",
+      0.007,
+    );
+    // Outer air curtains and an angular lower apron frame the central intake.
+    put(
+      "front_bumper",
+      "dark",
+      front,
+      superellipse(s * 0.737, 0.425, 0.087, 0.096, 4),
+      32,
+      3,
+      "front",
     );
     // Tail lights: across the back and round onto the sides.
     put(
@@ -543,8 +637,8 @@ function addBodyDetails(
       band(
         s * 0.3,
         s * 0.88,
-        () => 0.975,
-        () => 1.035,
+        (u) => 0.986 + 0.012 * u,
+        (u) => 1.026 + 0.012 * u,
       ),
       28,
       3,
@@ -569,7 +663,19 @@ function addBodyDetails(
       put("door_handles", "chrome", sides, superellipse(x, 0.92, 0.075, 0.014, 6), 32, 2, side);
     }
   }
-  put("front_bumper", "dark", front, superellipse(0, 0.372, 0.56, 0.052, 6), 64, 4, "front");
+  put("front_bumper", "dark", front, superellipse(0, 0.355, 0.535, 0.06, 5), 64, 4, "front");
+  put("rear_bumper", "dark", rear, superellipse(0, 0.36, 0.66, 0.065, 5), 48, 3, "rear");
+  // Small roundel above the grille, sharing the bonnet's existing part id.
+  put(
+    "hood",
+    "chrome",
+    front,
+    superellipse(2.015, 0, 0.031, 0.031, 2, 0.72, 1),
+    32,
+    1,
+    "top",
+    0.004,
+  );
   put(
     "driver_assistance",
     "dark",
@@ -601,10 +707,14 @@ function mergeChildren(group: THREE.Group): THREE.BufferGeometry {
   const normals: number[] = [];
   group.traverse((o) => {
     if (!(o instanceof THREE.Mesh)) return;
-    const g = (o.geometry as THREE.BufferGeometry).toNonIndexed();
+    const source = o.geometry as THREE.BufferGeometry;
+    const g = source.index ? source.toNonIndexed() : source.clone();
     g.applyMatrix4(o.matrixWorld);
     positions.push(...(g.getAttribute("position").array as Float32Array));
     normals.push(...(g.getAttribute("normal").array as Float32Array));
+    g.dispose();
+    source.dispose();
+    (o.material as THREE.Material).dispose();
   });
   const merged = new THREE.BufferGeometry();
   merged.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
@@ -622,7 +732,7 @@ const ANCHOR_OVERRIDES: Record<string, [number, number, number]> = {
   door_handles: [-0.1, 0.93, -0.97],
   side_windows: [0.05, 1.18, -0.82],
   mirrors: [0.7, 1.1, -1.08],
-  headlights: [2.25, 0.8, -0.65],
+  headlights: [2.1, 0.8, -0.65],
   taillights: [-2.3, 1.0, -0.7],
   front_seats: [-0.2, 0.9, DRIVER_Z],
   rear_seats: [-1.15, 0.9, -0.45],
@@ -630,8 +740,8 @@ const ANCHOR_OVERRIDES: Record<string, [number, number, number]> = {
   ambient_light: [-0.35, 0.8, -0.88],
   body: [-1.75, 0.75, -0.97],
   roof: [-0.55, 1.52, 0],
-  kidney_grille: [2.45, 0.63, 0],
-  front_bumper: [2.35, 0.36, -0.5],
+  kidney_grille: [2.2, 0.63, 0],
+  front_bumper: [2.1, 0.36, -0.5],
   rear_bumper: [-2.45, 0.6, -0.5],
   drivetrain: [0.4, 0.26, -0.72],
   luggage: [-1.95, 0.95, 0],

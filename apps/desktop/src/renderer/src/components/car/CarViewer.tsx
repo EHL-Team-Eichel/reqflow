@@ -4,6 +4,7 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { cx } from "@/lib/cx";
 import { label } from "./classify";
 import { buildCar, type CarPiece } from "./model/buildCar";
+import { G60 } from "./model/body";
 import {
   applyState,
   createOutlineMaterial,
@@ -87,6 +88,31 @@ export function CarViewer(props: Props) {
     const car = buildCar();
     scene.add(car.root);
     setAnchors(car.anchors);
+    const bounds = new THREE.Box3().setFromObject(car.root);
+    const corners: THREE.Vector3[] = [];
+    for (const x of [bounds.min.x, bounds.max.x]) {
+      for (const y of [bounds.min.y, bounds.max.y]) {
+        for (const z of [bounds.min.z, bounds.max.z]) corners.push(new THREE.Vector3(x, y, z));
+      }
+    }
+    const fittedPosition = (preset: CameraPreset) => {
+      const target = new THREE.Vector3(...PRESETS[preset].target);
+      const direction = new THREE.Vector3(...PRESETS[preset].position).sub(target).normalize();
+      const right = new THREE.Vector3().crossVectors(camera.up, direction).normalize();
+      const up = new THREE.Vector3().crossVectors(direction, right);
+      const tanV = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+      const tanH = tanV * camera.aspect;
+      let distance = 0;
+      for (const corner of corners) {
+        const delta = corner.clone().sub(target);
+        distance = Math.max(
+          distance,
+          delta.dot(direction) +
+            Math.max(Math.abs(delta.dot(right)) / tanH, Math.abs(delta.dot(up)) / tanV),
+        );
+      }
+      return target.addScaledVector(direction, distance * 1.12);
+    };
 
     let palette: SketchPalette = readPalette();
     const outline = createOutlineMaterial(palette.ink, 1.4);
@@ -96,16 +122,44 @@ export function CarViewer(props: Props) {
 
     for (const piece of car.pieces) {
       const style = createPieceStyle(piece, palette);
+      (piece.mesh.material as THREE.Material).dispose();
       piece.mesh.material = style.fill;
       styles.set(piece, style);
-      const threshold = piece.kind === "paint" || piece.kind === "glass" ? 32 : 40;
-      const edges = new THREE.LineSegments(
-        new THREE.EdgesGeometry(piece.mesh.geometry, threshold),
-        style.lines,
-      );
+      // The body already has explicit panel/character lines and a silhouette.
+      // Drawing tessellation creases adds stray spikes around the wheel arches.
+      const threshold = piece.kind === "paint" || piece.kind === "glass" ? 180 : 40;
+      const edgeGeometry = new THREE.EdgesGeometry(piece.mesh.geometry, threshold);
+      const hasArches =
+        piece.kind === "paint" &&
+        ["body", "front_doors", "rear_doors"].includes(piece.partId ?? "");
+      if (hasArches) {
+        // Arch contours are drawn as smooth projected arcs, rather than the
+        // cut grid's many inner and outer boundary segments.
+        const positions = edgeGeometry.getAttribute("position");
+        const clean: number[] = [];
+        for (let k = 0; k < positions.count; k += 2) {
+          const nearArch = [k, k + 1].some((v) =>
+            [G60.frontAxleX, G60.rearAxleX].some(
+              (axle) =>
+                Math.hypot(positions.getX(v) - axle, positions.getY(v) - G60.tyreRadius) <
+                G60.archRadius + 0.035,
+            ),
+          );
+          if (nearArch) continue;
+          for (const v of [k, k + 1])
+            clean.push(positions.getX(v), positions.getY(v), positions.getZ(v));
+        }
+        edgeGeometry.setAttribute("position", new THREE.Float32BufferAttribute(clean, 3));
+      }
+      const edges = new THREE.LineSegments(edgeGeometry, style.lines);
       edges.raycast = () => {};
       piece.mesh.add(edges);
-      if (OUTLINED.has(piece.kind)) {
+      // Inverted hulls work on closed solids. On open body panels they expose
+      // their back faces through arch openings and turn the triangulation into ink.
+      if (
+        OUTLINED.has(piece.kind) &&
+        (!piece.mesh.geometry.userData.openSurface || (piece.kind === "paint" && !hasArches))
+      ) {
         const hull = new THREE.Mesh(piece.mesh.geometry, outline);
         hull.raycast = () => {};
         piece.mesh.add(hull);
@@ -165,16 +219,23 @@ export function CarViewer(props: Props) {
       toT: THREE.Vector3;
       t0: number;
     } | null = null;
+    let activePreset: CameraPreset | null = propsRef.current.preset;
     const moveTo = (preset: CameraPreset) => {
       const p = PRESETS[preset];
+      activePreset = preset;
       flight = {
         from: camera.position.clone(),
-        to: new THREE.Vector3(...p.position),
+        to: fittedPosition(preset),
         fromT: controls.target.clone(),
         toT: new THREE.Vector3(...p.target),
         t0: performance.now(),
       };
     };
+    const onOrbitStart = () => {
+      flight = null;
+      activePreset = null;
+    };
+    controls.addEventListener("start", onOrbitStart);
     apiRef.current = { restyle, moveTo };
 
     // Picking.
@@ -228,6 +289,12 @@ export function CarViewer(props: Props) {
       renderer.domElement.style.height = `${h}px`;
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
+      if (activePreset) {
+        const position = fittedPosition(activePreset);
+        controls.maxDistance = Math.max(16, position.distanceTo(controls.target) * 1.5);
+        if (flight) flight.to.copy(position);
+        else camera.position.copy(position);
+      }
       const size = renderer.getDrawingBufferSize(new THREE.Vector2());
       outline.uniforms.resolution!.value.copy(size);
       outline.uniforms.width!.value = 1.4 * renderer.getPixelRatio();
@@ -251,7 +318,10 @@ export function CarViewer(props: Props) {
         if (t >= 1) flight = null;
         dirty = true;
       }
-      if (controls.update()) dirty = true;
+      if (controls.update()) {
+        dirty = true;
+        needsPick = true;
+      }
       if (needsPick) {
         needsPick = false;
         const part = pointerInside ? pick() : null;
@@ -273,7 +343,7 @@ export function CarViewer(props: Props) {
         const anchor = car.anchors.get(partId);
         if (!anchor) continue;
         v.copy(anchor).project(camera);
-        const visible = v.z < 1 && Math.abs(v.x) < 1.05 && Math.abs(v.y) < 1.05;
+        const visible = v.z > -1 && v.z < 1 && Math.abs(v.x) < 1.05 && Math.abs(v.y) < 1.05;
         badge.style.visibility = visible ? "visible" : "hidden";
         badge.style.transform = `translate(${((v.x + 1) / 2) * w}px, ${((1 - v.y) / 2) * h}px) translate(-50%, -50%)`;
       }
@@ -288,10 +358,13 @@ export function CarViewer(props: Props) {
       el.removeEventListener("pointerleave", onLeave);
       el.removeEventListener("pointerdown", onDown);
       el.removeEventListener("pointerup", onUp);
+      controls.removeEventListener("start", onOrbitStart);
       controls.dispose();
+      const geometries = new Set<THREE.BufferGeometry>();
       scene.traverse((o) => {
-        if (o instanceof THREE.Mesh || o instanceof THREE.LineSegments) o.geometry.dispose();
+        if (o instanceof THREE.Mesh || o instanceof THREE.LineSegments) geometries.add(o.geometry);
       });
+      for (const geometry of geometries) geometry.dispose();
       for (const s of styles.values()) {
         s.fill.dispose();
         s.lines.dispose();
