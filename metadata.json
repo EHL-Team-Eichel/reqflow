@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4KMWRK0Z5V4D4GVXSB0HPP9",
   "strategy": "manual-commit",
   "branch": "ws6-research",
-  "checkpoints_count": 5,
+  "checkpoints_count": 6,
   "files_touched": [
     ".gitignore",
     ".prettierignore",
@@ -30,7 +30,11 @@
     "package.json",
     "packages/blocks/package.json",
     "packages/blocks/src/index.ts",
+    "packages/blocks/src/research/data-budget.test.ts",
+    "packages/blocks/src/research/data-budget.ts",
     "packages/blocks/src/research/index.ts",
+    "packages/blocks/src/research/runtime.test.ts",
+    "packages/blocks/src/research/runtime.ts",
     "packages/core/src/audit.ts",
     "packages/core/src/blocks.ts",
     "packages/core/src/fixtures/sample-5-series-eu.ts",
@@ -70,13 +74,20 @@
       "compact_transcript": "/3/transcript.jsonl",
       "content_hash": "/3/content_hash.txt",
       "prompt": "/3/prompt.txt"
+    },
+    {
+      "metadata": "/4/metadata.json",
+      "transcript": "/4/full.jsonl",
+      "compact_transcript": "/4/transcript.jsonl",
+      "content_hash": "/4/content_hash.txt",
+      "prompt": "/4/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 171,
-    "cache_creation_tokens": 297878,
-    "cache_read_tokens": 2285738,
-    "output_tokens": 26854,
-    "api_call_count": 57
+    "input_tokens": 225,
+    "cache_creation_tokens": 373242,
+    "cache_read_tokens": 3263620,
+    "output_tokens": 36774,
+    "api_call_count": 75
   }
 }
