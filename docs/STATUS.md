@@ -196,7 +196,7 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 ## WS3 — Car tab: requirements review & audit UI
 
-**Status:** in progress (3D car + part classifier in review) · **Owner:** Claude Code (car-model session) · **Branch:** `ws3-car-model`
+**Status:** in progress (car model refinement complete; requirements review pending) · **Owner:** Codex (BMW styling and geometry fixes) · **Branch:** `codex/car-model-refinements`
 **Depends on:** nothing to start: build on `@reqflow/core/fixtures` (5 requirements, findings, sources,
 audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 serves them.
 
@@ -221,6 +221,30 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - [ ] PM override of the auto-classified part (needs a contract field + audit event, WS0).
 
 **Log**
+
+- 2026-10-10: Shortened the bonnet/nose by 0.33 m and rounded the front plan-view corners at
+  the user’s request. The front axle, chassis components, wheel wells, projected front details,
+  roundel and badge positions follow the new shape; all 34 catalog parts remain. The rear,
+  cabin height and width retain their previous dimensions. Updated the sketch caption to reflect
+  its adapted proportions. Applied to the main source and rebuilt/reloaded the judging demo.
+  Verified typecheck, 217 passing tests (24 skipped), UI smoke (29 screenshots), front/side/top
+  visual checks, changed-file Prettier and `git diff --check`.
+
+- 2026-10-10: Completed BMW model refinement in the main source and running judging demo.
+  All 34 catalog parts, meshes and badge anchors remain; the full interior is available in Interior.
+  Refined angular kidney grilles/slats, twin LED signatures, bonnet creases, air curtains, rear apron,
+  roundel and Hofmeister kink. Fixed folded underfloor/arch geometry, stepped panel boundaries,
+  projected-patch degeneracy, headrests/HUD protruding through glass and suspension lines leaking
+  through wheel wells. Window masks keep Exterior clean; wheel-well shields ghost in Interior.
+  Panel buffers now contain their own vertices/bounds. Camera presets fit the viewport, orbit
+  cancels preset transitions, and materials/geometries are disposed without redundant shader updates.
+  Verified: `npm run typecheck`, `npm test` (217 passed, 24 skipped), `npm run smoke` (PASS, 29
+  screenshots), changed-file Prettier and `git diff --check`. Reviewed front/side/rear/top/interior
+  screenshots and light/dark rendering. Rebuilt and reloaded the demo; left it on Exterior / Front.
+
+- 2026-10-10: Claimed car-model refinement. Preserve all 34 parts; fix folded wheel-arch/underfloor
+  geometry, panel boundaries and projected-detail glitches; refine BMW kidney grille, twin LED
+  signatures and Hofmeister kink. Apply car files to the running judging demo and the main source.
 
 - 2026-10-10 night: 3D car + auto classifier built (`components/car/`, `pages/CarPage.tsx`).
   - **Car:** procedural three.js model (`model/body.ts` parametric body cut into panels,

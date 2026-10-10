@@ -4,7 +4,8 @@ import type { CarPiece, PieceKind } from "./buildCar";
 /**
  * The sketch look: a pen drawing, not a rendering. Every surface is filled with the page colour
  * (so it hides the lines behind it) and drawn with ink: silhouettes, panel lines and creases.
- * No paint, no shading. Glass and volumes have no fill at all, so you see through them.
+ * No paint, no shading. Glass masks the cabin in exterior view; the interior view
+ * reveals all cabin parts through the ghosted body. Volumes have no fill.
  * Colours come from the app's CSS tokens, so it follows light and dark mode.
  */
 
@@ -26,7 +27,7 @@ export function readPalette(): SketchPalette {
 }
 
 /** See-through kinds: drawn with lines only. */
-const SEE_THROUGH: ReadonlySet<PieceKind> = new Set(["glass", "volume", "glow"]);
+const SEE_THROUGH: ReadonlySet<PieceKind> = new Set(["volume", "glow"]);
 
 /** Kinds that get an ink silhouette (inverted hull). Thin and see-through ones don't. */
 export const OUTLINED: ReadonlySet<PieceKind> = new Set([
@@ -76,6 +77,7 @@ export function applyState(
   const base = style.fill.userData.base as { opacity: number };
   const active = state === "hover" || state === "selected";
   const color = p.background.clone();
+  if (piece.kind === "glass") color.lerp(p.ink, 0.045);
   let opacity = base.opacity;
   // Selection is the only colour on the drawing: brand-coloured lines and a faint wash.
   if (state === "selected") {
@@ -90,11 +92,14 @@ export function applyState(
   }
   style.fill.color.copy(color);
   style.fill.opacity = opacity;
-  style.fill.transparent = opacity < 1;
+  const transparent = opacity < 1;
+  if (style.fill.transparent !== transparent) {
+    style.fill.transparent = transparent;
+    style.fill.needsUpdate = true;
+  }
   style.fill.depthWrite = opacity >= 1;
-  style.fill.needsUpdate = true;
   style.lines.color.copy(active ? p.brand : p.ink);
-  style.lines.opacity = lineOpacity;
+  style.lines.opacity = piece.kind === "liner" ? 0 : lineOpacity;
   return !ghost && piece.partId !== null;
 }
 

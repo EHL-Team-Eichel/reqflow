@@ -7,17 +7,19 @@ import * as THREE from "three";
  */
 
 /** Which way the shape is projected: from the front (−x), rear (+x), left (+z) or right (−z). */
-export type View = "front" | "rear" | "left" | "right";
+export type View = "front" | "rear" | "left" | "right" | "top";
 
 /** Maps grid coordinates (u, v ∈ [0, 1]) to plane coordinates (a, b). */
 export type Shape2D = (u: number, v: number) => [number, number];
 
 /** Plane coordinates: front and rear views see (z, y), the sides see (x, y). */
 const toPlane = (view: View, p: THREE.Vector3): [number, number] =>
-  view === "front" || view === "rear" ? [p.z, p.y] : [p.x, p.y];
+  view === "top" ? [p.x, p.z] : view === "front" || view === "rear" ? [p.z, p.y] : [p.x, p.y];
 
 function ray(view: View, a: number, b: number): { origin: THREE.Vector3; dir: THREE.Vector3 } {
   switch (view) {
+    case "top":
+      return { origin: new THREE.Vector3(a, 3, b), dir: new THREE.Vector3(0, -1, 0) };
     case "front":
       return { origin: new THREE.Vector3(4, b, a), dir: new THREE.Vector3(-1, 0, 0) };
     case "rear":
@@ -117,9 +119,9 @@ export function projectPatch(
     raycaster.set(origin, dir);
     const hit = raycaster.intersectObject(target, false)[0];
     if (!hit?.face) return null;
-    const n = hit.face.normal.clone();
-    if (n.dot(dir) > 0) n.negate();
-    return hit.point.clone().addScaledVector(n, lift);
+    // A constant lift along the projection axis avoids tiny jumps where the
+    // ray crosses triangles with different face normals.
+    return hit.point.clone().addScaledVector(dir, -lift);
   });
   target.geometry.dispose();
   (target.material as THREE.Material).dispose();
@@ -127,29 +129,51 @@ export function projectPatch(
   const positions: number[] = [];
   const index: number[] = [];
   const ids = new Map<number, number>();
+  const welded = new Map<string, number>();
   const idOf = (k: number) => {
     let id = ids.get(k);
     if (id === undefined) {
       const p = points[k]!;
-      id = positions.length / 3;
-      positions.push(p.x, p.y, p.z);
+      const key = [p.x, p.y, p.z].map((v) => Math.round(v * 1e6)).join(",");
+      id = welded.get(key);
+      if (id === undefined) {
+        id = positions.length / 3;
+        positions.push(p.x, p.y, p.z);
+        welded.set(key, id);
+      }
       ids.set(k, id);
     }
     return id;
   };
   const at = (i: number, j: number) => i * (vSeg + 1) + j;
+  const aPoint = new THREE.Vector3();
+  const bPoint = new THREE.Vector3();
+  const cPoint = new THREE.Vector3();
+  const outward = ray(view, 0, 0).dir.negate();
+  const triangle = (a: number, b: number, c: number) => {
+    if (a === b || b === c || c === a) return;
+    aPoint.fromArray(positions, a * 3);
+    bPoint.fromArray(positions, b * 3).sub(aPoint);
+    cPoint.fromArray(positions, c * 3).sub(aPoint);
+    bPoint.cross(cPoint);
+    if (bPoint.lengthSq() < 1e-16) return;
+    if (bPoint.dot(outward) < 0) index.push(a, c, b);
+    else index.push(a, b, c);
+  };
   for (let i = 0; i < uSeg; i++) {
     for (let j = 0; j < vSeg; j++) {
       const quad = [at(i, j), at(i + 1, j), at(i + 1, j + 1), at(i, j + 1)];
       if (quad.some((k) => !points[k])) continue;
       const [a, b, c, d] = quad.map(idOf) as [number, number, number, number];
-      index.push(a, b, c, a, c, d);
+      triangle(a, b, c);
+      triangle(a, c, d);
     }
   }
   if (index.length === 0) return null;
   const geo = new THREE.BufferGeometry();
   geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
   geo.setIndex(index);
+  geo.userData.openSurface = true;
   geo.computeVertexNormals();
   return geo;
 }

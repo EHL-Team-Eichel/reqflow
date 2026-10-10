@@ -3,11 +3,11 @@ import * as THREE from "three";
 /**
  * The car body as one smooth parametric surface, cut into panels.
  *
- * Built procedurally (no downloaded model) from the published outer dimensions of the BMW 5 Series
- * Sedan (G60): length 5,060 mm, width 1,900 mm, height 1,515 mm, wheelbase 2,995 mm. The shapes in
- * between (roof line, tumblehome, overhangs) are drawn to match its side view, not measured.
+ * Built procedurally (no downloaded model), inspired by the BMW 5 Series Sedan (G60).
+ * The nose and bonnet are shortened for the sketch: 4,730 mm overall, with the original
+ * 1,900 mm width and 1,515 mm roof height. Surface shapes are drawn, not measured.
  *
- * Axes: x forward (front bumper at +2.53), y up (ground at 0), z to the car's right; metres.
+ * Axes: x forward (front bumper at +2.20, rear at −2.53), y up, z to the car's right; metres.
  * The surface is a tube: one cross-section ring per station along x. Each ring runs through ten
  * control points per side (bottom → sill → side → shoulder → belt → glass → roof). Every quad of
  * the grid is then given to one panel (hood, front door, windscreen, …) by where it sits, so the
@@ -15,11 +15,13 @@ import * as THREE from "three";
  */
 
 export const G60 = {
-  length: 5.06,
+  length: 4.73,
+  frontX: 2.2,
+  rearX: -2.53,
   width: 1.9,
   height: 1.515,
-  wheelbase: 2.995,
-  frontAxleX: 1.58,
+  wheelbase: 2.835,
+  frontAxleX: 1.42,
   rearAxleX: -1.415,
   track: 1.63,
   tyreRadius: 0.37,
@@ -27,8 +29,6 @@ export const G60 = {
   rimRadius: 0.245,
   archRadius: 0.425,
 } as const;
-
-const HALF_L = G60.length / 2;
 
 type Pt = readonly [number, number];
 
@@ -68,11 +68,11 @@ const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 /** Side view: the top line (bumper → bonnet → windscreen → roof → rear window → boot → bumper). */
 export const topLine = profile([
-  [2.53, 0.79],
-  [2.515, 0.835],
-  [2.47, 0.865],
-  [2.3, 0.885],
-  [1.6, 0.935],
+  [2.2, 0.8],
+  [2.185, 0.835],
+  [2.14, 0.87],
+  [1.96, 0.9],
+  [1.42, 0.949],
   [1.05, 0.98],
   [0.82, 0.995],
   [0.55, 1.13],
@@ -103,9 +103,9 @@ export const beltLine = profile([
 
 /** Side view: the bottom line (front apron → sills → rear apron). */
 export const bottomLine = profile([
-  [2.53, 0.32],
-  [2.47, 0.24],
-  [2.3, 0.2],
+  [2.2, 0.34],
+  [2.14, 0.26],
+  [1.96, 0.205],
   [1.0, 0.165],
   [-1.0, 0.165],
   [-2.0, 0.22],
@@ -119,23 +119,23 @@ const baseHalfWidth = profile([
   [-2.0, 0.935],
   [-1.4, 0.95],
   [0, 0.95],
-  [1.6, 0.945],
-  [2.2, 0.92],
-  [2.53, 0.9],
+  [1.42, 0.945],
+  [1.88, 0.915],
+  [2.2, 0.88],
 ]);
 
-const NOSE_START = 2.2;
+const NOSE_START = 1.82;
 const TAIL_START = -2.2;
 
 /** Plan view: half the body width; the ends round off like a superellipse. */
 export function halfWidth(x: number): number {
   let w = baseHalfWidth(x);
   if (x > NOSE_START) {
-    const s = Math.min(1, (x - NOSE_START) / (HALF_L - NOSE_START));
-    w *= Math.pow(Math.max(0, 1 - Math.pow(s, 4)), 1 / 4);
+    const s = Math.min(1, (x - NOSE_START) / (G60.frontX - NOSE_START));
+    w *= Math.pow(Math.max(0, 1 - Math.pow(s, 2.6)), 1 / 2.6);
   }
   if (x < TAIL_START) {
-    const s = Math.min(1, (TAIL_START - x) / (TAIL_START + HALF_L));
+    const s = Math.min(1, (TAIL_START - x) / (TAIL_START - G60.rearX));
     w *= Math.pow(Math.max(0, 1 - Math.pow(s, 3.6)), 1 / 3.6);
   }
   return w;
@@ -220,7 +220,7 @@ function stationXs(): number[] {
     const u = i / (STATIONS - 1);
     const s = 0.5 - 0.5 * Math.cos(Math.PI * u); // 0…1, dense at both ends
     const mix = 0.55 * s + 0.45 * u;
-    xs.push(-HALF_L + G60.length * mix);
+    xs.push(G60.rearX + G60.length * mix);
   }
   return xs;
 }
@@ -245,6 +245,7 @@ export function buildBodyGrid(): BodyGrid {
   all.setIndex(gridIndex((i, j) => !cut[i * RING + j]));
   all.computeVertexNormals();
   const normals = all.getAttribute("normal").array as Float32Array;
+  all.dispose();
   return { positions, normals, glass, stationX, cut };
 }
 
@@ -291,9 +292,22 @@ function cutWheelArches(positions: Float32Array): Uint8Array {
       const dx = x - axle;
       const dy = y - WHEEL_Y;
       const d = Math.hypot(dx, dy);
-      if (d < 1e-6 || y < WHEEL_Y - 0.25) continue;
-      positions[v] = axle + (dx / d) * G60.archRadius;
-      positions[v + 1] = WHEEL_Y + (dy / d) * G60.archRadius;
+      // The opening ends at the sill. Pulling the inner floor onto the circle creates
+      // folded fins below the car and makes the underbody poke through the apron.
+      if (d < 1e-6 || Math.abs(positions[v + 2]!) < 0.55 || segmentOf(j) === 0) continue;
+      if (dy >= 0) {
+        // Keep station x ordering across the crown of the arch. Radially moving
+        // both coordinates can fold adjacent triangles into little saw teeth.
+        const archX = Math.max(-G60.archRadius, Math.min(G60.archRadius, dx));
+        positions[v] = axle + archX;
+        positions[v + 1] = WHEEL_Y + Math.sqrt(Math.max(0, G60.archRadius ** 2 - archX ** 2));
+      } else {
+        // Below the hub, keep the sill height and move only towards the side of
+        // the opening; the floor remains above the ground.
+        const archY = Math.max(-G60.archRadius, dy);
+        positions[v] =
+          axle + Math.sign(dx) * Math.sqrt(Math.max(0, G60.archRadius ** 2 - archY ** 2));
+      }
     }
   }
   return cut;
@@ -394,14 +408,31 @@ export function panelGeometries(
       positions[k] = grid.positions[k]! + grid.normals[k]! * offset;
     }
   }
-  const position = new THREE.BufferAttribute(positions, 3);
-  const normal = new THREE.BufferAttribute(grid.normals, 3);
   const out = new Map<string, THREE.BufferGeometry>();
   for (const [key, mask] of buckets) {
+    // Keep only vertices this panel actually uses. Shared full-body attributes gave
+    // every small panel the bounds of the entire car and wasted GPU buffers.
+    const sourceIndex = gridIndex((i, j) => mask[i * RING + j]!);
+    const remap = new Map<number, number>();
+    const panelPositions: number[] = [];
+    const panelNormals: number[] = [];
+    const index = sourceIndex.map((v) => {
+      let id = remap.get(v);
+      if (id === undefined) {
+        id = remap.size;
+        remap.set(v, id);
+        for (let k = 0; k < 3; k++) {
+          panelPositions.push(positions[v * 3 + k]!);
+          panelNormals.push(grid.normals[v * 3 + k]!);
+        }
+      }
+      return id;
+    });
     const geo = new THREE.BufferGeometry();
-    geo.setAttribute("position", position);
-    geo.setAttribute("normal", normal);
-    geo.setIndex(gridIndex((i, j) => mask[i * RING + j]!));
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(panelPositions, 3));
+    geo.setAttribute("normal", new THREE.Float32BufferAttribute(panelNormals, 3));
+    geo.setIndex(index);
+    geo.userData.openSurface = true;
     geo.computeBoundingBox();
     geo.computeBoundingSphere();
     out.set(key, geo);
@@ -421,7 +452,9 @@ export function featureLine(
     const b = vid(i + 1, ringIndex) * 3;
     const p = grid.positions;
     if (!keep(p[a]!, p[a + 1]!) || !keep(p[b]!, p[b + 1]!)) continue;
-    pts.push(p[a]!, p[a + 1]!, p[a + 2]!, p[b]!, p[b + 1]!, p[b + 2]!);
+    for (const v of [a, b]) {
+      for (let k = 0; k < 3; k++) pts.push(p[v + k]! + grid.normals[v + k]! * 0.002);
+    }
   }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute("position", new THREE.Float32BufferAttribute(pts, 3));
@@ -443,7 +476,9 @@ export function inWheelArch(q: Pick<Quad, "x" | "y" | "z" | "seg">): boolean {
 
 /** Side window outline: front edge follows the A-pillar, rear edge the C-pillar, gap = B-pillar. */
 const windowFront = (y: number) => 0.8 - (y - 1.0) * 1.82 - 0.13;
-const windowRear = (y: number) => -1.62 + (y - 1.05) * 0.85;
+// The return at the foot of the C-pillar is BMW's characteristic Hofmeister kink.
+const windowRear = (y: number) =>
+  y < 1.12 ? lerp(-1.48, -1.66, smoothstep(1.05, 1.12, y)) : -1.66 + (y - 1.12) * 1.08;
 const inBPillar = (x: number) => x > -0.31 && x < -0.19;
 
 function inSideWindow(q: Quad): boolean {
@@ -466,7 +501,7 @@ export function bodyPanel(q: Quad): string | null {
   if (q.seg === 0) return "underbody";
 
   if (q.seg <= 4) {
-    if (q.x > 2.03) return "front_bumper";
+    if (q.x > 1.91) return "front_bumper";
     if (q.x < -2.03) return q.y < 0.93 ? "rear_bumper" : az < 0.8 ? "trunk_lid" : "body";
     // Dark sill trim between the wheels makes the body read lower, like on the real car.
     if (q.seg === 1 && q.x < 1.12 && q.x > -0.96) return "body:dark";
@@ -492,7 +527,7 @@ export function bodyPanel(q: Quad): string | null {
   if (q.seg >= 7 && az < 0.6) {
     if (q.x > 0.02) return "windshield:glass";
     if (q.x < -1.28) return "rear_window:glass";
-    if (az < 0.47 && q.x < -0.18 && q.x > -1.12) return "roof:glass";
+    if (az < 0.47 && q.x < -0.18 && q.x > -0.92) return "roof:glass";
   }
   return "roof";
 }
@@ -545,4 +580,10 @@ export function smoothPanelEdges(grid: BodyGrid, assign: (q: Quad) => string | n
       p[v * 3 + 2] = z;
     }
   }
+  const surface = new THREE.BufferGeometry();
+  surface.setAttribute("position", new THREE.BufferAttribute(p, 3));
+  surface.setIndex(gridIndex((i, j) => !grid.cut[i * RING + j]));
+  surface.computeVertexNormals();
+  grid.normals = surface.getAttribute("normal").array as Float32Array;
+  surface.dispose();
 }
