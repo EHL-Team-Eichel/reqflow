@@ -220,6 +220,18 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 **Log**
 
+- 2026-10-11: Rear-window support restored after rendering the 21:27 build (`f71a8f9`)
+  for comparison. Rear glazing now tapers inside mirrored C-pillars and stops before a
+  painted lower frame, rather than extending onto the taller STL-guided rear deck. Current
+  silhouette, trunk details, 68 components and requirement review stay intact. Added four
+  regressions: typecheck and 421 tests pass (25 skipped). Reviewed rear smoke screenshot;
+  smoke retains the same 12 previously documented menu assertions (32 screenshots generated).
+
+- 2026-10-11: OpenCode claimed rear-window support restoration: compare the pre-STL build
+  from over an hour earlier and restore the rear frame/C-pillars without reverting current
+  silhouette, trunk details, selectable parts or requirement review. Verify model regressions
+  and rear-view screenshots; preserve pre-existing handoff edits.
+
 - 2026-10-10: BMW door character lines complete: a stronger shoulder crease runs below
   the handles through both doors into the rear haunch; a lower scallop rises into the rear
   arch. Individual sketch strokes have a clear ink hierarchy and soften in interior view.
@@ -247,21 +259,6 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
   confidence; load full requirements and linked evidence via existing IPC. Preserve car/model work
   and pre-existing handoff reordering. Verify the focused renderer slice before committing.
 
-- 2026-10-10: OpenCode claimed collapsed-on-load, menu-driven markers: opening a class
-  activates its parts, subclasses narrow focus, >8 markers become blue dots and <=8 keep
-  text/counts. Preserve concurrent component/model, visibility and shared smoke work.
-
-- 2026-10-10: Menu-driven markers complete: all sections/subclasses start closed without
-  markers; opening a class shows all descendant parts even with zero requirements, opening
-  a subclass narrows focus, and closing the focused class restores its parent or clears markers.
-  >8 eligible part markers use small blue dots; <=8 use compact text/count labels. Interior and
-  Technology activation reveal the interior view. Selection/back preserves menu state.
-  Typecheck and all 386 tests pass (25 skipped); native Electron probe verified collapsed load,
-  class/subclass activation, blue-dot/label modes, close/reset, dot selection and back retention.
-  Reviewed collapsed, Exterior dots, Doors labels and Interior screenshots. Shared smoke builds
-  and generates 32 screenshots but its automatic-on-load point assertions now need WS1/WS0 to
-  open the relevant class first (12 assertion failures); left that owned script unchanged.
-
 - 2026-10-10: Expanded the car from 34 to 68 selectable parts while retaining the original
   assemblies. Added distinct front/rear motors, gearbox, battery, inverter, cooling, shafts,
   differential, brake discs/calipers and suspension components, plus individual seats,
@@ -270,6 +267,22 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
   subclasses cover every part exactly once. Verified typecheck, 378 tests (25 skipped),
   UI smoke (PASS, 32 screenshots), and an isolated native Electron probe selecting all 34
   new parts with zero requirements. Reviewed motor/driver-seat selection and detailed trunk.
+
+- 2026-10-10: OpenCode claimed collapsed-on-load, menu-driven markers: opening a class
+  activates its parts, subclasses narrow focus, >8 markers become blue dots and <=8 keep
+  text/counts. Preserve concurrent component/model, visibility and shared smoke work.
+
+- 2026-10-10: Menu-driven markers complete: all sections/subclasses start closed without
+  markers; opening a class shows all descendant parts even with zero requirements, opening
+  a subclass narrows focus, and closing the focused class restores its parent or clears markers.
+
+  > 8 eligible part markers use small blue dots; <=8 use compact text/count labels. Interior and
+  > Technology activation reveal the interior view. Selection/back preserves menu state.
+  > Typecheck and all 386 tests pass (25 skipped); native Electron probe verified collapsed load,
+  > class/subclass activation, blue-dot/label modes, close/reset, dot selection and back retention.
+  > Reviewed collapsed, Exterior dots, Doors labels and Interior screenshots. Shared smoke builds
+  > and generates 32 screenshots but its automatic-on-load point assertions now need WS1/WS0 to
+  > open the relevant class first (12 assertion failures); left that owned script unchanged.
 
 - 2026-10-10: Idle car orbit complete: slow, frame-rate-independent rotation on opening and
   after 30 seconds without app-wide input. Held drags block it; camera presets remain usable,
@@ -308,18 +321,6 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
   rear plate recess/handle/roundel, lamp signatures and bumper details. Preserve existing
   part IDs and cabin forms; verify and push this model-only follow-up.
 
-- 2026-10-10: Compact car-point tags complete: short labels (e.g. Grille, Display, Rear seats)
-  plus a small count replace number-only points and long hover names. Removed the long native
-  hover tooltip; full accessible names remain. Point clicks still select the detailed side-panel
-  review with descriptions, targets, evidence and classification. Added 37 tag regressions.
-  Typecheck and all 327 tests pass (25 skipped); Prettier passes; reviewed `car-3d.png` and
-  `car-clicked.png`. Smoke produces 29 screenshots but retains the seven obsolete sample-control
-  failures documented below; WS1-owned smoke script remains unchanged.
-
-- 2026-10-10: OpenCode claimed compact car-point tags: replace long hover names with short
-  labels, show a small tag and count on each point, and preserve click-through to the full review.
-  Existing visibility/model and part-menu changes remain outside this slice.
-
 - 2026-10-10: OpenCode claimed the expandable parts-menu slice on the current branch:
   Exterior / Interior / Technology sections with broader subclasses (Doors, Seats, etc.)
   and all existing detailed parts visible by default. Preserve concurrent model edits.
@@ -332,6 +333,26 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
   Interior submenu screenshots. Shared smoke produced 29 screenshots but still fails the seven
   obsolete sample-toggle checks noted above; WS1 follow-up unchanged. Commit only this slice.
 
+- 2026-10-10: Completed STL-guided sketch refinement. Traced the supplied sedan's roof,
+  bonnet, shoulders and rear deck into smooth procedural curves; fitted all four tyres,
+  arches, liners and axle components to its normalized wheel stations. Projected strokes
+  follow the panels and stop at openings. Preserved all 34 part IDs/anchors, both front
+  seats (LHD driver and passenger), three rear places, dashboard and the other interior forms.
+  Verified typecheck, full suite (269 passed, 25 skipped), smoke (PASS, 29 screenshots),
+  front/side/rear/top/interior and dark visual checks, changed-file Prettier and diff checks.
+
+- 2026-10-10: Compact car-point tags complete: short labels (e.g. Grille, Display, Rear seats)
+  plus a small count replace number-only points and long hover names. Removed the long native
+  hover tooltip; full accessible names remain. Point clicks still select the detailed side-panel
+  review with descriptions, targets, evidence and classification. Added 37 tag regressions.
+  Typecheck and all 327 tests pass (25 skipped); Prettier passes; reviewed `car-3d.png` and
+  `car-clicked.png`. Smoke produces 29 screenshots but retains the seven obsolete sample-control
+  failures documented below; WS1-owned smoke script remains unchanged.
+
+- 2026-10-10: OpenCode claimed compact car-point tags: replace long hover names with short
+  labels, show a small tag and count on each point, and preserve click-through to the full review.
+  Existing visibility/model and part-menu changes remain outside this slice.
+
 - 2026-10-10: Removed the Car tab's top-right synthetic-sample source control; the panel now
   uses flow requirements only and its empty state no longer offers the removed sample.
   Added two regressions. Typecheck and all 285 tests pass (25 skipped); reviewed `car-3d.png`.
@@ -343,18 +364,6 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
   Keep flow requirements as the source, update the empty-state hint, and leave existing model
   changes untouched. Add a focused regression and verify before committing/pushing this slice.
 
-- 2026-10-10: Completed STL-guided sketch refinement. Traced the supplied sedan's roof,
-  bonnet, shoulders and rear deck into smooth procedural curves; fitted all four tyres,
-  arches, liners and axle components to its normalized wheel stations. Projected strokes
-  follow the panels and stop at openings. Preserved all 34 part IDs/anchors, both front
-  seats (LHD driver and passenger), three rear places, dashboard and the other interior forms.
-  Verified typecheck, full suite (269 passed, 25 skipped), smoke (PASS, 29 screenshots),
-  front/side/rear/top/interior and dark visual checks, changed-file Prettier and diff checks.
-
-- 2026-10-10: Claimed STL-guided refinement using the supplied Hot Wheels sedan: trace its
-  silhouette and body creases, fit all four tyres to the arches, preserve the 34-part catalog
-  and existing interior subforms, then verify and push the current branch.
-
 - 2026-10-10: Click-highlight slice complete: selected parts use the theme's soft-blue fill;
   deselection restores the sketch, with glass masks and interior ghosting preserved. Added 18
   light/dark regressions. Verified the isolated staged snapshot: typecheck, 265 tests passed
@@ -365,6 +374,10 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - 2026-10-10: OpenCode claimed the focused click-highlight slice: use the theme's soft-blue fill
   for the selected part, preserve sketch lines and interior ghosting, and verify before commit/push.
   Existing STL-guided refinement work and ownership are unchanged.
+
+- 2026-10-10: Claimed STL-guided refinement using the supplied Hot Wheels sedan: trace its
+  silhouette and body creases, fit all four tyres to the arches, preserve the 34-part catalog
+  and existing interior subforms, then verify and push the current branch.
 
 - 2026-10-10: Shortened the bonnet/nose by 0.33 m and rounded the front plan-view corners at
   the user’s request. The front axle, chassis components, wheel wells, projected front details,

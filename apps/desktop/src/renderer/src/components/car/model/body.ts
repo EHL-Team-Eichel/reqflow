@@ -504,7 +504,12 @@ export function bodyPanel(q: Quad): string | null {
   if (sideGlass && inBPillar(q.x)) return "roof:dark";
   if (q.seg >= 7 && az < 0.6) {
     if (q.x > 0.02) return "windshield:glass";
-    if (q.x < -1.28) return "rear_window:glass";
+    // The taller reference deck no longer closes the rear glass at the belt line.
+    // Inset it explicitly, retaining the old sketch's C-pillars and lower support.
+    if (q.x < -1.28) {
+      const glassHalfWidth = lerp(0.5, 0.6, smoothstep(-1.28, -1.82, q.x));
+      return q.x > -1.82 && az < glassHalfWidth ? "rear_window:glass" : "roof";
+    }
     if (az < 0.47 && q.x < -0.18 && q.x > -0.92) return "roof:glass";
   }
   return "roof";
