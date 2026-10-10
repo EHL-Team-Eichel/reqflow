@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4KMWRK0Z5V4D4GVXSB0HPP9",
   "strategy": "manual-commit",
   "branch": "ws6-research",
-  "checkpoints_count": 30,
+  "checkpoints_count": 31,
   "files_touched": [
     ".gitignore",
     ".prettierignore",
@@ -254,6 +254,13 @@
       "compact_transcript": "/21/transcript.jsonl",
       "content_hash": "/21/content_hash.txt",
       "prompt": "/21/prompt.txt"
+    },
+    {
+      "metadata": "/22/metadata.json",
+      "transcript": "/22/full.jsonl",
+      "compact_transcript": "/22/transcript.jsonl",
+      "content_hash": "/22/content_hash.txt",
+      "prompt": "/22/prompt.txt"
     }
   ],
   "token_usage": {
