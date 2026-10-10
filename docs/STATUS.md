@@ -69,6 +69,21 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 **Log**
 
+- 2026-10-10: Mastra desktop integration implemented on `integrate-mastra-judge`: four main-process
+  agents, OpenAI protected-key entry/status/removal, an explicit `mock/judge` demo, ranked source
+  inputs and validated proposal output. AI Judge now feeds HIL → Add to Car rather than publishing
+  directly; upstream scores/evidence are preserved. Added atomic persistent id-range reservations
+  and atomic evidence publication; removed relative-score inflation, empty-check confidence and
+  cross-market fallback. Car cards expose independent confidence and source excerpts. Live research
+  is opt-in with domain checks, bounded fetches and exact normalized quote verification; no cloud
+  telemetry configured. Verified: typecheck and formatting pass, 271 tests pass, 25 local-data tests
+  skipped; native smoke passes with 31 screenshots, including the HIL/publication/evidence path and
+  masked OpenAI key entry. Ready to push for integration. No live-provider calls or BMW data used.
+- 2026-10-10: OpenCode claimed the human-requested Mastra desktop integration as WS0/integrator on
+  `integrate-mastra-judge`, isolated from the shared car-model checkouts. Import the local AI Judge
+  prototype, wire main-process agents/OpenAI secrets, preserve evidence and unique ids, expose
+  confidence/evidence on the Car tab, and verify offline before pushing. Focused cross-workstream
+  wiring is part of this integration; no BMW data or live-provider calls.
 - 2026-10-10 night: Demo scope switched to the 1 Series F70 · EU (default settings, fixtures renamed to
   `sample-f70-eu.ts` with `REQ-F70-EU-…` ids, docs). `data/samples/` stays 5 Series on purpose: it
   tests the parser, and a second series shows the Raw block isn't tied to one car.

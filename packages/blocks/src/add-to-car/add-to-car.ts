@@ -1,6 +1,9 @@
 import {
   emptyPipelineData,
   parseBlockParams,
+  mergePipelineData,
+  Requirement,
+  formatRequirementId,
   type Priority,
   type ProductScope,
 } from "@reqflow/core";
@@ -94,6 +97,25 @@ export const addToCarBlock = defineBlock({
       priority: priorityForRanking(ranking, i),
       data: inputs[`in-${i}`] ?? emptyPipelineData(),
     }));
+    const prepared = mergePipelineData(...ranked.map((r) => r.data));
+    if (prepared.requirements.length) {
+      ctx.signal.throwIfAborted();
+      const ids = new Set(prepared.findings.map((f) => f.id));
+      for (const r of prepared.requirements) {
+        Requirement.parse(r);
+        if (r.status !== "proposed")
+          throw new Error(
+            "Add to Car only publishes proposed upstream requirements; human decisions use the Car review API.",
+          );
+        if (r.findingIds.some((id) => !ids.has(id)))
+          throw new Error(`Requirement ${r.id} is missing its upstream evidence`);
+      }
+      await ctx.car.add(prepared.requirements, prepared);
+      ctx.log(
+        `Published ${prepared.requirements.length} upstream proposals, preserving their importance, confidence and evidence. No decision was made.`,
+      );
+      return { status: "ok", outputs: {} };
+    }
     const arrived = ranked.reduce((n, r) => n + r.data.records.length + r.data.findings.length, 0);
     if (arrived === 0) {
       ctx.log("Nothing arrived, so no requirements were added.");
@@ -103,14 +125,21 @@ export const addToCarBlock = defineBlock({
     ctx.progress(0.1, "Sorting feedback into themes");
 
     const scope = scopeFor(params, ctx.scope);
-    const firstSeq = (await ctx.car.nextSeq?.(scope)) ?? 1;
     const derived = deriveRequirements(ranked, {
       scope,
-      firstSeq,
       runId: ctx.runId,
       now: new Date().toISOString(),
       mergeDuplicates: params.mergeDuplicates,
     });
+    if (derived.requirements.length) {
+      const firstSeq = (await ctx.car.nextSeq?.(scope, derived.requirements.length)) ?? 1;
+      derived.requirements = derived.requirements.map((r, i) =>
+        Requirement.parse({
+          ...r,
+          id: formatRequirementId(scope.vehicleCode, scope.market, firstSeq + i),
+        }),
+      );
+    }
     for (const line of report(derived.stats)) ctx.log(line);
     ctx.signal.throwIfAborted();
     ctx.progress(0.6, "Recording findings");

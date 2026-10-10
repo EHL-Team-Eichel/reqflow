@@ -81,7 +81,7 @@ export interface AuditFilter {
 export type ExportFormat = "json" | "csv" | "md";
 
 /** API keys never cross into the renderer; it only learns whether one is configured. */
-export type SecretName = "anthropic_api_key" | "tavily_api_key";
+export type SecretName = "anthropic_api_key" | "tavily_api_key" | "openai_api_key";
 export type SecretStatus = Record<
   SecretName,
   { configured: boolean; source: "keychain" | "env" | null }

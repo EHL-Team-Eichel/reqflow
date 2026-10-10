@@ -45,6 +45,29 @@ npm install
 Optional, dev only: copy `.env.example` to `apps/desktop/.env` and add an `ANTHROPIC_API_KEY`. Without
 one, the default AI provider is the offline `mock`.
 
+## Mastra AI Judge
+
+The **AI Judge** block proposes evidence-linked actions for a part or problem, using four roles:
+scope resolver, web researcher, solution proposer and an independent confidence judge. Importance
+is computed deterministically; solution confidence is displayed separately on the Car tab.
+
+1. In **Settings → AI & research**, save an OpenAI key (OS-protected storage), or configure
+   `OPENAI_API_KEY` in the main-process development environment. Stored keys are never displayed.
+2. Add Raw blocks for feedback, studies and optional sales context. Connect them to the AI Judge's
+   inputs; order the source labels from most important to least important.
+3. Set **Part or problem**, for example `seats`. The default model is `openai/gpt-6-luna`.
+   Use `mock/judge` for an explicit offline demonstration: no model calls, and confidence stays zero.
+4. Connect **AI Judge → HIL → Add to Car**, then press **Start**. Review the saved proposals in
+   the HIL report and explicitly continue. Publishing does not approve a requirement.
+5. On **Car**, select a part and expand **Why, uncertainty & evidence** to see source excerpts,
+   assumptions, conflicts and separate importance/confidence scores.
+
+Live runs send selected internal evidence to OpenAI. Web research is opt-in, uses the domain policy
+from Settings and accepts only exact normalized quotations on fetched public pages. This integration
+does not configure Mastra cloud telemetry. Confidence scores and rank ranges are decision-support
+heuristics and sensitivity analysis, not statistical probabilities. Agent integration tests and the
+desktop smoke scenario use only synthetic data and the explicit offline provider.
+
 ## Daily commands
 
 ```bash

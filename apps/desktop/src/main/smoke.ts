@@ -253,7 +253,7 @@ export async function runSmoke(
   const blockCount = await count(".react-flow__node");
   check(
     blockCount === PALETTE_BLOCK_KINDS.length,
-    `dataflow: expected 7 blocks, got ${blockCount}`,
+    `dataflow: expected ${PALETTE_BLOCK_KINDS.length} blocks, got ${blockCount}`,
   );
   for (const kind of PALETTE_BLOCK_KINDS) {
     check((await count(`[data-testid="block-${kind}"]`)) === 1, `dataflow: block ${kind} missing`);
@@ -580,6 +580,138 @@ export async function runSmoke(
   check(await click('[data-testid="car-view-exterior"]'), "car: no exterior view");
   check(await click('[data-testid="car-source-app"]'), "car: no app source option");
 
+  // Real packaged IPC: Raw → AI Judge (explicit offline demo) → HIL → Add to Car.
+  const judgeDb = new DatabaseSync(join(outDir, "data", "judge-synthetic.sqlite"));
+  judgeDb.exec(
+    "CREATE TABLE IF NOT EXISTS feedback (market TEXT, comment TEXT); DELETE FROM feedback;",
+  );
+  for (let i = 0; i < 8; i++)
+    judgeDb
+      .prepare("INSERT INTO feedback VALUES (?, ?)")
+      .run("DE", `The seats squeak over bumps during every trip, synthetic case ${i}.`);
+  judgeDb.close();
+  let judgeGraph: WorkflowGraph = {
+    blocks: [
+      createBlock("raw", { id: "judge-raw", position: { x: 0, y: 0 } }),
+      createBlock("ai_judge", { id: "judge-ai", position: { x: 300, y: 0 } }),
+      createBlock("hil", { id: "judge-review", position: { x: 600, y: 0 } }),
+      createBlock("add_to_car", { id: "judge-car", position: { x: 900, y: 0 } }),
+    ],
+    edges: [],
+  };
+  judgeGraph = setBlockParams(judgeGraph, "judge-raw", {
+    ...defaultBlockParams("raw"),
+    source: "database",
+    connection: join(outDir, "data", "judge-synthetic.sqlite"),
+    query: "SELECT * FROM feedback",
+  }).graph;
+  judgeGraph = setBlockParams(judgeGraph, "judge-ai", {
+    ...defaultBlockParams("ai_judge"),
+    query: "seats",
+    sources: ["Feedback"],
+    model: "mock/judge",
+    webResearch: false,
+  }).graph;
+  for (const [source, sourcePort, target, targetPort] of [
+    ["judge-raw", "out", "judge-ai", "in-0"],
+    ["judge-ai", "out", "judge-review", "in"],
+    ["judge-review", "out", "judge-car", "in-0"],
+  ])
+    judgeGraph = connect(judgeGraph, {
+      source: source!,
+      sourcePort: sourcePort!,
+      target: target!,
+      targetPort: targetPort!,
+    });
+  const judgeWorkflow = await js<{ ok: boolean; value?: { id: string } }>(
+    `window.reqflowBridge.invoke("reqflow:workflows.save", ${JSON.stringify({ ...judgeGraph, name: "Synthetic AI Judge smoke", scope: DEFAULT_SETTINGS.defaultScope })})`,
+  );
+  check(judgeWorkflow.ok, "judge: workflow could not be saved");
+  if (judgeWorkflow.value) {
+    const started = await js<{ ok: boolean; value?: { id: string } }>(
+      `window.reqflowBridge.invoke("reqflow:runs.start", ${JSON.stringify(judgeWorkflow.value.id)})`,
+    );
+    check(started.ok, "judge: run did not start");
+    if (started.value) {
+      const runId = JSON.stringify(started.value.id);
+      const wait = async () => {
+        let status = "running";
+        const deadline = Date.now() + 10000;
+        while (status === "running" && Date.now() < deadline) {
+          await delay(100);
+          status = await js<string>(
+            `window.reqflowBridge.invoke("reqflow:runs.get", ${runId}).then((r) => r.value?.status ?? "error")`,
+          );
+        }
+        return status;
+      };
+      check((await wait()) === "waiting_for_review", "judge: proposals must pause at HIL");
+      const before = await js<{ value?: unknown[] }>(
+        `window.reqflowBridge.invoke("reqflow:requirements.list", {runId: ${runId}})`,
+      );
+      check(before.value?.length === 0, "judge: published before human continuation");
+      const resumed = await js<{ ok: boolean }>(
+        `window.reqflowBridge.invoke("reqflow:runs.resume", ${runId})`,
+      );
+      check(
+        resumed.ok && (await wait()) === "completed",
+        "judge: human continuation did not publish",
+      );
+      const proposals = await js<{ value?: { id: string; status: string }[] }>(
+        `window.reqflowBridge.invoke("reqflow:requirements.list", {runId: ${runId}})`,
+      );
+      check(
+        !!proposals.value?.length && proposals.value.every((r) => r.status === "proposed"),
+        "judge: no proposed requirements published",
+      );
+      if (proposals.value?.[0]) {
+        const id = JSON.stringify(proposals.value[0].id);
+        const detail = await js<{
+          value?: { findings: unknown[]; sources: unknown[]; records: unknown[] };
+        }>(`window.reqflowBridge.invoke("reqflow:requirements.get", ${id})`);
+        check(
+          !!detail.value?.findings.length &&
+            !!detail.value.sources.length &&
+            !!detail.value.records.length,
+          "judge: evidence was not persisted",
+        );
+        await go("/dataflow");
+        await go("/car");
+        await delay(500);
+        await click('[aria-label="Back to all parts"]');
+        const rows = await js<string[]>(
+          `[...document.querySelectorAll('button[data-testid^="car-part-"]')].map((el) => el.dataset.testid)`,
+        );
+        let found = false;
+        for (const row of rows) {
+          await click(`[data-testid="${row}"]`);
+          await delay(60);
+          found = await js<boolean>(
+            `[...document.querySelectorAll('[data-testid="car-requirement"]')].some((el) => el.textContent.includes(${id}))`,
+          );
+          if (found) break;
+          await click('[aria-label="Back to all parts"]');
+        }
+        check(found, "judge: proposed requirement missing from actual Car cards");
+        if (found) {
+          await js(
+            `const card = [...document.querySelectorAll('[data-testid="car-requirement"]')].find((el) => el.textContent.includes(${id})); if (card) card.querySelector('details').open = true;`,
+          );
+          await delay(400);
+          check(
+            (await count('[data-testid="car-importance-confidence"]')) > 0,
+            "judge: independent confidence not rendered",
+          );
+          check(
+            (await count('[data-testid="car-evidence"] blockquote')) > 0,
+            "judge: evidence quotes not rendered",
+          );
+          await shot("ai-judge-car-evidence");
+        }
+      }
+    }
+  }
+
   // 4. Settings: every section, then dark mode across pages.
   await go("/settings");
   for (const id of SETTINGS_SECTIONS) {
@@ -587,6 +719,23 @@ export async function runSmoke(
     await delay(300);
     await shot(`settings-${id}`);
   }
+  await click('[data-testid="settings-section-ai"]');
+  await delay(200);
+  check(
+    (await count('[data-testid="secret-openai_api_key"]')) === 1,
+    "settings: OpenAI key entry missing",
+  );
+  check(
+    await js<boolean>(
+      `document.querySelector('[data-testid="secret-openai_api_key"]')?.type === "password"`,
+    ),
+    "settings: OpenAI key entry must be masked",
+  );
+  await js(
+    `document.querySelector('[data-testid="secret-openai_api_key"]')?.scrollIntoView({ block: "center" })`,
+  );
+  await delay(200);
+  await shot("settings-openai-key");
   check(await click('[data-testid="settings-section-app"]'), "settings: no app section");
   await delay(200);
   check(await click('[data-testid="theme-dark"]'), "settings: no dark theme option");

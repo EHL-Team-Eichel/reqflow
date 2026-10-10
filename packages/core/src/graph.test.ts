@@ -54,6 +54,8 @@ describe("block specs", () => {
       "Could have",
     ]);
     expect(ports("add_to_car").outputs).toHaveLength(0);
+    expect(ports("ai_judge").outputs.map((p) => p.id)).toEqual(["out"]);
+    expect(ports("ai_judge").inputs).toHaveLength(3);
     expect(BLOCK_SPECS.custom.params).toHaveLength(0);
     const expandable = PALETTE_BLOCK_KINDS.filter((k) => BLOCK_SPECS[k].hasInnerWorkplace);
     expect(expandable).toEqual(["custom", "research", "ai_filter", "ai_splitter"]);

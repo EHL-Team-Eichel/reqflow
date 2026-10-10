@@ -1,4 +1,5 @@
 import { basename } from "node:path";
+import { createJudgingAgents, createOfflineJudgingAgents } from "@reqflow/agents";
 import { writeFile } from "node:fs/promises";
 import type { SaveDialogOptions, SaveDialogReturnValue } from "electron";
 import { z } from "zod";
@@ -26,6 +27,7 @@ import {
   type WorkflowSave,
   type LlmClient,
   type WebSearch,
+  type JudgingAgents,
 } from "@reqflow/core";
 import type { AppInfo, ReqflowHandlers, SecretName } from "@reqflow/core/ipc";
 import {
@@ -39,7 +41,7 @@ import {
   SqliteRunRepository,
   type LocalFileStore,
 } from "@reqflow/db";
-import { BlockRegistry, WorkflowExecutor } from "@reqflow/engine";
+import { BlockRegistry, WorkflowExecutor, type JudgingAgentRequest } from "@reqflow/engine";
 import { createLlmClient } from "@reqflow/llm";
 import { ReqflowError } from "./dispatch";
 import { previewBlock } from "./preview";
@@ -68,7 +70,7 @@ const AuditFilterSchema = z
   })
   .optional();
 
-const SecretNameSchema = z.enum(["anthropic_api_key", "tavily_api_key"]);
+const SecretNameSchema = z.enum(["anthropic_api_key", "tavily_api_key", "openai_api_key"]);
 
 const ExportRequirementsSchema = z.object({
   runId: z.string().optional(),
@@ -100,6 +102,8 @@ export interface HandlerDeps {
   saveDialog?: (opts: SaveDialogOptions) => Promise<SaveDialogReturnValue>;
   pushRunUpdate?: (run: WorkflowRun) => void;
   secretsStore?: SecretsStore;
+  /** Tests/smoke inject offline agents. Production constructs Mastra agents from protected storage. */
+  agents?: (options: JudgingAgentRequest) => Promise<JudgingAgents | null>;
 }
 
 export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
@@ -139,6 +143,13 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
       audit: auditLogger,
       files: deps.files,
       web: deps.web ?? null,
+      agents:
+        deps.agents ??
+        (async (options) => {
+          if (options.model === "mock/judge") return createOfflineJudgingAgents();
+          const apiKey = await secretsStore.getSecret("openai_api_key");
+          return apiKey ? createJudgingAgents({ apiKey, ...options }) : null;
+        }),
       car: {
         async add(requirements, evidence) {
           await reqRepo.savePipelineData({
@@ -147,12 +158,8 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
             requirements,
           });
         },
-        async nextSeq(scope) {
-          const prefix = `REQ-${scope.vehicleCode}-${scope.market}-`;
-          const used = (await reqRepo.list())
-            .filter((r) => r.id.startsWith(prefix))
-            .map((r) => Number(r.id.slice(prefix.length)));
-          return used.length ? Math.max(...used) + 1 : 1;
+        async nextSeq(scope, count = 1) {
+          return reqRepo.reserveSequences(scope, count);
         },
       },
     },

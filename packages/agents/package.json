@@ -1,0 +1,17 @@
+{
+  "name": "@reqflow/agents",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "@mastra/core": "1.75.0",
+    "@reqflow/core": "*",
+    "zod": "^4.6.5"
+  }
+}

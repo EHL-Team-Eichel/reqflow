@@ -3,6 +3,7 @@ import { cx } from "@/lib/cx";
 import { XIcon } from "@/components/ui/icons";
 import { label, type ClassifiedRequirement, type Confidence } from "./classify";
 import { CAR_PARTS, PART_GROUP_LABELS, PARTS_BY_ID, WHOLE_CAR, type PartGroup } from "./parts";
+import { EvidenceDetails } from "./EvidenceDetails";
 
 const PRIORITY_LABELS: Record<Priority, string> = {
   must: "Must",
@@ -185,6 +186,7 @@ function RequirementCard({ item }: { item: ClassifiedRequirement }) {
           <> Could also be: {a.alternatives.map((x) => label(x.partId)).join(", ")}.</>
         )}
       </p>
+      <EvidenceDetails requirement={r} />
     </article>
   );
 }
