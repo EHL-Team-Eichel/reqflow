@@ -1,0 +1,10 @@
+"Read-only review in /Users/jonas/Documents/reqflow-ws7-ai-splitter branch ws7-mastra-splitter. User explicitly requested parallelized agents; no furtheragents allowed. Review changes backend core/splitter-report.ts, core/pipeline.ts, core/ipc.ts, core/audit.ts, engine/executor.ts+block.ts, db/runs.ts+audit.ts, main/handlers.ts, ai-splitter/raw*.ts+customer-demand+feedback-units+reroute, llm/mastra.ts/mock.ts, raw/research-json.ts. Check actual correctness/endtoend analytical protocols2-10 groups/demand70freq30impact nullunknown, no invented evidence, rawoutputs unique/batchesglobal, Report persisted snapshot, human correction versionvalidation/transaction outputs+report+audit and actual resume reads correctedoutputs, no requirementpriority/status mutated, privacy no source text/secrets logs. Mastra factory injectable existingllm no separatekeys path. No data/raw or credentials/configfiles; synthetic fixtures only. Tests new main/splitter-review.test.ts concurrently authored do notedit orduplicate parent/testagent. You may scoped typecheck/tests no rootcheck/smoke parentowns. Do not edit/commit/deps/launchagents. Return concise confirmed findings pathline+impact+fix, or no findings with actual verification. Avoid speculative scopeexpansion. Current correction limited direct sameworkspace editableHIL and no alreadyconsumed downstream; that is explicit scope. Inspect currentdiff againstbranchbase no needwholehistoricalrepo."
+
+---
+
+▣ DCP | -90.5K removed, +3.5K summary
+
+│███⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿█████████████████│
+▣ Compression #1 -90.4K removed, +3.5K summary
+→ Topic: Scoped backend review progress
+→ Items: 9 messages and 32 tools compressed
