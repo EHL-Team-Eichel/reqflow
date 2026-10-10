@@ -49,20 +49,23 @@ export const BMW_REFERENCE = {
     [2.2, 0.87],
   ],
   // Plane coordinates: (x,y) for side curves, (x,z) for bonnet/deck curves.
+  // BMW-style shoulder crease sits below the handles, rising into the rear haunch.
   shoulder: [
     [2.08, 0.825],
-    [1.65, 0.9],
-    [0.82, 0.925],
-    [0, 0.95],
-    [-0.9, 0.975],
+    [1.65, 0.865],
+    [0.82, 0.891],
+    [0, 0.923],
+    [-0.9, 0.965],
     [-1.75, 1.025],
     [-2.3, 1.065],
   ],
+  // A shallow scallop catches the door surface and kicks up ahead of the rear arch.
   lowerDoor: [
-    [0.93, 0.36],
-    [0.55, 0.325],
-    [-0.35, 0.31],
-    [-1.02, 0.36],
+    [0.91, 0.415],
+    [0.55, 0.385],
+    [-0.15, 0.398],
+    [-0.68, 0.449],
+    [-1.045, 0.515],
   ],
   sill: [
     [0.93, 0.245],

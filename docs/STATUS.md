@@ -220,6 +220,15 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 **Log**
 
+- 2026-10-10: BMW door character lines complete: a stronger shoulder crease runs below
+  the handles through both doors into the rear haunch; a lower scallop rises into the rear
+  arch. Individual sketch strokes have a clear ink hierarchy and soften in interior view.
+  The 68 selectable components and trunk details remain intact. Typecheck and 417 tests
+  pass (25 skipped), including door coverage and contour-rise regression. Reviewed smoke
+  side, three-quarter and dark screenshots. Full smoke generated 32 screenshots but still
+  fails the 12 existing collapsed-menu/requirement-explanation assertions recorded above;
+  WS1/WS0 should update those main-process smoke checks for the current menu behavior.
+
 - 2026-10-10: Compact requirement review complete on `ws3-compact-requirements`: bounded cards
   show the short requirement, up to two targets, priority/status and percentage part-placement
   confidence, with weak-evidence/conflict warnings retained. Clicking opens validated IPC details:

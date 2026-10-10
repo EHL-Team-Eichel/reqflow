@@ -153,6 +153,37 @@ describe("buildCar", () => {
     }
   });
 
+  it("carries the shoulder crease across both doors and lifts the lower contour into the rear arch", () => {
+    for (const side of [-1, 1]) {
+      const line = (feature: string) =>
+        car.sketchLines
+          .find(
+            (geometry) =>
+              geometry.userData.feature === feature &&
+              Math.sign(geometry.getAttribute("position").getZ(0)) === side,
+          )!
+          .getAttribute("position");
+      const shoulder = line("shoulder");
+      const nearestY = (
+        positions: THREE.BufferAttribute | THREE.InterleavedBufferAttribute,
+        x: number,
+      ) => {
+        let nearest = 0;
+        for (let i = 1; i < positions.count; i++)
+          if (Math.abs(positions.getX(i) - x) < Math.abs(positions.getX(nearest) - x)) nearest = i;
+        expect(Math.abs(positions.getX(nearest) - x)).toBeLessThan(0.025);
+        return positions.getY(nearest);
+      };
+      // Both door centres and their seam retain the continuous crease beneath the handles.
+      for (const x of [0.6, -0.1, -0.8]) {
+        expect(nearestY(shoulder, x)).toBeGreaterThan(0.88);
+        expect(nearestY(shoulder, x)).toBeLessThan(0.98);
+      }
+      const lower = line("door_scallop");
+      expect(nearestY(lower, -1) - nearestY(lower, 0.5)).toBeGreaterThan(0.1);
+    }
+  });
+
   it("keeps the inner floor level through both wheel arches", () => {
     const grid = buildBodyGrid();
     for (let i = 0; i < STATIONS; i++) {

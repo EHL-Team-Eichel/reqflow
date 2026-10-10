@@ -140,16 +140,27 @@ export function buildCar(): CarModel {
   const sketchLines: THREE.BufferGeometry[] = [];
   for (const side of SIDES) {
     const view: View = side < 0 ? "left" : "right";
-    for (const contour of [BMW_REFERENCE.shoulder, BMW_REFERENCE.lowerDoor, BMW_REFERENCE.sill])
-      sketchLines.push(projectSketchLine(bodySurfaces, contour, view));
-    for (const contour of [BMW_REFERENCE.bonnet, BMW_REFERENCE.rearDeck])
-      sketchLines.push(
-        projectSketchLine(
-          bodySurfaces,
-          contour.map(([x, z]) => [x, side * z]),
-          "top",
-        ),
+    for (const [feature, contour, inkOpacity] of [
+      ["shoulder", BMW_REFERENCE.shoulder, 0.82],
+      ["door_scallop", BMW_REFERENCE.lowerDoor, 0.6],
+      ["sill", BMW_REFERENCE.sill, 0.44],
+    ] as const) {
+      const line = projectSketchLine(bodySurfaces, contour, view);
+      line.userData = { feature, inkOpacity };
+      sketchLines.push(line);
+    }
+    for (const [feature, contour] of [
+      ["bonnet", BMW_REFERENCE.bonnet],
+      ["rear_deck", BMW_REFERENCE.rearDeck],
+    ] as const) {
+      const line = projectSketchLine(
+        bodySurfaces,
+        contour.map(([x, z]) => [x, side * z]),
+        "top",
       );
+      line.userData = { feature, inkOpacity: 0.45 };
+      sketchLines.push(line);
+    }
   }
 
   // Wheel arch liners (not a part; they hide the inside of the body behind the wheels).

@@ -188,12 +188,16 @@ export function CarViewer(props: Props) {
         outlines.set(piece, hull);
       }
     }
-    const sketchMat = new THREE.LineBasicMaterial({
-      color: palette.ink,
-      transparent: true,
-      opacity: 0.35,
+    const sketchStyles = car.sketchLines.map((geometry) => {
+      const opacity = (geometry.userData.inkOpacity as number | undefined) ?? 0.35;
+      const material = new THREE.LineBasicMaterial({
+        color: palette.ink,
+        transparent: true,
+        opacity,
+      });
+      scene.add(new THREE.LineSegments(geometry, material));
+      return { material, opacity };
     });
-    for (const geo of car.sketchLines) scene.add(new THREE.LineSegments(geo, sketchMat));
 
     let hoveredPart: string | null = null;
     let dirty = true;
@@ -206,8 +210,10 @@ export function CarViewer(props: Props) {
       }
       scene.background = palette.background;
       outline.uniforms.color!.value.copy(palette.ink);
-      sketchMat.color.copy(palette.ink);
-      sketchMat.opacity = view === "interior" ? 0.08 : 0.35;
+      for (const { material, opacity } of sketchStyles) {
+        material.color.copy(palette.ink);
+        material.opacity = view === "interior" ? opacity * 0.2 : opacity;
+      }
       pickable.length = 0;
       for (const piece of car.pieces) {
         piece.mesh.visible = isPieceVisible(piece, view);
@@ -420,7 +426,7 @@ export function CarViewer(props: Props) {
         s.lines.dispose();
       }
       outline.dispose();
-      sketchMat.dispose();
+      for (const { material } of sketchStyles) material.dispose();
       renderer.dispose();
       renderer.domElement.remove();
       apiRef.current = null;
