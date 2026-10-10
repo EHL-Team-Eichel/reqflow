@@ -1,0 +1,13 @@
+commit push
+
+---
+
+implement the push button into the reqflow app and at a start button there, at the end it puts out a finished selected database, input is region, and part of the car, per text implement this fast
+
+---
+
+stop everything and just tell me what you did and what the fuck even works
+
+---
+
+look at the current architecture and merge your results with it, make sure it works in reqflow app and then push
