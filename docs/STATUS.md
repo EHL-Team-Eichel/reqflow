@@ -220,6 +220,18 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 **Log**
 
+- 2026-10-11: Four-choice switcher implemented and reconciled with the existing catalog:
+  Electric (two motors/full traction battery), Hybrid (engine/rear motor/smaller battery/fuel/
+  exhaust/charge flap), H2 (fuel cell/storage/rear motor/buffer battery), Gasoline (engine/fuel/
+  exhaust). Shared body/windows and the current requirement scope stay intact. Requirements
+  for absent parts retain assignments, counts, selected review and full details. Reusable
+  layout/menu modules, persistent validated sketch state and model-equipment navigation added.
+  Synthetic Electron probe passes repeated switching, single-canvas cleanup, retained full
+  detail, light/dark and no requirement/scope writes; six screenshots visually reviewed.
+  Final component labels distinguish combustion engines from electric motors. Root smoke
+  retains the same 12 documented stale marker/menu assertions (32 screenshots). Final checks
+  run in an isolated checkout because other sessions are updating this branch concurrently.
+
 - 2026-10-11: Implemented BMW models 21-30 (2015 F80 M3, 2025 G82 M4 Competition, 2024 X3 M40i, 1999 E46 328i Sport, 2017 Pandem E30 V1.5, 2010 DTM FiberWerkz E30 M3, 1988 E30 M3 Evolution II, 2019 330i M Sport, 2014 Duke Dynamics MD4 M4, 2015 Varis Full Widebody F82 M4). Added DTM box flares, time-attack front diffusers and swan-neck GT wings.
 
 - 2026-10-11: Implemented BMW models 11-20 (2014 Z4 sDrive35is, 1979 M1, 2019 M235i Gran Coupe, 2013 335i GT, 2025 M3 CS Touring, 2024 X5 xDrive40i, 1973 3.0 CSL Batmobile, 2020 M340i xDrive, 1993 M3 Coupe E36, 2011 E92 M3 GTS). Added roadster, classic homologation, touring and SUV aero packages.

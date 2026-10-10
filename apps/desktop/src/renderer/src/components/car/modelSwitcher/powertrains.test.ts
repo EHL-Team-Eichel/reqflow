@@ -100,6 +100,7 @@ describe("powertrain switching", () => {
   it("classifies combustion, fuel, exhaust and hydrogen stack requirements independently", () => {
     for (const [title, id] of [
       ["Combustion engine refinement", "combustion_engine"],
+      ["Engine refinement", "combustion_engine"],
       ["Fuel tank usability", "fuel_system"],
       ["Exhaust system sound", "exhaust_system"],
       ["Fuel cell stack response", "fuel_cell"],

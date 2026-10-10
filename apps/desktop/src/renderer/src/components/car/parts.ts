@@ -645,7 +645,7 @@ export const EXTENDED_CAR_PARTS: CarPart[] = [
       "combustion engine",
       "petrol engine",
       "gasoline engine",
-      "engine",
+      "engines?",
       "verbrennungsmotor",
     ],
     categories: ["driving_experience"],

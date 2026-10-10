@@ -25,17 +25,10 @@ export const COMPONENT_PARTS: CarPart[] = [
   },
   {
     id: "motor",
-    label: "Front motor / engine",
+    label: "Front electric motor",
     group: "technology",
     blurb: "Main motor in the front power unit: smooth response, noise and acceleration.",
-    keywords: [
-      "electric motors?",
-      "front motors?",
-      "motors?",
-      "engines?",
-      "motor",
-      "antriebsmotor",
-    ],
+    keywords: ["electric motors?", "front motors?", "motors?", "motor", "antriebsmotor"],
   },
   {
     id: "rear_motor",
@@ -55,7 +48,7 @@ export const COMPONENT_PARTS: CarPart[] = [
     id: "battery_pack",
     label: "Battery pack",
     group: "technology",
-    blurb: "Underfloor battery: usable capacity, range and charging endurance.",
+    blurb: "Battery storage: usable capacity, range and charging endurance.",
     keywords: ["batter(?:y|ies)", "battery pack", "kwh", "akku", "batterie"],
   },
   {
@@ -67,7 +60,7 @@ export const COMPONENT_PARTS: CarPart[] = [
   },
   {
     id: "cooling_system",
-    label: "Motor & battery cooling",
+    label: "Powertrain cooling",
     group: "technology",
     blurb: "Cooling circuit, radiator and thermal management of the drive units.",
     keywords: [

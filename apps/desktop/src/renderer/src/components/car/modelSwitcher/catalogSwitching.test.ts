@@ -6,8 +6,9 @@ import { initialMarkerMenu, toggleMarkerMenu, menuPartIds } from "../markerMenu"
 import * as THREE from "three";
 
 describe("existing catalog switching integration", () => {
-  it("matches every catalog sketch to its available parts/menu without duplicate powertrains", () => {
-    for (const model of VEHICLE_MODELS) {
+  it.each(VEHICLE_MODELS)(
+    "matches $id to its parts/menu without duplicate powertrains",
+    (model) => {
       const car = buildVehicleModel(model, model.defaultPowertrain);
       const modelled = new Set(
         car.pieces.map((p) => p.partId).filter((id): id is string => id !== null),
@@ -24,8 +25,8 @@ describe("existing catalog switching integration", () => {
         (p.mesh.material as THREE.Material).dispose();
       }
       for (const line of car.sketchLines) line.dispose();
-    }
-  });
+    },
+  );
 
   it("supports exploratory powertrains while preserving catalog equipment and baseline body", () => {
     const model = VEHICLE_MODELS.find((m) => m.specialParts.includes("gt_wing"))!;

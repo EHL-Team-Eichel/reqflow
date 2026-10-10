@@ -79,7 +79,7 @@ describe("classifyRequirement", () => {
 
   it.each([
     ["Quiet front motor", "motor"],
-    ["More responsive engine", "motor"],
+    ["More responsive engine", "combustion_engine"],
     ["Rear motor response", "rear_motor"],
     ["Smoother gearbox", "transmission"],
     ["Larger battery pack", "battery_pack"],

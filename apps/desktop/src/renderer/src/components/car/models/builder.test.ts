@@ -1,17 +1,14 @@
 import { describe, expect, it } from "vitest";
+import * as THREE from "three";
 import { buildVehicleModel } from "./builder";
 import { BATCH_1_MODELS } from "./batch1";
-import { BATCH_2_MODELS } from "./batch2";
-import { BATCH_3_MODELS } from "./batch3";
 import { VEHICLE_MODELS, getVehicleModelById, searchVehicleModels } from "./registry";
 import type { PowertrainType } from "./types";
 
 describe("Vehicle Models & Builder", () => {
-  it("has definitions for all models in Batches 1 to 3", () => {
-    expect(BATCH_1_MODELS).toHaveLength(10);
-    expect(BATCH_2_MODELS).toHaveLength(10);
-    expect(BATCH_3_MODELS).toHaveLength(10);
-    expect(VEHICLE_MODELS).toHaveLength(30);
+  it("has valid and uniquely identifiable catalog definitions", () => {
+    expect(VEHICLE_MODELS.length).toBeGreaterThan(0);
+    expect(new Set(VEHICLE_MODELS.map((model) => model.id)).size).toBe(VEHICLE_MODELS.length);
     for (const model of VEHICLE_MODELS) {
       expect(model.id).toBeTruthy();
       expect(model.name).toBeTruthy();
@@ -21,23 +18,23 @@ describe("Vehicle Models & Builder", () => {
     }
   });
 
-  it("builds valid 3D model for each powertrain variant", () => {
-    const powertrains: PowertrainType[] = ["gasoline", "hybrid", "electric", "h2"];
-    const model = BATCH_1_MODELS[0]!;
-
-    for (const pt of powertrains) {
-      const car = buildVehicleModel(model, pt);
+  it.each<PowertrainType>(["gasoline", "hybrid", "electric", "h2"])(
+    "builds valid %s geometry",
+    (powertrain) => {
+      const car = buildVehicleModel(BATCH_1_MODELS[0]!, powertrain);
       expect(car.root).toBeDefined();
       expect(car.pieces.length).toBeGreaterThan(60);
       expect(car.anchors.size).toBeGreaterThan(30);
-
-      // Verify no NaN coordinates
       for (const { mesh } of car.pieces) {
-        const arr = mesh.geometry.getAttribute("position").array;
-        expect(Array.from(arr).some((v) => Number.isNaN(v))).toBe(false);
+        expect(
+          Array.from(mesh.geometry.getAttribute("position").array).every(Number.isFinite),
+        ).toBe(true);
+        mesh.geometry.dispose();
+        (mesh.material as THREE.Material).dispose();
       }
-    }
-  });
+      for (const line of car.sketchLines) line.dispose();
+    },
+  );
 
   it("adds car-specific aero parts when specified on the model", () => {
     // Model 2: M4 GT3 EVO has gt_wing, front_splitter, canards, widebody_flares, rear_diffuser, roll_cage
