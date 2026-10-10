@@ -216,8 +216,20 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - [x] Auto classifier: assign every requirement to a car part (explainable: matched terms, confidence).
 - [ ] Requirement detail / drill-down from a card on the car (the list tasks above).
 - [ ] PM override of the auto-classified part (needs a contract field + audit event, WS0).
+- [ ] Subtle blue fill on the clicked car part, with light/dark selection regressions.
 
 **Log**
+
+- 2026-10-10: Click-highlight slice complete: selected parts use the theme's soft-blue fill;
+  deselection restores the sketch, with glass masks and interior ghosting preserved. Added 18
+  light/dark regressions. Verified the isolated staged snapshot: typecheck, 265 tests passed
+  (25 skipped), UI smoke passed (29 screenshots; selected door visually checked), formatting
+  and diff check passed. Shared checkout had a concurrent reference-stroke symmetry failure,
+  left untouched. Commit includes only this styling slice, its tests and these handoff entries.
+
+- 2026-10-10: OpenCode claimed the focused click-highlight slice: use the theme's soft-blue fill
+  for the selected part, preserve sketch lines and interior ghosting, and verify before commit/push.
+  Existing STL-guided refinement work and ownership are unchanged.
 
 - 2026-10-10: Shortened the bonnet/nose by 0.33 m and rounded the front plan-view corners at
   the user’s request. The front axle, chassis components, wheel wells, projected front details,

@@ -4,8 +4,8 @@ import type { CarPiece, PieceKind } from "./buildCar";
 /**
  * The sketch look: a pen drawing, not a rendering. Every surface is filled with the page colour
  * (so it hides the lines behind it) and drawn with ink: silhouettes, panel lines and creases.
- * No paint, no shading. Glass masks the cabin in exterior view; the interior view
- * reveals all cabin parts through the ghosted body. Volumes have no fill.
+ * Only the selected part gets a soft blue fill. Glass masks the cabin in exterior view; the interior
+ * view reveals all cabin parts through the ghosted body. Unselected volumes have no fill.
  * Colours come from the app's CSS tokens, so it follows light and dark mode.
  */
 
@@ -13,6 +13,7 @@ export interface SketchPalette {
   background: THREE.Color;
   ink: THREE.Color;
   brand: THREE.Color;
+  selection: THREE.Color;
 }
 
 export function readPalette(): SketchPalette {
@@ -23,6 +24,7 @@ export function readPalette(): SketchPalette {
     background: token("--color-panel", "#ffffff"),
     ink: token("--color-ink", "#111214"),
     brand: token("--color-brand", "#16588e"),
+    selection: token("--color-brand-soft", "#e6f0f9"),
   };
 }
 
@@ -81,7 +83,7 @@ export function applyState(
   let opacity = base.opacity;
   // Selection is the only colour on the drawing: brand-coloured lines and a faint wash.
   if (state === "selected") {
-    color.lerp(p.brand, 0.12);
+    color.copy(p.selection);
     opacity = Math.max(opacity, 0.5);
   }
   let lineOpacity = piece.layer === "interior" ? 0.55 : 0.75;
