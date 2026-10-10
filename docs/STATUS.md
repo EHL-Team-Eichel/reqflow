@@ -194,6 +194,7 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 ## WS3 — Car tab: requirements review & audit UI
 
 **Status:** in progress (car model refinement complete; requirements review pending) · **Owner:** Codex (BMW styling and geometry fixes) · **Branch:** `codex/car-model-refinements`
+**Animation slice:** review (implemented and verified) · **Owner:** OpenCode · **Branch:** `ws3-car-view-animation` (isolated worktree)
 **Depends on:** nothing to start: build on `@reqflow/core/fixtures` (5 requirements, findings, sources,
 audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 serves them.
 
@@ -218,6 +219,10 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - [ ] PM override of the auto-classified part (needs a contract field + audit event, WS0).
 
 **Log**
+
+- 2026-10-10: Implemented an 850 ms reversible exterior flight: all exterior meshes (including wheels and wheel-well masks) separate outward, fade away to expose the assembled cabin, and retrace their exact paths back. Rapid toggles reverse without jumps; badges follow/fade with their pieces, departed pieces cannot intercept canvas picks, and reduced motion snaps to the endpoint (including live preference changes). No car geometry, core contracts or main-process files changed. Added 12 colocated regressions. Verified `npm run typecheck && npm test` (259 passed, 25 real-data tests skipped), `npm run smoke` (29 screenshots), changed-file Prettier and `git diff --check`. An isolated synthetic native UI probe also passed outward/return, mid-flight reversal, badge behavior, cabin selection, dark theme and live reduced motion (8 additional screenshots); inspected assembled, departing, returning and interior screenshots in `apps/desktop/out/smoke/`. Requested slice complete; branch ready for integration with concurrent shape work. WS1/WS0 follow-up: add transition-progress, rapid-reversal and reduced-motion checks to shared `main/smoke.ts`.
+
+- 2026-10-10: Claimed the requested reversible exterior/interior animation in an isolated worktree to preserve concurrent car-shape work. Exterior pieces fly away to reveal the assembled cabin and return along the same paths; preserve all catalog parts, picking, theme styling and camera controls. Scope: WS3 car renderer, colocated tests and this section. User requested commit and push after verification.
 
 - 2026-10-10: Shortened the bonnet/nose by 0.33 m and rounded the front plan-view corners at
   the user’s request. The front axle, chassis components, wheel wells, projected front details,
