@@ -255,7 +255,7 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 ## WS7 — AI blocks: AI Filter, AI Splitter, Add to Car
 
-**Status:** open · **Owner:** — · **Branch:** —
+**Status:** in progress (Add to Car first) · **Owner:** Claude Code (splitter session) · **Branch:** `main`
 **Depends on:** nothing for tasks 1–2; WS8 for the splitter's priority mode.
 
 **Tasks**
@@ -272,6 +272,10 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - [ ] End-to-end offline test: fixture records → AI Filter → AI Splitter → Add to Car with `mock`.
 
 **Log**
+
+- 2026-10-10 night: Claimed WS7, starting with Add to Car: a deterministic theme splitter
+  (component › aspect × polarity, BMW VFC tags first, keyword rules on clauses for untagged text)
+  that turns feedback into findings, themes and requirements without an LLM.
 
 ## WS8 — Prioritization
 
