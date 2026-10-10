@@ -377,7 +377,7 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 ## WS6 — Research block
 
-**Status:** implementation verified — separate-branch publication pending · **Owner:** OpenCode (Jonas) · **Branch:** `ws6-ai-providers`
+**Status:** done — multi-provider/customization integration verified and published · **Owner:** OpenCode (Jonas) · **Branch:** `ws6-ai-providers`
 **Integration:** typed `ctx.research` collector, main-process provider/secret runtime, existing workflow executor and native GUI. Shared/main/UI changes authorized by the human for this slice.
 
 **Tasks**
@@ -392,10 +392,11 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - [x] OpenAI Responses and Google Gemini APIs for app LLM and opt-in Mastra query planning; OS-encrypted credentials and remembered custom provider models.
 - [x] Social-media platform dropdown and editable Research scope using canonical existing parameters.
 - [x] Offline integration/regression tests, independent review corrections, native/packaged smoke and documentation.
-- [ ] Publish the verified merge on the separate branch with its Entire checkpoint and verify remote refs.
+- [x] Publish the verified merge on the separate branch with its Entire checkpoint and verify remote refs.
 
 **Log**
 
+- 2026-10-11: Published the history-preserving merge as `648e092` on `origin/ws6-ai-providers`; both parents (`434a881`, upstream `9228fb3`) are retained. Verified the remote source hash and hook-generated Entire checkpoint `01M4M0K9ZAFGTS3VXFCA8S4NJA` ref/hash, including completed Gemini review/documentation transcripts. Closed only known completed delegates from this slice, preserving other workstreams and the active parent session. No force-push, private/generated artifacts or pre-existing user snapshots were published. Next: authorized live API/account validation and other-platform/Docling verification; implementation and native synthetic gates are complete.
 - 2026-10-11: Completed the multi-provider/customization integration against `main@9228fb3`, retaining the authoritative SQLite/main stores, one execution kernel, Car, HIL, splitter, templates, lineage and Raw behavior. Independent review exposed active access-revocation, concurrent requirement-version and mutation/audit atomicity issues; all three were corrected and independently re-reviewed as closed. Root `npm run check` passes 71 files / 1,625 tests, with 25 private-data tests skipped. Native smoke passes 36 screenshots / 85 Research checks; unsigned macOS arm64 packaged smoke passes 36 / 86, including the actual ASAR-unpacked Worker. Package inventory excludes generated logs, smoke data, credentials and originals. Fresh audit remains 12 moderate / zero high or critical. App APIs remain untested live; no real keys or BMW originals read. Coding subagents now resolve exclusively to Gemini 3.8 Flash with task-appropriate low/medium/high reasoning, including installed role overrides; restart interactive OpenCode to load that config. See [verification](research/verification.md) and [routing](AGENT_ROUTING.md). Publication uses plain Git and Entire hooks; user snapshots remain untouched.
 - 2026-10-10: Human requested latest upstream, OpenAI/Google API support and greater customization (social-media dropdown), published on a separate branch. Created `ws6-ai-providers` from verified Research; pulled `origin/main` at `9228fb3` with history-preserving merge. Resolving overlapping upstream main/runtime/executor/UI implementations without replacing their new behavior. Google means Gemini LLM; shared provider/secret/model-profile contracts extended for this requested slice. User snapshots and Entire hooks preserved; no live keys/paid provider calls authorized.
 - 2026-10-10: Pulled/rebased latest main (b1dae4f). Human expanded WS6 to the 13 raw-only research agents,
