@@ -15,3 +15,5 @@ export * from "./services";
 export * from "./settings";
 export * from "./source";
 export * from "./workflow";
+export * from "./research";
+export { SECRET_NAMES, SecretName } from "./secrets";

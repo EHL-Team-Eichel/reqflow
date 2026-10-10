@@ -1,6 +1,7 @@
 import type { AppInfo, ReqflowHandlers } from "@reqflow/core/ipc";
 import { BMW_DEFAULT_TEMPLATE } from "@reqflow/blocks";
 import { ReqflowError } from "./dispatch";
+import type { createResearchRuntime } from "./research/runtime";
 
 // Owner: WS1 (docs/WORKSTREAMS.md). Every method the UI can call is listed here; the ones not built
 // yet fail loudly with code "not_implemented" so the UI can show a clear message instead of hanging.
@@ -17,6 +18,7 @@ function notBuilt(method: string, owner = "WS1") {
 
 export interface HandlerDeps {
   appInfo: () => AppInfo;
+  research?: Awaited<ReturnType<typeof createResearchRuntime>>["handlers"];
 }
 
 export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
@@ -51,6 +53,18 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
       secrets: notBuilt("settings.secrets"),
       setSecret: notBuilt("settings.setSecret"),
     },
-    exports: { requirements: notBuilt("exports.requirements") },
+    research: {
+      agents: notBuilt("research.agents", "WS6"),
+      providers: notBuilt("research.providers", "WS6"),
+      configure: notBuilt("research.configure", "WS6"),
+      test: notBuilt("research.test", "WS6"),
+      dataset: notBuilt("research.dataset", "WS6"),
+    },
+    ...deps.research,
+    exports: {
+      requirements: notBuilt("exports.requirements"),
+      research: notBuilt("exports.research", "WS6"),
+      ...deps.research?.exports,
+    },
   };
 }

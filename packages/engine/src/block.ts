@@ -9,6 +9,7 @@ import type {
   Requirement,
   Settings,
   WebSearch,
+  ResearchCollector,
 } from "@reqflow/core";
 
 /** Everything a block may touch while running. Blocks must not import DB, env or Electron code. */
@@ -27,6 +28,7 @@ export interface BlockContext {
   progress(fraction: number, message?: string): void; // 0–1
   signal: AbortSignal; // run cancelled → stop promptly
   resumed: boolean; // true when a HIL block is re-entered after the reviewer finished
+  research?: ResearchCollector; // Raw-only research service wired in Electron main.
 }
 
 /** What arrived, per input port id. Several edges into one port are merged with `mergePipelineData`. */

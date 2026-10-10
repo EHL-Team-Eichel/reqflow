@@ -31,7 +31,7 @@ export const Source = z.object({
   publisher: z.string().optional(),
   publishedAt: z.iso.datetime().optional(),
   retrievedAt: z.iso.datetime(),
-  reliability: Reliability,
+  reliability: Reliability.optional(), // Research collects raw data; assessment belongs downstream.
   market: z.string().optional(),
   vehicleLine: z.string().optional(),
 });

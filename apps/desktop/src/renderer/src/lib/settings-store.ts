@@ -17,6 +17,8 @@ export interface SettingsState {
   error: string | null;
   /** Ask main for the stored settings. Keeps the defaults when storage isn't built yet. */
   load(): Promise<void>;
+  /** Refresh only main-owned provider APIs. Keeps local edits, persistence state and pending autosave. */
+  reloadResearchApis(): Promise<void>;
   /**
    * Merge `patch` into one section, validated with the `Settings` schema. Returns a readable
    * error and changes nothing when invalid; otherwise applies it and saves in the background.
@@ -29,16 +31,32 @@ const SAVE_DELAY_MS = 400;
 
 export function createSettingsStore(client: Pick<ReqflowApi, "settings">) {
   let saveTimer: ReturnType<typeof setTimeout> | undefined;
+  let localRevision = 0;
+  let saveGeneration = 0;
+  let researchReloadGeneration = 0;
+  let researchApisRevision = 0;
 
   return createStore<SettingsState>()((set, get) => {
     const save = () => {
       clearTimeout(saveTimer);
       saveTimer = setTimeout(async () => {
         if (get().persistence === "unavailable") return;
+        const revision = localRevision;
+        const generation = ++saveGeneration;
+        const apisRevision = researchApisRevision;
+        const current = () => revision === localRevision && generation === saveGeneration;
         try {
-          const saved = await client.settings.save(get().settings);
+          const response = await client.settings.save(get().settings);
+          if (!current()) return;
+          const saved = Settings.parse(response);
+          // A configure/reload may finish while this full-settings save is in flight.
+          // Its earlier response cannot undo the provider access state just reconciled.
+          if (apisRevision !== researchApisRevision) {
+            saved.research.apis = get().settings.research.apis;
+          }
           set({ settings: saved, persistence: "saved", error: null });
         } catch (err) {
+          if (!current()) return;
           if (err instanceof ReqflowError && err.code === "not_implemented") {
             set({ persistence: "unavailable", error: null });
           } else {
@@ -54,6 +72,7 @@ export function createSettingsStore(client: Pick<ReqflowApi, "settings">) {
         const issue = parsed.error.issues[0];
         return issue ? issue.message : "Invalid value";
       }
+      localRevision++;
       set({ settings: { ...get().settings, [section]: parsed.data } });
       save();
       return null;
@@ -75,6 +94,26 @@ export function createSettingsStore(client: Pick<ReqflowApi, "settings">) {
           } else {
             set({ persistence: "error", error: errorMessage(err, "Loading settings failed") });
           }
+        }
+      },
+
+      async reloadResearchApis() {
+        const generation = ++researchReloadGeneration;
+        researchApisRevision++;
+        try {
+          const response = await client.settings.get();
+          if (generation !== researchReloadGeneration) return;
+          const stored = Settings.parse(response);
+          researchApisRevision++;
+          const settings = get().settings;
+          set({
+            settings: {
+              ...settings,
+              research: { ...settings.research, apis: stored.research.apis },
+            },
+          });
+        } catch (err) {
+          if (generation === researchReloadGeneration) throw err;
         }
       },
 

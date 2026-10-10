@@ -2,6 +2,7 @@ import { useRef } from "react";
 import { ReactFlowProvider, useReactFlow } from "@xyflow/react";
 import { BlockPalette } from "@/components/dataflow/BlockPalette";
 import { Breadcrumb } from "@/components/dataflow/Breadcrumb";
+import { RunControls } from "@/components/dataflow/RunControls";
 import { dataflowStore, useDataflow } from "@/components/dataflow/store";
 import { Workplace } from "@/components/dataflow/Workplace";
 import { Button } from "@/components/ui/Button";
@@ -33,19 +34,22 @@ export function DataflowPage() {
 
   return (
     <ReactFlowProvider>
-      <div className="flex h-full gap-2">
+      <div className="flex h-full flex-col gap-2">
         <h1 className="sr-only">Data Flow</h1>
-        <Panel title="Building Blocks" className="w-1/4 min-w-64 max-w-sm" testId="palette">
-          <BlockPalette canvasRef={canvasRef} />
-        </Panel>
-        <Panel
-          title={<Breadcrumb />}
-          actions={<WorkplaceActions />}
-          className="flex-1"
-          testId="workplace"
-        >
-          <Workplace canvasRef={canvasRef} />
-        </Panel>
+        <RunControls />
+        <div className="flex min-h-0 flex-1 gap-2">
+          <Panel title="Building Blocks" className="w-1/4 min-w-64 max-w-sm" testId="palette">
+            <BlockPalette canvasRef={canvasRef} />
+          </Panel>
+          <Panel
+            title={<Breadcrumb />}
+            actions={<WorkplaceActions />}
+            className="flex-1"
+            testId="workplace"
+          >
+            <Workplace canvasRef={canvasRef} />
+          </Panel>
+        </div>
       </div>
     </ReactFlowProvider>
   );

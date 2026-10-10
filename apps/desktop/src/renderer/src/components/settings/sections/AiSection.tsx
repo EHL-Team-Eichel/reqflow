@@ -1,18 +1,14 @@
 import { LlmProvider, ResearchProvider, type SecretName, type SecretStatus } from "@reqflow/core";
-import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/Button";
-import {
-  NumberInput,
-  Select,
-  Slider,
-  TextArea,
-  ValidatedTextInput,
-} from "@/components/ui/controls";
-import { api, ReqflowError } from "@/lib/api";
-import { settingsStore, useSettings } from "@/lib/settings";
+import { useEffect, useRef, useState } from "react";
+import { Button } from "../../ui/Button";
+import { NumberInput, Select, Slider, TextArea, ValidatedTextInput } from "../../ui/controls";
+import { api } from "../../../lib/api";
+import { settingsStore, useSettings } from "../../../lib/settings";
 import { SettingRow } from "../SettingRow";
+import { CredentialInput } from "./ResearchApisSection";
+import { nonEmptySecretDraft, settingsErrorMessage } from "./ResearchApisSection.helpers";
 
-const SECRET_LABELS: Record<SecretName, string> = {
+const SECRET_LABELS: Partial<Record<SecretName, string>> = {
   anthropic_api_key: "Anthropic",
   tavily_api_key: "Tavily",
 };
@@ -22,9 +18,9 @@ const LLM_PROVIDER_OPTIONS = [
   { value: "anthropic", label: "Anthropic Claude" },
 ];
 const RESEARCH_PROVIDER_OPTIONS = [
-  { value: "off", label: "Off" },
-  { value: "anthropic_web_search", label: "Claude web search" },
-  { value: "tavily", label: "Tavily" },
+  { value: "off", label: "Off (no web search)" },
+  { value: "firecrawl", label: "Firecrawl (recommended)" },
+  { value: "tavily", label: "Tavily (alternative)" },
 ];
 
 /** One domain per line; blank lines ignored. */
@@ -65,19 +61,108 @@ function DomainList(props: {
 export function AiSection() {
   const llm = useSettings((s) => s.settings.llm);
   const research = useSettings((s) => s.settings.research);
+  // Keep older settings readable without offering the unsupported provider to new users.
+  const researchProviderOptions =
+    research.provider === "anthropic_web_search"
+      ? [
+          ...RESEARCH_PROVIDER_OPTIONS,
+          {
+            value: "anthropic_web_search",
+            label: "Claude web search (legacy · unsupported)",
+          },
+        ]
+      : RESEARCH_PROVIDER_OPTIONS;
   const [secrets, setSecrets] = useState<SecretStatus | null>(null);
   const [secretsError, setSecretsError] = useState<string | null>(null);
+  const [anthropicDraft, setAnthropicDraft] = useState("");
+  const [secretsPending, setSecretsPending] = useState(true);
+  const [secretsNotice, setSecretsNotice] = useState<string | null>(null);
+  const secretRequest = useRef(0);
+  const secretsBusy = useRef(false);
+  const mounted = useRef(false);
   const update = settingsStore.getState().update;
 
   useEffect(() => {
-    api.settings.secrets().then(setSecrets, (err: unknown) => {
-      setSecretsError(
-        err instanceof ReqflowError && err.code === "not_implemented"
-          ? "Key storage isn't built yet (WS1). For development, put keys in apps/desktop/.env."
-          : `Couldn't read the key status: ${err instanceof Error ? err.message : String(err)}`,
-      );
-    });
+    mounted.current = true;
+    secretsBusy.current = true;
+    setSecretsPending(true);
+    const token = ++secretRequest.current;
+    api.settings
+      .secrets()
+      .then(
+        (status) => {
+          if (mounted.current && token === secretRequest.current) {
+            setSecrets(status);
+            setSecretsError(null);
+          }
+        },
+        (error: unknown) => {
+          if (mounted.current && token === secretRequest.current) {
+            setAnthropicDraft("");
+            setSecretsError(
+              settingsErrorMessage(
+                error,
+                "Could not read credential status. Reopen this section to retry.",
+              ),
+            );
+          }
+        },
+      )
+      .finally(() => {
+        if (mounted.current && token === secretRequest.current) {
+          secretsBusy.current = false;
+          setSecretsPending(false);
+        }
+      });
+    return () => {
+      mounted.current = false;
+      secretRequest.current++;
+      secretsBusy.current = false;
+      setAnthropicDraft("");
+    };
   }, []);
+
+  const saveAnthropic = async (value: string | null) => {
+    if (!mounted.current || secretsBusy.current || !secrets) return;
+    if (value === null && !secrets.anthropic_api_key?.configured) return;
+    const credential = value === null ? null : nonEmptySecretDraft(value);
+    if (value !== null && credential === null) return;
+    const token = ++secretRequest.current;
+    const current = () => mounted.current && token === secretRequest.current;
+    secretsBusy.current = true;
+    setSecretsPending(true);
+    setSecretsError(null);
+    setSecretsNotice(null);
+    setAnthropicDraft("");
+    try {
+      const saved = await api.settings.setSecret("anthropic_api_key", credential);
+      if (!current()) return;
+      setAnthropicDraft("");
+      setSecrets(saved);
+      setSecretsNotice(
+        value === null
+          ? "Saved key removed. An environment key may still be configured."
+          : "Key saved. Your model and provider settings did not change.",
+      );
+      const refreshed = await api.settings.secrets();
+      if (current()) setSecrets(refreshed);
+    } catch (error) {
+      if (current()) {
+        setAnthropicDraft("");
+        setSecretsError(
+          settingsErrorMessage(
+            error,
+            "Could not update or reload credential status. Retry or reopen this section.",
+          ),
+        );
+      }
+    } finally {
+      if (current()) {
+        secretsBusy.current = false;
+        setSecretsPending(false);
+      }
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -125,8 +210,12 @@ export function AiSection() {
       <div className="flex flex-col">
         <h3 className="mb-2 mt-4 text-sm font-semibold text-ink">Web research</h3>
         <SettingRow label="Provider">
+          <label htmlFor="web-research-provider" className="sr-only">
+            Web research provider
+          </label>
           <Select
-            options={RESEARCH_PROVIDER_OPTIONS}
+            id="web-research-provider"
+            options={researchProviderOptions}
             value={research.provider}
             onChange={(value) => {
               const provider = ResearchProvider.safeParse(value);
@@ -134,6 +223,17 @@ export function AiSection() {
             }}
           />
         </SettingRow>
+        <p className="mt-2 text-xs text-muted">
+          Off blocks web search. Select Firecrawl (recommended) or Tavily here, then configure and
+          enable it in Research APIs &amp; Zugänge. No automatic fallback is used. Other research
+          providers are controlled independently by their own access settings.
+        </p>
+        {research.provider === "anthropic_web_search" && (
+          <p role="alert" className="mt-2 text-sm text-muted">
+            Claude web search is a legacy setting and is unsupported. Select Firecrawl, Tavily, or
+            Off before running web research.
+          </p>
+        )}
         <SettingRow label="Max results per search">
           <NumberInput
             value={research.maxResultsPerQuery}
@@ -160,28 +260,72 @@ export function AiSection() {
         />
       </div>
 
+      <div className="rounded-lg border border-line bg-panel-2 p-3 text-sm text-muted">
+        <h3 className="font-medium text-ink">Optional Mastra query planning</h3>
+        <p className="mt-1">
+          Requires an Anthropic key and the Research block's explicit query-planning toggle (off by
+          default). Enabling it may make paid model calls during a run. It only plans queries and
+          cannot enable providers, bypass missing credentials or approval, or create source
+          evidence. Saving a key or choosing an AI model does not enable planning.
+        </p>
+      </div>
+
       <div className="flex flex-col">
         <h3 className="mb-2 mt-4 text-sm font-semibold text-ink">API keys</h3>
-        {secretsError ? (
-          <div className="rounded-lg border border-line bg-panel-2 p-3 text-sm text-muted">
+        {secretsError && (
+          <div
+            role="alert"
+            className="rounded-lg border border-line bg-danger-soft p-3 text-sm text-danger"
+          >
             {secretsError}
           </div>
-        ) : !secrets ? (
-          <div className="text-sm text-muted">Checking keys…</div>
-        ) : (
+        )}
+        {secretsNotice && (
+          <p role="status" className="mt-2 text-sm text-ink">
+            {secretsNotice}
+          </p>
+        )}
+        {secretsPending && (
+          <div role="status" className="text-sm text-muted">
+            Updating credential status…
+          </div>
+        )}
+        {secrets &&
           (Object.keys(SECRET_LABELS) as SecretName[]).map((name) => {
             const status = secrets[name];
             return (
-              <SettingRow key={name} label={SECRET_LABELS[name]}>
-                <span className={status.configured ? "text-sm text-ok" : "text-sm text-muted"}>
-                  {status.configured
-                    ? `Configured (${status.source === "env" ? ".env file" : "OS keychain"})`
-                    : "Not set"}
-                </span>
+              <SettingRow key={name} label={SECRET_LABELS[name] ?? name}>
+                {name === "anthropic_api_key" ? (
+                  <CredentialInput
+                    id="anthropic_api_key"
+                    label="Anthropic API key"
+                    configured={status?.configured}
+                    source={status?.source}
+                    draft={anthropicDraft}
+                    disabled={secretsPending}
+                    onDraft={setAnthropicDraft}
+                    onSave={() => {
+                      void saveAnthropic(anthropicDraft);
+                    }}
+                    onRemove={() => {
+                      void saveAnthropic(null);
+                    }}
+                  />
+                ) : (
+                  <>
+                    <span className="text-sm text-muted">
+                      {status?.configured
+                        ? `Configured (${status.source === "env" ? "environment" : "OS keychain"})`
+                        : "Not set"}
+                    </span>
+                    <p className="text-xs text-muted">
+                      Manage this key in Research APIs &amp; Zugänge.
+                    </p>
+                  </>
+                )}
               </SettingRow>
             );
-          })
-        )}
+          })}
       </div>
 
       <div className="mt-4 flex gap-3">

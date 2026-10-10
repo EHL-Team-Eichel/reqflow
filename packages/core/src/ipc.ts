@@ -16,6 +16,15 @@ import type { Priority } from "./scoring";
 import type { Settings } from "./settings";
 import type { Source, SourceRecord } from "./source";
 import type { Workflow, WorkflowRun, WorkflowTemplate } from "./workflow";
+import type {
+  ResearchProviderId,
+  ResearchProviderConfig,
+  ResearchProviderStatus,
+  ResearchDataset,
+  ResearchAgentDefinition,
+} from "./research";
+import type { SecretName } from "./secrets";
+export type { SecretName } from "./secrets";
 
 export interface AppInfo {
   version: string;
@@ -68,7 +77,6 @@ export interface AuditFilter {
 export type ExportFormat = "json" | "csv" | "md";
 
 /** API keys never cross into the renderer; it only learns whether one is configured. */
-export type SecretName = "anthropic_api_key" | "tavily_api_key";
 export type SecretStatus = Record<
   SecretName,
   { configured: boolean; source: "keychain" | "env" | null }
@@ -105,6 +113,16 @@ export interface ReqflowApi {
     decide(id: string, decision: RequirementDecision): Promise<Requirement>;
   };
   audit: { list(filter?: AuditFilter): Promise<AuditEvent[]> };
+  research: {
+    agents(): Promise<ResearchAgentDefinition[]>;
+    providers(): Promise<ResearchProviderStatus[]>;
+    configure(
+      id: ResearchProviderId,
+      config: ResearchProviderConfig,
+    ): Promise<ResearchProviderStatus>;
+    test(id: ResearchProviderId): Promise<ResearchProviderStatus>;
+    dataset(runId: string): Promise<ResearchDataset>;
+  };
   settings: {
     get(): Promise<Settings>;
     save(settings: Settings): Promise<Settings>;
@@ -115,6 +133,10 @@ export interface ReqflowApi {
   exports: {
     /** Opens the native save dialog and writes the requirement list. null = cancelled. */
     requirements(opts: { runId?: string; format: ExportFormat }): Promise<{ path: string } | null>;
+    research(opts: {
+      runId: string;
+      format: "json" | "xlsx" | "csv";
+    }): Promise<{ path: string } | null>;
   };
 }
 
@@ -136,8 +158,9 @@ export const IPC_INVOKE_METHODS = {
   runs: ["start", "get", "list", "blockOutput", "resume", "cancel"],
   requirements: ["list", "get", "edit", "decide"],
   audit: ["list"],
+  research: ["agents", "providers", "configure", "test", "dataset"],
   settings: ["get", "save", "secrets", "setSecret"],
-  exports: ["requirements"],
+  exports: ["requirements", "research"],
 } as const satisfies { [N in keyof ReqflowApi]: readonly InvokeKeys<ReqflowApi[N]>[] };
 
 // Compile-time guard: adding a method to ReqflowApi without listing it above is a type error.

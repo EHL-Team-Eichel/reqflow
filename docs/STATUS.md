@@ -207,21 +207,28 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 ## WS6 — Research block
 
-**Status:** open · **Owner:** — · **Branch:** —
-**Depends on:** WS1 wires the providers into `ctx.web`; everything below can start now.
+**Status:** done — raw Research slice; live access unverified · **Owner:** OpenCode (Jonas) · **Branch:** `ws6-research`
+**Integration:** typed `ctx.research` collector, main-process provider/secret runtime, existing workflow executor and native GUI. Shared/main/UI changes authorized by the human for this slice.
 
 **Tasks**
 
-- [ ] `WebSearch` providers in `packages/blocks/src/research/`: `anthropic_web_search` and `tavily`,
-      as factories that take the key as an argument (never read env vars).
-- [ ] Query builder from the block's params and the scope (competitors in the segment, owner and press
-      reviews, market and technology trends for the horizon).
-- [ ] Fetch pages and extract clean text into `SourceRecord`s; `Source` with kind, publisher, date and
-      reliability (document the rule).
-- [ ] Respect allowed / blocked domains and `maxResults`, de-duplicate by URL, log failures.
-- [ ] Recorded fixtures so `npm test` runs offline (no live network in tests).
+- [x] Thirteen raw-only agents with real Mastra query-planner instances and explicit paid-planning opt-in; configurable vehicle/generation/market/language/date scope.
+- [x] Firecrawl originals and optional Tavily alternative; YouTube, Reddit OAuth, X recent/archive, fixed approved Apify actors, OpenAlex, Eurostat and local documents. No automatic paid fallback; legacy Claude web search reports unsupported.
+- [x] Verbatim records, tables, explicit metadata, unknown attribution and linked provenance; no inferred reliability, classifications, requirements or human decisions.
+- [x] Authoritative domain policies, unique-result/shared-request budgets, retry/cancel/partial preservation, deduplication and shared BMW document cache.
+- [x] Research APIs & Zugänge Settings, main-only encrypted secrets, typed IPC, persistence/audit, workflow run controls and JSON/XLSX/CSV exports with formula/overflow/Unicode protection.
+- [x] Offline synthetic tests, independent code/security review corrections, root checks, native and packaged macOS smoke, screenshot inspection and research documentation.
 
 **Log**
+
+- 2026-10-10: Pulled/rebased latest main (b1dae4f). Human expanded WS6 to the 13 raw-only research agents,
+  Research API Settings, secure secrets, workflow integration and JSON/XLSX export, and authorized the
+  necessary shared-contract/main/UI changes ("mach einfach"). Shared schemas and adapter contracts defined
+  before parallel implementation. Existing untracked `* 2.*` files are user work and remain untouched.
+  No live provider tests or confidential-data access authorized. Next: provider adapters and integration.
+- 2026-10-10: Completed parallel provider/UI/executor/planner slices and parent integration. Fixed independent review findings, including concurrent state races, secret reload, Off/domain/budget enforcement, paid-actor cleanup and XLSX/JSON resource amplification. `npm run typecheck`, `npm test` (36 files / 991 tests), `npm run check`, `npm run smoke` pass. Native and unsigned packaged macOS arm64 smoke each pass 17 screenshots / 69 research checks, including real ASAR-unpacked Worker import and JSON/XLSX/CSV export with zero provider calls. `npm audit`: 12 moderate, zero high/critical; remaining advisory chains documented. No real keys/BMW data/Docling conversion or Windows/Linux native execution verified. No commits made; user duplicates and Entire hooks preserved. See [research README](research/README.md) and [verification](research/verification.md). Next: authorized live credentials/budgets/permissions, optional local Docling provisioning, other-platform verification and downstream workstreams.
+- 2026-10-10: Human requested Git/Entire publication. Enabled automatic checkpoint pushing in project and local Entire settings; existing Git, Claude Code and OpenCode hooks pass `entire doctor`. Current Research session is attached to `ws6-research`. Pre-commit `npm run check` passes again (991 tests); publication uses plain Git and its automatic checkpoint trailer.
+- 2026-10-10: Fixed the human-reported `npm run dev` load error: Vite had eagerly resolved `ws`'s optional native addons. Narrowly externalized `bufferutil` and `utf-8-validate` to retain their guarded JavaScript fallbacks. Actual dev UI/IPC pass; `npm run check` passes 37 files / 992 tests. Rebuilt native and packaged smoke both pass 17 screenshots / 69 checks; actual dev/production/ASAR WebSocket helpers pass 64/65-byte and UTF-8 fallback probes with addon opt-out flags unset. Restart an already-running dev process to load the corrected build configuration.
 
 ## WS7 — AI blocks: AI Filter, AI Splitter, Add to Car
 

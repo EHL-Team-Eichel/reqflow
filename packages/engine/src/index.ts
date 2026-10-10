@@ -4,3 +4,4 @@
 // merge per input port, pause/resume at HIL, cancel). Semantics: docs/ARCHITECTURE.md.
 export * from "./block";
 export * from "./registry";
+export * from "./executor";

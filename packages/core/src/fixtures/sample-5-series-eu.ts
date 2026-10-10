@@ -843,6 +843,14 @@ export const fixtureWorkflow: Workflow = {
         market: "global",
         maxAgeMonths: 24,
         maxResults: 10,
+        agents: ["editorial_reviews", "competitor_models", "technology"],
+        scopeJson: "{}",
+        queryPlanning: false,
+        document: null,
+        maxRequests: 100,
+        maxDocumentPages: 20,
+        timeoutMs: 120000,
+        concurrency: 3,
       },
       inner: {
         blocks: [

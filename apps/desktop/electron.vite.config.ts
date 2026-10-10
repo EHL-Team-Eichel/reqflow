@@ -30,7 +30,21 @@ function contentSecurityPolicy(): Plugin {
 
 // Everything — workspace packages included — is bundled, so the packaged app ships no node_modules.
 export default defineConfig({
-  main: { build: { externalizeDeps: false } },
+  main: {
+    build: {
+      externalizeDeps: false,
+      rollupOptions: {
+        // Keep ws's optional native probes inside try/catch so its JS fallback works.
+        external: ["bufferutil", "utf-8-validate"],
+        input: {
+          index: resolve("src/main/index.ts"),
+          "research-xlsx-worker": resolve(
+            "../../packages/blocks/src/research/documents/xlsx-worker.ts",
+          ),
+        },
+      },
+    },
+  },
   preload: { build: { externalizeDeps: false } },
   renderer: {
     resolve: { alias: { "@": resolve("src/renderer/src") } },

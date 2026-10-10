@@ -1,12 +1,13 @@
 import { z } from "zod";
 import { ProductScope } from "./scope";
 import { PriorityThresholds, ScoreWeights } from "./scoring";
+import { ResearchApiSettings, DEFAULT_RESEARCH_APIS } from "./research";
 
 /** "mock" returns canned, schema-valid output so the app runs offline and in tests. */
 export const LlmProvider = z.enum(["anthropic", "mock"]);
 export type LlmProvider = z.infer<typeof LlmProvider>;
 
-export const ResearchProvider = z.enum(["anthropic_web_search", "tavily", "off"]);
+export const ResearchProvider = z.enum(["firecrawl", "anthropic_web_search", "tavily", "off"]);
 export type ResearchProvider = z.infer<typeof ResearchProvider>;
 
 export const ThemePreference = z.enum(["system", "light", "dark"]);
@@ -56,6 +57,7 @@ export const Settings = z.object({
     maxResultsPerQuery: z.number().int().min(1).max(50),
     allowedDomains: z.array(z.string()), // empty = any
     blockedDomains: z.array(z.string()),
+    apis: ResearchApiSettings,
   }),
   scoring: z.object({
     weights: ScoreWeights,
@@ -105,6 +107,7 @@ export const DEFAULT_SETTINGS: Settings = {
     maxResultsPerQuery: 8,
     allowedDomains: [],
     blockedDomains: [],
+    apis: DEFAULT_RESEARCH_APIS,
   },
   scoring: {
     weights: {
