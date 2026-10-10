@@ -150,6 +150,27 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 **Log**
 
+- 2026-10-10: Start-button slice complete and verified on `ws2-start-flow`, PR #10. WS2 released for
+  its remaining checklist (per-node status/counts, save/load/autosave, run outputs and human review/resume).
+  Explicit **Start** button replaces Save & run, with a play icon, full-root/inner-flow
+  explanation, disabled empty/starting/running/HIL states and visible progress labels. Kept existing
+  IPC execution, cancellation and human-review pause. Stale active fetches/events no longer regress
+  terminal run status; recovered live updates clear catch-up errors. Added 15 regression cases.
+  Verify: `npm run check` (228 passed, 24 real-data tests skipped) and `npm run smoke` (29 screenshots;
+  light/dark Start inspected). A synthetic-only isolated native button probe passed Raw → Custom
+  (boundary passthrough) → Add to Car while inside Custom: one run after a double click, the complete
+  root snapshot, all blocks succeeded, one proposed requirement. Raw → HIL → Add to Car paused without
+  publishing, blocked restart, then cancelled. Tab catch-up also passed. Inspected
+  `apps/desktop/out/smoke/start-{inner-completed,hil-paused,cancelled}.png`.
+  WS1/WS0 request: promote these actual Start-button scenarios into the shared `main/smoke.ts` runner;
+  its current run checks bypass the renderer button. No main/core/product changes required.
+  Setup note for WS0: generated `.opencode/plugins/entire.ts` was formatted to pass the repo gate;
+  Entire's hash check now warns hooks are out of date, though the hook logic is unchanged. Add this
+  managed file to the root formatting ignore list before regenerating it with `entire enable --force`.
+- 2026-10-10: Human activated a focused Start-button slice. Latest main already has Save & run;
+  make full-workflow execution explicit with a Start button and verify its safety states and native
+  execution. Working in an isolated worktree; the original checkout's documentation edits are untouched.
+  Scope: WS2 renderer paths and this section only, plus the required generated Entire hook.
 - 2026-10-10: OpenCode's execution/publication fix merged in PR #8. Reverified integrated main after the concurrent AI Splitter/LLM updates: `npm run check` passed (227 passed, 10 skipped), `npm run smoke` passed (29 screenshots), and the isolated native Raw → Add to Car → Car-card probe passed again. Requested slice complete; WS2 released for remaining tasks (per-node status/counts, save/load/autosave, report run outputs, review/resume).
 - 2026-10-10: Add to Car publication fixed and verified. Data Flow now has Save & run, snapshots the full graph/scope, starts via IPC, displays live run status and block logs, cancels explicitly, and catches up after switching tabs. Added 8 run-state tests and a schema-valid creation-audit regression. `npm run check`: 158 passed, 10 skipped; `npm run smoke`: 26 screenshots. Native synthetic Raw SQLite → Add to Car probe stored one proposed requirement and verified its actual id/title on a Car card; screenshots inspected in `apps/desktop/out/smoke/add-to-car-{run,overview}.png`.
 - Remaining WS1/WS7 risks: the existing requirement-id reuse/upsert issue can overwrite earlier requirements on another run (see WS7's existing request). HIL resume still needs human-review enforcement and UI wiring; this slice deliberately does not auto-resume or approve anything. Request WS1/WS0 add a synthetic Raw → Add to Car run/Car-card assertion to the shared smoke runner. No WS3 or core files changed.

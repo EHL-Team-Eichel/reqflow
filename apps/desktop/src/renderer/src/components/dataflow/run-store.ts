@@ -21,6 +21,9 @@ interface RunState {
 const active = (run: WorkflowRun | null) =>
   run !== null && ["queued", "running", "waiting_for_review"].includes(run.status);
 
+const staleActiveUpdate = (current: WorkflowRun | null, next: WorkflowRun) =>
+  current?.id === next.id && !active(current) && active(next);
+
 /** Kept outside the page so changing tabs does not lose the current run or saved workflow id. */
 export function createRunStore(api: RunApi) {
   return createStore<RunState>()((set, get) => ({
@@ -78,9 +81,9 @@ export function createRunStore(api: RunApi) {
       let disposed = false;
       let receivedUpdate = false;
       const unsubscribe = api.runs.onUpdate((run) => {
-        if (get().run?.id === run.id) {
+        if (get().run?.id === run.id && !staleActiveUpdate(get().run, run)) {
           receivedUpdate = true;
-          set({ run });
+          set({ run, error: null });
         }
       });
       // Catch up when the page remounts after a run finished while the Car tab was open.
@@ -88,7 +91,13 @@ export function createRunStore(api: RunApi) {
       if (current) {
         void api.runs.get(current.id).then(
           (run) => {
-            if (!disposed && !receivedUpdate && get().run?.id === run.id) set({ run });
+            if (
+              !disposed &&
+              !receivedUpdate &&
+              get().run?.id === run.id &&
+              !staleActiveUpdate(get().run, run)
+            )
+              set({ run, error: null });
           },
           (err: unknown) => {
             if (!disposed && !receivedUpdate && get().run?.id === current.id)
