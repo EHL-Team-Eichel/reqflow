@@ -292,6 +292,13 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
   transferred part/type scaffolding, preserve BMW body/windows and requirement review,
   verify renderer/model tests plus a synthetic Electron switching probe, then commit/push.
 
+- 2026-10-11: Rear window support moved 4.8 cm back (`REAR_WINDOW_SUPPORT_X` -1.17 → -1.218),
+  still over the rear half of the rear door handle, so the fixed quarter pane is 15% smaller
+  (rendered side-view area 0.1059 → 0.0902 m²). One body station now snaps to the support's
+  rear edge; panel edges follow stations, so without it the pane could only shrink in ~11%
+  steps. New area regression; typecheck and 564 tests pass (25 skipped). Reviewed side smoke
+  screenshot; smoke keeps its 12 documented menu assertions.
+
 - 2026-10-11: Rear-door window support is now upright like the B-pillar and stands
   directly over the rear door handle (`REAR_WINDOW_SUPPORT_X` in `body.ts`), as on the
   BMW M5, replacing the slanted quarter-glass frame. Applies to every catalog model (shared

@@ -185,6 +185,13 @@ export interface BodyGrid {
   cut: Uint8Array;
 }
 
+// The rear door's moving glass ends at an upright support in front of the small fixed quarter
+// pane. Like the B-pillar it runs straight from the belt to the roof, and it stands over the rear
+// half of the rear door handle (centre x = -1.17 in buildCar), as on the BMW M5. It sits far
+// enough back that the quarter pane is 15% smaller than with the support centred on the handle.
+export const REAR_WINDOW_SUPPORT_X = -1.218;
+export const REAR_WINDOW_SUPPORT_HALF_WIDTH = 0.04;
+
 /** Station positions, denser at the ends where the nose and tail curve fast. */
 function stationXs(): number[] {
   const xs: number[] = [];
@@ -194,6 +201,14 @@ function stationXs(): number[] {
     const mix = 0.55 * s + 0.45 * u;
     xs.push(G60.rearX + G60.length * mix);
   }
+  // Panel edges follow stations, so the quarter pane would only shrink in whole-station steps
+  // (about 11% each). Put a station on the support's rear edge so the pane ends exactly there.
+  const edge = REAR_WINDOW_SUPPORT_X - REAR_WINDOW_SUPPORT_HALF_WIDTH;
+  let nearest = 0;
+  xs.forEach((x, i) => {
+    if (Math.abs(x - edge) < Math.abs(xs[nearest]! - edge)) nearest = i;
+  });
+  xs[nearest] = edge;
   return xs;
 }
 
@@ -452,11 +467,8 @@ const windowFront = (y: number) => 0.8 - (y - 1.0) * 1.82 - 0.13;
 const windowRear = (y: number) =>
   y < 1.12 ? lerp(-1.48, -1.66, smoothstep(1.05, 1.12, y)) : -1.66 + (y - 1.12) * 1.08;
 const inBPillar = (x: number) => x > -0.31 && x < -0.19;
-// The rear door's moving glass ends at an upright support in front of the small fixed quarter
-// pane. Like the B-pillar it runs straight from the belt to the roof, and it stands right over the
-// rear door handle (x = -1.17 in buildCar), as on the BMW M5.
-export const REAR_WINDOW_SUPPORT_X = -1.17;
-const inQuarterWindowFrame = (x: number) => Math.abs(x - REAR_WINDOW_SUPPORT_X) < 0.04;
+const inQuarterWindowFrame = (x: number) =>
+  Math.abs(x - REAR_WINDOW_SUPPORT_X) < REAR_WINDOW_SUPPORT_HALF_WIDTH;
 
 function inSideWindow(q: Quad): boolean {
   return (
