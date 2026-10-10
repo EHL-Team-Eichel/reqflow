@@ -181,6 +181,8 @@ function ReportDialog({
 
           <div className="min-h-0">
             <DataPanel
+              key={currentStep.block.id}
+              root={root}
               step={currentStep}
               isTarget={currentStep.block.id === lineage.targetId}
               showSample={showSample}

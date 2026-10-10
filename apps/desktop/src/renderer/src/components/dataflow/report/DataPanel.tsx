@@ -1,10 +1,13 @@
 import { useState, useMemo, useEffect } from "react";
-import { type LineageStep } from "@reqflow/core";
+import { type LineageStep, type WorkflowGraph } from "@reqflow/core";
 import { Button } from "@/components/ui/Button";
 import { TableIcon } from "@/components/ui/icons";
 import { TextInput } from "@/components/ui/controls";
 import { sampleDataAt } from "./sample";
-import { canPreview, useBlockPreview } from "../usePreview";
+import { type PreviewState } from "../usePreview";
+import { api } from "@/lib/api";
+import { useSettings } from "@/lib/settings";
+import { previewReportInputs, reportPreviewInputs } from "./preview";
 import {
   SourcesTable,
   RecordsTable,
@@ -15,6 +18,7 @@ import {
 import { cx } from "@/lib/cx";
 
 interface Props {
+  root: WorkflowGraph;
   step: LineageStep;
   isTarget: boolean;
   showSample: boolean;
@@ -24,18 +28,47 @@ interface Props {
 const TABS = ["Requirements", "Themes", "Findings", "Records", "Sources"] as const;
 type Tab = (typeof TABS)[number];
 
-export function DataPanel({ step, isTarget, showSample, onShowSample }: Props) {
+export function DataPanel({ root, step, isTarget, showSample, onShowSample }: Props) {
   const [filter, setFilter] = useState("");
   const [activeTab, setActiveTab] = useState<Tab | null>(null);
 
-  // A block without inputs (Raw) can show its real data right away; others need a run.
-  const previewable = canPreview(step.block);
-  const preview = useBlockPreview(previewable ? step.block : null);
-  const { load } = preview;
+  const scope = useSettings((s) => s.settings.defaultScope);
+  const inputs = useMemo(() => reportPreviewInputs(root, step), [root, step]);
+  const [result, setResult] = useState<{
+    inputs: typeof inputs;
+    scope: typeof scope;
+    state: PreviewState;
+  } | null>(null);
+  const previewable = inputs !== null;
   useEffect(() => {
-    if (previewable) void load();
-  }, [previewable, load]);
-  const real = preview.state.status === "ready" ? preview.state.data : null;
+    if (!inputs) return;
+    let cancelled = false;
+    setResult({ inputs, scope, state: { status: "loading" } });
+    void previewReportInputs(inputs, scope, api.blocks.preview).then(
+      ({ data, logs }) => {
+        if (!cancelled) setResult({ inputs, scope, state: { status: "ready", data, logs } });
+      },
+      (err: unknown) => {
+        if (!cancelled)
+          setResult({
+            inputs,
+            scope,
+            state: {
+              status: "error",
+              message: err instanceof Error ? err.message : String(err),
+              logs: [],
+            },
+          });
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [inputs, scope]);
+  // Hide old results immediately, before the effect reloads changed inputs or scope.
+  const state: PreviewState =
+    result?.inputs === inputs && result.scope === scope ? result.state : { status: "idle" };
+  const real = state.status === "ready" ? state.data : null;
 
   // Real data wins. The synthetic sample is only for steps whose data needs a run.
   const data = useMemo(() => {
@@ -62,7 +95,7 @@ export function DataPanel({ step, isTarget, showSample, onShowSample }: Props) {
 
   const headerLabel = isTarget ? "Data at this point" : `Data at ${step.block.label}`;
 
-  if (previewable && (preview.state.status === "idle" || preview.state.status === "loading")) {
+  if (previewable && (state.status === "idle" || state.status === "loading")) {
     return (
       <div
         data-testid="data-panel"
@@ -86,11 +119,11 @@ export function DataPanel({ step, isTarget, showSample, onShowSample }: Props) {
           className="flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center"
         >
           <TableIcon className="size-8 text-muted" />
-          {preview.state.status === "error" ? (
+          {previewable && state.status === "error" ? (
             <div>
               <div className="mb-1 font-medium text-ink">Couldn't read this block's data</div>
               <div role="alert" className="text-sm text-danger">
-                {preview.state.message}
+                {state.message}
               </div>
             </div>
           ) : (
@@ -120,8 +153,9 @@ export function DataPanel({ step, isTarget, showSample, onShowSample }: Props) {
 
       {real ? (
         <div data-testid="data-real" className="bg-brand-soft px-4 py-2 text-xs text-brand">
-          Read from the block's {step.block.params.source === "database" ? "database" : "file"} just
-          now: its own output, not a run.
+          {step.block.kind === "hil"
+            ? "Preview of connected source inputs, read just now. This flow has not run; no review or approval has been recorded."
+            : `Read from the block's ${step.block.params.source === "database" ? "database" : "file"} just now: its own output, not a run.`}
         </div>
       ) : (
         <div className="flex items-center justify-between bg-warn-soft px-4 py-2 text-xs text-warn">
