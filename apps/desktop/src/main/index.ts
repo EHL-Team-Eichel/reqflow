@@ -24,9 +24,14 @@ function createWindow(): BrowserWindow {
       contextIsolation: true,
       sandbox: true,
       nodeIntegration: false,
+      // The smoke test renders off screen: it paints even when the display sleeps or the window
+      // is covered, and never steals focus.
+      offscreen: smokeDir !== null,
     },
   });
-  win.once("ready-to-show", () => (smokeDir ? win.showInactive() : win.show()));
+  win.once("ready-to-show", () => {
+    if (!smokeDir) win.show();
+  });
 
   // The window never navigates away from the app; http(s) links open in the user's browser.
   win.webContents.setWindowOpenHandler(({ url }) => {

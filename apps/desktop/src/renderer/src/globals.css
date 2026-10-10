@@ -1,13 +1,71 @@
 @import "tailwindcss";
+@import "@xyflow/react/dist/style.css";
 
-/* Design tokens — WS4 owns the visual system; extend here, don't hard-code colors in components. */
-@theme {
-  --color-brand: #1c69d4; /* BMW blue */
-  --color-brand-ink: #0b1b2b;
-  --color-surface: #f6f7f9;
+/* Dark mode follows the `data-theme` attribute on <html> (set from Settings → App → Theme). */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/*
+ * Design tokens — WS4 owns the visual system. Use these (bg-panel, border-line, text-muted, …)
+ * instead of hard-coded colors, so light and dark mode both work.
+ */
+@theme static {
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial,
+    sans-serif;
+
+  /* BMW M colorway: the three M stripe colours (same in both themes) on carbon neutrals. */
+  --color-m-light: #81c4ff;
+  --color-m-dark: #16588e;
+  --color-m-red: #e7222e;
+
+  --color-brand: #16588e; /* accent for text, borders, focus rings: M dark blue */
+  --color-brand-fill: #16588e; /* filled controls with white content (primary button, toggle) */
+  --color-brand-soft: #e6f0f9;
+  --color-canvas: #f2f3f4; /* app background behind the panels */
+  --color-dot: #d2d5d9; /* dot grid on the canvas */
   --color-panel: #ffffff;
-  --color-line: #e3e6eb;
-  --color-muted: #5b6573;
+  --color-panel-2: #f6f7f8; /* inset areas, inputs */
+  --color-line: #d9dcdf;
+  --color-line-strong: #b3b8be;
+  --color-ink: #111214;
+  --color-muted: #5d636b;
+  --color-danger: #c81e28; /* M red, a shade darker so small text stays readable */
+  --color-danger-soft: #fdecec;
+  --color-warn: #a35f00;
+  --color-warn-soft: #fff4e0;
+  --color-ok: #1b7f4b;
+
+  /* Block groups (see BlockGroup in @reqflow/core), drawn from the M stripe */
+  --color-group-structure: #6b7078;
+  --color-group-source: #2b8ee6; /* M light blue, deepened for white backgrounds */
+  --color-group-ai: #16588e; /* M dark blue */
+  --color-group-human: #e7222e; /* M red: a person has to act here */
+  --color-group-output: #111214; /* the car itself */
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-brand: #81c4ff; /* M light blue */
+  --color-brand-fill: #1f6fb5;
+  --color-brand-soft: #132638;
+  --color-canvas: #08090a;
+  --color-dot: #1f2226;
+  --color-panel: #121315;
+  --color-panel-2: #191a1d;
+  --color-line: #25282c;
+  --color-line-strong: #3a3e44;
+  --color-ink: #f2f3f5;
+  --color-muted: #979ca4;
+  --color-danger: #ff5a63;
+  --color-danger-soft: #3a1517;
+  --color-warn: #f0b04d;
+  --color-warn-soft: #36290f;
+  --color-ok: #4cc287;
+  --color-group-structure: #8d939b;
+  --color-group-source: #81c4ff;
+  --color-group-ai: #4b8fd1; /* M dark blue, lifted for dark backgrounds */
+  --color-group-human: #ff4752;
+  --color-group-output: #f2f3f5;
 }
 
 html,
@@ -15,6 +73,32 @@ body,
 #root {
   height: 100%;
   margin: 0;
-  background: var(--color-surface);
-  color: var(--color-brand-ink);
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 14px;
+}
+
+/* The dotted backdrop from the app sketch. */
+.dot-grid {
+  background-color: var(--color-canvas);
+  background-image: radial-gradient(var(--color-dot) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+/* React Flow follows the tokens too. */
+.react-flow {
+  --xy-background-color: var(--color-panel);
+  --xy-background-pattern-color: var(--color-dot);
+  --xy-edge-stroke: var(--color-muted);
+  --xy-edge-stroke-width: 1.75;
+  --xy-edge-stroke-selected: var(--color-brand);
+  --xy-connectionline-stroke: var(--color-brand);
+  --xy-handle-background-color: var(--color-panel);
+  --xy-handle-border-color: var(--color-line-strong);
+  --xy-controls-button-background-color: var(--color-panel);
+  --xy-controls-button-background-color-hover: var(--color-panel-2);
+  --xy-controls-button-color: var(--color-ink);
+  --xy-controls-button-border-color: var(--color-line);
+  --xy-minimap-background-color: var(--color-panel-2);
 }
