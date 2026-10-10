@@ -18,19 +18,19 @@
       "deletions": 0,
       "files": 0
     },
-    "cost": 4.9953262500000015,
+    "cost": 5.1266891500000025,
     "tokens": {
-      "input": 26533,
-      "output": 71900,
-      "reasoning": 43917,
+      "input": 26551,
+      "output": 72860,
+      "reasoning": 48269,
       "cache": {
-        "read": 8448040,
-        "write": 1189703
+        "read": 8991759,
+        "write": 1199237
       }
     },
     "time": {
       "created": 1791649887289,
-      "updated": 1791660794955
+      "updated": 1791660992363
     }
   },
   "messages": [
@@ -24797,21 +24797,24 @@
           "cwd": "/Users/jonas/Documents/reqflow",
           "root": "/Users/jonas/Documents/reqflow"
         },
-        "cost": 0,
+        "cost": 0.0180014,
         "tokens": {
-          "input": 0,
-          "output": 0,
-          "reasoning": 0,
+          "total": 88952,
+          "input": 3,
+          "output": 115,
+          "reasoning": 436,
           "cache": {
-            "read": 0,
-            "write": 0
+            "write": 1519,
+            "read": 86879
           }
         },
         "modelID": "gpt-6.1-sol",
         "providerID": "openai",
         "time": {
-          "created": 1791660794954
+          "created": 1791660794954,
+          "completed": 1791660843806
         },
+        "finish": "tool-calls",
         "id": "msg_1274e244a0028PkaDeHZHdcj0u",
         "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj"
       },
@@ -24845,17 +24848,22 @@
           "tool": "bash",
           "callID": "call_rD2aBVrowxqDOk2RptIsOkWP",
           "state": {
-            "metadata": {
-              "output": ""
-            },
-            "status": "running",
+            "status": "completed",
             "input": {
               "command": "rtk git commit -m \"feat(ws6): add raw research agents and secure runtime\" -m \"Keep provider originals and provenance intact through native workflows\\nand exports. Gate paid calls and encrypt credentials with OS storage.\\n\\nBound document and JSON resources, preserve ws's guarded addon\\nfallbacks in dev and packaged builds, and enable Entire checkpoint\\nsync on Git pushes.\"",
               "workdir": "/Users/jonas/Documents/reqflow",
               "timeout": 120000
             },
+            "output": "ok 6a36a25\n",
+            "metadata": {
+              "output": "ok 6a36a25\n",
+              "exit": 0,
+              "truncated": false
+            },
+            "title": "rtk git commit -m \"feat(ws6): add raw research agents and secure runtime\" -m \"Keep provider originals and provenance intact through native workflows\\nand exports. Gate paid calls and encrypt credentials with OS storage.\\n\\nBound document and JSON resources, preserve ws's guarded addon\\nfallbacks in dev and packaged builds, and enable Entire checkpoint\\nsync on Git pushes.\"",
             "time": {
-              "start": 1791660810600
+              "start": 1791660810600,
+              "end": 1791660843736
             }
           },
           "metadata": {
@@ -24866,6 +24874,931 @@
           "id": "prt_1274e5a380012vwYazSSEClXfV",
           "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj",
           "messageID": "msg_1274e244a0028PkaDeHZHdcj0u"
+        },
+        {
+          "reason": "tool-calls",
+          "snapshot": "da5f6998b99aa09b2306114dea3ec1eba12e44e1",
+          "type": "step-finish",
+          "tokens": {
+            "total": 88952,
+            "input": 3,
+            "output": 115,
+            "reasoning": 436,
+            "cache": {
+              "write": 1519,
+              "read": 86879
+            }
+          },
+          "cost": 0.0180014,
+          "id": "prt_1274ee2fa001ZjH43QuJrE5j3g",
+          "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj",
+          "messageID": "msg_1274e244a0028PkaDeHZHdcj0u"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_1274c0f73001ry3RjM563L7Xvd",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "variant": "xhigh",
+        "path": {
+          "cwd": "/Users/jonas/Documents/reqflow",
+          "root": "/Users/jonas/Documents/reqflow"
+        },
+        "cost": 0.0166733,
+        "tokens": {
+          "total": 89624,
+          "input": 3,
+          "output": 120,
+          "reasoning": 516,
+          "cache": {
+            "write": 587,
+            "read": 88398
+          }
+        },
+        "modelID": "gpt-6.1-sol",
+        "providerID": "openai",
+        "time": {
+          "created": 1791660843822,
+          "completed": 1791660862627
+        },
+        "finish": "tool-calls",
+        "id": "msg_1274ee32e0026OG5kLWyoNzbIi",
+        "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj"
+      },
+      "parts": [
+        {
+          "snapshot": "da5f6998b99aa09b2306114dea3ec1eba12e44e1",
+          "type": "step-start",
+          "id": "prt_1274eede6001wu84d67u0jmicj",
+          "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj",
+          "messageID": "msg_1274ee32e0026OG5kLWyoNzbIi"
+        },
+        {
+          "type": "reasoning",
+          "text": "",
+          "time": {
+            "start": 1791660846568,
+            "end": 1791660860661
+          },
+          "metadata": {
+            "openai": {
+              "itemId": "rs_014b228475912bbe016aca932e4f2087d2b88bbe3a823acb12",
+              "reasoningEncryptedContent": "REDACTED"
+            }
+          },
+          "id": "prt_1274eede800179FkLK2jOR7UNn",
+          "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj",
+          "messageID": "msg_1274ee32e0026OG5kLWyoNzbIi"
+        },
+        {
+          "type": "tool",
+          "tool": "bash",
+          "callID": "call_rXCmbLpG6PaL2wLcENVnEcQA",
+          "state": {
+            "status": "completed",
+            "input": {
+              "command": "rtk git log -1 --format=%B",
+              "workdir": "/Users/jonas/Documents/reqflow"
+            },
+            "output": "feat(ws6): add raw research agents and secure runtime\n\nKeep provider originals and provenance intact through native workflows\\nand exports. Gate paid calls and encrypt cred...\n\nEntire-Checkpoint: 01M4KMWRK0Z5V4D4GVXSB0HPP9\n\n",
+            "metadata": {
+              "output": "feat(ws6): add raw research agents and secure runtime\n\nKeep provider originals and provenance intact through native workflows\\nand exports. Gate paid calls and encrypt cred...\n\nEntire-Checkpoint: 01M4KMWRK0Z5V4D4GVXSB0HPP9\n\n",
+              "exit": 0,
+              "truncated": false
+            },
+            "title": "rtk git log -1 --format=%B",
+            "time": {
+              "start": 1791660860690,
+              "end": 1791660860732
+            }
+          },
+          "metadata": {
+            "openai": {
+              "itemId": "fc_014b228475912bbe016aca933c389c87d281650e908bbf371d"
+            }
+          },
+          "id": "prt_1274f24fa001THEyQVL2QMxx21",
+          "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj",
+          "messageID": "msg_1274ee32e0026OG5kLWyoNzbIi"
+        },
+        {
+          "type": "tool",
+          "tool": "bash",
+          "callID": "call_nigAYcWyjanuLZvSiP9tPFPY",
+          "state": {
+            "status": "completed",
+            "input": {
+              "command": "rtk git status --short",
+              "workdir": "/Users/jonas/Documents/reqflow"
+            },
+            "output": "?? \"apps/desktop/src/renderer/src/components/settings/PersistenceBanner 2.tsx\"\n?? \"apps/desktop/src/renderer/src/components/settings/Segmented 2.tsx\"\n?? \"apps/desktop/src/renderer/src/components/settings/SettingRow 2.tsx\"\n?? \"apps/desktop/src/renderer/src/components/settings/SettingsNav 2.tsx\"\n?? \"apps/desktop/src/renderer/src/components/settings/icons 2.tsx\"\n?? \"apps/desktop/src/renderer/src/components/settings/sections/AboutSection 2.tsx\"\n?? \"apps/desktop/src/renderer/src/components/settings/sections/AiSection 2.tsx\"\n?? \"apps/desktop/src/renderer/src/components/settings/sections/AppSection 2.tsx\"\n?? \"apps/desktop/src/renderer/src/components/settings/sections/CollaborationSection 2.tsx\"\n?? \"apps/desktop/src/renderer/src/components/settings/sections/ParametersSection 2.tsx\"\n?? \"apps/desktop/src/renderer/src/components/shell/BottomNav 2.tsx\"\n?? \"apps/desktop/src/renderer/src/components/ui/Button 2.tsx\"\n?? \"apps/desktop/src/renderer/src/components/ui/Field 2.tsx\"\n?? \"apps/desktop/src/renderer/src/components/ui/MStripe 2.tsx\"\n?? \"apps/desktop/src/renderer/src/components/ui/Panel 2.tsx\"\n?? \"apps/desktop/src/renderer/src/components/ui/controls 2.tsx\"\n?? \"apps/desktop/src/renderer/src/components/ui/icons 2.tsx\"\n?? \"apps/desktop/src/renderer/src/lib/cx 2.ts\"\n?? \"apps/desktop/src/renderer/src/lib/settings 2.ts\"\n?? \"apps/desktop/src/renderer/src/lib/settings-store 2.ts\"\n?? \"apps/desktop/src/renderer/src/lib/settings-store.test 2.ts\"\n?? \"apps/desktop/src/renderer/src/lib/theme 2.ts\"\n?? \"docs/AGENT_PROMPT 2.md\"\n?? \"docs/decisions/0003-building-blocks 2.md\"\n?? \"packages/core/src/blocks 2.ts\"\n?? \"packages/core/src/graph 2.ts\"\n?? \"packages/core/src/graph.test 2.ts\"",
+            "metadata": {
+              "output": "?? \"apps/desktop/src/renderer/src/components/settings/PersistenceBanner 2.tsx\"\n?? \"apps/desktop/src/renderer/src/components/settings/Segmented 2.tsx\"\n?? \"apps/desktop/src/renderer/src/components/settings/SettingRow 2.tsx\"\n?? \"apps/desktop/src/renderer/src/components/settings/SettingsNav 2.tsx\"\n?? \"apps/desktop/src/renderer/src/components/settings/icons 2.tsx\"\n?? \"apps/desktop/src/renderer/src/components/settings/sections/AboutSection 2.tsx\"\n?? \"apps/desktop/src/renderer/src/components/settings/sections/AiSection 2.tsx\"\n?? \"apps/desktop/src/renderer/src/components/settings/sections/AppSection 2.tsx\"\n?? \"apps/desktop/src/renderer/src/components/settings/sections/CollaborationSection 2.tsx\"\n?? \"apps/desktop/src/renderer/src/components/settings/sections/ParametersSection 2.tsx\"\n?? \"apps/desktop/src/renderer/src/components/shell/BottomNav 2.tsx\"\n?? \"apps/desktop/src/renderer/src/components/ui/Button 2.tsx\"\n?? \"apps/desktop/src/renderer/src/components/ui/Field 2.tsx\"\n?? \"apps/desktop/src/renderer/src/components/ui/MStripe 2.tsx\"\n?? \"apps/desktop/src/renderer/src/components/ui/Panel 2.tsx\"\n?? \"apps/desktop/src/renderer/src/components/ui/controls 2.tsx\"\n?? \"apps/desktop/src/renderer/src/components/ui/icons 2.tsx\"\n?? \"apps/desktop/src/renderer/src/lib/cx 2.ts\"\n?? \"apps/desktop/src/renderer/src/lib/settings 2.ts\"\n?? \"apps/desktop/src/renderer/src/lib/settings-store 2.ts\"\n?? \"apps/desktop/src/renderer/src/lib/settings-store.test 2.ts\"\n?? \"apps/desktop/src/renderer/src/lib/theme 2.ts\"\n?? \"docs/AGENT_PROMPT 2.md\"\n?? \"docs/decisions/0003-building-blocks 2.md\"\n?? \"packages/core/src/blocks 2.ts\"\n?? \"packages/core/src/graph 2.ts\"\n?? \"packages/core/src/graph.test 2.ts\"",
+              "exit": 0,
+              "truncated": false
+            },
+            "title": "rtk git status --short",
+            "time": {
+              "start": 1791660861040,
+              "end": 1791660861078
+            }
+          },
+          "metadata": {
+            "openai": {
+              "itemId": "fc_014b228475912bbe016aca933c38b487d2bf971d4b759e9d92"
+            }
+          },
+          "id": "prt_1274f2513001eWDUB1rdWrjZ4d",
+          "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj",
+          "messageID": "msg_1274ee32e0026OG5kLWyoNzbIi"
+        },
+        {
+          "type": "tool",
+          "tool": "bash",
+          "callID": "call_E4K91zNvkJux7BTUCgdM70Um",
+          "state": {
+            "status": "completed",
+            "input": {
+              "command": "entire checkpoint list --json",
+              "workdir": "/Users/jonas/Documents/reqflow",
+              "timeout": 120000
+            },
+            "output": "[\n  {\n    \"checkpoint_id\": \"c7547d9733428d590c50ff9a6a1731dc70841a6b\",\n    \"session_id\": \"ses_ed934a25affeqvU5oK6dY3SvdF\",\n    \"date\": \"2026-10-10T21:33:52+02:00\",\n    \"message\": \"carry forward: uncommitted session files\"\n  },\n  {\n    \"checkpoint_id\": \"09f9b5698aa59c2eb434ffc5bc98b85ef36305bb\",\n    \"session_id\": \"ses_ed92b49abffes1JaCbFUQHfn6s\",\n    \"date\": \"2026-10-10T21:33:49+02:00\",\n    \"message\": \"carry forward: uncommitted session files\"\n  },\n  {\n    \"checkpoint_id\": \"01M4KMWRK0Z5V4D4GVXSB0HPP9\",\n    \"session_id\": \"ses_ed9584bc6ffeZtRFHM33qPtUGj\",\n    \"agent\": \"OpenCode\",\n    \"date\": \"2026-10-10T21:33:30+02:00\",\n    \"message\": \"feat(ws6): add raw research agents and secure runtime\",\n    \"is_logs_only\": true,\n    \"session_count\": 28,\n    \"session_ids\": [\n      \"ses_ed8be30a1ffe46XBg7h6VOTSGP\",\n      \"ses_ed8c185e4ffex5SBctUEZ1HF3X\",\n      \"ses_ed8d35c64ffeQm2bBo7fR1zL7B\",\n      \"ses_ed8d96bacffeS7YuJOqZ4Cb4WX\",\n      \"ses_ed8dfd3edffeql75MP4KbawAHK\",\n      \"ses_ed8f5b501ffepXgqPXouhpXyTQ\",\n      \"ses_ed8f5b5a0ffeR1CVrjy8GP1NAd\",\n      \"ses_ed8f5b652ffebJ0IGxyAjI3sYs\",\n      \"ses_ed8feb14bffeCY5iRHVoyzJRV9\",\n      \"ses_ed9035daaffe63sYV2EKKAw1kr\",\n      \"ses_ed9035e53ffe3s4IvO3sm07ZPE\",\n      \"ses_ed9035e5affe4WGaO1E228CzGd\",\n      \"ses_ed9035f86ffepGaaO8cwox0e9N\",\n      \"ses_ed90b21feffeLZlSmZhNKEiC3C\",\n      \"ses_ed913b1d6ffelhNsK2N8qelPeE\",\n      \"ses_ed9156ba9ffehygkwEweg0BVfH\",\n      \"ses_ed9156c42ffe8TeF7SujYDCHpj\",\n      \"ses_ed9156d66ffev198nqGc9bMCTU\",\n      \"ses_ed9225444ffeNXYufR8eNym9i9\",\n      \"ses_ed92b49abffes1JaCbFUQHfn6s\",\n      \"ses_ed934a25affeqvU5oK6dY3SvdF\",\n      \"ses_ed93ba4d6ffe9pbaMT2Sd4RQYH\",\n      \"ses_ed93ba565ffezyB3mimW6z4u6M\",\n      \"ses_ed93ba5eeffeQJnckZzKs6SHMJ\",\n      \"ses_ed93ba67bffel9ETWu29IG8jtZ\",\n      \"ses_ed93ba70effeLwmA7f00Py1ezw\",\n      \"ses_ed93ba7bbffeJFRh0lJJJGcYhi\",\n      \"ses_ed9584bc6ffeZtRFHM33qPtUGj\"\n    ]\n  },\n  {\n    \"checkpoint_id\": \"01M4KA0111HQB5G10SZWCYMFKG\",\n    \"session_id\": \"ses_ed96a75eeffeytIQCCfRZvEr3k\",\n    \"agent\": \"OpenCode\",\n    \"date\": \"2026-10-10T18:26:23+02:00\",\n    \"message\": \"ws0: document verified Entire setup\",\n    \"is_logs_only\": true,\n    \"session_count\": 1,\n    \"session_ids\": [\n      \"ses_ed96a75eeffeytIQCCfRZvEr3k\"\n    ]\n  },\n  {\n    \"checkpoint_id\": \"01M4K9XV8X9GP2RCJZRQRC2Q62\",\n    \"session_id\": \"ses_ed96a75eeffeytIQCCfRZvEr3k\",\n    \"agent\": \"OpenCode\",\n    \"date\": \"2026-10-10T18:24:51+02:00\",\n    \"message\": \"ws0: enable Entire for OpenCode\",\n    \"is_logs_only\": true,\n    \"session_count\": 1,\n    \"session_ids\": [\n      \"ses_ed96a75eeffeytIQCCfRZvEr3k\"\n    ]\n  },\n  {\n    \"checkpoint_id\": \"01M4K97J3FBXSHR17DECXM58ZY\",\n    \"session_id\": \"40d2eb91-dde3-4e39-8ba4-6686a20b47a7\",\n    \"agent\": \"Claude Code\",\n    \"date\": \"2026-10-10T18:09:41+02:00\",\n    \"message\": \"ws0: update docs and task lists for all workstreams\",\n    \"is_logs_only\": true,\n    \"session_count\": 1,\n    \"session_ids\": [\n      \"40d2eb91-dde3-4e39-8ba4-6686a20b47a7\"\n    ]\n  },\n  {\n    \"checkpoint_id\": \"01M4K97GZMXAPERTYG3R8JXHSK\",\n    \"session_id\": \"40d2eb91-dde3-4e39-8ba4-6686a20b47a7\",\n    \"agent\": \"Claude Code\",\n    \"date\": \"2026-10-10T18:09:40+02:00\",\n    \"message\": \"ws0: build app shell, Data Flow editor, Car and Settings tabs\",\n    \"is_logs_only\": true,\n    \"session_count\": 1,\n    \"session_ids\": [\n      \"40d2eb91-dde3-4e39-8ba4-6686a20b47a7\"\n    ]\n  },\n  {\n    \"checkpoint_id\": \"01M4K97FFYDQPA8HG7NCZ3S91B\",\n    \"session_id\": \"40d2eb91-dde3-4e39-8ba4-6686a20b47a7\",\n    \"agent\": \"Claude Code\",\n    \"date\": \"2026-10-10T18:09:38+02:00\",\n    \"message\": \"ws0: replace node model with building blocks contract\",\n    \"is_logs_only\": true,\n    \"session_count\": 1,\n    \"session_ids\": [\n      \"40d2eb91-dde3-4e39-8ba4-6686a20b47a7\"\n    ]\n  }\n]\n",
+            "metadata": {
+              "output": "[\n  {\n    \"checkpoint_id\": \"c7547d9733428d590c50ff9a6a1731dc70841a6b\",\n    \"session_id\": \"ses_ed934a25affeqvU5oK6dY3SvdF\",\n    \"date\": \"2026-10-10T21:33:52+02:00\",\n    \"message\": \"carry forward: uncommitted session files\"\n  },\n  {\n    \"checkpoint_id\": \"09f9b5698aa59c2eb434ffc5bc98b85ef36305bb\",\n    \"session_id\": \"ses_ed92b49abffes1JaCbFUQHfn6s\",\n    \"date\": \"2026-10-10T21:33:49+02:00\",\n    \"message\": \"carry forward: uncommitted session files\"\n  },\n  {\n    \"checkpoint_id\": \"01M4KMWRK0Z5V4D4GVXSB0HPP9\",\n    \"session_id\": \"ses_ed9584bc6ffeZtRFHM33qPtUGj\",\n    \"agent\": \"OpenCode\",\n    \"date\": \"2026-10-10T21:33:30+02:00\",\n    \"message\": \"feat(ws6): add raw research agents and secure runtime\",\n    \"is_logs_only\": true,\n    \"session_count\": 28,\n    \"session_ids\": [\n      \"ses_ed8be30a1ffe46XBg7h6VOTSGP\",\n      \"ses_ed8c185e4ffex5SBctUEZ1HF3X\",\n      \"ses_ed8d35c64ffeQm2bBo7fR1zL7B\",\n      \"ses_ed8d96bacffeS7YuJOqZ4Cb4WX\",\n      \"ses_ed8dfd3edffeql75MP4KbawAHK\",\n      \"ses_ed8f5b501ffepXgqPXouhpXyTQ\",\n      \"ses_ed8f5b5a0ffeR1CVrjy8GP1NAd\",\n      \"ses_ed8f5b652ffebJ0IGxyAjI3sYs\",\n      \"ses_ed8feb14bffeCY5iRHVoyzJRV9\",\n      \"ses_ed9035daaffe63sYV2EKKAw1kr\",\n      \"ses_ed9035e53ffe3s4IvO3sm07ZPE\",\n      \"ses_ed9035e5affe4WGaO1E228CzGd\",\n      \"ses_ed9035f86ffepGaaO8cwox0e9N\",\n      \"ses_ed90b21feffeLZlSmZhNKEiC3C\",\n      \"ses_ed913b1d6ffelhNsK2N8qelPeE\",\n      \"ses_ed9156ba9ffehygkwEweg0BVfH\",\n      \"ses_ed9156c42ffe8TeF7SujYDCHpj\",\n      \"ses_ed9156d66ffev198nqGc9bMCTU\",\n      \"ses_ed9225444ffeNXYufR8eNym9i9\",\n      \"ses_ed92b49abffes1JaCbFUQHfn6s\",\n      \"ses_ed934a25affeqvU5oK6dY3SvdF\",\n      \"ses_ed93ba4d6ffe9pbaMT2Sd4RQYH\",\n      \"ses_ed93ba565ffezyB3mimW6z4u6M\",\n      \"ses_ed93ba5eeffeQJnckZzKs6SHMJ\",\n      \"ses_ed93ba67bffel9ETWu29IG8jtZ\",\n      \"ses_ed93ba70effeLwmA7f00Py1ezw\",\n      \"ses_ed93ba7bbffeJFRh0lJJJGcYhi\",\n      \"ses_ed9584bc6ffeZtRFHM33qPtUGj\"\n    ]\n  },\n  {\n    \"checkpoint_id\": \"01M4KA0111HQB5G10SZWCYMFKG\",\n    \"session_id\": \"ses_ed96a75eeffeytIQCCfRZvEr3k\",\n    \"agent\": \"OpenCode\",\n    \"date\": \"2026-10-10T18:26:23+02:00\",\n    \"message\": \"ws0: document verified Entire setup\",\n    \"is_logs_only\": true,\n    \"session_count\": 1,\n    \"session_ids\": [\n      \"ses_ed96a75eeffeytIQCCfRZvEr3k\"\n    ]\n  },\n  {\n    \"checkpoint_id\": \"01M4K9XV8X9GP2RCJZRQRC2Q62\",\n    \"session_id\": \"ses_ed96a75eeffeytIQCCfRZvEr3k\",\n    \"agent\": \"OpenCode\",\n    \"date\": \"2026-10-10T18:24:51+02:00\",\n    \"message\": \"ws0: enable Entire for OpenCode\",\n    \"is_logs_only\": true,\n    \"session_count\": 1,\n    \"session_ids\": [\n      \"ses_ed96a75eeffeytIQCCfRZvEr3k\"\n    ]\n  },\n  {\n    \"checkpoint_id\": \"01M4K97J3FBXSHR17DECXM58ZY\",\n    \"session_id\": \"40d2eb91-dde3-4e39-8ba4-6686a20b47a7\",\n    \"agent\": \"Claude Code\",\n    \"date\": \"2026-10-10T18:09:41+02:00\",\n    \"message\": \"ws0: update docs and task lists for all workstreams\",\n    \"is_logs_only\": true,\n    \"session_count\": 1,\n    \"session_ids\": [\n      \"40d2eb91-dde3-4e39-8ba4-6686a20b47a7\"\n    ]\n  },\n  {\n    \"checkpoint_id\": \"01M4K97GZMXAPERTYG3R8JXHSK\",\n    \"session_id\": \"40d2eb91-dde3-4e39-8ba4-6686a20b47a7\",\n    \"agent\": \"Claude Code\",\n    \"date\": \"2026-10-10T18:09:40+02:00\",\n    \"message\": \"ws0: build app shell, Data Flow editor, Car and Settings tabs\",\n    \"is_logs_only\": true,\n    \"session_count\": 1,\n    \"session_ids\": [\n      \"40d2eb91-dde3-4e39-8ba4-6686a20b47a7\"\n    ]\n  },\n  {\n    \"checkpoint_id\": \"01M4K97FFYDQPA8HG7NCZ3S91B\",\n    \"session_id\": \"40d2eb91-dde3-4e39-8ba4-6686a20b47a7\",\n    \"agent\": \"Claude Code\",\n    \"date\": \"2026-10-10T18:09:38+02:00\",\n    \"message\": \"ws0: replace node model with building blocks contract\",\n    \"is_logs_only\": true,\n    \"session_count\": 1,\n    \"session_ids\": [\n      \"40d2eb91-dde3-4e39-8ba4-6686a20b47a7\"\n    ]\n  }\n]\n",
+              "exit": 0,
+              "truncated": false
+            },
+            "title": "entire checkpoint list --json",
+            "time": {
+              "start": 1791660861043,
+              "end": 1791660862554
+            }
+          },
+          "metadata": {
+            "openai": {
+              "itemId": "fc_014b228475912bbe016aca933c38c087d281cb213ff8d0dfab"
+            }
+          },
+          "id": "prt_1274f2671001sV9J0xYXjWzSee",
+          "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj",
+          "messageID": "msg_1274ee32e0026OG5kLWyoNzbIi"
+        },
+        {
+          "reason": "tool-calls",
+          "snapshot": "da5f6998b99aa09b2306114dea3ec1eba12e44e1",
+          "type": "step-finish",
+          "tokens": {
+            "total": 89624,
+            "input": 3,
+            "output": 120,
+            "reasoning": 516,
+            "cache": {
+              "write": 587,
+              "read": 88398
+            }
+          },
+          "cost": 0.0166733,
+          "id": "prt_1274f2c81001vkQ5GArLU4r0qo",
+          "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj",
+          "messageID": "msg_1274ee32e0026OG5kLWyoNzbIi"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_1274c0f73001ry3RjM563L7Xvd",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "variant": "xhigh",
+        "path": {
+          "cwd": "/Users/jonas/Documents/reqflow",
+          "root": "/Users/jonas/Documents/reqflow"
+        },
+        "cost": 0.0275995,
+        "tokens": {
+          "total": 93022,
+          "input": 3,
+          "output": 114,
+          "reasoning": 1034,
+          "cache": {
+            "write": 2886,
+            "read": 88985
+          }
+        },
+        "modelID": "gpt-6.1-sol",
+        "providerID": "openai",
+        "time": {
+          "created": 1791660862641,
+          "completed": 1791660910705
+        },
+        "finish": "tool-calls",
+        "id": "msg_1274f2cb1002sVZrKqqlUtGgYg",
+        "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj"
+      },
+      "parts": [
+        {
+          "snapshot": "da5f6998b99aa09b2306114dea3ec1eba12e44e1",
+          "type": "step-start",
+          "id": "prt_1274f35f2001F0Hp4IIUS9MRxd",
+          "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj",
+          "messageID": "msg_1274f2cb1002sVZrKqqlUtGgYg"
+        },
+        {
+          "type": "reasoning",
+          "text": "",
+          "time": {
+            "start": 1791660865012,
+            "end": 1791660876061
+          },
+          "metadata": {
+            "openai": {
+              "itemId": "rs_0f48701bbc62f4a1016aca9340d5e487d2a63caccfe6438092",
+              "reasoningEncryptedContent": "REDACTED"
+            }
+          },
+          "id": "prt_1274f35f4001FyHe86NoUBvv8u",
+          "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj",
+          "messageID": "msg_1274f2cb1002sVZrKqqlUtGgYg"
+        },
+        {
+          "type": "reasoning",
+          "text": "",
+          "time": {
+            "start": 1791660876066,
+            "end": 1791660890299
+          },
+          "metadata": {
+            "openai": {
+              "itemId": "rs_0f48701bbc62f4a1016aca934bdf8487d2b9b38d5fc2925e01",
+              "reasoningEncryptedContent": "REDACTED"
+            }
+          },
+          "id": "prt_1274f6122001o7Lcvv7DUAWLja",
+          "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj",
+          "messageID": "msg_1274f2cb1002sVZrKqqlUtGgYg"
+        },
+        {
+          "type": "tool",
+          "tool": "bash",
+          "callID": "call_LfSm5Ix1L9VYtLOHfg6JyFYG",
+          "state": {
+            "status": "completed",
+            "input": {
+              "command": "rtk git commit --amend -m \"feat(ws6): add raw research agents and secure runtime\" -m \"Keep provider originals and provenance intact through native workflows\nand exports. Gate paid calls and encrypt credentials with OS storage.\n\nBound document and JSON resources, preserve ws's guarded addon\nfallbacks in dev and packaged builds, and enable Entire checkpoint\nsync on Git pushes.\"",
+              "workdir": "/Users/jonas/Documents/reqflow",
+              "timeout": 120000
+            },
+            "output": "ok 9409549\n",
+            "metadata": {
+              "output": "ok 9409549\n",
+              "exit": 0,
+              "truncated": false
+            },
+            "title": "rtk git commit --amend -m \"feat(ws6): add raw research agents and secure runtime\" -m \"Keep provider originals and provenance intact through native workflows\nand exports. Gate paid calls and encrypt credentials with OS storage.\n\nBound document and JSON resources, preserve ws's guarded addon\nfallbacks in dev and packaged builds, and enable Entire checkpoint\nsync on Git pushes.\"",
+            "time": {
+              "start": 1791660890897,
+              "end": 1791660910634
+            }
+          },
+          "metadata": {
+            "openai": {
+              "itemId": "fc_0f48701bbc62f4a1016aca9359b28c87d28a7ebcdf55043d99"
+            }
+          },
+          "id": "prt_1274f98bd0010xsdXQAUYoolZe",
+          "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj",
+          "messageID": "msg_1274f2cb1002sVZrKqqlUtGgYg"
+        },
+        {
+          "reason": "tool-calls",
+          "snapshot": "da5f6998b99aa09b2306114dea3ec1eba12e44e1",
+          "type": "step-finish",
+          "tokens": {
+            "total": 93022,
+            "input": 3,
+            "output": 114,
+            "reasoning": 1034,
+            "cache": {
+              "write": 2886,
+              "read": 88985
+            }
+          },
+          "cost": 0.0275995,
+          "id": "prt_1274fe84e0013HBFXYWL76wXNd",
+          "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj",
+          "messageID": "msg_1274f2cb1002sVZrKqqlUtGgYg"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_1274c0f73001ry3RjM563L7Xvd",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "variant": "xhigh",
+        "path": {
+          "cwd": "/Users/jonas/Documents/reqflow",
+          "root": "/Users/jonas/Documents/reqflow"
+        },
+        "cost": 0.0254181,
+        "tokens": {
+          "total": 94383,
+          "input": 3,
+          "output": 293,
+          "reasoning": 1034,
+          "cache": {
+            "write": 1182,
+            "read": 91871
+          }
+        },
+        "modelID": "gpt-6.1-sol",
+        "providerID": "openai",
+        "time": {
+          "created": 1791660910721,
+          "completed": 1791660942919
+        },
+        "finish": "tool-calls",
+        "id": "msg_1274fe881002H4EWj4YgX3f70m",
+        "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj"
+      },
+      "parts": [
+        {
+          "snapshot": "da5f6998b99aa09b2306114dea3ec1eba12e44e1",
+          "type": "step-start",
+          "id": "prt_1274ff11f00100prbXcH96etif",
+          "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj",
+          "messageID": "msg_1274fe881002H4EWj4YgX3f70m"
+        },
+        {
+          "type": "reasoning",
+          "text": "",
+          "time": {
+            "start": 1791660912929,
+            "end": 1791660925888
+          },
+          "metadata": {
+            "openai": {
+              "itemId": "rs_06e3b52ea953a953016aca9370df2087d2b2e1e1b77c29fa78",
+              "reasoningEncryptedContent": "REDACTED"
+            }
+          },
+          "id": "prt_1274ff12100186QqUR2x8dSR4H",
+          "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj",
+          "messageID": "msg_1274fe881002H4EWj4YgX3f70m"
+        },
+        {
+          "type": "reasoning",
+          "text": "",
+          "time": {
+            "start": 1791660925890,
+            "end": 1791660938129
+          },
+          "metadata": {
+            "openai": {
+              "itemId": "rs_06e3b52ea953a953016aca937dc79887d2a650e3028ba85f28",
+              "reasoningEncryptedContent": "REDACTED"
+            }
+          },
+          "id": "prt_1275023c2001GtZmoH26L9EIS0",
+          "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj",
+          "messageID": "msg_1274fe881002H4EWj4YgX3f70m"
+        },
+        {
+          "type": "tool",
+          "tool": "bash",
+          "callID": "call_HXdNtWIdHyAeFzoJfcpK86z7",
+          "state": {
+            "status": "completed",
+            "input": {
+              "command": "python3 <<'PY'\nimport json, re, subprocess\nGIT = '/usr/bin/git'\ndef git(*args): return subprocess.check_output([GIT, *args], text=True)\nmessage = git('log','-1','--format=%B')\nprint(git('log','-1','--format=%h %s').strip())\nprint(message)\nassert '\\\\n' not in message, 'Commit body contains literal newline escapes'\ncheckpoint = re.search(r'^Entire-Checkpoint: (\\S+)$', message, re.M)\nassert checkpoint, 'Entire trailer is missing'\ncheckpoint = checkpoint.group(1)\nrefs = git('for-each-ref','--format=%(refname) %(objectname)','refs/entire/checkpoints').splitlines()\nmatch = next(line for line in refs if line.split()[0].endswith('/'+checkpoint))\nref, oid = match.split()\npaths = git('ls-tree','-r','--name-only',ref).splitlines()\nprint(json.dumps({'checkpoint':checkpoint,'ref':ref,'object':oid,'checkpointFiles':len(paths),'samplePaths':paths[:8]},indent=2))\nPY",
+              "workdir": "/Users/jonas/Documents/reqflow",
+              "timeout": 120000
+            },
+            "output": "9409549 feat(ws6): add raw research agents and secure runtime\nfeat(ws6): add raw research agents and secure runtime\n\nKeep provider originals and provenance intact through native workflows\nand exports. Gate paid calls and encrypt credentials with OS storage.\n\nBound document and JSON resources, preserve ws's guarded addon\nfallbacks in dev and packaged builds, and enable Entire checkpoint\nsync on Git pushes.\n\nEntire-Checkpoint: 01M4KMZ6V6BGKFHHYD78XKBQR3\n\n\nTraceback (most recent call last):\n  File \"<stdin>\", line 12, in <module>\nStopIteration\n",
+            "metadata": {
+              "output": "9409549 feat(ws6): add raw research agents and secure runtime\nfeat(ws6): add raw research agents and secure runtime\n\nKeep provider originals and provenance intact through native workflows\nand exports. Gate paid calls and encrypt credentials with OS storage.\n\nBound document and JSON resources, preserve ws's guarded addon\nfallbacks in dev and packaged builds, and enable Entire checkpoint\nsync on Git pushes.\n\nEntire-Checkpoint: 01M4KMZ6V6BGKFHHYD78XKBQR3\n\n\nTraceback (most recent call last):\n  File \"<stdin>\", line 12, in <module>\nStopIteration\n",
+              "exit": 1,
+              "truncated": false
+            },
+            "title": "python3 <<'PY'\nimport json, re, subprocess\nGIT = '/usr/bin/git'\ndef git(*args): return subprocess.check_output([GIT, *args], text=True)\nmessage = git('log','-1','--format=%B')\nprint(git('log','-1','--format=%h %s').strip())\nprint(message)\nassert '\\\\n' not in message, 'Commit body contains literal newline escapes'\ncheckpoint = re.search(r'^Entire-Checkpoint: (\\S+)$', message, re.M)\nassert checkpoint, 'Entire trailer is missing'\ncheckpoint = checkpoint.group(1)\nrefs = git('for-each-ref','--format=%(refname) %(objectname)','refs/entire/checkpoints').splitlines()\nmatch = next(line for line in refs if line.split()[0].endswith('/'+checkpoint))\nref, oid = match.split()\npaths = git('ls-tree','-r','--name-only',ref).splitlines()\nprint(json.dumps({'checkpoint':checkpoint,'ref':ref,'object':oid,'checkpointFiles':len(paths),'samplePaths':paths[:8]},indent=2))\nPY",
+            "time": {
+              "start": 1791660942382,
+              "end": 1791660942470
+            }
+          },
+          "metadata": {
+            "openai": {
+              "itemId": "fc_06e3b52ea953a953016aca938a08b087d2a86efb094f100cbe"
+            }
+          },
+          "id": "prt_12750539200131GUA0zYF14OQQ",
+          "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj",
+          "messageID": "msg_1274fe881002H4EWj4YgX3f70m"
+        },
+        {
+          "reason": "tool-calls",
+          "snapshot": "da5f6998b99aa09b2306114dea3ec1eba12e44e1",
+          "type": "step-finish",
+          "tokens": {
+            "total": 94383,
+            "input": 3,
+            "output": 293,
+            "reasoning": 1034,
+            "cache": {
+              "write": 1182,
+              "read": 91871
+            }
+          },
+          "cost": 0.0254181,
+          "id": "prt_127506626001mou4jqav2drSBv",
+          "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj",
+          "messageID": "msg_1274fe881002H4EWj4YgX3f70m"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_1274c0f73001ry3RjM563L7Xvd",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "variant": "xhigh",
+        "path": {
+          "cwd": "/Users/jonas/Documents/reqflow",
+          "root": "/Users/jonas/Documents/reqflow"
+        },
+        "cost": 0.0167513,
+        "tokens": {
+          "total": 94910,
+          "input": 3,
+          "output": 108,
+          "reasoning": 266,
+          "cache": {
+            "write": 1480,
+            "read": 93053
+          }
+        },
+        "modelID": "gpt-6.1-sol",
+        "providerID": "openai",
+        "time": {
+          "created": 1791660942934,
+          "completed": 1791660956708
+        },
+        "finish": "tool-calls",
+        "id": "msg_1275066560023IGxF3MftCCPkS",
+        "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj"
+      },
+      "parts": [
+        {
+          "snapshot": "da5f6998b99aa09b2306114dea3ec1eba12e44e1",
+          "type": "step-start",
+          "id": "prt_1275079eb001R3TP5ZlNT5xla0",
+          "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj",
+          "messageID": "msg_1275066560023IGxF3MftCCPkS"
+        },
+        {
+          "type": "reasoning",
+          "text": "",
+          "time": {
+            "start": 1791660947949,
+            "end": 1791660955317
+          },
+          "metadata": {
+            "openai": {
+              "itemId": "rs_0adc642a134e266a016aca9393a28887d29ec53d1bdb8dab5c",
+              "reasoningEncryptedContent": "REDACTED"
+            }
+          },
+          "id": "prt_1275079ed001gIXCr7ujHtcguO",
+          "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj",
+          "messageID": "msg_1275066560023IGxF3MftCCPkS"
+        },
+        {
+          "type": "tool",
+          "tool": "bash",
+          "callID": "call_yAfdSOZwxdswlP0p8UTCWE0f",
+          "state": {
+            "status": "completed",
+            "input": {
+              "command": "/usr/bin/git for-each-ref --format='%(refname) %(objectname)' refs/entire/checkpoints",
+              "workdir": "/Users/jonas/Documents/reqflow"
+            },
+            "output": "refs/entire/checkpoints/1B/01M4K97FFYDQPA8HG7NCZ3S91B 0e08a7116a1042b357d64c76e08f0e4fa0e59bb7\nrefs/entire/checkpoints/62/01M4K9XV8X9GP2RCJZRQRC2Q62 2e07f9a22813f635d77590b4118203eb8481cfed\nrefs/entire/checkpoints/68/01M4KGAN8V9AZ2JQ89N43C3668 3b6a551be096356bef5fec8c34dd8273f2e119a8\nrefs/entire/checkpoints/DR/01M4KGC0CTDKG59F4VDHCAY7DR 0715c70d54d24fd95f141a37fd1191893ad98a93\nrefs/entire/checkpoints/JD/01M4KGFPX8RM6MM20K1ZBRPMJD f9f26b535e27a2ba8468ea33d03ea2cf23d9afee\nrefs/entire/checkpoints/KG/01M4KA0111HQB5G10SZWCYMFKG fbb446438656676eb97f69e9442206b283564aff\nrefs/entire/checkpoints/P9/01M4KMWRK0Z5V4D4GVXSB0HPP9 43f9adade296201f153dd4539747b21d9b8ee65f\nrefs/entire/checkpoints/SK/01M4K97GZMXAPERTYG3R8JXHSK 058a4640783cc54a9755bc623e766630ef878190\nrefs/entire/checkpoints/TA/01M4KEQM3V5ASEF48MGNK78YTA 71c24fd0e109d37233592a73ff814512e1afb32b\nrefs/entire/checkpoints/ZY/01M4K97J3FBXSHR17DECXM58ZY f9d75964f1314d87500748ee14c66ec7062856a6\n",
+            "metadata": {
+              "output": "refs/entire/checkpoints/1B/01M4K97FFYDQPA8HG7NCZ3S91B 0e08a7116a1042b357d64c76e08f0e4fa0e59bb7\nrefs/entire/checkpoints/62/01M4K9XV8X9GP2RCJZRQRC2Q62 2e07f9a22813f635d77590b4118203eb8481cfed\nrefs/entire/checkpoints/68/01M4KGAN8V9AZ2JQ89N43C3668 3b6a551be096356bef5fec8c34dd8273f2e119a8\nrefs/entire/checkpoints/DR/01M4KGC0CTDKG59F4VDHCAY7DR 0715c70d54d24fd95f141a37fd1191893ad98a93\nrefs/entire/checkpoints/JD/01M4KGFPX8RM6MM20K1ZBRPMJD f9f26b535e27a2ba8468ea33d03ea2cf23d9afee\nrefs/entire/checkpoints/KG/01M4KA0111HQB5G10SZWCYMFKG fbb446438656676eb97f69e9442206b283564aff\nrefs/entire/checkpoints/P9/01M4KMWRK0Z5V4D4GVXSB0HPP9 43f9adade296201f153dd4539747b21d9b8ee65f\nrefs/entire/checkpoints/SK/01M4K97GZMXAPERTYG3R8JXHSK 058a4640783cc54a9755bc623e766630ef878190\nrefs/entire/checkpoints/TA/01M4KEQM3V5ASEF48MGNK78YTA 71c24fd0e109d37233592a73ff814512e1afb32b\nrefs/entire/checkpoints/ZY/01M4K97J3FBXSHR17DECXM58ZY f9d75964f1314d87500748ee14c66ec7062856a6\n",
+              "exit": 0,
+              "truncated": false
+            },
+            "title": "/usr/bin/git for-each-ref --format='%(refname) %(objectname)' refs/entire/checkpoints",
+            "time": {
+              "start": 1791660955377,
+              "end": 1791660955404
+            }
+          },
+          "metadata": {
+            "openai": {
+              "itemId": "fc_0adc642a134e266a016aca939afd3c87d2a57c99715fae4595"
+            }
+          },
+          "id": "prt_1275096bc001YPSFVgkNKbqI4w",
+          "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj",
+          "messageID": "msg_1275066560023IGxF3MftCCPkS"
+        },
+        {
+          "type": "tool",
+          "tool": "bash",
+          "callID": "call_1em7arryrWHbktsq4G7nlWHj",
+          "state": {
+            "status": "completed",
+            "input": {
+              "command": "entire checkpoint list --json",
+              "workdir": "/Users/jonas/Documents/reqflow",
+              "timeout": 120000
+            },
+            "output": "[\n  {\n    \"checkpoint_id\": \"c7547d9733428d590c50ff9a6a1731dc70841a6b\",\n    \"session_id\": \"ses_ed934a25affeqvU5oK6dY3SvdF\",\n    \"date\": \"2026-10-10T21:33:52+02:00\",\n    \"message\": \"carry forward: uncommitted session files\"\n  },\n  {\n    \"checkpoint_id\": \"09f9b5698aa59c2eb434ffc5bc98b85ef36305bb\",\n    \"session_id\": \"ses_ed92b49abffes1JaCbFUQHfn6s\",\n    \"date\": \"2026-10-10T21:33:49+02:00\",\n    \"message\": \"carry forward: uncommitted session files\"\n  },\n  {\n    \"checkpoint_id\": \"01M4KA0111HQB5G10SZWCYMFKG\",\n    \"session_id\": \"ses_ed96a75eeffeytIQCCfRZvEr3k\",\n    \"agent\": \"OpenCode\",\n    \"date\": \"2026-10-10T18:26:23+02:00\",\n    \"message\": \"ws0: document verified Entire setup\",\n    \"is_logs_only\": true,\n    \"session_count\": 1,\n    \"session_ids\": [\n      \"ses_ed96a75eeffeytIQCCfRZvEr3k\"\n    ]\n  },\n  {\n    \"checkpoint_id\": \"01M4K9XV8X9GP2RCJZRQRC2Q62\",\n    \"session_id\": \"ses_ed96a75eeffeytIQCCfRZvEr3k\",\n    \"agent\": \"OpenCode\",\n    \"date\": \"2026-10-10T18:24:51+02:00\",\n    \"message\": \"ws0: enable Entire for OpenCode\",\n    \"is_logs_only\": true,\n    \"session_count\": 1,\n    \"session_ids\": [\n      \"ses_ed96a75eeffeytIQCCfRZvEr3k\"\n    ]\n  },\n  {\n    \"checkpoint_id\": \"01M4K97J3FBXSHR17DECXM58ZY\",\n    \"session_id\": \"40d2eb91-dde3-4e39-8ba4-6686a20b47a7\",\n    \"agent\": \"Claude Code\",\n    \"date\": \"2026-10-10T18:09:41+02:00\",\n    \"message\": \"ws0: update docs and task lists for all workstreams\",\n    \"is_logs_only\": true,\n    \"session_count\": 1,\n    \"session_ids\": [\n      \"40d2eb91-dde3-4e39-8ba4-6686a20b47a7\"\n    ]\n  },\n  {\n    \"checkpoint_id\": \"01M4K97GZMXAPERTYG3R8JXHSK\",\n    \"session_id\": \"40d2eb91-dde3-4e39-8ba4-6686a20b47a7\",\n    \"agent\": \"Claude Code\",\n    \"date\": \"2026-10-10T18:09:40+02:00\",\n    \"message\": \"ws0: build app shell, Data Flow editor, Car and Settings tabs\",\n    \"is_logs_only\": true,\n    \"session_count\": 1,\n    \"session_ids\": [\n      \"40d2eb91-dde3-4e39-8ba4-6686a20b47a7\"\n    ]\n  },\n  {\n    \"checkpoint_id\": \"01M4K97FFYDQPA8HG7NCZ3S91B\",\n    \"session_id\": \"40d2eb91-dde3-4e39-8ba4-6686a20b47a7\",\n    \"agent\": \"Claude Code\",\n    \"date\": \"2026-10-10T18:09:38+02:00\",\n    \"message\": \"ws0: replace node model with building blocks contract\",\n    \"is_logs_only\": true,\n    \"session_count\": 1,\n    \"session_ids\": [\n      \"40d2eb91-dde3-4e39-8ba4-6686a20b47a7\"\n    ]\n  }\n]\n",
+            "metadata": {
+              "output": "[\n  {\n    \"checkpoint_id\": \"c7547d9733428d590c50ff9a6a1731dc70841a6b\",\n    \"session_id\": \"ses_ed934a25affeqvU5oK6dY3SvdF\",\n    \"date\": \"2026-10-10T21:33:52+02:00\",\n    \"message\": \"carry forward: uncommitted session files\"\n  },\n  {\n    \"checkpoint_id\": \"09f9b5698aa59c2eb434ffc5bc98b85ef36305bb\",\n    \"session_id\": \"ses_ed92b49abffes1JaCbFUQHfn6s\",\n    \"date\": \"2026-10-10T21:33:49+02:00\",\n    \"message\": \"carry forward: uncommitted session files\"\n  },\n  {\n    \"checkpoint_id\": \"01M4KA0111HQB5G10SZWCYMFKG\",\n    \"session_id\": \"ses_ed96a75eeffeytIQCCfRZvEr3k\",\n    \"agent\": \"OpenCode\",\n    \"date\": \"2026-10-10T18:26:23+02:00\",\n    \"message\": \"ws0: document verified Entire setup\",\n    \"is_logs_only\": true,\n    \"session_count\": 1,\n    \"session_ids\": [\n      \"ses_ed96a75eeffeytIQCCfRZvEr3k\"\n    ]\n  },\n  {\n    \"checkpoint_id\": \"01M4K9XV8X9GP2RCJZRQRC2Q62\",\n    \"session_id\": \"ses_ed96a75eeffeytIQCCfRZvEr3k\",\n    \"agent\": \"OpenCode\",\n    \"date\": \"2026-10-10T18:24:51+02:00\",\n    \"message\": \"ws0: enable Entire for OpenCode\",\n    \"is_logs_only\": true,\n    \"session_count\": 1,\n    \"session_ids\": [\n      \"ses_ed96a75eeffeytIQCCfRZvEr3k\"\n    ]\n  },\n  {\n    \"checkpoint_id\": \"01M4K97J3FBXSHR17DECXM58ZY\",\n    \"session_id\": \"40d2eb91-dde3-4e39-8ba4-6686a20b47a7\",\n    \"agent\": \"Claude Code\",\n    \"date\": \"2026-10-10T18:09:41+02:00\",\n    \"message\": \"ws0: update docs and task lists for all workstreams\",\n    \"is_logs_only\": true,\n    \"session_count\": 1,\n    \"session_ids\": [\n      \"40d2eb91-dde3-4e39-8ba4-6686a20b47a7\"\n    ]\n  },\n  {\n    \"checkpoint_id\": \"01M4K97GZMXAPERTYG3R8JXHSK\",\n    \"session_id\": \"40d2eb91-dde3-4e39-8ba4-6686a20b47a7\",\n    \"agent\": \"Claude Code\",\n    \"date\": \"2026-10-10T18:09:40+02:00\",\n    \"message\": \"ws0: build app shell, Data Flow editor, Car and Settings tabs\",\n    \"is_logs_only\": true,\n    \"session_count\": 1,\n    \"session_ids\": [\n      \"40d2eb91-dde3-4e39-8ba4-6686a20b47a7\"\n    ]\n  },\n  {\n    \"checkpoint_id\": \"01M4K97FFYDQPA8HG7NCZ3S91B\",\n    \"session_id\": \"40d2eb91-dde3-4e39-8ba4-6686a20b47a7\",\n    \"agent\": \"Claude Code\",\n    \"date\": \"2026-10-10T18:09:38+02:00\",\n    \"message\": \"ws0: replace node model with building blocks contract\",\n    \"is_logs_only\": true,\n    \"session_count\": 1,\n    \"session_ids\": [\n      \"40d2eb91-dde3-4e39-8ba4-6686a20b47a7\"\n    ]\n  }\n]\n",
+              "exit": 0,
+              "truncated": false
+            },
+            "title": "entire checkpoint list --json",
+            "time": {
+              "start": 1791660955555,
+              "end": 1791660956639
+            }
+          },
+          "metadata": {
+            "openai": {
+              "itemId": "fc_0adc642a134e266a016aca939afd5487d2a53f878f0f9ac8a5"
+            }
+          },
+          "id": "prt_1275096f9001u8YO4g2OkJC19Q",
+          "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj",
+          "messageID": "msg_1275066560023IGxF3MftCCPkS"
+        },
+        {
+          "reason": "tool-calls",
+          "snapshot": "da5f6998b99aa09b2306114dea3ec1eba12e44e1",
+          "type": "step-finish",
+          "tokens": {
+            "total": 94910,
+            "input": 3,
+            "output": 108,
+            "reasoning": 266,
+            "cache": {
+              "write": 1480,
+              "read": 93053
+            }
+          },
+          "cost": 0.0167513,
+          "id": "prt_127509c03001HgMtDgpK9XWrsw",
+          "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj",
+          "messageID": "msg_1275066560023IGxF3MftCCPkS"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_1274c0f73001ry3RjM563L7Xvd",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "variant": "xhigh",
+        "path": {
+          "cwd": "/Users/jonas/Documents/reqflow",
+          "root": "/Users/jonas/Documents/reqflow"
+        },
+        "cost": 0.0269193,
+        "tokens": {
+          "total": 97692,
+          "input": 3,
+          "output": 210,
+          "reasoning": 1066,
+          "cache": {
+            "write": 1880,
+            "read": 94533
+          }
+        },
+        "modelID": "gpt-6.1-sol",
+        "providerID": "openai",
+        "time": {
+          "created": 1791660956722,
+          "completed": 1791660992347
+        },
+        "finish": "tool-calls",
+        "id": "msg_127509c32002ZKtW0mUO0nEULE",
+        "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj"
+      },
+      "parts": [
+        {
+          "snapshot": "da5f6998b99aa09b2306114dea3ec1eba12e44e1",
+          "type": "step-start",
+          "id": "prt_12750bc960019caYyHZpIA33B0",
+          "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj",
+          "messageID": "msg_127509c32002ZKtW0mUO0nEULE"
+        },
+        {
+          "type": "reasoning",
+          "text": "",
+          "time": {
+            "start": 1791660965015,
+            "end": 1791660973231
+          },
+          "metadata": {
+            "openai": {
+              "itemId": "rs_050ccdce7614df74016aca939f768c87d29178971239fafcbe",
+              "reasoningEncryptedContent": "REDACTED"
+            }
+          },
+          "id": "prt_12750bc97001FLuoY80XHF7oTu",
+          "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj",
+          "messageID": "msg_127509c32002ZKtW0mUO0nEULE"
+        },
+        {
+          "type": "reasoning",
+          "text": "",
+          "time": {
+            "start": 1791660973280,
+            "end": 1791660985986
+          },
+          "metadata": {
+            "openai": {
+              "itemId": "rs_050ccdce7614df74016aca93acc6a087d2b2ae639aa6724cd4",
+              "reasoningEncryptedContent": "REDACTED"
+            }
+          },
+          "id": "prt_12750dce0001C0UVq5PPfK8tzZ",
+          "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj",
+          "messageID": "msg_127509c32002ZKtW0mUO0nEULE"
+        },
+        {
+          "type": "reasoning",
+          "text": "",
+          "time": {
+            "start": 1791660986074,
+            "end": 1791660988650
+          },
+          "metadata": {
+            "openai": {
+              "itemId": "rs_050ccdce7614df74016aca93b9739887d2bfdaf0d959e7c7b1",
+              "reasoningEncryptedContent": "REDACTED"
+            }
+          },
+          "id": "prt_127510eda001ItNis20c2oDAvC",
+          "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj",
+          "messageID": "msg_127509c32002ZKtW0mUO0nEULE"
+        },
+        {
+          "type": "tool",
+          "tool": "bash",
+          "callID": "call_1rcOwRKmS1gzL5vXJn7As67N",
+          "state": {
+            "status": "completed",
+            "input": {
+              "command": "entire checkpoint --help",
+              "workdir": "/Users/jonas/Documents/reqflow",
+              "timeout": 120000
+            },
+            "output": "Operations on checkpoints — the persistent records of agent work tied to commits.\n\nCommands:\n  list     List checkpoints on the current branch\n  explain  Explain a checkpoint, commit, or session\n  tokens   Show token usage and optimization recommendations\n  search   Search checkpoints (semantic + keyword)\n\nExamples:\n  entire checkpoint list\n  entire checkpoint explain <id|sha>\n  entire checkpoint tokens <id>\n  entire checkpoint search \"fix login\"\n\nUsage:\n  entire checkpoint [command]\n\nAliases:\n  checkpoint, cp, checkpoints\n\nAvailable Commands:\n  explain     Explain a session, commit, or checkpoint\n  list        List checkpoints on the current branch\n  search      Search checkpoints, commits, and sessions using semantic and keyword matching\n  tokens      Show token usage and optimization recommendations for a checkpoint\n\nFlags:\n  -h, --help   help for checkpoint\n\nGlobal Flags:\n      --context name   Act as this saved login name for this command only — including the git and agent processes it spawns — instead of the active context (entire auth contexts lists them)\n\nUse \"entire checkpoint [command] --help\" for more information about a command.\n",
+            "metadata": {
+              "output": "Operations on checkpoints — the persistent records of agent work tied to commits.\n\nCommands:\n  list     List checkpoints on the current branch\n  explain  Explain a checkpoint, commit, or session\n  tokens   Show token usage and optimization recommendations\n  search   Search checkpoints (semantic + keyword)\n\nExamples:\n  entire checkpoint list\n  entire checkpoint explain <id|sha>\n  entire checkpoint tokens <id>\n  entire checkpoint search \"fix login\"\n\nUsage:\n  entire checkpoint [command]\n\nAliases:\n  checkpoint, cp, checkpoints\n\nAvailable Commands:\n  explain     Explain a session, commit, or checkpoint\n  list        List checkpoints on the current branch\n  search      Search checkpoints, commits, and sessions using semantic and keyword matching\n  tokens      Show token usage and optimization recommendations for a checkpoint\n\nFlags:\n  -h, --help   help for checkpoint\n\nGlobal Flags:\n      --context name   Act as this saved login name for this command only — including the git and agent processes it spawns — instead of the active context (entire auth contexts lists them)\n\nUse \"entire checkpoint [command] --help\" for more information about a command.\n",
+              "exit": 0,
+              "truncated": false
+            },
+            "title": "entire checkpoint --help",
+            "time": {
+              "start": 1791660988741,
+              "end": 1791660988777
+            }
+          },
+          "metadata": {
+            "openai": {
+              "itemId": "fc_050ccdce7614df74016aca93bc4d3c87d2b26bffeac7018a57"
+            }
+          },
+          "id": "prt_12751190600162rX93YxRtqzgJ",
+          "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj",
+          "messageID": "msg_127509c32002ZKtW0mUO0nEULE"
+        },
+        {
+          "type": "tool",
+          "tool": "bash",
+          "callID": "call_sRje7KU1IAZsOFuZPXfkODfm",
+          "state": {
+            "status": "completed",
+            "input": {
+              "command": "/usr/bin/git ls-tree -r --name-only refs/entire/checkpoints/P9/01M4KMWRK0Z5V4D4GVXSB0HPP9",
+              "workdir": "/Users/jonas/Documents/reqflow",
+              "timeout": 120000
+            },
+            "output": "0/content_hash.txt\n0/full.jsonl\n0/metadata.json\n0/prompt.txt\n0/transcript.jsonl\n1/content_hash.txt\n1/full.jsonl\n1/metadata.json\n1/prompt.txt\n1/transcript.jsonl\n10/content_hash.txt\n10/full.jsonl\n10/metadata.json\n10/prompt.txt\n10/transcript.jsonl\n11/content_hash.txt\n11/full.jsonl\n11/metadata.json\n11/prompt.txt\n11/transcript.jsonl\n12/content_hash.txt\n12/full.jsonl\n12/metadata.json\n12/prompt.txt\n12/transcript.jsonl\n13/content_hash.txt\n13/full.jsonl\n13/metadata.json\n13/prompt.txt\n13/transcript.jsonl\n14/content_hash.txt\n14/full.jsonl\n14/metadata.json\n14/prompt.txt\n14/transcript.jsonl\n15/content_hash.txt\n15/full.jsonl\n15/metadata.json\n15/prompt.txt\n15/transcript.jsonl\n16/content_hash.txt\n16/full.jsonl\n16/metadata.json\n16/prompt.txt\n16/transcript.jsonl\n17/content_hash.txt\n17/full.jsonl\n17/metadata.json\n17/prompt.txt\n17/transcript.jsonl\n18/content_hash.txt\n18/full.jsonl\n18/metadata.json\n18/prompt.txt\n18/transcript.jsonl\n19/content_hash.txt\n19/full.jsonl\n19/metadata.json\n19/prompt.txt\n19/transcript.jsonl\n2/content_hash.txt\n2/full.jsonl\n2/metadata.json\n2/prompt.txt\n2/transcript.jsonl\n20/content_hash.txt\n20/full.jsonl\n20/metadata.json\n20/prompt.txt\n20/transcript.jsonl\n21/content_hash.txt\n21/full.jsonl\n21/metadata.json\n21/prompt.txt\n21/transcript.jsonl\n22/content_hash.txt\n22/full.jsonl\n22/metadata.json\n22/prompt.txt\n22/transcript.jsonl\n23/content_hash.txt\n23/full.jsonl\n23/metadata.json\n23/prompt.txt\n23/transcript.jsonl\n24/content_hash.txt\n24/full.jsonl\n24/metadata.json\n24/prompt.txt\n24/transcript.jsonl\n25/content_hash.txt\n25/full.jsonl\n25/metadata.json\n25/prompt.txt\n25/transcript.jsonl\n26/content_hash.txt\n26/full.jsonl\n26/metadata.json\n26/prompt.txt\n26/transcript.jsonl\n27/content_hash.txt\n27/full.jsonl\n27/metadata.json\n27/prompt.txt\n27/transcript.jsonl\n3/content_hash.txt\n3/full.jsonl\n3/metadata.json\n3/prompt.txt\n3/transcript.jsonl\n4/content_hash.txt\n4/full.jsonl\n4/metadata.json\n4/prompt.txt\n4/transcript.jsonl\n5/content_hash.txt\n5/full.jsonl\n5/metadata.json\n5/prompt.txt\n5/transcript.jsonl\n6/content_hash.txt\n6/full.jsonl\n6/metadata.json\n6/prompt.txt\n6/transcript.jsonl\n7/content_hash.txt\n7/full.jsonl\n7/metadata.json\n7/prompt.txt\n7/transcript.jsonl\n8/content_hash.txt\n8/full.jsonl\n8/metadata.json\n8/prompt.txt\n8/transcript.jsonl\n9/content_hash.txt\n9/full.jsonl\n9/metadata.json\n9/prompt.txt\n9/transcript.jsonl\nmetadata.json\n",
+            "metadata": {
+              "output": "0/content_hash.txt\n0/full.jsonl\n0/metadata.json\n0/prompt.txt\n0/transcript.jsonl\n1/content_hash.txt\n1/full.jsonl\n1/metadata.json\n1/prompt.txt\n1/transcript.jsonl\n10/content_hash.txt\n10/full.jsonl\n10/metadata.json\n10/prompt.txt\n10/transcript.jsonl\n11/content_hash.txt\n11/full.jsonl\n11/metadata.json\n11/prompt.txt\n11/transcript.jsonl\n12/content_hash.txt\n12/full.jsonl\n12/metadata.json\n12/prompt.txt\n12/transcript.jsonl\n13/content_hash.txt\n13/full.jsonl\n13/metadata.json\n13/prompt.txt\n13/transcript.jsonl\n14/content_hash.txt\n14/full.jsonl\n14/metadata.json\n14/prompt.txt\n14/transcript.jsonl\n15/content_hash.txt\n15/full.jsonl\n15/metadata.json\n15/prompt.txt\n15/transcript.jsonl\n16/content_hash.txt\n16/full.jsonl\n16/metadata.json\n16/prompt.txt\n16/transcript.jsonl\n17/content_hash.txt\n17/full.jsonl\n17/metadata.json\n17/prompt.txt\n17/transcript.jsonl\n18/content_hash.txt\n18/full.jsonl\n18/metadata.json\n18/prompt.txt\n18/transcript.jsonl\n19/content_hash.txt\n19/full.jsonl\n19/metadata.json\n19/prompt.txt\n19/transcript.jsonl\n2/content_hash.txt\n2/full.jsonl\n2/metadata.json\n2/prompt.txt\n2/transcript.jsonl\n20/content_hash.txt\n20/full.jsonl\n20/metadata.json\n20/prompt.txt\n20/transcript.jsonl\n21/content_hash.txt\n21/full.jsonl\n21/metadata.json\n21/prompt.txt\n21/transcript.jsonl\n22/content_hash.txt\n22/full.jsonl\n22/metadata.json\n22/prompt.txt\n22/transcript.jsonl\n23/content_hash.txt\n23/full.jsonl\n23/metadata.json\n23/prompt.txt\n23/transcript.jsonl\n24/content_hash.txt\n24/full.jsonl\n24/metadata.json\n24/prompt.txt\n24/transcript.jsonl\n25/content_hash.txt\n25/full.jsonl\n25/metadata.json\n25/prompt.txt\n25/transcript.jsonl\n26/content_hash.txt\n26/full.jsonl\n26/metadata.json\n26/prompt.txt\n26/transcript.jsonl\n27/content_hash.txt\n27/full.jsonl\n27/metadata.json\n27/prompt.txt\n27/transcript.jsonl\n3/content_hash.txt\n3/full.jsonl\n3/metadata.json\n3/prompt.txt\n3/transcript.jsonl\n4/content_hash.txt\n4/full.jsonl\n4/metadata.json\n4/prompt.txt\n4/transcript.jsonl\n5/content_hash.txt\n5/full.jsonl\n5/metadata.json\n5/prompt.txt\n5/transcript.jsonl\n6/content_hash.txt\n6/full.jsonl\n6/metadata.json\n6/prompt.txt\n6/transcript.jsonl\n7/content_hash.txt\n7/full.jsonl\n7/metadata.json\n7/prompt.txt\n7/transcript.jsonl\n8/content_hash.txt\n8/full.jsonl\n8/metadata.json\n8/prompt.txt\n8/transcript.jsonl\n9/content_hash.txt\n9/full.jsonl\n9/metadata.json\n9/prompt.txt\n9/transcript.jsonl\nmetadata.json\n",
+              "exit": 0,
+              "truncated": false
+            },
+            "title": "/usr/bin/git ls-tree -r --name-only refs/entire/checkpoints/P9/01M4KMWRK0Z5V4D4GVXSB0HPP9",
+            "time": {
+              "start": 1791660988798,
+              "end": 1791660988823
+            }
+          },
+          "metadata": {
+            "openai": {
+              "itemId": "fc_050ccdce7614df74016aca93bc4d5087d2a025d5cbad656d56"
+            }
+          },
+          "id": "prt_127511947001VyvqD2Yr9q6U3x",
+          "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj",
+          "messageID": "msg_127509c32002ZKtW0mUO0nEULE"
+        },
+        {
+          "type": "tool",
+          "tool": "bash",
+          "callID": "call_FHi4lnkWH2dZ9ZJMmMdW1jpg",
+          "state": {
+            "status": "completed",
+            "input": {
+              "command": "entire doctor --help",
+              "workdir": "/Users/jonas/Documents/reqflow",
+              "timeout": 120000
+            },
+            "output": "Scan for session issues and offer to fix them.\n\nChecks performed:\n  1. Disconnected metadata branches: detects when local and remote\n     entire/checkpoints/v1 branches share no common ancestor (caused by a\n     previous bug). Fixes by cherry-picking local checkpoints onto remote tip.\n\n  2. Operational logs: warn when .entire/logs cannot be written. Every other\n     diagnostic is delivered by writing there, and that write is silent about\n     its own failure, so an unwritable log directory looks exactly like a repo\n     where nothing ran.\n\n  When Codex hooks are installed:\n  3. Codex hook trust: warn when hooks declared in .codex/hooks.json\n     lack a trusted_hash entry in the user's Codex config (i.e. /hooks\n     review hasn't run yet on this machine, or a newer entire release\n     added a hook the user hasn't approved yet).\n\n  For each installed agent that reports hook-config drift:\n  4. Hook config: warn when the installed hooks no longer match what this\n     CLI writes (e.g. an older release wrote Claude Code tool matchers that\n     no longer fire, or a committed Pi/OpenCode extension has gone stale).\n     Fix by re-running 'entire enable --force'.\n\n  5. Retired Gemini CLI hooks: remove Entire hook entries left in\n     .gemini/settings.json. Gemini CLI support was removed; the entries now do\n     nothing but run a no-op on every Gemini event.\n\n  6. Summary provider: warn when summary_generation.provider names a registered\n     agent that cannot generate text (e.g. factoryai-droid), which makes\n     'entire checkpoint explain --generate', 'entire dispatch' and\n     'entire runner setup' fail. Reports the file to change; does not rewrite it.\n\n  7. Stuck sessions: sessions stuck in ACTIVE or ENDED phase that need cleanup.\n\nA session is considered stuck if:\n  - It is in ACTIVE phase with no interaction for over 1 hour\n  - It is in ENDED phase with uncondensed checkpoint data on a shadow branch\n\nFor each stuck session, you can choose to:\n  - Condense: Save session data to permanent storage\n  - Discard: Remove the session state and shadow branch data\n  - Skip: Leave the session as-is\n\nUse --force to condense all fixable sessions without prompting.  Sessions that can't\nbe condensed will be discarded.\n\nWithout a terminal to prompt on (agents, CI), doctor reports each issue and\npoints at --force instead of prompting.\n\nUsage:\n  entire doctor [flags]\n  entire doctor [command]\n\nAvailable Commands:\n  bundle              Produce a diagnostic bundle (zip) for bug reports — secrets are redacted by default\n  logs                Show recent operational logs\n  migrate-checkpoints Convert git-branch checkpoints into per-checkpoint git refs (git-refs store)\n  trace               Show hook performance traces\n\nFlags:\n  -f, --force   Auto-fix all issues without prompting\n  -h, --help    help for doctor\n\nGlobal Flags:\n      --context name   Act as this saved login name for this command only — including the git and agent processes it spawns — instead of the active context (entire auth contexts lists them)\n\nUse \"entire doctor [command] --help\" for more information about a command.\n",
+            "metadata": {
+              "output": "Scan for session issues and offer to fix them.\n\nChecks performed:\n  1. Disconnected metadata branches: detects when local and remote\n     entire/checkpoints/v1 branches share no common ancestor (caused by a\n     previous bug). Fixes by cherry-picking local checkpoints onto remote tip.\n\n  2. Operational logs: warn when .entire/logs cannot be written. Every other\n     diagnostic is delivered by writing there, and that write is silent about\n     its own failure, so an unwritable log directory looks exactly like a repo\n     where nothing ran.\n\n  When Codex hooks are installed:\n  3. Codex hook trust: warn when hooks declared in .codex/hooks.json\n     lack a trusted_hash entry in the user's Codex config (i.e. /hooks\n     review hasn't run yet on this machine, or a newer entire release\n     added a hook the user hasn't approved yet).\n\n  For each installed agent that reports hook-config drift:\n  4. Hook config: warn when the installed hooks no longer match what this\n     CLI writes (e.g. an older release wrote Claude Code tool matchers that\n     no longer fire, or a committed Pi/OpenCode extension has gone stale).\n     Fix by re-running 'entire enable --force'.\n\n  5. Retired Gemini CLI hooks: remove Entire hook entries left in\n     .gemini/settings.json. Gemini CLI support was removed; the entries now do\n     nothing but run a no-op on every Gemini event.\n\n  6. Summary provider: warn when summary_generation.provider names a registered\n     agent that cannot generate text (e.g. factoryai-droid), which makes\n     'entire checkpoint explain --generate', 'entire dispatch' and\n     'entire runner setup' fail. Reports the file to change; does not rewrite it.\n\n  7. Stuck sessions: sessions stuck in ACTIVE or ENDED phase that need cleanup.\n\nA session is considered stuck if:\n  - It is in ACTIVE phase with no interaction for over 1 hour\n  - It is in ENDED phase with uncondensed checkpoint data on a shadow branch\n\nFor each stuck session, you can choose to:\n  - Condense: Save session data to permanent storage\n  - Discard: Remove the session state and shadow branch data\n  - Skip: Leave the session as-is\n\nUse --force to condense all fixable sessions without prompting.  Sessions that can't\nbe condensed will be discarded.\n\nWithout a terminal to prompt on (agents, CI), doctor reports each issue and\npoints at --force instead of prompting.\n\nUsage:\n  entire doctor [flags]\n  entire doctor [command]\n\nAvailable Commands:\n  bundle              Produce a diagnostic bundle (zip) for bug reports — secrets are redacted by default\n  logs                Show recent operational logs\n  migrate-checkpoints Convert git-branch checkpoints into per-checkpoint git refs (git-refs store)\n  trace               Show hook performance traces\n\nFlags:\n  -f, --force   Auto-fix all issues without prompting\n  -h, --help    help for doctor\n\nGlobal Flags:\n      --context name   Act as this saved login name for this command only — including the git and agent processes it spawns — instead of the active context (entire auth contexts lists them)\n\nUse \"entire doctor [command] --help\" for more information about a command.\n",
+              "exit": 0,
+              "truncated": false
+            },
+            "title": "entire doctor --help",
+            "time": {
+              "start": 1791660988899,
+              "end": 1791660988932
+            }
+          },
+          "metadata": {
+            "openai": {
+              "itemId": "fc_050ccdce7614df74016aca93bc4d5887d29bfdbb653686c718"
+            }
+          },
+          "id": "prt_1275119e1001xYNJ4RZtUSwkS1",
+          "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj",
+          "messageID": "msg_127509c32002ZKtW0mUO0nEULE"
+        },
+        {
+          "type": "tool",
+          "tool": "bash",
+          "callID": "call_Lvs2XWyxToxHn7aS8n4TmWJa",
+          "state": {
+            "status": "completed",
+            "input": {
+              "command": "/usr/bin/git rev-parse '6a36a25^{tree}' '9409549^{tree}'",
+              "workdir": "/Users/jonas/Documents/reqflow"
+            },
+            "output": "85d48de2df2c3436c97c700d687945bf7e56abe0\n85d48de2df2c3436c97c700d687945bf7e56abe0\n",
+            "metadata": {
+              "output": "85d48de2df2c3436c97c700d687945bf7e56abe0\n85d48de2df2c3436c97c700d687945bf7e56abe0\n",
+              "exit": 0,
+              "truncated": false
+            },
+            "title": "/usr/bin/git rev-parse '6a36a25^{tree}' '9409549^{tree}'",
+            "time": {
+              "start": 1791660988965,
+              "end": 1791660988988
+            }
+          },
+          "metadata": {
+            "openai": {
+              "itemId": "fc_050ccdce7614df74016aca93bc4d6087d2afb03adc4d3a9f52"
+            }
+          },
+          "id": "prt_127511a23001u4egNqGV6464FO",
+          "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj",
+          "messageID": "msg_127509c32002ZKtW0mUO0nEULE"
+        },
+        {
+          "reason": "tool-calls",
+          "snapshot": "da5f6998b99aa09b2306114dea3ec1eba12e44e1",
+          "type": "step-finish",
+          "tokens": {
+            "total": 97692,
+            "input": 3,
+            "output": 210,
+            "reasoning": 1066,
+            "cache": {
+              "write": 1880,
+              "read": 94533
+            }
+          },
+          "cost": 0.0269193,
+          "id": "prt_127512737001hHRMfeVKP3EGBF",
+          "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj",
+          "messageID": "msg_127509c32002ZKtW0mUO0nEULE"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_1274c0f73001ry3RjM563L7Xvd",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "variant": "xhigh",
+        "path": {
+          "cwd": "/Users/jonas/Documents/reqflow",
+          "root": "/Users/jonas/Documents/reqflow"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "read": 0,
+            "write": 0
+          }
+        },
+        "modelID": "gpt-6.1-sol",
+        "providerID": "openai",
+        "time": {
+          "created": 1791660992362
+        },
+        "id": "msg_12751276a002SP5wyQ5VBMeLtA",
+        "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj"
+      },
+      "parts": [
+        {
+          "snapshot": "da5f6998b99aa09b2306114dea3ec1eba12e44e1",
+          "type": "step-start",
+          "id": "prt_1275144c60019YFvjd1igH9fb4",
+          "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj",
+          "messageID": "msg_12751276a002SP5wyQ5VBMeLtA"
+        },
+        {
+          "type": "reasoning",
+          "text": "",
+          "time": {
+            "start": 1791660999881,
+            "end": 1791661008749
+          },
+          "metadata": {
+            "openai": {
+              "itemId": "rs_0d31f3f550efb4fc016aca93c2c9f087d29b4714552bf9005a",
+              "reasoningEncryptedContent": "REDACTED"
+            }
+          },
+          "id": "prt_1275144c9001AquEESbRS5J2PX",
+          "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj",
+          "messageID": "msg_12751276a002SP5wyQ5VBMeLtA"
+        },
+        {
+          "type": "reasoning",
+          "text": "",
+          "time": {
+            "start": 1791661008786,
+            "end": 1791661010608
+          },
+          "metadata": {
+            "openai": {
+              "itemId": "rs_0d31f3f550efb4fc016aca93d04bc887d2a90659695eef4df0",
+              "reasoningEncryptedContent": "REDACTED"
+            }
+          },
+          "id": "prt_127516792001noCCRmyiRcKLDC",
+          "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj",
+          "messageID": "msg_12751276a002SP5wyQ5VBMeLtA"
+        },
+        {
+          "type": "tool",
+          "tool": "bash",
+          "callID": "call_rGeSpKnL7ue3d0VCqfnx4rEV",
+          "state": {
+            "metadata": {
+              "output": ""
+            },
+            "status": "running",
+            "input": {
+              "command": "python3 <<'PY'\nimport re, subprocess\nGIT='/usr/bin/git'\ndef git(*args): return subprocess.check_output([GIT,*args],text=True)\noriginal='6a36a25'\nassert git('rev-parse',original+'^{tree}') == git('rev-parse','HEAD^{tree}'), 'Code differs from the already-recorded checkpoint'\nassert not git('diff','--cached','--name-only').strip(), 'Unexpected staged changes'\ncheckpoint=re.search(r'^Entire-Checkpoint: (\\S+)$',git('log','-1',original,'--format=%B'),re.M).group(1)\nrefs=git('for-each-ref','--format=%(refname)','refs/entire/checkpoints').splitlines()\nassert any(ref.endswith('/'+checkpoint) for ref in refs), 'Original checkpoint does not exist'\n# Retain the existing hook-generated checkpoint when correcting the unpublished message.\n# Entire 0.11.4 generated a new trailer on -m amend without a corresponding ref.\nmessage=f'''feat(ws6): add raw research agents and secure runtime\n\nKeep provider originals and provenance intact through native workflows\nand exports. Gate paid calls and encrypt credentials with OS storage.\n\nBound document and JSON resources, preserve ws's guarded addon\nfallbacks in dev and packaged builds, and enable Entire checkpoint\nsync on Git pushes.\n\nEntire-Checkpoint: {checkpoint}\n'''\nsubprocess.run([GIT,'commit','--amend','-F','-'],input=message,text=True,check=True)\nprint('Retained verified hook-generated checkpoint:',checkpoint)\nPY",
+              "workdir": "/Users/jonas/Documents/reqflow",
+              "timeout": 120000
+            },
+            "time": {
+              "start": 1791661015283
+            }
+          },
+          "metadata": {
+            "openai": {
+              "itemId": "fc_0d31f3f550efb4fc016aca93d1d42c87d28a2836c3dff2057e"
+            }
+          },
+          "id": "prt_127516eb600192B1ftYxDhqwH2",
+          "sessionID": "ses_ed9584bc6ffeZtRFHM33qPtUGj",
+          "messageID": "msg_12751276a002SP5wyQ5VBMeLtA"
         }
       ]
     }

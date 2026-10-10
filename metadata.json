@@ -15,12 +15,9 @@
     "apps/desktop/src/main/handlers.ts",
     "apps/desktop/src/main/index.ts",
     "apps/desktop/src/main/research/runtime.test.ts",
-    "apps/desktop/src/main/research/runtime.ts",
     "apps/desktop/src/main/research/secrets.test.ts",
-    "apps/desktop/src/main/research/secrets.ts",
     "apps/desktop/src/main/research/smoke-fixture.ts",
     "apps/desktop/src/main/research/storage.test.ts",
-    "apps/desktop/src/main/research/storage.ts",
     "apps/desktop/src/main/smoke.ts",
     "apps/desktop/src/main/ws-bundle.test.ts",
     "apps/desktop/src/renderer/src/components/dataflow/RunControls.test.ts",
@@ -305,11 +302,11 @@
     }
   ],
   "token_usage": {
-    "input_tokens": 1233,
-    "cache_creation_tokens": 2823024,
-    "cache_read_tokens": 32860255,
-    "output_tokens": 201061,
-    "api_call_count": 412
+    "input_tokens": 933,
+    "cache_creation_tokens": 1803762,
+    "cache_read_tokens": 25058341,
+    "output_tokens": 132720,
+    "api_call_count": 312
   },
   "combined_attribution": {
     "calculated_at": "2026-10-10T19:34:03.688403Z",
