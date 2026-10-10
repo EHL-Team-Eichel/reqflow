@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4KWRGMX94CV7DD5E9F04ZTW",
+  "strategy": "manual-commit",
+  "branch": "ws7-agents-ui",
+  "checkpoints_count": 5,
+  "files_touched": [
+    "apps/desktop/src/main/smoke.ts",
+    "apps/desktop/src/renderer/src/components/ui/controls.tsx"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 10,
+    "cache_creation_tokens": 10308,
+    "cache_read_tokens": 2169891,
+    "output_tokens": 2088,
+    "api_call_count": 5
+  }
+}
