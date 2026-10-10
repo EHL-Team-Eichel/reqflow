@@ -3,12 +3,14 @@ import { BATCH_1_MODELS } from "./batch1";
 import { BATCH_2_MODELS } from "./batch2";
 import { BATCH_3_MODELS } from "./batch3";
 import { BATCH_4_MODELS } from "./batch4";
+import { BATCH_5_MODELS } from "./batch5";
 
 export const VEHICLE_MODELS: VehicleModel[] = [
   ...BATCH_1_MODELS,
   ...BATCH_2_MODELS,
   ...BATCH_3_MODELS,
   ...BATCH_4_MODELS,
+  ...BATCH_5_MODELS,
 ];
 
 const MODELS_MAP = new Map<string, VehicleModel>(VEHICLE_MODELS.map((m) => [m.id, m]));

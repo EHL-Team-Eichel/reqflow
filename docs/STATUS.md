@@ -240,11 +240,20 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
   retains the same 12 documented stale marker/menu assertions (32 screenshots). Final checks
   run in an isolated checkout because other sessions are updating this branch concurrently.
 
+- 2026-10-11: Implemented BMW models 41-50 (2021 430i xDrive Coupé G22, 2022 M440i xDrive Gran Coupé G26, 2019 X5 xDrive30d G05, 2005 M3 E46, 2010 X6 M E71, 2016 Duke Dynamics E92 M3 Widebody, 2018 DTM FiberWerkz E46 M3 Widebody, 2003 M3 CSL E46, 2015 Pandem E46 M3 Duckbill, 2014 M2 Motoring E46 M3). Added E46 CSL carbon induction ducktail, DTM widebody kits and M Gran Coupé aero.
+
 - 2026-10-11: Implemented BMW models 31-40 (2014 LB★WORKS BMW 4 Series Body Kit F82, 2020 X1 xDrive 18d, 2019 X7 xDrive40i, 2020 X6 xDrive40i, 2019 X2 xDrive20d M Sport X, 2019 X4 xDrive20d, 2022 X3 xDrive 30i, 2018 X3 G01 Model M, 2018 3D Design i8 I12, 2015 Energy Motor Sport EVO i8 Widebody). Added LB-Works riveted overfenders, SAV roof rail packages, and hybrid futuristic aero kits.
 
 - 2026-10-11: OpenCode claimed hover-safe idle orbit: pointer hover/movement must not stop
   rotation or reset its 30-second restart timer; clicks and camera interaction still pause it.
   Preserve concurrent car-model work, verify the focused slice, then commit/push.
+
+- 2026-10-11: Hover-safe orbit complete: hover no longer pauses spinning or extends the
+  idle timer; click, orbit drag and zoom still pause it. Root typecheck and all 503 tests
+  pass (25 skipped), including 13 orbit regressions. Synthetic native Electron probe passes
+  moving hover, click, real 30-second restart under continuous hover, drag and zoom. Reviewed
+  light/dark smoke and `car-hover-orbit.png`; shared smoke retains its 12 documented stale
+  menu assertions. Commit only this slice and preserve concurrent model/catalog work.
 
 - 2026-10-11: Implemented BMW models 21-30 (2015 F80 M3, 2025 G82 M4 Competition, 2024 X3 M40i, 1999 E46 328i Sport, 2017 Pandem E30 V1.5, 2010 DTM FiberWerkz E30 M3, 1988 E30 M3 Evolution II, 2019 330i M Sport, 2014 Duke Dynamics MD4 M4, 2015 Varis Full Widebody F82 M4). Added DTM box flares, time-attack front diffusers and swan-neck GT wings.
 
