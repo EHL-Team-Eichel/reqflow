@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4KZ91HJ7SBVZZ777QGBNC3K",
   "strategy": "manual-commit",
   "branch": "ws7-mastra-splitter",
-  "checkpoints_count": 4,
+  "checkpoints_count": 6,
   "files_touched": [
     "PRODUCT.md",
     "apps/desktop/src/main/smoke.ts",
@@ -43,6 +43,13 @@
       "compact_transcript": "/3/transcript.jsonl",
       "content_hash": "/3/content_hash.txt",
       "prompt": "/3/prompt.txt"
+    },
+    {
+      "metadata": "/4/metadata.json",
+      "transcript": "/4/full.jsonl",
+      "compact_transcript": "/4/transcript.jsonl",
+      "content_hash": "/4/content_hash.txt",
+      "prompt": "/4/prompt.txt"
     }
   ],
   "token_usage": {
