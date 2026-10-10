@@ -3,12 +3,11 @@ import { useStore } from "zustand";
 import { Link } from "react-router";
 import { walkBlocks } from "@reqflow/core";
 import { Button } from "@/components/ui/Button";
-import { api } from "@/lib/api";
 import { useSettings } from "@/lib/settings";
-import { useDataflow } from "./store";
-import { createRunStore } from "./run-store";
+import { dataflowStore, useDataflow } from "./store";
+import { pausedHil } from "./run-store";
+import { runStore } from "./run-session";
 
-const runStore = createRunStore(api);
 const STATUS_LABELS = {
   queued: "Queued",
   running: "Running",
@@ -25,6 +24,7 @@ export function RunControls() {
   const busy = useStore(runStore, (s) => s.busy);
   const error = useStore(runStore, (s) => s.error);
   const active = run && ["queued", "running", "waiting_for_review"].includes(run.status);
+  const gate = pausedHil(run);
   const labels = new Map(
     run ? [...walkBlocks(run.graph)].map(({ block }) => [block.id, block.label]) : [],
   );
@@ -48,6 +48,18 @@ export function RunControls() {
           onClick={() => void runStore.getState().cancel()}
         >
           Cancel run
+        </Button>
+      )}
+      {gate && (
+        <Button
+          variant="primary"
+          data-testid="flow-review"
+          disabled={busy}
+          onClick={() =>
+            dataflowStore.setState({ report: { blockId: gate.block.id, path: gate.path } })
+          }
+        >
+          Review paused step
         </Button>
       )}
       <div className="min-w-0 flex-1 text-sm">

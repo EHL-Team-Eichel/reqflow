@@ -7,7 +7,7 @@ import {
 } from "@reqflow/core";
 import { fixtureRun } from "@reqflow/core/fixtures";
 import { describe, expect, it, vi } from "vitest";
-import { createRunStore } from "./run-store";
+import { createRunStore, pausedHil } from "./run-store";
 
 const scope = DEFAULT_SETTINGS.defaultScope;
 const raw = createBlock("raw", { id: "raw", position: { x: 0, y: 0 } });
@@ -34,12 +34,14 @@ function setup() {
   const start = vi.fn().mockResolvedValue(run);
   const get = vi.fn().mockResolvedValue(run);
   const cancel = vi.fn().mockResolvedValue({ ...run, status: "cancelled" });
+  const resume = vi.fn().mockResolvedValue({ ...run, status: "completed" });
   const api = {
     workflows: { save },
     runs: {
       start,
       get,
       cancel,
+      resume,
       onUpdate: vi.fn((listener: (run: WorkflowRun) => void) => {
         listeners.add(listener);
         return () => {
@@ -52,7 +54,7 @@ function setup() {
   const emit = (next: WorkflowRun) => {
     for (const listener of listeners) listener(next);
   };
-  return { store, save, start, get, cancel, emit, listeners };
+  return { store, save, start, get, cancel, resume, emit, listeners };
 }
 
 describe("Data Flow execution wiring", () => {
@@ -162,5 +164,129 @@ describe("Data Flow execution wiring", () => {
     await store.getState().cancel();
     expect(cancel).toHaveBeenCalledWith(run.id);
     expect(store.getState().run?.status).toBe("cancelled");
+  });
+});
+
+describe("explicit HIL review and resume", () => {
+  const hil = createBlock("hil", { id: "review", position: { x: 150, y: 0 } });
+  const paused: WorkflowRun = {
+    ...run,
+    status: "waiting_for_review",
+    graph: { blocks: [raw, hil, car], edges: [] },
+    blockRuns: [{ blockId: hil.id, status: "waiting_for_review", counts: {}, logs: [] }],
+  };
+  const setupPaused = () => {
+    const c = setup();
+    c.store.setState({ run: structuredClone(paused), workflowId: paused.workflowId });
+    return c;
+  };
+
+  it("does not resume automatically and requires an explicit confirmation of the current gate", async () => {
+    const { store, resume } = setupPaused();
+    expect(pausedHil(store.getState().run)?.block.id).toBe(hil.id);
+    expect(resume).not.toHaveBeenCalled();
+    await store.getState().resume(paused.id, hil.id, false);
+    expect(resume).not.toHaveBeenCalled();
+    await store.getState().resume(paused.id, hil.id, true);
+    expect(resume).toHaveBeenCalledExactlyOnceWith(paused.id);
+    expect(store.getState()).toMatchObject({
+      busy: false,
+      error: null,
+      run: { status: "completed" },
+    });
+  });
+
+  it("rejects stale run ids, the wrong HIL block, and non-paused runs", async () => {
+    const { store, resume } = setupPaused();
+    await store.getState().resume("run_old", hil.id, true);
+    await store.getState().resume(paused.id, "other-gate", true);
+    store.setState({ run: { ...paused, status: "running" } });
+    await store.getState().resume(paused.id, hil.id, true);
+    expect(resume).not.toHaveBeenCalled();
+    expect(store.getState().error).toMatch(/current paused HIL/);
+  });
+
+  it("does not turn one confirmation into multiple required reviews", async () => {
+    const { store, resume } = setupPaused();
+    store.setState({
+      run: {
+        ...paused,
+        graph: {
+          ...paused.graph,
+          blocks: [raw, { ...hil, params: { ...hil.params, approvals: 2 } }, car],
+        },
+      },
+    });
+    await store.getState().resume(paused.id, hil.id, true);
+    expect(resume).not.toHaveBeenCalled();
+    expect(store.getState().error).toMatch(/multiple reviewers/);
+  });
+
+  it("keeps the current gate paused after a resume failure so the human can retry", async () => {
+    const { store, resume, listeners } = setupPaused();
+    resume.mockRejectedValueOnce(new Error("Resume failed"));
+    await store.getState().resume(paused.id, hil.id, true);
+    expect(store.getState()).toMatchObject({
+      error: "Resume failed",
+      busy: false,
+      run: { status: "waiting_for_review" },
+    });
+    expect(listeners.size).toBe(0);
+  });
+
+  it("prevents duplicate pending clicks and preserves a newer terminal update", async () => {
+    const { store, resume, emit, listeners } = setupPaused();
+    let resolve!: (value: WorkflowRun) => void;
+    resume.mockImplementation(
+      () =>
+        new Promise<WorkflowRun>((r) => {
+          resolve = r;
+        }),
+    );
+    const pending = store.getState().resume(paused.id, hil.id, true);
+    await store.getState().resume(paused.id, hil.id, true);
+    expect(resume).toHaveBeenCalledTimes(1);
+    emit({ ...paused, status: "completed" });
+    resolve({ ...paused, status: "running" });
+    await pending;
+    expect(store.getState().run?.status).toBe("completed");
+    expect(listeners.size).toBe(0);
+  });
+
+  it("keeps long-running resumed work cancellable", async () => {
+    const { store, resume, emit, cancel } = setupPaused();
+    let resolve!: (value: WorkflowRun) => void;
+    resume.mockImplementation(
+      () =>
+        new Promise<WorkflowRun>((r) => {
+          resolve = r;
+        }),
+    );
+    const pending = store.getState().resume(paused.id, hil.id, true);
+    emit({ ...paused, status: "running" });
+    expect(store.getState().busy).toBe(false);
+    await store.getState().cancel();
+    expect(cancel).toHaveBeenCalledExactlyOnceWith(paused.id);
+    emit({ ...paused, status: "cancelled" });
+    resolve({ ...paused, status: "running" });
+    await pending;
+    expect(store.getState().run?.status).toBe("cancelled");
+  });
+
+  it("requires a separate confirmation when execution pauses at the next HIL gate", async () => {
+    const { store, resume } = setupPaused();
+    const next = createBlock("hil", { id: "review-next", position: { x: 225, y: 0 } });
+    resume.mockResolvedValue({
+      ...paused,
+      graph: { ...paused.graph, blocks: [...paused.graph.blocks, next] },
+      blockRuns: [
+        { blockId: hil.id, status: "succeeded", counts: {}, logs: [] },
+        { blockId: next.id, status: "waiting_for_review", counts: {}, logs: [] },
+      ],
+    });
+    await store.getState().resume(paused.id, hil.id, true);
+    expect(pausedHil(store.getState().run)?.block.id).toBe(next.id);
+    await store.getState().resume(paused.id, hil.id, true);
+    expect(resume).toHaveBeenCalledTimes(1);
   });
 });
