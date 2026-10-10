@@ -47,6 +47,7 @@ import {
 } from "@reqflow/db";
 import { BlockRegistry, WorkflowExecutor } from "@reqflow/engine";
 import { createLlmClient } from "@reqflow/llm";
+import { createAgentServices, testSetup, type AgentDeps } from "./agents";
 import { ReqflowError } from "./dispatch";
 import { previewBlock } from "./preview";
 import { SecretsStore } from "./secrets";
@@ -122,6 +123,8 @@ export interface HandlerDeps {
   saveDialog?: (opts: SaveDialogOptions) => Promise<SaveDialogReturnValue>;
   pushRunUpdate?: (run: WorkflowRun) => void;
   secretsStore?: SecretsStore;
+  /** Injectable transport for API setups (tests); defaults to the global fetch. */
+  fetch?: typeof fetch;
 }
 
 export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
@@ -146,7 +149,15 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
       settings.llm.provider === "anthropic"
         ? ((await secretsStore.getSecret("anthropic_api_key")) ?? undefined)
         : undefined;
+    if (settings.llm.provider === "anthropic" && !apiKey) {
+      throw new Error("The default AI (Anthropic) has no API key. Add it in Settings → AI.");
+    }
     return createLlmClient(settings.llm, { apiKey });
+  };
+  const agentDeps: AgentDeps = {
+    defaultLlm: configuredLlm,
+    getKey: (setupId) => secretsStore.getSecret(`setup:${setupId}`),
+    fetch: deps.fetch,
   };
   const activeLlm: LlmClient = deps.llm ?? {
     generateObject: async (request) =>
@@ -161,6 +172,7 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
     registry,
     services: {
       llm: configuredLlm,
+      agents: (settings) => createAgentServices(settings, agentDeps),
       audit: auditLogger,
       files: deps.files,
       web: deps.web ?? null,
@@ -533,8 +545,9 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
         await secretsStore.setSecret(name, value);
         return await secretsStore.getStatus();
       },
-      testSetup: async () => {
-        throw new ReqflowError("not_implemented", "Testing API setups isn't built yet");
+      testSetup: async (setupIdInput: unknown) => {
+        const setupId = parseArg(NonEmptySchema, setupIdInput, "setupId");
+        return await testSetup(loadSettings(dataDir), setupId, agentDeps);
       },
     },
     reasoning: {

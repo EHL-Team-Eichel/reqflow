@@ -263,30 +263,39 @@ describe("handlers (All IPC methods against SQLite and stores)", () => {
       const { handlers } = setup();
       const uploads = join(tempDir, "uploads");
 
+      // BMW data: assertions compare booleans and counts only, so a failure can't print a value.
       await runFeedbackToCar(handlers, uploads, BMW_FEEDBACK);
       const first = await handlers.requirements.list();
-      expect(first.length).toBeGreaterThan(20);
+      expect(first.length).toBeGreaterThan(0);
+      expect(first.length).toBeLessThanOrEqual(20); // the block's default limit
       expect(first.every((r) => r.priority === "must" && r.status === "proposed")).toBe(true);
+      expect(first.every((r) => r.confidence !== undefined && r.inputRank === 1)).toBe(true);
       const seq = (id: string) => Number(id.split("-").at(-1));
       expect(Math.min(...first.map((r) => seq(r.id)))).toBe(1);
       const detail = await handlers.requirements.get(first[0]!.id);
       expect(detail.findings.length).toBeGreaterThan(0);
       expect(detail.records.length).toBeGreaterThan(0);
-      expect(detail.sources.map((s) => s.kind)).toContain("customer_feedback");
-      for (const f of detail.findings) {
-        for (const e of f.evidence) {
-          expect(detail.records.find((r) => r.id === e.recordId)?.text).toContain(e.excerpt);
-        }
-      }
+      expect(detail.sources.some((s) => s.kind === "customer_feedback")).toBe(true);
+      const verbatim = detail.findings.every((f) =>
+        f.evidence.every(
+          (e) => detail.records.find((r) => r.id === e.recordId)?.text.includes(e.excerpt) ?? false,
+        ),
+      );
+      expect(verbatim).toBe(true);
+      const trace = await handlers.reasoning.forRequirement(first[0]!.id);
+      expect(trace !== null && trace.offline && trace.requirements.length === first.length).toBe(
+        true,
+      );
 
       // A second run continues the numbering instead of overwriting the first run's ids.
       await runFeedbackToCar(handlers, uploads, BMW_FEEDBACK);
       const all = await handlers.requirements.list();
       expect(all.length).toBe(2 * first.length);
       expect(new Set(all.map((r) => r.id)).size).toBe(all.length);
-      expect((await handlers.requirements.get(first[0]!.id)).requirement).toEqual(
-        detail.requirement,
-      );
+      const unchanged =
+        JSON.stringify((await handlers.requirements.get(first[0]!.id)).requirement) ===
+        JSON.stringify(detail.requirement);
+      expect(unchanged).toBe(true);
     },
     60_000,
   );

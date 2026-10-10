@@ -58,7 +58,7 @@ export function anthropicClient(o: AnthropicOptions): LlmClient {
 
   async function call(
     request: LlmTextRequest & { schema?: z.ZodType },
-  ): Promise<{ text: string; model: string; usage: LlmUsage; thinking?: string }> {
+  ): Promise<{ text: string; model: string; usage?: LlmUsage; thinking?: string }> {
     const model = request.tier === "fast" ? o.fastModel || o.model : o.model;
     const effort = request.effort ?? o.effort;
     const body: Record<string, unknown> = {
@@ -127,17 +127,22 @@ export function anthropicClient(o: AnthropicOptions): LlmClient {
         .join("\n\n")
         .trim()
         .slice(0, MAX_THINKING_CHARS);
-      const u = data.usage ?? {};
+      const u = data.usage;
       return {
         text,
         model: data.model,
-        usage: {
-          inputTokens:
-            (u.input_tokens ?? 0) +
-            (u.cache_creation_input_tokens ?? 0) +
-            (u.cache_read_input_tokens ?? 0),
-          outputTokens: u.output_tokens ?? 0,
-        },
+        // Only what the provider reported: no usage block means no numbers, not zeros.
+        ...(u
+          ? {
+              usage: {
+                inputTokens:
+                  (u.input_tokens ?? 0) +
+                  (u.cache_creation_input_tokens ?? 0) +
+                  (u.cache_read_input_tokens ?? 0),
+                outputTokens: u.output_tokens ?? 0,
+              },
+            }
+          : {}),
         ...(thinking ? { thinking } : {}),
       };
     }, request.signal);
@@ -155,7 +160,7 @@ export function anthropicClient(o: AnthropicOptions): LlmClient {
       return {
         object: request.schema.parse(raw),
         model: result.model,
-        usage: result.usage,
+        ...(result.usage ? { usage: result.usage } : {}),
         ...(result.thinking ? { thinking: result.thinking } : {}),
       };
     },
