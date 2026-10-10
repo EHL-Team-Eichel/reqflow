@@ -6,11 +6,43 @@ import {
   Source,
   SourceRecord,
   type PipelineData,
+  PipelineData as PipelineDataSchema,
+  ProductScope,
 } from "@reqflow/core";
 import type { DatabaseSync } from "node:sqlite";
 
 export class SqliteRequirementRepository {
   constructor(private readonly db: DatabaseSync) {}
+
+  /** Reserve before generation/publication; gaps after cancellation are intentional, ids are never reused. */
+  reserveSequences(scope: ProductScope, count = 1): number {
+    const valid = ProductScope.parse(scope);
+    if (!Number.isInteger(count) || count < 1)
+      throw new Error("Requirement sequence count must be a positive integer");
+    const prefix = `REQ-${valid.vehicleCode}-${valid.market}-`;
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const saved = this.db
+        .prepare("SELECT next_seq FROM requirement_sequences WHERE scope_key = ?")
+        .get(prefix) as { next_seq: number } | undefined;
+      const existing = this.db
+        .prepare(
+          "SELECT COALESCE(MAX(CAST(substr(id, ?) AS INTEGER)), 0) AS max_seq FROM requirements WHERE id LIKE ?",
+        )
+        .get(prefix.length + 1, `${prefix}%`) as { max_seq: number };
+      const first = Math.max(saved?.next_seq ?? 1, existing.max_seq + 1);
+      this.db
+        .prepare(
+          "INSERT INTO requirement_sequences(scope_key, next_seq) VALUES (?, ?) ON CONFLICT(scope_key) DO UPDATE SET next_seq = excluded.next_seq",
+        )
+        .run(prefix, first + count);
+      this.db.exec("COMMIT");
+      return first;
+    } catch (e) {
+      this.db.exec("ROLLBACK");
+      throw e;
+    }
+  }
 
   async list(filter?: RequirementFilter): Promise<Requirement[]> {
     const conditions: string[] = [];
@@ -121,6 +153,10 @@ export class SqliteRequirementRepository {
   }
 
   async saveVersion(req: Requirement): Promise<Requirement> {
+    return this.writeVersion(req);
+  }
+
+  private writeVersion(req: Requirement): Requirement {
     const validated = Requirement.parse(req);
     const json = JSON.stringify(validated);
 
@@ -157,41 +193,49 @@ export class SqliteRequirementRepository {
   }
 
   async savePipelineData(data: PipelineData, runId?: string): Promise<void> {
-    for (const src of data.sources) {
-      const stmt = this.db.prepare(`
+    data = PipelineDataSchema.parse(data);
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      for (const src of data.sources) {
+        const stmt = this.db.prepare(`
         INSERT INTO sources (id, run_id, json) VALUES (?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET json = excluded.json, run_id = excluded.run_id
       `);
-      stmt.run(src.id, runId ?? null, JSON.stringify(src));
-    }
+        stmt.run(src.id, runId ?? null, JSON.stringify(src));
+      }
 
-    for (const rec of data.records) {
-      const stmt = this.db.prepare(`
+      for (const rec of data.records) {
+        const stmt = this.db.prepare(`
         INSERT INTO records (id, source_id, run_id, json) VALUES (?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET json = excluded.json, run_id = excluded.run_id
       `);
-      stmt.run(rec.id, rec.sourceId, runId ?? null, JSON.stringify(rec));
-    }
+        stmt.run(rec.id, rec.sourceId, runId ?? null, JSON.stringify(rec));
+      }
 
-    for (const fnd of data.findings) {
-      const stmt = this.db.prepare(`
+      for (const fnd of data.findings) {
+        const stmt = this.db.prepare(`
         INSERT INTO findings (id, run_id, json) VALUES (?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET json = excluded.json, run_id = excluded.run_id
       `);
-      stmt.run(fnd.id, runId ?? null, JSON.stringify(fnd));
-    }
+        stmt.run(fnd.id, runId ?? null, JSON.stringify(fnd));
+      }
 
-    for (const thm of data.themes) {
-      const stmt = this.db.prepare(`
+      for (const thm of data.themes) {
+        const stmt = this.db.prepare(`
         INSERT INTO themes (id, run_id, json) VALUES (?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET json = excluded.json, run_id = excluded.run_id
       `);
-      stmt.run(thm.id, runId ?? null, JSON.stringify(thm));
-    }
+        stmt.run(thm.id, runId ?? null, JSON.stringify(thm));
+      }
 
-    for (const req of data.requirements) {
-      const withRun = runId && !req.runId ? { ...req, runId } : req;
-      await this.saveVersion(withRun);
+      for (const req of data.requirements) {
+        const withRun = runId && !req.runId ? { ...req, runId } : req;
+        this.writeVersion(withRun);
+      }
+      this.db.exec("COMMIT");
+    } catch (e) {
+      this.db.exec("ROLLBACK");
+      throw e;
     }
   }
 }

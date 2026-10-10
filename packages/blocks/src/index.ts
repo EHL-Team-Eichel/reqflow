@@ -3,6 +3,7 @@
 import { BlockRegistry, type BlockImplementation } from "@reqflow/engine";
 import { addToCarImplementations } from "./add-to-car";
 import { aiFilterImplementations } from "./ai-filter";
+import { aiJudgeImplementations } from "./ai-judge";
 import { aiSplitterImplementations } from "./ai-splitter";
 import { hilImplementations } from "./hil";
 import { rawImplementations } from "./raw";
@@ -15,6 +16,7 @@ export const allBlockImplementations: readonly BlockImplementation[] = [
   ...aiSplitterImplementations,
   ...hilImplementations,
   ...addToCarImplementations,
+  ...aiJudgeImplementations,
 ];
 
 export function createBlockRegistry(): BlockRegistry {

@@ -3,6 +3,7 @@ import { cx } from "@/lib/cx";
 import { XIcon } from "@/components/ui/icons";
 import { label, type ClassifiedRequirement, type Confidence } from "./classify";
 import { CAR_PARTS, PART_GROUP_LABELS, PARTS_BY_ID, WHOLE_CAR, type PartGroup } from "./parts";
+import { EvidenceDetails } from "./EvidenceDetails";
 
 const PRIORITY_LABELS: Record<Priority, string> = {
   must: "Must",
@@ -153,7 +154,6 @@ function RequirementCard({ item }: { item: ClassifiedRequirement }) {
         <span className="ml-auto">{STATUS_LABELS[r.status] ?? r.status}</span>
       </div>
       <h4 className="mt-1 text-sm font-medium text-ink">{r.title}</h4>
-      <p className="mt-1 text-sm text-muted">{r.description}</p>
       <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
         {r.priority && (
           <Chip strong={r.priority === "must"}>
@@ -166,15 +166,6 @@ function RequirementCard({ item }: { item: ClassifiedRequirement }) {
         </Chip>
         <Chip>{CATEGORY_LABELS[r.category]}</Chip>
       </div>
-      {r.targets.length > 0 && (
-        <ul className="mt-2 space-y-0.5 text-xs text-muted">
-          {r.targets.map((t) => (
-            <li key={t.metric}>
-              <span className="text-ink">{t.metric}:</span> {t.target}
-            </li>
-          ))}
-        </ul>
-      )}
       <p
         className="mt-2 border-t border-line pt-2 text-xs text-muted"
         data-testid="car-classifier-reason"
@@ -185,6 +176,7 @@ function RequirementCard({ item }: { item: ClassifiedRequirement }) {
           <> Could also be: {a.alternatives.map((x) => label(x.partId)).join(", ")}.</>
         )}
       </p>
+      <EvidenceDetails requirement={r} />
     </article>
   );
 }

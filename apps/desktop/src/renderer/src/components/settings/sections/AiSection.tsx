@@ -11,10 +11,12 @@ import {
 import { api, ReqflowError } from "@/lib/api";
 import { settingsStore, useSettings } from "@/lib/settings";
 import { SettingRow } from "../SettingRow";
+import { SecretEditor } from "../SecretEditor";
 
 const SECRET_LABELS: Record<SecretName, string> = {
   anthropic_api_key: "Anthropic",
   tavily_api_key: "Tavily",
+  openai_api_key: "OpenAI (AI Judge)",
 };
 
 const LLM_PROVIDER_OPTIONS = [
@@ -173,11 +175,14 @@ export function AiSection() {
             const status = secrets[name];
             return (
               <SettingRow key={name} label={SECRET_LABELS[name]}>
-                <span className={status.configured ? "text-sm text-ok" : "text-sm text-muted"}>
-                  {status.configured
-                    ? `Configured (${status.source === "env" ? ".env file" : "OS keychain"})`
-                    : "Not set"}
-                </span>
+                <div className="flex w-full flex-col gap-2">
+                  <span className={status.configured ? "text-sm text-ok" : "text-sm text-muted"}>
+                    {status.configured
+                      ? `Configured (${status.source === "env" ? ".env file" : "OS keychain"})`
+                      : "Not set"}
+                  </span>
+                  <SecretEditor name={name} onSaved={setSecrets} />
+                </div>
               </SettingRow>
             );
           })

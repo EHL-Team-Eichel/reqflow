@@ -2,6 +2,7 @@ import type {
   AuditLogger,
   BlockParams,
   FileStore,
+  JudgingAgents,
   LlmClient,
   PaletteBlockKind,
   PipelineData,
@@ -20,7 +21,12 @@ export type CarEvidence = Partial<
 export interface CarService {
   add(requirements: Requirement[], evidence?: CarEvidence): Promise<void>;
   /** Next unused requirement number for the scope (ids are never reused). Absent = start at 1. */
-  nextSeq?(scope: ProductScope): Promise<number>;
+  nextSeq?(scope: ProductScope, count?: number): Promise<number>;
+}
+
+export interface JudgingAgentRequest {
+  model: string;
+  reasoningEffort: string;
 }
 
 /** Everything a block may touch while running. Blocks must not import DB, env or Electron code. */
@@ -35,6 +41,7 @@ export interface BlockContext {
   web: WebSearch | null; // null when Settings.research.provider === "off"
   /** Requirements handed to the Car page (Add to Car). WS1 wires this to the database. */
   car: CarService;
+  agents?: (options: JudgingAgentRequest) => Promise<JudgingAgents | null>;
   log(message: string): void; // shown on the block in the editor
   progress(fraction: number, message?: string): void; // 0–1
   signal: AbortSignal; // run cancelled → stop promptly

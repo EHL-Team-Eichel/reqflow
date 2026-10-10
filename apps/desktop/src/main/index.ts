@@ -1,4 +1,5 @@
-import { join } from "node:path";
+import { join, resolve } from "node:path";
+import { mkdirSync } from "node:fs";
 import type { WorkflowRun } from "@reqflow/core";
 import { IPC_EVENTS } from "@reqflow/core/ipc";
 import { createFileStore } from "@reqflow/db";
@@ -9,6 +10,13 @@ import { dataDir, loadDevEnv, uploadsDir } from "./paths";
 import { parseSmokeArg, runSmoke } from "./smoke";
 
 const smokeDir = parseSmokeArg(process.argv);
+
+// An isolated profile lets a new build open beside an existing demo without sharing its lock.
+if (process.env.REQFLOW_USER_DATA_DIR) {
+  const profile = resolve(process.env.REQFLOW_USER_DATA_DIR);
+  mkdirSync(profile, { recursive: true });
+  app.setPath("userData", profile);
+}
 
 // One instance per user: two processes writing the same SQLite file would corrupt the audit trail.
 if (!smokeDir && !app.requestSingleInstanceLock()) app.quit();

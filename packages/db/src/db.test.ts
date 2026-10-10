@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { DatabaseSync } from "node:sqlite";
 import { emptyPipelineData } from "@reqflow/core";
+import { fixtureScope } from "@reqflow/core/fixtures";
 import {
   createDatabase,
   formatRequirementsCsv,
@@ -43,6 +44,16 @@ describe("SQLite persistence (@reqflow/db)", () => {
 
     const audits = await auditRepo.list();
     expect(audits.length).toBeGreaterThan(0);
+  });
+
+  it("reserves disjoint requirement ranges even before earlier proposals are published", () => {
+    seedDatabaseIfEmpty(db);
+    const repo = new SqliteRequirementRepository(db);
+    const first = repo.reserveSequences(fixtureScope, 3);
+    expect(first).toBeGreaterThan(5);
+    expect(repo.reserveSequences(fixtureScope, 2)).toBe(first + 3);
+    expect(new SqliteRequirementRepository(db).reserveSequences(fixtureScope)).toBe(first + 5);
+    expect(() => repo.reserveSequences(fixtureScope, 0)).toThrow(/positive integer/);
   });
 
   it("versions requirements and records audit events", async () => {

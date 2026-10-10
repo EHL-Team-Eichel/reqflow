@@ -16,13 +16,14 @@ import {
   type LlmClient,
   type PipelineData,
   type Requirement,
+  type JudgingAgents,
   type Settings,
   type WebSearch,
   type Workflow,
   type WorkflowBlock,
   type WorkflowGraph,
 } from "@reqflow/core";
-import type { BlockContext, CarService } from "./block";
+import type { BlockContext, CarService, JudgingAgentRequest } from "./block";
 import type { BlockRegistry } from "./registry";
 
 export class EngineError extends Error {
@@ -52,6 +53,7 @@ export interface WorkflowExecutorOptions {
     files: FileStore;
     web: WebSearch | null;
     car: CarService;
+    agents?: (options: JudgingAgentRequest) => Promise<JudgingAgents | null>;
   };
   outputStore?: BlockOutputStore;
   onUpdate?: (run: WorkflowRun) => void;
@@ -380,6 +382,7 @@ export class WorkflowExecutor {
         files: this.options.services.files,
         web: this.options.services.web,
         car: this.options.services.car,
+        ...(this.options.services.agents ? { agents: this.options.services.agents } : {}),
         log: (msg) => {
           blockRun.logs.push({ at: new Date().toISOString(), message: msg });
           this.emitUpdate(run);

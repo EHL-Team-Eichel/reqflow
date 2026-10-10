@@ -16,6 +16,7 @@
     "package:dir": "electron-vite build && electron-builder --dir --publish never"
   },
   "devDependencies": {
+    "@reqflow/agents": "*",
     "@reqflow/blocks": "*",
     "@reqflow/core": "*",
     "@reqflow/db": "*",

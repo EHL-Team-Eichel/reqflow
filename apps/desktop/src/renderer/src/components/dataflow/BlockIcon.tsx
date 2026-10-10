@@ -25,6 +25,12 @@ export function BlockIcon({
   } as const;
 
   switch (kind) {
+    case "ai_judge":
+      return (
+        <svg {...svgProps}>
+          <path d="M12 3v18M4 6h16M6 6l-4 8h8L6 6ZM18 6l-4 8h8l-4-8ZM6 21h12" />
+        </svg>
+      );
     case "custom":
       return (
         <svg {...svgProps}>

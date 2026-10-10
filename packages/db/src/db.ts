@@ -33,6 +33,11 @@ export function initSchema(db: DatabaseSync): void {
       PRIMARY KEY (id, version)
     );
 
+    CREATE TABLE IF NOT EXISTS requirement_sequences (
+      scope_key TEXT PRIMARY KEY,
+      next_seq INTEGER NOT NULL
+    );
+
     CREATE INDEX IF NOT EXISTS idx_requirements_id ON requirements (id);
     CREATE INDEX IF NOT EXISTS idx_requirements_run_id ON requirements (run_id);
     CREATE INDEX IF NOT EXISTS idx_requirements_status ON requirements (status);

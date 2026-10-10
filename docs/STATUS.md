@@ -69,6 +69,13 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 **Log**
 
+- 2026-10-10: `quick-ai-results` complete: Mastra/OpenAI AI Judge is registered and wired in the native app, outputs proposals through HIL → Add to Car, stores evidence with non-reused ids, and exposes OpenAI secret entry. New reviews-first defaults, low reasoning effort, concise proposals and Summary/Targets/Evidence result tabs. Verified `npm run typecheck && npm test` (273 passed, 25 skipped), formatting, and native `npm run smoke` (32 screenshots, including each result tab and synthetic AI Judge → review → persisted Car output). No live AI performance claim: the full regression is explicitly offline/synthetic; live runs need an OpenAI key. Independent app profiles supported for a side-by-side launch without touching the original demo. The original integration worktree and user's shared edits were left unchanged.
+- 2026-10-10: OpenCode claimed the human-requested quick-AI/results integration on `quick-ai-results`. Reused an isolated snapshot of the in-flight Mastra integration without modifying its worktree. Add reviews-first defaults, low reasoning effort, concise proposals and Summary/Targets/Evidence result tabs; verify and push this branch, then launch an updated isolated native app. BMW data, keys and live test output stay outside git.
+- 2026-10-10: OpenCode claimed the human-requested Mastra desktop integration as WS0/integrator on
+  `integrate-mastra-judge`, isolated from the shared car-model checkouts. Import the local AI Judge
+  prototype, wire main-process agents/OpenAI secrets, preserve evidence and unique ids, expose
+  confidence/evidence on the Car tab, and verify offline before pushing. Focused cross-workstream
+  wiring is part of this integration; no BMW data or live-provider calls.
 - 2026-10-10 night: Demo scope switched to the 1 Series F70 · EU (default settings, fixtures renamed to
   `sample-f70-eu.ts` with `REQ-F70-EU-…` ids, docs). `data/samples/` stays 5 Series on purpose: it
   tests the parser, and a second series shows the Raw block isn't tied to one car.
