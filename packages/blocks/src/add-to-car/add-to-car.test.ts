@@ -95,6 +95,36 @@ describe("Add to Car rules", () => {
     );
   });
 
+  it("continues numbering after existing requirements and hands over the evidence", async () => {
+    const source = { ...fixtureSources[0]!, kind: "customer_feedback" as const };
+    const data = PipelineData.parse({
+      ...emptyPipelineData(),
+      sources: [source],
+      records: [
+        "The rear seats are uncomfortable on long journeys",
+        "The rear seats are uncomfortable and need better support",
+      ].map((text, k) => ({ id: `rec_seq${k}`, sourceId: source.id, text, language: "en" })),
+    });
+    const c = context();
+    const stored: unknown[] = [];
+    c.ctx.car = {
+      add: async (rs, evidence) => void stored.push({ rs, evidence }),
+      nextSeq: async () => 42,
+    };
+    await addToCarBlock.run({ "in-0": data }, params(), c.ctx);
+    const [{ rs, evidence }] = stored as [
+      {
+        rs: Requirement[];
+        evidence: { findings: { id: string }[]; records: { id: string }[]; themes: unknown[] };
+      },
+    ];
+    expect(rs[0]!.id).toBe("REQ-F70-EU-042");
+    const findingIds = new Set(evidence.findings.map((f) => f.id));
+    expect(rs.every((r) => r.findingIds.every((id) => findingIds.has(id)))).toBe(true);
+    expect(evidence.records.length).toBeGreaterThan(0);
+    expect(evidence.themes.length).toBeGreaterThan(0);
+  });
+
   it("nothing arrived: logs it and adds nothing", async () => {
     const { requirements, logs } = await runBlock({});
     expect(requirements).toHaveLength(0);

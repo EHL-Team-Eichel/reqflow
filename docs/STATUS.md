@@ -343,6 +343,14 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 **Log**
 
+- 2026-10-11: Closed the two Add to Car gaps in the shared architecture: `CarService` in
+  `packages/engine/src/block.ts` now takes `add(requirements, evidence)` and an optional
+  `nextSeq(scope)`; the desktop handlers store sources, cited records, findings and themes with the
+  requirements and continue numbering after the highest existing id (seeded demo ids are kept).
+  Verified in the app's own handlers on BMW's real F70 export (`handlers.test.ts`, runs only with
+  `data/raw/`): Raw → Add to Car run completes, 101 requirements, the detail view has findings,
+  verbatim records and sources, a second run adds new ids and changes nothing old.
+  `npm run check` and `npm run smoke` pass.
 - 2026-10-10: **AI Splitter built** at the existing `ai_splitter` entry point (human requested replacing
   the previous splitter). One input, 2–10 named outputs, priority/category/sentiment/custom modes,
   exact-once primary routing and linked evidence/conflicts retained. No human decisions or requirements
@@ -381,14 +389,7 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
     rules, 9 % unplaced; G60/G70 4,000 each, similar. ~100 ms per export.
   - Verify: `npm run check` (the "BMW … → Add to Car" suites run when `data/raw/` has the exports),
     `npm run smoke`. Tests use the real exports, not invented data.
-- Contract change requests for WS0/WS1:
-  - `ctx.car.add` takes only requirements, so the findings Add to Car derives are recorded in full in
-    the audit trail (`finding.extracted` / `finding.excluded`, `changes[0].after`). Proposal:
-    `car.add(requirements, evidence: { findings, themes })` so the Car page can show them directly.
-  - **Urgent now that runs work:** requirement numbers start at 001 per run, and `saveVersion` upserts
-    on `(id, version)`, so a second run overwrites version 1 of the first run's requirements. `seq` must
-    never be reused per scope: the block needs the next free number (`car.nextSeq(scope)`), or
-    `car.add` assigns the ids.
+- Contract requests for WS0/WS1: **resolved** (see the log entry above them).
 - 2026-10-10 night: Claimed WS7, starting with Add to Car: a deterministic theme splitter
   (component › aspect × polarity, BMW VFC tags first, keyword rules on clauses for untagged text)
   that turns feedback into findings, themes and requirements without an LLM.

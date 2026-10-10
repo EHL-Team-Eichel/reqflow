@@ -22,7 +22,7 @@ import {
   type WorkflowBlock,
   type WorkflowGraph,
 } from "@reqflow/core";
-import type { BlockContext } from "./block";
+import type { BlockContext, CarService } from "./block";
 import type { BlockRegistry } from "./registry";
 
 export class EngineError extends Error {
@@ -51,7 +51,7 @@ export interface WorkflowExecutorOptions {
     audit: AuditLogger;
     files: FileStore;
     web: WebSearch | null;
-    car: { add(requirements: Requirement[]): Promise<void> };
+    car: CarService;
   };
   outputStore?: BlockOutputStore;
   onUpdate?: (run: WorkflowRun) => void;
