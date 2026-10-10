@@ -16,6 +16,7 @@ import {
   priorityForScore,
   ScoreFactor,
   ScoreBreakdown,
+  withSplitterWorkplaces,
 } from "../index";
 
 export const fixtureScope: ProductScope = {
@@ -801,7 +802,7 @@ const rawParams = (dataset: string) => ({
 const RANKS = ["Must have", "Should have", "Could have"];
 
 /** The flow that produced the fixture requirements: BMW data + research → filter → rank → review → car. */
-export const fixtureWorkflow: Workflow = {
+export const fixtureWorkflow: Workflow = withSplitterWorkplaces<Workflow>({
   id: "wf_demo0001",
   name: "Default flow",
   scope: fixtureScope,
@@ -945,7 +946,7 @@ export const fixtureWorkflow: Workflow = {
     { id: "e9", source: "split-rank", sourcePort: "out-1", target: "car", targetPort: "in-1" },
     { id: "e10", source: "split-rank", sourcePort: "out-2", target: "car", targetPort: "in-2" },
   ],
-};
+});
 
 const done = (
   blockId: string,

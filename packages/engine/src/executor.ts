@@ -6,6 +6,7 @@ import {
   newId,
   parseBlockParams,
   validateGraph,
+  withSplitterWorkplaces,
   WorkflowRun,
   type Actor,
   type AuditLogger,
@@ -46,7 +47,7 @@ export interface BlockOutputStore {
 export interface WorkflowExecutorOptions {
   registry: BlockRegistry;
   services: {
-    llm: LlmClient;
+    llm: LlmClient | ((settings: Settings) => Promise<LlmClient>);
     audit: AuditLogger;
     files: FileStore;
     web: WebSearch | null;
@@ -103,6 +104,24 @@ export function collectAllBlocks(graph: WorkflowGraph): WorkflowBlock[] {
   }
   recurse(graph);
   return blocks;
+}
+
+/** Splitters keep editable boundaries even when the built-in AI implementation runs. */
+function usesInnerWorkplace(block: WorkflowBlock): boolean {
+  return (
+    !!block.inner &&
+    block.inner.blocks.length > 0 &&
+    (block.kind !== "ai_splitter" ||
+      block.inner.edges.length > 0 ||
+      block.inner.blocks.some((b) => !isBoundaryBlockKind(b.kind)))
+  );
+}
+
+function executableBlocks(graph: WorkflowGraph): WorkflowBlock[] {
+  return graph.blocks.flatMap((block) => [
+    block,
+    ...(usesInnerWorkplace(block) ? executableBlocks(block.inner!) : []),
+  ]);
 }
 
 export function getDownstreamBlockIds(graph: WorkflowGraph, failedBlockId: string): Set<string> {
@@ -202,7 +221,8 @@ export class WorkflowExecutor {
   }
 
   createInitialRun(workflow: Workflow, startedBy: Actor): WorkflowRun {
-    const allBlocks = collectAllBlocks(workflow);
+    workflow = withSplitterWorkplaces(workflow);
+    const allBlocks = executableBlocks(workflow);
     const initialBlockRuns: BlockRun[] = allBlocks.map((b) => ({
       blockId: b.id,
       status: "pending",
@@ -227,6 +247,7 @@ export class WorkflowExecutor {
   }
 
   validateBeforeRun(workflow: Workflow): void {
+    workflow = withSplitterWorkplaces(workflow);
     const issues = validateGraph(workflow);
     if (issues.length > 0) {
       throw new EngineError(
@@ -235,11 +256,11 @@ export class WorkflowExecutor {
       );
     }
 
-    const allBlocks = collectAllBlocks(workflow);
+    const allBlocks = executableBlocks(workflow);
     for (const block of allBlocks) {
       if (block.kind === "custom") continue;
       if (isBoundaryBlockKind(block.kind)) continue;
-      if (block.inner && block.inner.blocks.length > 0) continue;
+      if (usesInnerWorkplace(block)) continue;
       if (!this.options.registry.has(block.kind)) {
         throw new EngineError(
           `Block "${block.label}" (${block.id}) has no implementation for kind "${block.kind}"`,
@@ -341,12 +362,20 @@ export class WorkflowExecutor {
       blockRun.startedAt = blockRun.startedAt ?? new Date().toISOString();
       this.emitUpdate(run);
 
+      const llmService = this.options.services.llm;
       const ctx: BlockContext = {
         runId: run.id,
         blockId: block.id,
         scope: run.scope,
         settings,
-        llm: this.options.services.llm,
+        llm:
+          typeof llmService === "function"
+            ? {
+                generateObject: async (request) =>
+                  (await llmService(settings)).generateObject(request),
+                generateText: async (request) => (await llmService(settings)).generateText(request),
+              }
+            : llmService,
         audit: this.options.services.audit,
         files: this.options.services.files,
         web: this.options.services.web,
@@ -371,10 +400,10 @@ export class WorkflowExecutor {
           blockOutputs = { out: blockInputs.in ?? emptyPipelineData() };
         } else if (block.kind === "block_output") {
           blockOutputs = { in: blockInputs.in ?? emptyPipelineData() };
-        } else if (block.inner && block.inner.blocks.length > 0) {
+        } else if (usesInnerWorkplace(block)) {
           const subflowRes = await this.executeWorkplace(
             run,
-            block.inner,
+            block.inner!,
             blockInputs,
             settings,
             signal,
@@ -425,6 +454,14 @@ export class WorkflowExecutor {
         await this.saveOutput(run.id, block.id, blockOutputs);
         this.emitUpdate(run);
       } catch (err) {
+        if (signal.aborted) {
+          blockRun.status = "skipped";
+          blockRun.finishedAt = new Date().toISOString();
+          run.status = "cancelled";
+          run.finishedAt = blockRun.finishedAt;
+          this.emitUpdate(run);
+          return { status: "paused" };
+        }
         const errMsg = err instanceof Error ? err.message : String(err);
         blockRun.status = "failed";
         blockRun.error = errMsg;
