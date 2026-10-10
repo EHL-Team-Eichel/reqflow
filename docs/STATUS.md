@@ -240,6 +240,8 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
   retains the same 12 documented stale marker/menu assertions (32 screenshots). Final checks
   run in an isolated checkout because other sessions are updating this branch concurrently.
 
+- 2026-10-11: Implemented BMW models 81-90 (2009 128i Coupe E82, 2021 M5 Competition F90 LCI, 2022 G82 M4 ADRO Carbon Widebody, 2021 M4 Competition G82, 2021 M4 G82 Zacoe Carbon Kit, 2015 X6 F16, 2015 X5 F15, 2016 X6 M F86, 2016 X5 M F85, 2019 Z4 M40i G29). Added ADRO aerodynamic redesign, ZACOE multi-tier splitters, F85/F86 M V8 power plants and Z4 roadster soft-top.
+
 - 2026-10-11: Implemented BMW models 71-80 (1990 E30 M3 Sport Evolution, 2003 M3 E46 Coupé, 2005 M6 Coupé E63 V10, 2013 M6 Coupe F13, 2018 M5 F90, 2025 M5 G99 Touring, 2025 M5 Sedan G90, 2014 5-Series Gran Turismo F07, 2006 Z4 M Coupe E86, 2005 M3 E46 GTR NFS Most Wanted). Added NFS hero livery aero, V10 carbon roof styling, G99 M Hybrid super-estate and Sport Evo homologation splitters.
 
 - 2026-10-11: Implemented BMW models 61-70 (2018 M4 F82 GT4, 2015 M4 Coupe F82, 2020 M850i Gran Coupe G16, 2016 M4 GTS F82, 2019 Varis M4 GTS SEMA Build, 2020 M8 Competition Convertible F91, 2017 AC Schnitzer i8 ACS8, 2019 LB-Works i8 Ver.2, 2015 i8 Coupe, 2021 218i Gran Coupé F44). Added water-injection M4 GTS roll bar, GT4 race cockpit and AC Schnitzer carbon hybrid aero.
