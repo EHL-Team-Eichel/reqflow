@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4KGC0CTDKG59F4VDHCAY7DR",
   "strategy": "manual-commit",
   "branch": "ws7-ai-splitter",
-  "checkpoints_count": 17,
+  "checkpoints_count": 18,
   "files_touched": [
     "apps/desktop/src/main/handlers.ts",
     "apps/desktop/src/main/smoke.ts",
@@ -114,6 +114,13 @@
       "compact_transcript": "/14/transcript.jsonl",
       "content_hash": "/14/content_hash.txt",
       "prompt": "/14/prompt.txt"
+    },
+    {
+      "metadata": "/15/metadata.json",
+      "transcript": "/15/full.jsonl",
+      "compact_transcript": "/15/transcript.jsonl",
+      "content_hash": "/15/content_hash.txt",
+      "prompt": "/15/prompt.txt"
     }
   ],
   "token_usage": {
