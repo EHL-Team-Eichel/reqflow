@@ -157,7 +157,7 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 ## WS3 — Car tab: requirements review & audit UI
 
-**Status:** open · **Owner:** — · **Branch:** —
+**Status:** in progress (3D car + part classifier first) · **Owner:** Claude Code (car-model session) · **Branch:** `ws3-car-model`
 **Depends on:** nothing to start: build on `@reqflow/core/fixtures` (5 requirements, findings, sources,
 audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 serves them.
 
@@ -174,8 +174,15 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - [ ] Audit timeline (global and per requirement) from `api.audit.list`, before → after diffs, filters.
 - [ ] Export button → `api.exports.requirements` (JSON / CSV / Markdown).
 - [ ] Add Car-tab steps to `npm run smoke` (propose the diff to WS1/WS0 in your log).
+- [ ] 3D car (5 Series G60 proportions, blueprint-sketch look): orbit / zoom, every part clickable,
+      the part's requirements from Add to Car shown in a side panel.
+- [ ] Auto classifier: assign every requirement to a car part (explainable: matched terms, confidence).
 
 **Log**
+
+- 2026-10-10 night: Claimed WS3. Starting with the 3D car and the part classifier the user asked for.
+  Decision: no free BMW G60 3D model is licensed for a public repo (all are paid or editorial-only),
+  so the car is built procedurally in three.js from G60 dimensions, every part its own mesh.
 
 ## WS4 — Settings, app shell & packaging
 
