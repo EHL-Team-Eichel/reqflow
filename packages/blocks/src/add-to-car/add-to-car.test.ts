@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
+  AuditEvent,
   defaultBlockParams,
   DEFAULT_SETTINGS,
   emptyPipelineData,
@@ -29,10 +30,16 @@ function context(scope = DEFAULT_SETTINGS.defaultScope, file?: StoredFile) {
     settings: DEFAULT_SETTINGS,
     files: { get: async () => file },
     audit: {
-      record: async (e: AuditEventInput) => (
-        audit.push(e),
-        { ...e, id: "aud_x", at: "", changes: [] }
-      ),
+      record: async (e: AuditEventInput) => {
+        const validated = AuditEvent.parse({
+          ...e,
+          id: "aud_test",
+          at: "2026-10-10T20:00:00.000Z",
+          changes: e.changes ?? [],
+        });
+        audit.push(e);
+        return validated;
+      },
     },
     car: { add: async (rs: Requirement[]) => void added.push(rs) },
     log: (m: string) => logs.push(m),
@@ -92,6 +99,32 @@ describe("Add to Car rules", () => {
     const { requirements, logs } = await runBlock({});
     expect(requirements).toHaveLength(0);
     expect(logs).toEqual(["Nothing arrived, so no requirements were added."]);
+  });
+
+  it("publishes synthetic feedback with schema-valid creation audit events", async () => {
+    const source = { ...fixtureSources[0]!, kind: "customer_feedback" as const };
+    const texts = [
+      "The rear seats are uncomfortable on long journeys",
+      "The rear seats are uncomfortable and need better support",
+      "The price is too expensive",
+    ];
+    const data = PipelineData.parse({
+      ...emptyPipelineData(),
+      sources: [source],
+      records: texts.map((text, i) => ({
+        id: `rec_synthetic${i}`,
+        sourceId: source.id,
+        text,
+        language: "en",
+      })),
+    });
+    const { requirements, audit } = await runBlock({ "in-0": data });
+    expect(requirements.length).toBeGreaterThan(0);
+    expect(requirements.every((r) => r.status === "proposed")).toBe(true);
+    expect(audit.map((event) => event.action)).toEqual(
+      expect.arrayContaining(["finding.extracted", "finding.excluded", "requirement.proposed"]),
+    );
+    expect(audit.every((event) => event.changes?.[0]?.path === "$")).toBe(true);
   });
 
   it("core fixtures: deterministic, every output parses, every excerpt is verbatim", () => {
