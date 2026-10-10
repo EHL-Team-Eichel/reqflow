@@ -42,8 +42,8 @@ export function CarPage() {
   const scope = useSettings((s) => s.settings.defaultScope);
   const { selectedModelId, powertrain, setPowertrain } = useVehicleStore();
   const active = useMemo(() => getActiveVehicle(), [selectedModelId, powertrain]);
-  const availableParts = availablePartIds(powertrain);
-  const subclasses = powertrainSubclasses(powertrain);
+  const availableParts = availablePartIds(powertrain, active.model);
+  const subclasses = powertrainSubclasses(powertrain, active.model);
   const [view, setView] = useState<CarView>("exterior");
   const [selected, setSelected] = useState<string | null>(null);
   const [markerMenu, setMarkerMenu] = useState(initialMarkerMenu);

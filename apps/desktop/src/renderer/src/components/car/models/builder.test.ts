@@ -1,13 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { buildVehicleModel } from "./builder";
 import { BATCH_1_MODELS } from "./batch1";
+import { BATCH_2_MODELS } from "./batch2";
 import { VEHICLE_MODELS, getVehicleModelById, searchVehicleModels } from "./registry";
 import type { PowertrainType } from "./types";
 
 describe("Vehicle Models & Builder", () => {
-  it("has definitions for all models in Batch 1", () => {
+  it("has definitions for all models in Batch 1 and Batch 2", () => {
     expect(BATCH_1_MODELS).toHaveLength(10);
-    for (const model of BATCH_1_MODELS) {
+    expect(BATCH_2_MODELS).toHaveLength(10);
+    expect(VEHICLE_MODELS).toHaveLength(20);
+    for (const model of [...BATCH_1_MODELS, ...BATCH_2_MODELS]) {
       expect(model.id).toBeTruthy();
       expect(model.name).toBeTruthy();
       expect(model.sketchfabUid).toMatch(/^[a-f0-9]{32}$/);

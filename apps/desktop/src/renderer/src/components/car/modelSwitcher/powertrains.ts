@@ -1,6 +1,6 @@
 import { CAR_PARTS, EXTENDED_CAR_PARTS } from "../parts";
 import { PART_SUBCLASSES, type PartSubclass } from "../partMenu";
-import type { PowertrainType } from "../models/types";
+import type { PowertrainType, VehicleModel } from "../models/types";
 
 /** Schematic layouts, independent of the configured requirement scope/vehicle derivative. */
 export const POWERTRAINS = [
@@ -46,22 +46,42 @@ export const POWERTRAIN_PARTS: Readonly<Record<PowertrainType, readonly string[]
   gasoline: ["combustion_engine", "fuel_system", "exhaust_system"],
 };
 
-/** Only powertrain extensions join classification; optional future body parts remain scaffolding. */
-export const CLASSIFIABLE_PARTS = [
-  ...CAR_PARTS,
-  ...EXTENDED_CAR_PARTS.filter((p) => VARIABLE_PARTS.includes(p.id)),
-];
+/** Stable vocabulary across sketches, so switching never changes requirement assignments. */
+export const CLASSIFIABLE_PARTS = [...CAR_PARTS, ...EXTENDED_CAR_PARTS];
 
-export function availablePartIds(powertrain: PowertrainType): ReadonlySet<string> {
+export function availablePartIds(
+  powertrain: PowertrainType,
+  model?: VehicleModel,
+): ReadonlySet<string> {
   return new Set([
     ...CAR_PARTS.filter((p) => !VARIABLE_PARTS.includes(p.id)).map((p) => p.id),
     ...POWERTRAIN_PARTS[powertrain],
+    ...modelPartIds(model),
   ]);
 }
 
-export function powertrainSubclasses(powertrain: PowertrainType): readonly PartSubclass[] {
-  const available = availablePartIds(powertrain);
-  return PART_SUBCLASSES.map((subclass) => ({
+/** Map special-equipment aliases to the existing selectable assembly IDs. */
+export function modelPartIds(model?: VehicleModel): string[] {
+  const aliases: Readonly<Record<string, string>> = {
+    gt_wing: "rear_spoiler",
+    duckbill_spoiler: "rear_spoiler",
+    canards: "front_splitter",
+  };
+  return [
+    ...new Set(
+      (model?.specialParts ?? [])
+        .filter((id) => !VARIABLE_PARTS.includes(id))
+        .map((id) => aliases[id] ?? id),
+    ),
+  ];
+}
+
+export function powertrainSubclasses(
+  powertrain: PowertrainType,
+  model?: VehicleModel,
+): readonly PartSubclass[] {
+  const available = availablePartIds(powertrain, model);
+  const subclasses = PART_SUBCLASSES.map((subclass) => ({
     ...subclass,
     partIds:
       subclass.id === "power_chassis"
@@ -71,6 +91,15 @@ export function powertrainSubclasses(powertrain: PowertrainType): readonly PartS
           ]
         : subclass.partIds.filter((id) => available.has(id)),
   }));
+  const existing = new Set(subclasses.flatMap((subclass) => subclass.partIds));
+  for (const group of ["exterior", "interior", "technology"] as const) {
+    const partIds = EXTENDED_CAR_PARTS.filter(
+      (p) => p.group === group && available.has(p.id) && !existing.has(p.id),
+    ).map((p) => p.id);
+    if (partIds.length)
+      subclasses.push({ id: `model_${group}`, label: "Model equipment", group, partIds });
+  }
+  return subclasses;
 }
 
 /** Preserve original assignments/counts; absent parts retain their own review rows. */

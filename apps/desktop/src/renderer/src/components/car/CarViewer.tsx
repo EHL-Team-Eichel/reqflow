@@ -8,7 +8,6 @@ import { markerPresentation } from "./markerMenu";
 import { trackIdleOrbit } from "./idleOrbit";
 import { buildCar, type CarPiece } from "./model/buildCar";
 import { buildVehicleModel } from "./models/builder";
-import { getActiveVehicle } from "./models/vehicleStore";
 import { getVehicleModelById } from "./models/registry";
 import type { PowertrainType } from "./models/types";
 import { G60 } from "./model/body";
@@ -106,10 +105,10 @@ export function CarViewer(props: Props) {
     const idleOrbit = trackIdleOrbit(window);
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
-    const active = getActiveVehicle();
-    const activeModel = props.modelId ? getVehicleModelById(props.modelId) : active.model;
-    const activePowertrain = props.powertrain ?? active.powertrain;
-    const car = activeModel ? buildVehicleModel(activeModel, activePowertrain) : buildCar();
+    const activeModel = props.modelId ? getVehicleModelById(props.modelId) : undefined;
+    const car = activeModel
+      ? buildVehicleModel(activeModel, props.powertrain)
+      : buildCar(props.powertrain);
     scene.add(car.root);
     setAnchors(car.anchors);
     const exteriorTargets = exteriorBadgeTargets(car.pieces, car.anchors);

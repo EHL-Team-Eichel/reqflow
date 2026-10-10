@@ -24,7 +24,8 @@ export const BATCH_1_MODELS: VehicleModel[] = [
       groundClearance: 0.14,
     },
     specialParts: ["exhaust_system", "fuel_system"],
-    description: "The benchmark sports sedan featuring xDrive intelligent all-wheel drive and BMW Curved Display.",
+    description:
+      "The benchmark sports sedan featuring xDrive intelligent all-wheel drive and BMW Curved Display.",
   },
   {
     id: "bmw_m4_gt3_evo_2025",
@@ -59,7 +60,8 @@ export const BATCH_1_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "Factory GT3 EVO race machine with extreme aero package, swan-neck GT rear wing and full FIA roll cage.",
+    description:
+      "Factory GT3 EVO race machine with extreme aero package, swan-neck GT rear wing and full FIA roll cage.",
   },
   {
     id: "bmw_zacoe_g87_m2_widebody_2026",
@@ -92,7 +94,8 @@ export const BATCH_1_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "ZACOE carbon fiber widebody program featuring aggressive flared fenders, central aero diffuser and GT wing.",
+    description:
+      "ZACOE carbon fiber widebody program featuring aggressive flared fenders, central aero diffuser and GT wing.",
   },
   {
     id: "bmw_g87_m2_zacoe_sema_2024",
@@ -125,7 +128,8 @@ export const BATCH_1_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "SEMA showcase show car featuring extreme carbon fiber aero extensions and track-spec roll cage.",
+    description:
+      "SEMA showcase show car featuring extreme carbon fiber aero extensions and track-spec roll cage.",
   },
   {
     id: "bmw_vorsteiner_g87_m2_project_2023",
@@ -157,7 +161,8 @@ export const BATCH_1_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "Vorsteiner aero tuning project with carbon front splitter, vented hood, and duckbill trunk lip.",
+    description:
+      "Vorsteiner aero tuning project with carbon front splitter, vented hood, and duckbill trunk lip.",
   },
   {
     id: "bmw_vorsteiner_g87_m2_vrs_2024",
@@ -189,7 +194,8 @@ export const BATCH_1_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "Full VRS aero program with pre-preg carbon fiber aerodynamic elements and high downforce GT wing.",
+    description:
+      "Full VRS aero program with pre-preg carbon fiber aerodynamic elements and high downforce GT wing.",
   },
   {
     id: "bmw_adro_g87_m2_2023",
@@ -221,7 +227,8 @@ export const BATCH_1_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "ADRO aerodynamic styling package redesigning the G87 front facia with functional carbon aerodynamic components.",
+    description:
+      "ADRO aerodynamic styling package redesigning the G87 front facia with functional carbon aerodynamic components.",
   },
   {
     id: "bmw_m140i_2018",
@@ -246,7 +253,8 @@ export const BATCH_1_MODELS: VehicleModel[] = [
       groundClearance: 0.13,
     },
     specialParts: ["rear_spoiler", "rear_diffuser", "exhaust_system", "fuel_system"],
-    description: "The rear-wheel-drive hot hatch legend powered by the B58 3.0-litre turbocharged inline-6.",
+    description:
+      "The rear-wheel-drive hot hatch legend powered by the B58 3.0-litre turbocharged inline-6.",
   },
   {
     id: "bmw_m2_cs_2026",
@@ -278,7 +286,8 @@ export const BATCH_1_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "Competition Sport evolution of the M2 with lightweight carbon roof, duckbill rear lid and 525+ hp.",
+    description:
+      "Competition Sport evolution of the M2 with lightweight carbon roof, duckbill rear lid and 525+ hp.",
   },
   {
     id: "bmw_750li_xdrive_2020",
@@ -303,6 +312,7 @@ export const BATCH_1_MODELS: VehicleModel[] = [
       groundClearance: 0.15,
     },
     specialParts: ["exhaust_system", "fuel_system"],
-    description: "Long-wheelbase luxury flagship with twin-turbo 4.4L V8, executive lounge seating and Carbon Core chassis.",
+    description:
+      "Long-wheelbase luxury flagship with twin-turbo 4.4L V8, executive lounge seating and Carbon Core chassis.",
   },
 ];

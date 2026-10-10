@@ -14,6 +14,8 @@ export function initialMarkerMenu(): MarkerMenuState {
 
 export function menuGroup(id: string): PartGroup {
   if (MENU_GROUPS.includes(id as PartGroup)) return id as PartGroup;
+  if (id.startsWith("model_") && MENU_GROUPS.includes(id.slice(6) as PartGroup))
+    return id.slice(6) as PartGroup;
   const subclass = PART_SUBCLASSES.find((s) => s.id === id);
   if (!subclass) throw new Error(`Unknown car menu: ${id}`);
   return subclass.group;
@@ -41,6 +43,7 @@ export function toggleMarkerMenu(state: MarkerMenuState, id: string): MarkerMenu
   }
   expanded.delete(id);
   if (id === group) {
+    expanded.delete(`model_${group}`);
     for (const subclass of PART_SUBCLASSES) {
       if (subclass.group === group) expanded.delete(subclass.id);
     }

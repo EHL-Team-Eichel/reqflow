@@ -1,6 +1,12 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
-import { buildCar, type CarModel, type CarPiece, type PieceKind, type PieceLayer } from "../model/buildCar";
+import {
+  buildCar,
+  type CarModel,
+  type CarPiece,
+  type PieceKind,
+  type PieceLayer,
+} from "../model/buildCar";
 import { G60 } from "../model/body";
 import type { PowertrainType, VehicleModel } from "./types";
 
@@ -14,7 +20,7 @@ export function buildVehicleModel(
   model?: VehicleModel,
   powertrain: PowertrainType = "gasoline",
 ): CarModel {
-  const base = buildCar();
+  const base = buildCar(powertrain);
   if (!model) return base;
 
   const root = base.root;
@@ -84,105 +90,6 @@ export function buildVehicleModel(
   const halfTrack = G60.track / 2;
   const tyreRadius = G60.tyreRadius;
 
-  // ---- Powertrain Specific Components ----------------------------------------------------
-  if (powertrain === "gasoline") {
-    // Hide underfloor battery pack
-    for (const p of pieces) {
-      if (p.partId === "battery_pack") p.mesh.visible = false;
-    }
-    // TwinPower Turbo engine block (Inline-6 or V8)
-    box("motor", "metal", "interior", [0.72, 0.44, 0.46], [frontAxleX + 0.05, 0.62, 0], {
-      radius: 0.04,
-    });
-    // Engine cylinder head cover with M Power badge styling
-    box("motor", "dark", "interior", [0.66, 0.09, 0.36], [frontAxleX + 0.05, 0.86, 0], {
-      radius: 0.02,
-    });
-    // Intake manifold / turbochargers
-    box("motor", "accent", "interior", [0.38, 0.16, 0.18], [frontAxleX + 0.12, 0.72, 0.26], {
-      radius: 0.02,
-    });
-    // Fuel tank under rear bench
-    box("fuel_system", "dark", "interior", [0.55, 0.24, 1.15], [-1.02, 0.38, 0], {
-      radius: 0.04,
-    });
-    anchors.set("fuel_system", new THREE.Vector3(-1.02, 0.38, 0));
-
-    // Exhaust system: mid-muffler, rear muffler box and dual or quad chrome exhaust tips
-    box("exhaust_system", "metal", "interior", [0.52, 0.18, 0.42], [-0.2, 0.22, 0], {
-      radius: 0.03,
-    });
-    box("exhaust_system", "metal", "exterior", [0.34, 0.18, 0.88], [rearX + 0.35, 0.32, 0], {
-      radius: 0.04,
-    });
-    // Quad exhaust tips protruding past rear bumper
-    const quadTips =
-      model.specialParts.includes("gt_wing") ||
-      model.series.startsWith("M") ||
-      model.name.includes("M") ||
-      model.name.includes("CS") ||
-      model.name.includes("GTS");
-
-    const tipZPositions = quadTips ? [-0.44, -0.34, 0.34, 0.44] : [-0.38, 0.38];
-    for (const z of tipZPositions) {
-      disc("exhaust_system", "chrome", "exterior", 0.046, 0.16, [rearX - 0.04, 0.29, z]);
-      disc("exhaust_system", "dark", "exterior", 0.038, 0.165, [rearX - 0.04, 0.29, z]);
-    }
-    anchors.set("exhaust_system", new THREE.Vector3(rearX - 0.04, 0.29, 0));
-  } else if (powertrain === "hybrid") {
-    // Hybrid: smaller internal combustion engine + electric motor + hybrid battery
-    box("motor", "metal", "interior", [0.56, 0.4, 0.42], [frontAxleX + 0.1, 0.6, 0], {
-      radius: 0.03,
-    });
-    box("motor", "dark", "interior", [0.5, 0.08, 0.32], [frontAxleX + 0.1, 0.82, 0], {
-      radius: 0.02,
-    });
-    box("fuel_system", "dark", "interior", [0.42, 0.2, 0.95], [-1.05, 0.38, 0], {
-      radius: 0.03,
-    });
-    anchors.set("fuel_system", new THREE.Vector3(-1.05, 0.38, 0));
-
-    // Dual exhaust tips
-    for (const z of [-0.36, 0.36]) {
-      disc("exhaust_system", "chrome", "exterior", 0.042, 0.15, [rearX - 0.03, 0.29, z]);
-      disc("exhaust_system", "dark", "exterior", 0.035, 0.155, [rearX - 0.03, 0.29, z]);
-    }
-    anchors.set("exhaust_system", new THREE.Vector3(rearX - 0.03, 0.29, 0));
-  } else if (powertrain === "h2") {
-    // Hydrogen: Fuel Cell stack + 700-bar carbon composite H2 storage cylinders
-    for (const p of pieces) {
-      if (p.partId === "battery_pack") p.mesh.visible = false;
-    }
-    // Fuel cell stack under bonnet
-    box("motor", "metal", "interior", [0.65, 0.42, 0.52], [frontAxleX + 0.05, 0.62, 0], {
-      radius: 0.03,
-    });
-    box("motor", "accent", "interior", [0.5, 0.12, 0.4], [frontAxleX + 0.05, 0.84, 0], {
-      radius: 0.02,
-    });
-    // Longitudinal 700-bar carbon-fibre H2 tank in tunnel
-    disc("h2_storage", "dark", "interior", 0.13, 1.45, [-0.1, 0.34, 0]);
-    // Transverse 700-bar H2 tank under rear seats
-    add(
-      new THREE.CylinderGeometry(0.14, 0.14, 1.15, 24).rotateZ(Math.PI / 2),
-      "h2_storage",
-      "dark",
-      "interior",
-      (m) => m.position.set(-1.05, 0.38, 0),
-    );
-    anchors.set("h2_storage", new THREE.Vector3(-0.5, 0.35, 0));
-
-    // Buffer battery pack (compact 35 kWh)
-    box("battery_pack", "dark", "interior", [1.1, 0.09, 1.1], [-0.05, 0.25, 0], { radius: 0.02 });
-
-    // Water-vapor exhaust port
-    disc("exhaust_system", "metal", "exterior", 0.032, 0.09, [rearX - 0.02, 0.28, 0.34]);
-    anchors.set("exhaust_system", new THREE.Vector3(rearX - 0.02, 0.28, 0.34));
-  } else {
-    // Electric: standard clean electric setup with full underfloor battery
-    anchors.set("charging_port", new THREE.Vector3(-1.6, 0.95, -0.88));
-  }
-
   // ---- Car-Specific Components -----------------------------------------------------------
   const specialParts = model.specialParts;
   const deckY = 1.14;
@@ -190,26 +97,54 @@ export function buildVehicleModel(
   // 1. GT Wing / Motorsport Wing
   if (specialParts.includes("gt_wing")) {
     // Twin curved carbon upright stanchions mounted to trunk deck
-    box("rear_spoiler", "dark", "exterior", [0.07, 0.28, 0.035], [rearX + 0.28, deckY + 0.14, -0.46], {
-      radius: 0.008,
-      rotZ: -0.15,
-    });
-    box("rear_spoiler", "dark", "exterior", [0.07, 0.28, 0.035], [rearX + 0.28, deckY + 0.14, 0.46], {
-      radius: 0.008,
-      rotZ: -0.15,
-    });
+    box(
+      "rear_spoiler",
+      "dark",
+      "exterior",
+      [0.07, 0.28, 0.035],
+      [rearX + 0.28, deckY + 0.14, -0.46],
+      {
+        radius: 0.008,
+        rotZ: -0.15,
+      },
+    );
+    box(
+      "rear_spoiler",
+      "dark",
+      "exterior",
+      [0.07, 0.28, 0.035],
+      [rearX + 0.28, deckY + 0.14, 0.46],
+      {
+        radius: 0.008,
+        rotZ: -0.15,
+      },
+    );
     // Main inverted aerodynamic carbon wing blade
     box("rear_spoiler", "dark", "exterior", [0.32, 0.035, 1.48], [rearX + 0.24, deckY + 0.28, 0], {
       radius: 0.012,
       rotZ: 0.08,
     });
     // Aerodynamic vertical endplates
-    box("rear_spoiler", "dark", "exterior", [0.34, 0.16, 0.018], [rearX + 0.24, deckY + 0.28, -0.74], {
-      radius: 0.006,
-    });
-    box("rear_spoiler", "dark", "exterior", [0.34, 0.16, 0.018], [rearX + 0.24, deckY + 0.28, 0.74], {
-      radius: 0.006,
-    });
+    box(
+      "rear_spoiler",
+      "dark",
+      "exterior",
+      [0.34, 0.16, 0.018],
+      [rearX + 0.24, deckY + 0.28, -0.74],
+      {
+        radius: 0.006,
+      },
+    );
+    box(
+      "rear_spoiler",
+      "dark",
+      "exterior",
+      [0.34, 0.16, 0.018],
+      [rearX + 0.24, deckY + 0.28, 0.74],
+      {
+        radius: 0.006,
+      },
+    );
     anchors.set("rear_spoiler", new THREE.Vector3(rearX + 0.24, deckY + 0.28, 0));
   } else if (specialParts.includes("duckbill_spoiler") || specialParts.includes("rear_spoiler")) {
     // Sculpted aerodynamic duckbill spoiler or lip spoiler along rear trunk edge
@@ -299,7 +234,10 @@ export function buildVehicleModel(
         { radius: 0.015 },
       );
     }
-    anchors.set("widebody_flares", new THREE.Vector3(frontAxleX, tyreRadius + 0.2, halfTrack + 0.06));
+    anchors.set(
+      "widebody_flares",
+      new THREE.Vector3(frontAxleX, tyreRadius + 0.2, halfTrack + 0.06),
+    );
   }
 
   // 5. Motorsport Safety Roll Cage

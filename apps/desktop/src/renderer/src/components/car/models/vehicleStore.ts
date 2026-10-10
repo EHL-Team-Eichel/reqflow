@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { settingsStore } from "@/lib/settings";
 import type { PowertrainType, VehicleModel } from "./types";
 import { getVehicleModelById, VEHICLE_MODELS } from "./registry";
 
@@ -14,6 +13,10 @@ interface VehicleState {
   setSelectedCategory: (category: string) => void;
 }
 
+export function isPowertrain(value: unknown): value is PowertrainType {
+  return value === "electric" || value === "hybrid" || value === "h2" || value === "gasoline";
+}
+
 const STORAGE_KEY = "reqflow.vehicle_switcher_state";
 
 function loadSaved(): { modelId: string; powertrain: PowertrainType } {
@@ -21,10 +24,10 @@ function loadSaved(): { modelId: string; powertrain: PowertrainType } {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed.modelId === "string") {
+      if (parsed && typeof parsed.modelId === "string" && getVehicleModelById(parsed.modelId)) {
         return {
           modelId: parsed.modelId,
-          powertrain: parsed.powertrain || "gasoline",
+          powertrain: isPowertrain(parsed.powertrain) ? parsed.powertrain : "electric",
         };
       }
     }
@@ -33,7 +36,7 @@ function loadSaved(): { modelId: string; powertrain: PowertrainType } {
   }
   return {
     modelId: VEHICLE_MODELS[0]?.id ?? "bmw_330i_xdrive_2025",
-    powertrain: "gasoline",
+    powertrain: "electric",
   };
 }
 
@@ -64,20 +67,10 @@ export const useVehicleStore = create<VehicleState>((set, get) => {
 
       set({ selectedModelId: modelId, powertrain: nextPowertrain });
       persist(modelId, nextPowertrain);
-
-      // Synchronize with app settings scope
-      try {
-        settingsStore.getState().update("defaultScope", {
-          vehicleLine: model.series,
-          vehicleCode: model.chassisCode,
-          derivative: model.bodyType,
-        });
-      } catch {
-        // Safe fallback if settings store is loading
-      }
     },
 
     setPowertrain: (powertrain: PowertrainType) => {
+      if (!isPowertrain(powertrain)) throw new Error("Unknown powertrain");
       set({ powertrain });
       persist(get().selectedModelId, powertrain);
     },
