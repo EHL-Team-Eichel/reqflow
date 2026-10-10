@@ -387,6 +387,66 @@ export async function runSmoke(
     "typing: allowed domains should keep both lines",
   );
 
+  // Car: the 3D car renders, parts are clickable (badge, list and a real click on the canvas),
+  // and the classifier explains where each requirement went.
+  await go("/car");
+  for (let i = 0; i < 40 && (await count('[data-testid="car-canvas"]')) === 0; i++)
+    await delay(100);
+  check((await count('[data-testid="car-canvas"]')) === 1, "car: no 3D canvas");
+  await delay(600);
+  await shot("car-3d");
+  check(
+    (await count('[data-testid^="car-part-"]')) >= 30,
+    "car: part index should list every part",
+  );
+  check(await click('[data-testid="car-source-sample"]'), "car: no sample source option");
+  await delay(400);
+  check((await count('[data-testid^="car-badge-"]')) >= 4, "car: sample should badge ≥ 4 parts");
+  check(await click('[data-testid="car-badge-rear_seats"]'), "car: no badge on the rear seats");
+  await delay(400);
+  check(
+    (await text('[data-testid="car-part-title"]')) === "Rear seats",
+    "car: badge click should select the rear seats",
+  );
+  check(
+    (await count('[data-testid="car-requirement"]')) >= 1,
+    "car: rear seats show no requirement",
+  );
+  check(
+    (await text('[data-testid="car-classifier-reason"]')).includes("rear seats"),
+    "car: classifier should explain itself",
+  );
+  await shot("car-part-selected");
+  for (const view of ["side", "rear", "top"]) {
+    check(await click(`[data-testid="car-camera-${view}"]`), `car: no ${view} camera`);
+    await delay(900);
+    await shot(`car-${view}`);
+  }
+  check(await click('[data-testid="car-camera-side"]'), "car: no side camera");
+  await delay(900);
+  const canvas = await centre('[data-testid="car-canvas"]');
+  if (canvas) {
+    // A real click on the middle of the car (the side view puts a door there).
+    const at = { x: canvas.x, y: canvas.y + 10 };
+    wc.sendInputEvent({ type: "mouseMove", ...at });
+    await delay(150);
+    wc.sendInputEvent({ type: "mouseDown", ...at, button: "left", clickCount: 1 });
+    wc.sendInputEvent({ type: "mouseUp", ...at, button: "left", clickCount: 1 });
+    await delay(400);
+    const picked = await text('[data-testid="car-part-title"]');
+    check(
+      picked !== "" && picked !== "Rear seats",
+      `car: clicking the 3D car selected "${picked}"`,
+    );
+    await shot("car-clicked");
+  }
+  check(await click('[data-testid="car-view-interior"]'), "car: no interior view");
+  check(await click('[data-testid="car-camera-front"]'), "car: no front camera");
+  await delay(900);
+  await shot("car-interior");
+  check(await click('[data-testid="car-view-exterior"]'), "car: no exterior view");
+  check(await click('[data-testid="car-source-app"]'), "car: no app source option");
+
   // 4. Settings: every section, then dark mode across pages.
   await go("/settings");
   for (const id of SETTINGS_SECTIONS) {
