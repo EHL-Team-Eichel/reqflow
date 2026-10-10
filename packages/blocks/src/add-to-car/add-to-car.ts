@@ -113,6 +113,7 @@ export const addToCarBlock = defineBlock({
     ctx.progress(0.6, "Recording findings");
 
     // Findings live only in the audit trail until the Car page stores them (contract request in STATUS.md).
+    // "$" marks a whole newly created entity; audit paths cannot be empty.
     const base = { actor: ADD_TO_CAR_ACTOR, runId: ctx.runId, blockId: ctx.blockId };
     for (const f of derived.findings) {
       await ctx.audit.record({
@@ -120,7 +121,7 @@ export const addToCarBlock = defineBlock({
         action: "finding.extracted",
         entityType: "finding",
         entityId: f.id,
-        changes: [{ path: "", before: null, after: f }],
+        changes: [{ path: "$", before: null, after: f }],
         rationale: `Theme ${f.themeId}: ${f.mentions} supporting comments.`,
       });
     }
@@ -130,7 +131,7 @@ export const addToCarBlock = defineBlock({
         action: "finding.excluded",
         entityType: "finding",
         entityId: f.id,
-        changes: [{ path: "", before: null, after: f }],
+        changes: [{ path: "$", before: null, after: f }],
         rationale: f.outOfScopeReason ?? "Out of scope.",
       });
     }
@@ -140,7 +141,7 @@ export const addToCarBlock = defineBlock({
         action: "requirement.proposed",
         entityType: "requirement",
         entityId: r.id,
-        changes: [{ path: "", before: null, after: r }],
+        changes: [{ path: "$", before: null, after: r }],
         rationale: r.priorityRationale ?? "",
       });
     }

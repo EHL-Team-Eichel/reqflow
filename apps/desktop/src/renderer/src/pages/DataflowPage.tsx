@@ -6,6 +6,7 @@ import { dataflowStore, useDataflow } from "@/components/dataflow/store";
 import { Workplace } from "@/components/dataflow/Workplace";
 import { Button } from "@/components/ui/Button";
 import { Panel } from "@/components/ui/Panel";
+import { RunControls } from "@/components/dataflow/RunControls";
 
 function WorkplaceActions() {
   const path = useDataflow((s) => s.path);
@@ -35,19 +36,22 @@ export function DataflowPage() {
 
   return (
     <ReactFlowProvider>
-      <div className="flex h-full gap-2">
-        <h1 className="sr-only">Data Flow</h1>
-        <Panel title="Building Blocks" className="w-1/4 min-w-64 max-w-sm" testId="palette">
-          <BlockPalette canvasRef={canvasRef} />
-        </Panel>
-        <Panel
-          title={<Breadcrumb />}
-          actions={<WorkplaceActions />}
-          className="flex-1"
-          testId="workplace"
-        >
-          <Workplace canvasRef={canvasRef} />
-        </Panel>
+      <div className="flex h-full flex-col gap-2">
+        <RunControls />
+        <div className="flex min-h-0 flex-1 gap-2">
+          <h1 className="sr-only">Data Flow</h1>
+          <Panel title="Building Blocks" className="w-1/4 min-w-64 max-w-sm" testId="palette">
+            <BlockPalette canvasRef={canvasRef} />
+          </Panel>
+          <Panel
+            title={<Breadcrumb />}
+            actions={<WorkplaceActions />}
+            className="flex-1"
+            testId="workplace"
+          >
+            <Workplace canvasRef={canvasRef} />
+          </Panel>
+        </div>
       </div>
       <HilReport />
     </ReactFlowProvider>
