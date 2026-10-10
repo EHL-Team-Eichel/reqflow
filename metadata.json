@@ -1,0 +1,58 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4KMWRK0Z5V4D4GVXSB0HPP9",
+  "strategy": "manual-commit",
+  "branch": "ws6-research",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".gitignore",
+    ".prettierignore",
+    "apps/desktop/electron-builder.yml",
+    "apps/desktop/electron.vite.config.ts",
+    "apps/desktop/package.json",
+    "apps/desktop/src/main/dispatch.test.ts",
+    "apps/desktop/src/main/dispatch.ts",
+    "apps/desktop/src/main/handlers.ts",
+    "apps/desktop/src/main/index.ts",
+    "apps/desktop/src/main/smoke.ts",
+    "apps/desktop/src/main/ws-bundle.test.ts",
+    "apps/desktop/src/renderer/src/components/settings/sections/AiSection.tsx",
+    "apps/desktop/src/renderer/src/lib/settings-store.test.ts",
+    "apps/desktop/src/renderer/src/lib/settings-store.ts",
+    "apps/desktop/src/renderer/src/pages/DataflowPage.tsx",
+    "apps/desktop/src/renderer/src/pages/SettingsPage.tsx",
+    "apps/desktop/tsconfig.web.json",
+    "docs/STATUS.md",
+    "package-lock.json",
+    "package.json",
+    "packages/blocks/package.json",
+    "packages/blocks/src/index.ts",
+    "packages/blocks/src/research/index.ts",
+    "packages/core/src/audit.ts",
+    "packages/core/src/blocks.ts",
+    "packages/core/src/fixtures/sample-5-series-eu.ts",
+    "packages/core/src/index.ts",
+    "packages/core/src/ipc.ts",
+    "packages/core/src/services.ts",
+    "packages/core/src/settings.ts",
+    "packages/core/src/source.ts",
+    "packages/engine/src/block.ts",
+    "packages/engine/src/index.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 45,
+    "cache_creation_tokens": 56585,
+    "cache_read_tokens": 553835,
+    "output_tokens": 5048,
+    "api_call_count": 15
+  }
+}
