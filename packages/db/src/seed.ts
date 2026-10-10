@@ -1,7 +1,11 @@
 import { fixtureAuditEvents, fixturePipelineData, fixtureRun } from "@reqflow/core/fixtures";
 import type { DatabaseSync } from "node:sqlite";
 
-export function seedDatabaseIfEmpty(db: DatabaseSync): boolean {
+/**
+ * TESTS ONLY: fills an empty database with the synthetic F70 fixtures. The app never calls this;
+ * it removes these rows instead (`removeDemoData`), so demo data never mixes with real results.
+ */
+export function seedFixtures(db: DatabaseSync): boolean {
   const checkStmt = db.prepare("SELECT COUNT(*) AS count FROM requirements");
   const row = checkStmt.get() as { count: number };
   if (row.count > 0) {

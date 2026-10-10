@@ -28,7 +28,7 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
   delete with confirmation. The flow lives in memory: **not saved yet** and **nothing runs yet**.
 - **HIL block (finalized):** double-click opens the review report: a flow chart of how the data was
   collected (lineage across inner workplaces) and a table icon on every step to see the data there
-  (synthetic sample until flows run). Runtime logic (pause until reviewed, then pass on) is built and
+  (a Raw step's own data, a HIL's connected Raw inputs, or the saved run; no demo data). Runtime logic (pause until reviewed, then pass on) is built and
   tested; it runs once the executor exists.
 - **Raw block (built, WS5):** reads `.xlsx` (any sheet), CSV (`,` `;` tab, UTF-8 or Windows-1252, German
   number formats) and read-only SQLite queries into one source + one record per row, with
@@ -37,7 +37,8 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
   data (`blocks.preview`). Synthetic samples in `data/samples/`. Also reads BMW's real exports
   (feedback, customer studies, sales volumes; see the WS5 log for their shapes) when they're in
   `data/raw/`; the PDF option list is refused for now.
-- **Car:** placeholder (car icon + global vehicle/market from Settings).
+- **Car:** 3D car with every requirement from Add to Car placed on a part (WS3); **Reset** removes
+  all requirements (audited, ids never reused). No demo data: the car is empty until a flow runs.
 - **Settings:** App, Global parameters, AI & research, Collaboration, About. Changes are validated and
   apply live (theme, grid, minimap). **Not saved to disk yet** (`settings.save` is WS1).
 - **Contract:** domain schemas, block specs (`core/src/blocks.ts`), graph rules (`core/src/graph.ts`),
@@ -69,6 +70,15 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 **Log**
 
+- 2026-10-10 night: **Removed all demo data from the app** and added **Reset** on the Car page
+  (branch `ws0-remove-demo-data`). The database is no longer seeded; on start, `removeDemoData`
+  (`packages/db/src/demo-data.ts`) deletes rows earlier builds seeded (exact fixture ids and the demo
+  run id only). Gone: the Car page's "Synthetic sample" source, the HIL report's sample button
+  (`report/sample.ts`) and the unused `fixture-service.ts`. Fixtures stay for tests (`seedFixtures`,
+  tests only). New `requirements.reset()`: removes every requirement, writes one
+  `requirement.deleted` audit event each, and ids are never reused (`nextSeq` also counts ids in the
+  audit trail). Tests and smoke make real requirements with Raw → Add to Car on a tiny synthetic CSV.
+  Verify: `npm run check && npm run smoke` (screens `car-reset-confirm`, `car-after-reset`).
 - 2026-10-10 night: Demo scope switched to the 1 Series F70 · EU (default settings, fixtures renamed to
   `sample-f70-eu.ts` with `REQ-F70-EU-…` ids, docs). `data/samples/` stays 5 Series on purpose: it
   tests the parser, and a second series shows the Raw block isn't tied to one car.
@@ -143,7 +153,7 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 - [x] HIL report with real data for steps that need a run: Raw steps already show their real data
       (`blocks.preview`); for the others, replace the "no run yet" state in
       `components/dataflow/report/DataPanel.tsx` with the step's data from the latest run (`api.runs.blockOutput`; for the HIL itself merge what
-      its incoming edges carried with `mergePipelineData`). Keep the synthetic sample as an explicit option.
+      its incoming edges carried with `mergePipelineData`). The synthetic sample was removed on 2026-10-10.
 - [ ] Polish: "Tidy up" auto-layout, multi-select actions, minimap colours per block group.
 - [x] Fix direct Raw → HIL report input preview (merged in PR #4 and verified).
 - [x] Save and execute the current flow so Add to Car publishes proposed requirements; expose status, block logs and cancellation (PR #8).

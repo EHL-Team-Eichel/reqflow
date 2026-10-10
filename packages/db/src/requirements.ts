@@ -120,6 +120,40 @@ export class SqliteRequirementRepository {
     };
   }
 
+  /**
+   * Deletes every requirement with all its versions and returns the latest version of each.
+   * Only what was listed is deleted, so a requirement added meanwhile is never removed unseen.
+   */
+  async removeAll(): Promise<Requirement[]> {
+    const removed = await this.list();
+    if (removed.length === 0) return [];
+    const placeholders = removed.map(() => "?").join(", ");
+    this.db
+      .prepare(`DELETE FROM requirements WHERE id IN (${placeholders})`)
+      .run(...removed.map((r) => r.id));
+    return removed;
+  }
+
+  /**
+   * Highest sequence number ever used for ids starting with `prefix` ("REQ-F70-EU-"), counting
+   * deleted requirements too: they live on in the audit trail, so their ids must not come back.
+   */
+  async maxSeq(prefix: string): Promise<number> {
+    const like = `${prefix.replace(/[\\%_]/g, "\\$&")}%`;
+    const rows = this.db
+      .prepare(
+        `SELECT id FROM requirements WHERE id LIKE ? ESCAPE '\\'
+         UNION SELECT entity_id AS id FROM audit_events
+           WHERE entity_type = 'requirement' AND entity_id LIKE ? ESCAPE '\\'`,
+      )
+      .all(like, like) as Array<{ id: string }>;
+    const seqs = rows
+      .map((r) => r.id.slice(prefix.length))
+      .filter((s) => /^\d+$/.test(s))
+      .map(Number);
+    return seqs.length ? Math.max(...seqs) : 0;
+  }
+
   async saveVersion(req: Requirement): Promise<Requirement> {
     const validated = Requirement.parse(req);
     const json = JSON.stringify(validated);

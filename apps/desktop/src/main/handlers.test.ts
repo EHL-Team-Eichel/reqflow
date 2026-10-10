@@ -13,13 +13,51 @@ import {
   type WorkflowRun,
 } from "@reqflow/core";
 import { fixtureRecords, fixtureSources } from "@reqflow/core/fixtures";
-import { createFileStore } from "@reqflow/db";
+import { createDatabase, createFileStore, seedFixtures } from "@reqflow/db";
 import { BlockRegistry, defineBlock } from "@reqflow/engine";
 import { createHandlers } from "./handlers";
 import { SecretsStore } from "./secrets";
 
 /** BMW's real export, present only locally in data/raw/ (gitignored). */
 const BMW_FEEDBACK = join(import.meta.dirname, "../../../../data/raw/F70_feedback_hackathon.xlsx");
+/** Synthetic feedback: two topics with two comments each, enough for Add to Car to propose two. */
+const FEEDBACK_CSV = [
+  "id,comment",
+  "F1,The rear seats are uncomfortable on long journeys",
+  "F2,The rear seats are uncomfortable and need better support",
+  "F3,The infotainment screen is too slow and freezes often",
+  "F4,The infotainment screen freezes and is too slow to respond",
+].join("\n");
+
+type Handlers = ReturnType<typeof createHandlers>;
+
+/** Saves and runs Raw (feedback file) → Add to Car, waits for the run, returns it. */
+async function runFeedbackToCar(handlers: Handlers, uploadsDir: string, path: string) {
+  const file = await createFileStore(uploadsDir).importFile(path);
+  const raw = createBlock("raw", { id: "raw", position: { x: 0, y: 0 } });
+  const car = createBlock("add_to_car", { id: "car", position: { x: 300, y: 0 } });
+  let graph = setBlockParams({ blocks: [raw, car], edges: [] }, "raw", {
+    ...raw.params,
+    dataset: "customer_feedback",
+    file: { fileId: file.id, name: file.name },
+  }).graph;
+  graph = connect(graph, { source: "raw", sourcePort: "out", target: "car", targetPort: "in-0" });
+  const workflow = await handlers.workflows.save({
+    ...graph,
+    name: "Feedback to car",
+    scope: DEFAULT_SETTINGS.defaultScope,
+  });
+  const initial = await handlers.runs.start(workflow.id);
+  let run = await handlers.runs.get(initial.id);
+  const deadline = Date.now() + 30_000;
+  while (run.status === "running" && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    run = await handlers.runs.get(initial.id);
+  }
+  expect(run.error).toBeUndefined();
+  expect(run.status).toBe("completed");
+  return run;
+}
 
 describe("handlers (All IPC methods against SQLite and stores)", () => {
   let tempDir: string;
@@ -173,50 +211,14 @@ describe("handlers (All IPC methods against SQLite and stores)", () => {
     "runs Raw → Add to Car on BMW's real F70 feedback: requirements with evidence, numbering continues",
     async () => {
       const { handlers } = setup();
-      const file = await createFileStore(join(tempDir, "uploads")).importFile(BMW_FEEDBACK);
-      const raw = createBlock("raw", { id: "raw", position: { x: 0, y: 0 } });
-      const car = createBlock("add_to_car", { id: "car", position: { x: 300, y: 0 } });
-      let graph = setBlockParams({ blocks: [raw, car], edges: [] }, "raw", {
-        ...raw.params,
-        dataset: "customer_feedback",
-        file: { fileId: file.id, name: file.name },
-      }).graph;
-      graph = connect(graph, {
-        source: "raw",
-        sourcePort: "out",
-        target: "car",
-        targetPort: "in-0",
-      });
-      const workflow = await handlers.workflows.save({
-        ...graph,
-        name: "F70 feedback to car",
-        scope: DEFAULT_SETTINGS.defaultScope,
-      });
-      const runOnce = async () => {
-        const initial = await handlers.runs.start(workflow.id);
-        let run = await handlers.runs.get(initial.id);
-        const deadline = Date.now() + 30_000;
-        while (run.status === "running" && Date.now() < deadline) {
-          await new Promise((resolve) => setTimeout(resolve, 50));
-          run = await handlers.runs.get(initial.id);
-        }
-        expect(run.error).toBeUndefined();
-        expect(run.status).toBe("completed");
-        return run;
-      };
+      const uploads = join(tempDir, "uploads");
 
-      const seeded = await handlers.requirements.list(); // the app seeds demo requirements
-      await runOnce();
-      const first = (await handlers.requirements.list()).filter(
-        (r) => !seeded.some((x) => x.id === r.id),
-      );
+      await runFeedbackToCar(handlers, uploads, BMW_FEEDBACK);
+      const first = await handlers.requirements.list();
       expect(first.length).toBeGreaterThan(20);
       expect(first.every((r) => r.priority === "must" && r.status === "proposed")).toBe(true);
-      // Numbering continues after the seeded ids instead of overwriting them.
       const seq = (id: string) => Number(id.split("-").at(-1));
-      expect(Math.min(...first.map((r) => seq(r.id)))).toBe(
-        Math.max(...seeded.map((r) => seq(r.id))) + 1,
-      );
+      expect(Math.min(...first.map((r) => seq(r.id)))).toBe(1);
       const detail = await handlers.requirements.get(first[0]!.id);
       expect(detail.findings.length).toBeGreaterThan(0);
       expect(detail.records.length).toBeGreaterThan(0);
@@ -227,9 +229,10 @@ describe("handlers (All IPC methods against SQLite and stores)", () => {
         }
       }
 
-      await runOnce();
+      // A second run continues the numbering instead of overwriting the first run's ids.
+      await runFeedbackToCar(handlers, uploads, BMW_FEEDBACK);
       const all = await handlers.requirements.list();
-      expect(all.length).toBe(seeded.length + 2 * first.length);
+      expect(all.length).toBe(2 * first.length);
       expect(new Set(all.map((r) => r.id)).size).toBe(all.length);
       expect((await handlers.requirements.get(first[0]!.id)).requirement).toEqual(
         detail.requirement,
@@ -240,6 +243,7 @@ describe("handlers (All IPC methods against SQLite and stores)", () => {
 
   it("handles requirements listing, detail view, editing, decisions, and audit trail", async () => {
     const { handlers } = setup();
+    await runSyntheticFeedback(handlers);
 
     const reqs = await handlers.requirements.list();
     expect(reqs.length).toBeGreaterThan(0);
@@ -402,5 +406,54 @@ describe("handlers (All IPC methods against SQLite and stores)", () => {
 
     const exported = await handlers.exports.requirements({ format: "csv" });
     expect(exported?.path).toBe(exportedPath);
+  });
+
+  /** Real requirements, made the way the app makes them: Raw → Add to Car on synthetic feedback. */
+  const runSyntheticFeedback = async (handlers: Handlers) => {
+    const csv = join(tempDir, "feedback.csv");
+    writeFileSync(csv, FEEDBACK_CSV, "utf8");
+    return runFeedbackToCar(handlers, join(tempDir, "uploads"), csv);
+  };
+
+  it("starts without demo data and removes what earlier builds seeded", async () => {
+    const old = createDatabase(dbPath);
+    expect(seedFixtures(old)).toBe(true);
+    old.close();
+
+    const { handlers } = setup();
+    expect(await handlers.requirements.list()).toEqual([]);
+    expect(await handlers.audit.list()).toEqual([]);
+    expect(await handlers.runs.list()).toEqual([]);
+  });
+
+  it("reset removes every requirement, audits each one, and never reuses their ids", async () => {
+    const { handlers } = setup();
+    expect(await handlers.requirements.reset()).toEqual({ removed: 0 });
+
+    await runSyntheticFeedback(handlers);
+    const before = await handlers.requirements.list();
+    expect(before.length).toBeGreaterThan(0);
+    await handlers.requirements.edit(before[0]!.id, { title: "Edited", rationale: "test" });
+
+    expect(await handlers.requirements.reset()).toEqual({ removed: before.length });
+    expect(await handlers.requirements.list()).toEqual([]);
+    await expect(handlers.requirements.get(before[0]!.id)).rejects.toThrow(/not found/i);
+    const deleted = await handlers.audit.list({ action: "requirement.deleted" });
+    expect(deleted.map((e) => e.entityId).sort()).toEqual(before.map((r) => r.id).sort());
+    expect(deleted.every((e) => e.actor.type === "human" && e.rationale?.includes("Reset"))).toBe(
+      true,
+    );
+    // The history of a removed requirement is kept.
+    const history = await handlers.audit.list({ entityId: before[0]!.id });
+    expect(history.map((e) => e.action)).toEqual(
+      expect.arrayContaining(["requirement.proposed", "requirement.edited", "requirement.deleted"]),
+    );
+
+    await runSyntheticFeedback(handlers);
+    const after = await handlers.requirements.list();
+    const seq = (id: string) => Number(id.split("-").at(-1));
+    expect(Math.min(...after.map((r) => seq(r.id)))).toBe(
+      Math.max(...before.map((r) => seq(r.id))) + 1,
+    );
   });
 });

@@ -33,7 +33,7 @@ import {
   formatRequirementsCsv,
   formatRequirementsJson,
   formatRequirementsMarkdown,
-  seedDatabaseIfEmpty,
+  removeDemoData,
   SqliteAuditLogger,
   SqliteRequirementRepository,
   SqliteRunRepository,
@@ -107,8 +107,10 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
   const dataDir = deps.dataDir ?? info.dataDir;
   const db = createDatabase(deps.dbPath ?? (dataDir ? `${dataDir}/reqflow.db` : ":memory:"));
 
-  // Seed fixtures synchronously on startup if database is empty
-  seedDatabaseIfEmpty(db);
+  // Earlier builds seeded synthetic demo data into every new database; remove what's left of it.
+  const demo = removeDemoData(db);
+  const demoRows = Object.values(demo).reduce((sum, n) => sum + n, 0);
+  if (demoRows) console.info(`Removed ${demoRows} synthetic demo rows from the database`, demo);
 
   const auditLogger = new SqliteAuditLogger(db);
   const runRepo = new SqliteRunRepository(db);
@@ -148,11 +150,8 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
           });
         },
         async nextSeq(scope) {
-          const prefix = `REQ-${scope.vehicleCode}-${scope.market}-`;
-          const used = (await reqRepo.list())
-            .filter((r) => r.id.startsWith(prefix))
-            .map((r) => Number(r.id.slice(prefix.length)));
-          return used.length ? Math.max(...used) + 1 : 1;
+          // Counts deleted requirements too (via the audit trail): ids are never reused.
+          return (await reqRepo.maxSeq(`REQ-${scope.vehicleCode}-${scope.market}-`)) + 1;
         },
       },
     },
@@ -429,6 +428,27 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
         });
 
         return saved;
+      },
+      reset: async () => {
+        const { reviewer } = loadSettings(dataDir).review;
+        const removed = await reqRepo.removeAll();
+        for (const r of removed) {
+          await auditLogger.record({
+            actor: {
+              type: "human",
+              userId: reviewer.userId,
+              name: reviewer.name,
+              role: reviewer.role,
+            },
+            action: "requirement.deleted",
+            entityType: "requirement",
+            entityId: r.id,
+            runId: r.runId,
+            rationale: "Removed with Reset on the Car page.",
+            changes: [{ path: "status", before: r.status, after: null }],
+          });
+        }
+        return { removed: removed.length };
       },
     },
     audit: {

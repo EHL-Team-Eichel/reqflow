@@ -120,6 +120,11 @@ export interface ReqflowApi {
     get(id: string): Promise<RequirementDetail>;
     edit(id: string, edit: RequirementEdit): Promise<Requirement>;
     decide(id: string, decision: RequirementDecision): Promise<Requirement>;
+    /**
+     * Removes every requirement (all versions). The audit trail keeps one `requirement.deleted`
+     * event per requirement, and their ids are never handed out again.
+     */
+    reset(): Promise<{ removed: number }>;
   };
   audit: { list(filter?: AuditFilter): Promise<AuditEvent[]> };
   settings: {
@@ -152,7 +157,7 @@ export const IPC_INVOKE_METHODS = {
   workflows: ["list", "get", "save", "remove"],
   files: ["import"],
   runs: ["start", "get", "list", "blockOutput", "resume", "cancel"],
-  requirements: ["list", "get", "edit", "decide"],
+  requirements: ["list", "get", "edit", "decide", "reset"],
   audit: ["list"],
   settings: ["get", "save", "secrets", "setSecret"],
   exports: ["requirements"],
