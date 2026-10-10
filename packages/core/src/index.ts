@@ -16,4 +16,5 @@ export * from "./scoring";
 export * from "./services";
 export * from "./settings";
 export * from "./source";
+export * from "./splitter-report";
 export * from "./workflow";

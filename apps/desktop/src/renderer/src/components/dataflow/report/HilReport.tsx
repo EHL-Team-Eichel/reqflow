@@ -19,6 +19,7 @@ import { DataPanel } from "./DataPanel";
 import { cx } from "@/lib/cx";
 import { runStore } from "../run-session";
 import { pausedHil } from "../run-store";
+import { reportsInLineage } from "./splitter-view";
 
 const REVIEWER_LABELS: Record<string, string> = {
   pm: "Product manager",
@@ -26,7 +27,7 @@ const REVIEWER_LABELS: Record<string, string> = {
   anyone: "Any team member",
 };
 
-/** The HIL review report: lineage flow chart + the data at each step. Opened by double-click. */
+/** HIL and splitter inspection share the saved graph lineage and exact historical outputs. */
 export function HilReport() {
   const report = useDataflow((s) => s.report);
   const editorRoot = useDataflow((s) => s.root);
@@ -79,6 +80,8 @@ function ReportDialog({
   run: WorkflowRun | null;
 }) {
   const lineage = useMemo(() => traceLineage(root, path, block.id), [root, path, block.id]);
+  const upstreamReports = useMemo(() => reportsInLineage(run, lineage), [run, lineage]);
+  const [pickedReportId, setPickedReportId] = useState("");
   const [selectedStepId, setSelectedStepId] = useState(block.id);
   const [reviewReady, setReviewReady] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
@@ -101,13 +104,16 @@ function ReportDialog({
 
   const currentStep = lineage.steps.find((s) => s.block.id === selectedStepId) ?? lineage.steps[0]!;
   const currentStepId = currentStep.block.id;
-  const style = GROUP_STYLE.human;
+  const isHil = block.kind === "hil";
+  const style = isHil ? GROUP_STYLE.human : GROUP_STYLE.ai;
   const instructions = String(block.params.instructions ?? "").trim();
   const reviewerLabel =
     REVIEWER_LABELS[String(block.params.reviewer)] ?? String(block.params.reviewer);
   const approvalsNeeded = Number(block.params.approvals);
   const mayEdit = block.params.allowEdits === true;
-  const waitingHere = pausedHil(run)?.block.id === block.id;
+  const waitingHere = isHil && pausedHil(run)?.block.id === block.id;
+  const pickedReport =
+    upstreamReports.find(({ step }) => step.block.id === pickedReportId) ?? upstreamReports[0];
 
   return (
     <div
@@ -115,6 +121,7 @@ function ReportDialog({
       aria-modal="true"
       aria-labelledby="hil-report-title"
       data-testid="hil-report"
+      data-report-kind={block.kind}
       className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-6"
       onClick={handleBackdropClick}
     >
@@ -126,7 +133,7 @@ function ReportDialog({
         <MStripe />
 
         {/* Header */}
-        <div className="flex flex-col border-b border-line p-6">
+        <div className="flex flex-col border-b border-line p-4">
           <div className="flex items-start justify-between">
             <div className="flex gap-4">
               <div
@@ -139,16 +146,24 @@ function ReportDialog({
               </div>
               <div>
                 <h2 id="hil-report-title" className="text-xl font-semibold text-ink">
-                  Review report · {block.label}
+                  {isHil ? "Review report" : "Scores & routing report"} · {block.label}
                 </h2>
-                <div className="mt-1 flex items-center gap-2 text-sm text-muted">
-                  <span>Human in the loop</span>
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted">
+                  {isHil ? (
+                    <>
+                      <span>Human in the loop</span>
+                      <span className="w-1 h-1 rounded-full bg-line" />
+                      <span>Reviewer: {reviewerLabel}</span>
+                      <span className="w-1 h-1 rounded-full bg-line" />
+                      <span>Approvals needed: {approvalsNeeded}</span>
+                      <span className="w-1 h-1 rounded-full bg-line" />
+                      <span>Reviewer may edit: {mayEdit ? "yes" : "no"}</span>
+                    </>
+                  ) : (
+                    <span>Classifications and routing only · no requirement decisions</span>
+                  )}
                   <span className="w-1 h-1 rounded-full bg-line" />
-                  <span>Reviewer: {reviewerLabel}</span>
-                  <span className="w-1 h-1 rounded-full bg-line" />
-                  <span>Approvals needed: {approvalsNeeded}</span>
-                  <span className="w-1 h-1 rounded-full bg-line" />
-                  <span>Reviewer may edit: {mayEdit ? "yes" : "no"}</span>
+                  <span>{run ? "Saved run snapshot" : "No saved run"}</span>
                 </div>
               </div>
             </div>
@@ -173,25 +188,60 @@ function ReportDialog({
             </div>
           </div>
 
-          <div className="mt-6 text-sm">
-            {instructions ? (
-              <div className="rounded-lg bg-panel-2 p-4 text-ink">{instructions}</div>
-            ) : (
-              <div className="text-muted">
-                No instructions for the reviewer yet — add them in the block's parameters.
-              </div>
-            )}
-          </div>
+          {isHil && (
+            <div className="mt-3 text-sm">
+              {instructions ? (
+                <div className="rounded-lg bg-panel-2 p-3 text-ink">{instructions}</div>
+              ) : (
+                <div className="text-muted">
+                  No instructions for the reviewer yet — add them in the block's parameters.
+                </div>
+              )}
+            </div>
+          )}
+          {isHil && upstreamReports.length > 0 && (
+            <div
+              className="mt-3 flex flex-wrap items-center gap-3 rounded-lg border border-line bg-brand-soft px-3 py-2"
+              data-testid="hil-upstream-splitter-reports"
+            >
+              <label htmlFor="upstream-splitter-report" className="text-sm font-medium text-ink">
+                Upstream splitter analysis
+              </label>
+              <select
+                id="upstream-splitter-report"
+                value={pickedReport?.step.block.id ?? ""}
+                onChange={(event) => setPickedReportId(event.target.value)}
+                className="min-w-0 max-w-80 rounded border border-line bg-panel px-2 py-1 text-sm text-ink focus-visible:outline-2 focus-visible:outline-brand"
+              >
+                {upstreamReports.map(({ step, report }) => (
+                  <option key={step.block.id} value={step.block.id}>
+                    {step.block.label} · {report.groups.length} groups · review v
+                    {report.reviews.length}
+                  </option>
+                ))}
+              </select>
+              <Button
+                data-testid="hil-open-upstream-report"
+                variant="primary"
+                onClick={() => pickedReport && setSelectedStepId(pickedReport.step.block.id)}
+              >
+                Review scores & evidence
+              </Button>
+              <span className="text-xs text-muted">
+                Nearest upstream report selected first. Saved in this run.
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Body */}
-        <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(380px,42%)]">
+        <div className="grid min-h-0 flex-1 grid-cols-[minmax(260px,28%)_minmax(0,1fr)]">
           <div className="flex flex-col h-full bg-panel-2">
-            <div className="p-6 pb-2">
+            <div className="p-4 pb-2">
               <h3 className="font-semibold text-ink">How the data was collected</h3>
               <p className="text-sm text-muted mt-1">
-                Every step the data passed through on its way here. Click a step's table icon to see
-                its data.
+                Saved lineage when a run exists. Select a step to inspect its data; splitter steps
+                also show saved scores and routing.
               </p>
             </div>
 

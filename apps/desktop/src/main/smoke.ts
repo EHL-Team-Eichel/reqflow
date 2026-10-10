@@ -9,6 +9,7 @@ import {
   PALETTE_BLOCK_KINDS,
   setBlockParams,
   type WorkflowGraph,
+  type WorkflowRun,
 } from "@reqflow/core";
 import type { LocalFileStore } from "@reqflow/db";
 import type { BrowserWindow, NativeImage } from "electron";
@@ -418,6 +419,14 @@ export async function runSmoke(
   db.exec(
     "INSERT INTO feedback VALUES ('DE', 'Im Fond ist es für Erwachsene zu eng'), ('GB', 'Rear legroom is too tight for adults'), ('FR', 'Le coffre est trop petit')",
   );
+  db.exec(`DROP TABLE IF EXISTS review_feedback; CREATE TABLE review_feedback (id TEXT, comment TEXT);
+    INSERT INTO review_feedback VALUES
+    ('S1', 'Rear seats are uncomfortable every journey'),
+    ('S2', 'I need better rear seat support daily'),
+    ('S3', 'The infotainment screen is broken and needs a restart'),
+    ('S4', 'I cannot use the infotainment screen'),
+    ('S5', 'I like the rear seats'),
+    ('S6', 'I want a bigger trunk');`);
   db.close();
   check(await click('[data-testid="block-raw"]'), "raw: can't select the Raw block");
   await delay(300);
@@ -515,6 +524,183 @@ export async function runSmoke(
   await shot("hil-report-real");
   check(await click('[aria-label="Close report"]'), "report: no close button");
   await delay(300);
+
+  // Analytical splitter → HIL through the actual editor/run store: graphics, evidence and correction.
+  await js("void (window.confirm = () => true)");
+  for (let i = 0; i < 30 && (await count('.react-flow__node [data-testid^="block-"]')); i++) {
+    await click('.react-flow__node [data-testid^="block-"]');
+    await delay(60);
+    check(await click('[data-testid="inspector-delete"]'), "splitter report: cannot clear editor");
+    await delay(60);
+  }
+  for (const kind of ["raw", "ai_splitter", "hil"] as const) {
+    check(
+      await click(`[data-testid="palette-item-${kind}"]`),
+      `splitter report: cannot add ${kind}`,
+    );
+    await delay(150);
+  }
+  await click('[data-testid="block-raw"]');
+  await delay(200);
+  await setSelect('[data-testid="inspector"] select', "database");
+  await type('input[placeholder="/path/to/data.sqlite"]', [dbPath]);
+  await type('textarea[placeholder="SELECT * FROM customer_feedback"]', [
+    "SELECT * FROM review_feedback",
+  ]);
+  await click('[data-testid="block-ai_splitter"]');
+  await delay(200);
+  await type('[data-testid="inspector"] input[type="number"]', ["5"]);
+  await click('[aria-label="Close details"]');
+  await delay(200);
+  await drag(handle("raw", "source"), handle("ai_splitter", "target"));
+  await drag(handle("ai_splitter", "source"), handle("hil", "target"));
+  check(await click('[data-testid="flow-run"]'), "splitter report: cannot start editor flow");
+  const reviewDeadline = Date.now() + 8000;
+  while (
+    !/Waiting for human review/i.test(await text('[data-testid="flow-run-status"]')) &&
+    Date.now() < reviewDeadline
+  )
+    await delay(100);
+  check(
+    /Waiting for human review/i.test(await text('[data-testid="flow-run-status"]')),
+    "splitter report: HIL did not pause",
+  );
+  const paused = await js<WorkflowRun | null>(
+    `window.reqflowBridge.invoke("reqflow:runs.list").then(r => r.value?.find(run => run.status === "waiting_for_review") ?? null)`,
+  );
+  const analysis = paused?.blockRuns.find((br) => br.splitterReport)?.splitterReport;
+  check(
+    analysis?.assignments.length === 6 && analysis.branches.length === 5,
+    "splitter report: six original rows and five priority bands expected",
+  );
+  check(
+    analysis?.input.customerCount === null &&
+      analysis.models.some((model) => model.startsWith("mock:")),
+    "splitter report: unknown customers and mock provenance must remain explicit",
+  );
+  await click('[data-testid="block-ai_splitter"]');
+  await delay(150);
+  check(
+    await click('[data-testid="inspector-open-splitter-report"]'),
+    "splitter report: inspector entry missing",
+  );
+  await delay(650);
+  check(
+    (await count('[data-testid="splitter-report"]')) === 1,
+    "splitter report: persisted analysis missing",
+  );
+  check(
+    /Frequency contribution/.test(await text('[data-testid="splitter-report"]')),
+    "splitter report: score decomposition missing",
+  );
+  await shot("splitter-demand-ranking");
+  const analysisTab = (label: string) =>
+    js<boolean>(
+      `(() => { const button = [...document.querySelectorAll('[aria-label="Analysis views"] button')].find(b => b.textContent.trim() === ${JSON.stringify(label)}); button?.click(); return !!button; })()`,
+    );
+  check(await analysisTab("Source × need"), "splitter report: heatmap tab missing");
+  await delay(250);
+  check(
+    (await count('[aria-label="Source by need evidence counts"]')) === 1,
+    "splitter report: evidence heatmap missing",
+  );
+  await shot("splitter-source-heatmap");
+  check(await analysisTab("Item routes"), "splitter report: item routes missing");
+  await delay(150);
+  check(
+    await click('[data-testid="splitter-route"] summary'),
+    "splitter report: route detail missing",
+  );
+  await delay(200);
+  const displayedItemId = await js<string | null>(
+    `document.querySelector('[data-testid="splitter-route"]')?.getAttribute('data-item-id') ?? null`,
+  );
+  const firstAssignment = analysis?.assignments.find((item) => item.itemId === displayedItemId);
+  check(!!firstAssignment, "splitter report: displayed route not in saved assignments");
+  const changedPort = firstAssignment?.outputPortId === "out-4" ? "out-0" : "out-4";
+  await setSelect('[data-testid="splitter-route"] select', changedPort);
+  await type('textarea[placeholder="Why is this evidence better routed to this output?"]', [
+    "Synthetic PM review: use the selected branch for follow-up.",
+  ]);
+  check(
+    await click('[data-testid="splitter-save-correction"]'),
+    "splitter report: correction action missing",
+  );
+  await delay(650);
+  if (paused && analysis && firstAssignment) {
+    const corrected = await js<WorkflowRun>(
+      `window.reqflowBridge.invoke("reqflow:runs.get", ${JSON.stringify(paused.id)}).then(r => r.value)`,
+    );
+    const report = corrected.blockRuns.find(
+      (br) => br.blockId === analysis.blockId,
+    )?.splitterReport;
+    check(
+      report?.reviews.length === 1 &&
+        report.assignments.find((a) => a.itemId === firstAssignment.itemId)?.outputPortId ===
+          changedPort,
+      "splitter report: correction was not persisted",
+    );
+    check(
+      report?.assignments.find((item) => item.itemId === firstAssignment.itemId)?.reason ===
+        firstAssignment.reason,
+      "splitter report: original AI interpretation was lost during human review",
+    );
+    const audit = await js<{ actor: { type: string }; action: string }[]>(
+      `window.reqflowBridge.invoke("reqflow:audit.list", {runId: ${JSON.stringify(paused.id)}, action: "run.routing_reviewed"}).then(r => r.value)`,
+    );
+    check(
+      audit.length === 1 && audit[0]?.actor.type === "human",
+      "splitter report: human correction audit missing",
+    );
+  }
+  await shot("splitter-human-routing-correction");
+  check(
+    await click('[data-testid="splitter-tab-data"]'),
+    "splitter report: original-data tab missing",
+  );
+  await delay(300);
+  await shot("splitter-original-evidence");
+  await click('[aria-label="Close report"]');
+  await js(
+    `document.querySelector('[data-testid="block-hil"]').dispatchEvent(new MouseEvent("dblclick", {bubbles: true}))`,
+  );
+  await delay(450);
+  check(
+    await click('[data-testid="hil-open-upstream-report"]'),
+    "HIL: upstream analysis entry missing",
+  );
+  await delay(250);
+  check(
+    (await count('[data-testid="splitter-report"]')) === 1,
+    "HIL: cannot inspect saved splitter analysis",
+  );
+  await shot("hil-splitter-review");
+  await click('[data-testid="report-data"]');
+  await delay(450);
+  check(
+    await click('[data-testid="hil-review-confirm"]'),
+    "HIL: explicit human continuation missing",
+  );
+  check(await click('[data-testid="hil-review-continue"]'), "HIL: continuation action missing");
+  await delay(450);
+  if (paused && analysis && firstAssignment) {
+    const continued = await js<WorkflowRun>(
+      `window.reqflowBridge.invoke("reqflow:runs.get", ${JSON.stringify(paused.id)}).then(r => r.value)`,
+    );
+    check(continued.status === "completed", "HIL: corrected run did not complete");
+    const hil = continued.graph.blocks.find((block) => block.kind === "hil");
+    const output = await js<Record<string, { records: { id: string }[] }>>(
+      `window.reqflowBridge.invoke("reqflow:runs.blockOutput", ${JSON.stringify(paused.id)}, ${JSON.stringify(hil?.id)}).then(r => r.value)`,
+    );
+    const includesChanged = Object.values(output ?? {}).some((data) =>
+      data.records.some((record) => record.id === firstAssignment.itemId),
+    );
+    check(
+      includesChanged === (changedPort === "out-0"),
+      "HIL: continuation consumed stale splitter routing",
+    );
+  }
+  await click('[aria-label="Close report"]');
   await go("/settings");
   check(await click('[data-testid="settings-section-ai"]'), "settings: no ai section");
   await delay(200);

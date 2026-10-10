@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { type LineageStep, type WorkflowGraph, type WorkflowRun } from "@reqflow/core";
 import { TableIcon } from "@/components/ui/icons";
 import { TextInput } from "@/components/ui/controls";
+import { Button } from "@/components/ui/Button";
 import { type PreviewState } from "../usePreview";
 import { api } from "@/lib/api";
 import { useSettings } from "@/lib/settings";
@@ -15,6 +16,8 @@ import {
   RequirementsTable,
 } from "./DataTables";
 import { cx } from "@/lib/cx";
+import { SplitterPanel } from "./SplitterPanel";
+import { reportForStep, reportRevision } from "./splitter-view";
 
 interface Props {
   root: WorkflowGraph;
@@ -27,18 +30,80 @@ interface Props {
 const TABS = ["Requirements", "Themes", "Findings", "Records", "Sources"] as const;
 type Tab = (typeof TABS)[number];
 
-export function DataPanel({ root, run, step, isTarget, onReviewReady }: Props) {
+export function DataPanel(props: Props) {
+  const isSplitter = props.step.block.kind === "ai_splitter";
+  const [view, setView] = useState<"scores" | "data">(isSplitter ? "scores" : "data");
+  return (
+    <div className="flex h-full min-h-0 flex-col">
+      {isSplitter && (
+        <div
+          className="flex shrink-0 gap-4 border-b border-l border-line bg-panel px-4 pt-3"
+          role="tablist"
+          aria-label="Splitter inspection"
+        >
+          {(["scores", "data"] as const).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              role="tab"
+              aria-selected={view === tab}
+              aria-controls={`splitter-${tab}-panel`}
+              id={`splitter-${tab}-tab`}
+              data-testid={`splitter-tab-${tab}`}
+              onClick={() => setView(tab)}
+              className={cx(
+                "border-b-2 pb-3 text-sm font-medium",
+                view === tab
+                  ? "border-brand text-brand"
+                  : "border-transparent text-muted hover:text-ink",
+              )}
+            >
+              {tab === "scores" ? "Scores / routing" : "Source / raw data"}
+            </button>
+          ))}
+        </div>
+      )}
+      <div
+        className="min-h-0 flex-1"
+        role={isSplitter ? "tabpanel" : undefined}
+        id={isSplitter ? `splitter-${view}-panel` : undefined}
+        aria-labelledby={isSplitter ? `splitter-${view}-tab` : undefined}
+      >
+        <DataPanelBody {...props} analysisView={isSplitter && view === "scores"} />
+      </div>
+    </div>
+  );
+}
+
+function DataPanelBody({
+  root,
+  run,
+  step,
+  isTarget,
+  onReviewReady,
+  analysisView,
+}: Props & { analysisView: boolean }) {
   const [filter, setFilter] = useState("");
   const [activeTab, setActiveTab] = useState<Tab | null>(null);
+  const [reload, setReload] = useState(0);
 
   const scope = useSettings((s) => s.settings.defaultScope);
   const inputs = useMemo(
     () => (run ? null : reportPreviewInputs(root, step)),
     [root, step, run?.id],
   );
+  const revision = reportRevision(run);
   const request = useMemo(
     () => ({ inputs, run, step }),
-    [inputs, run?.id, step.block.id, step.path.join("/")],
+    [
+      inputs,
+      run?.id,
+      revision,
+      reload,
+      run?.blockRuns.find((br) => br.blockId === step.block.id)?.status,
+      step.block.id,
+      step.path.join("/"),
+    ],
   );
   const [result, setResult] = useState<{
     request: typeof request;
@@ -108,6 +173,20 @@ export function DataPanel({ root, run, step, isTarget, onReviewReady }: Props) {
 
   const headerLabel = isTarget ? "Data at this point" : `Data at ${step.block.label}`;
 
+  if (analysisView)
+    return (
+      <div className="h-full overflow-auto border-l border-line bg-panel">
+        <SplitterPanel
+          report={reportForStep(run, step.block.id)}
+          run={run ?? null}
+          data={data}
+          loading={state.status === "idle" || state.status === "loading"}
+          error={state.status === "error" ? state.message : null}
+          onRetry={() => setReload((value) => value + 1)}
+        />
+      </div>
+    );
+
   if (previewable && (state.status === "idle" || state.status === "loading")) {
     return (
       <div
@@ -138,6 +217,9 @@ export function DataPanel({ root, run, step, isTarget, onReviewReady }: Props) {
               <div role="alert" className="text-sm text-danger">
                 {state.message}
               </div>
+              <Button className="mt-3" onClick={() => setReload((value) => value + 1)}>
+                {run ? "Retry saved data read" : "Retry source preview"}
+              </Button>
             </div>
           ) : (
             <div>
@@ -168,7 +250,11 @@ export function DataPanel({ root, run, step, isTarget, onReviewReady }: Props) {
       </div>
 
       <div className="border-b border-line px-4 pt-2">
-        <div role="tablist" className="flex gap-4">
+        <div
+          role="tablist"
+          aria-label="Saved data layers"
+          className="flex flex-wrap gap-x-4 gap-y-1"
+        >
           {TABS.map((tab) => (
             <button
               key={tab}

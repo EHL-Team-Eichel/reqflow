@@ -78,12 +78,12 @@ export const BlockNode = memo(function BlockNode({ data, selected }: NodeProps<B
             </button>
           )}
 
-          {block.kind === "hil" && (
+          {(block.kind === "hil" || block.kind === "ai_splitter") && (
             <button
               type="button"
               data-testid="block-report"
               className="nodrag shrink-0 rounded-md p-1 text-muted hover:bg-panel-2 hover:text-ink"
-              aria-label={`Open the review report of ${block.label}`}
+              aria-label={`Open the ${block.kind === "ai_splitter" ? "scores and routing" : "review"} report of ${block.label}`}
               onClick={(e) => {
                 e.stopPropagation();
                 dataflowStore.getState().openReport(block.id);

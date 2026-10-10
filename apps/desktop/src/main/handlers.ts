@@ -46,7 +46,7 @@ import {
   type LocalFileStore,
 } from "@reqflow/db";
 import { BlockRegistry, WorkflowExecutor } from "@reqflow/engine";
-import { createLlmClient } from "@reqflow/llm";
+import { createLlmClient, createMastraLlmClient } from "@reqflow/llm";
 import { createAgentServices, testSetup, type AgentDeps } from "./agents";
 import { ReqflowError } from "./dispatch";
 import { previewBlock } from "./preview";
@@ -143,19 +143,26 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
   const reasoningRepo = new SqliteReasoningRepository(db);
   const secretsStore = deps.secretsStore ?? new SecretsStore(dataDir);
 
-  const configuredLlm = async (settings: Settings): Promise<LlmClient> => {
-    if (deps.llm) return deps.llm;
-    const apiKey =
-      settings.llm.provider === "anthropic"
-        ? ((await secretsStore.getSecret("anthropic_api_key")) ?? undefined)
-        : undefined;
-    if (settings.llm.provider === "anthropic" && !apiKey) {
+  const defaultAiKey = async (settings: Settings): Promise<string | undefined> => {
+    if (settings.llm.provider !== "anthropic") return undefined;
+    const apiKey = (await secretsStore.getSecret("anthropic_api_key")) ?? undefined;
+    if (!apiKey) {
       throw new Error("The default AI (Anthropic) has no API key. Add it in Settings → AI.");
     }
-    return createLlmClient(settings.llm, { apiKey });
+    return apiKey;
+  };
+  // Blocks call the default AI through a standalone Mastra Agent (AI Splitter's choice).
+  const configuredLlm = async (settings: Settings): Promise<LlmClient> => {
+    if (deps.llm) return deps.llm;
+    return createMastraLlmClient(settings.llm, { apiKey: await defaultAiKey(settings) });
+  };
+  // The Add to Car agents call it directly: adaptive thinking and effort need the Messages API.
+  const directLlm = async (settings: Settings): Promise<LlmClient> => {
+    if (deps.llm) return deps.llm;
+    return createLlmClient(settings.llm, { apiKey: await defaultAiKey(settings) });
   };
   const agentDeps: AgentDeps = {
-    defaultLlm: configuredLlm,
+    defaultLlm: directLlm,
     getKey: (setupId) => secretsStore.getSecret(`setup:${setupId}`),
     fetch: deps.fetch,
   };
@@ -199,6 +206,9 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
       },
       async getBlockOutput(runId, blockId) {
         return await runRepo.getBlockOutput(runId, blockId);
+      },
+      async saveSplitterReview(run, blockId, outputs, event) {
+        await runRepo.saveSplitterReview(run, blockId, outputs, event);
       },
     },
     onUpdate: (run) => {
@@ -299,6 +309,15 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
         await runRepo.update(resumed);
         deps.pushRunUpdate?.(resumed);
         return resumed;
+      },
+      reviewSplitter: async (runId, blockId, review) => {
+        const reviewer = loadSettings(dataDir).review.reviewer;
+        return executor.reviewSplitter(
+          z.string().startsWith("run_").parse(runId),
+          z.string().min(1).parse(blockId),
+          review,
+          { type: "human", ...reviewer },
+        );
       },
       cancel: async (runId: string) => {
         const rId = z.string().min(1).parse(runId);

@@ -18,6 +18,7 @@ import type { Priority } from "./scoring";
 import type { ProductScope } from "./scope";
 import type { Settings } from "./settings";
 import type { Source, SourceRecord } from "./source";
+import type { SplitterReview } from "./splitter-report";
 import type { Workflow, WorkflowRun, WorkflowTemplate } from "./workflow";
 
 export interface AppInfo {
@@ -126,6 +127,8 @@ export interface ReqflowApi {
     list(workflowId?: string): Promise<WorkflowRun[]>;
     /** What one block emitted, per output port id. */
     blockOutput(runId: string, blockId: string): Promise<Record<string, PipelineData>>;
+    /** Human routing correction, before an editable HIL gate continues. */
+    reviewSplitter(runId: string, blockId: string, review: SplitterReview): Promise<WorkflowRun>;
     resume(runId: string): Promise<WorkflowRun>;
     cancel(runId: string): Promise<WorkflowRun>;
     /** Pushed by main on every status/progress change. Returns an unsubscribe function. */
@@ -182,7 +185,7 @@ export const IPC_INVOKE_METHODS = {
   blocks: ["preview"],
   workflows: ["list", "get", "save", "remove"],
   files: ["import"],
-  runs: ["start", "get", "list", "blockOutput", "resume", "cancel"],
+  runs: ["start", "get", "list", "blockOutput", "reviewSplitter", "resume", "cancel"],
   requirements: ["list", "get", "edit", "decide", "reset"],
   audit: ["list"],
   settings: ["get", "save", "secrets", "setSecret", "testSetup"],

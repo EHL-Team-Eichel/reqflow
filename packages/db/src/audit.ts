@@ -11,6 +11,11 @@ export class SqliteAuditLogger implements AuditLogger {
   constructor(private readonly db: DatabaseSync) {}
 
   async record(eventInput: AuditEventInput): Promise<AuditEvent> {
+    return this.recordSync(eventInput);
+  }
+
+  /** Also usable inside one synchronous SQLite transaction, without yielding between writes. */
+  recordSync(eventInput: AuditEventInput): AuditEvent {
     const event: AuditEvent = {
       id: newId("aud"),
       at: new Date().toISOString(),

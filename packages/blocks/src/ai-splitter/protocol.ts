@@ -5,7 +5,14 @@ import { z } from "zod";
 /** Matches the focused 2–10 branch contract being integrated by the parent. */
 export const SplitterParams = z
   .strictObject({
-    splitBy: z.enum(["priority", "category", "sentiment", "custom"]),
+    splitBy: z.enum([
+      "customer_priority",
+      "car_parts",
+      "priority",
+      "category",
+      "sentiment",
+      "custom",
+    ]),
     branches: z
       .array(z.string().trim().min(1).max(60))
       .min(2)
@@ -84,16 +91,16 @@ export function validateIds<T extends { id: string }>(
 ): Map<string, T> {
   const allowed = new Set(expected);
   const byId = new Map<string, T>();
-  for (const item of items) {
+  for (const [index, item] of items.entries()) {
     if (!allowed.has(item.id))
-      throw new Error(`AI Splitter returned unknown assignment ID ${item.id}`);
+      throw new Error(`AI Splitter returned unknown assignment ID at response index ${index}`);
     if (byId.has(item.id))
-      throw new Error(`AI Splitter returned duplicate assignment ID ${item.id}`);
+      throw new Error(`AI Splitter returned duplicate assignment ID at response index ${index}`);
     byId.set(item.id, item);
   }
   const missing = expected.filter((id) => !byId.has(id));
   if (missing.length)
-    throw new Error(`AI Splitter is missing assignments for ${missing.join(", ")}`);
+    throw new Error(`AI Splitter is missing assignments for ${missing.length} primary items`);
   return byId;
 }
 

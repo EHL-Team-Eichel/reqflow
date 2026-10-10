@@ -1,7 +1,8 @@
 import { Settings, type LlmClient, type Settings as AppSettings } from "@reqflow/core";
-import { z } from "zod";
 import { mockObject } from "./mock";
 import { anthropicClient } from "./anthropic";
+import { Request } from "./client-request";
+import { createMastraProvider, type MastraLlmClientOptions } from "./mastra";
 
 export interface LlmClientOptions {
   /** Supplied by the main process secret store, never read from the environment. */
@@ -9,12 +10,6 @@ export interface LlmClientOptions {
   /** Injectable transport for recorded, offline HTTP tests. */
   fetch?: typeof globalThis.fetch;
 }
-
-const Request = z.object({
-  prompt: z.string().min(1),
-  system: z.string().optional(),
-  tier: z.enum(["default", "fast"]).optional(),
-});
 
 /**
  * The default AI (Settings → AI): Anthropic or the AI Splitter's offline mock. No secret discovery
@@ -57,4 +52,15 @@ export function createLlmClient(
     temperature: config.temperature,
     fetch: options.fetch,
   });
+}
+
+/** Stateless standalone Mastra provider. Construction validates config but makes no model calls. */
+export function createMastraLlmClient(
+  settings: AppSettings["llm"],
+  options: MastraLlmClientOptions = {},
+): LlmClient {
+  const config = Settings.shape.llm.parse(settings);
+  return config.provider === "mock"
+    ? createLlmClient(config, options)
+    : createMastraProvider(config, options);
 }

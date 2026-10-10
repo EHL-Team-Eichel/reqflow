@@ -11,6 +11,8 @@ import {
   type PromptItem,
 } from "./evidence";
 import { priorityBranches, routePriority } from "./priority";
+import { analyzeRaw } from "./raw-analysis";
+import { selectRawOutputs } from "./raw-evidence";
 import {
   Assignments,
   ROUTING_SYSTEM,
@@ -22,6 +24,16 @@ import {
 
 export const aiSplitterBlock = defineBlock({
   kind: "ai_splitter",
+  reroute(input, report) {
+    if (report.input.primaryLayer !== "records")
+      throw new Error("Routing corrections currently require a raw-record analytical report.");
+    validateInput(input);
+    return selectRawOutputs(
+      input,
+      new Map(report.assignments.map((a) => [a.itemId, Number(a.outputPortId.slice(4))])),
+      report.branches.length,
+    ).outputs;
+  },
   async run(inputs, rawParams, ctx) {
     ctx.signal.throwIfAborted();
     const params = SplitterParams.parse(rawParams);
@@ -30,6 +42,13 @@ export const aiSplitterBlock = defineBlock({
       throw new Error("AI Splitter supports only input port in");
     const input = Object.hasOwn(inputs, "in") ? inputs.in! : emptyPipelineData();
     validateInput(input);
+    if (
+      params.splitBy === "customer_priority" ||
+      params.splitBy === "car_parts" ||
+      (params.splitBy === "custom" && (input.records.length > 0 || !primaryLayer(input)))
+    ) {
+      return analyzeRaw(input, params, ctx);
+    }
     if (params.splitBy === "priority") priorityBranches(params.branches);
     const counts = countPipelineData(input);
     ctx.log(
@@ -91,9 +110,7 @@ export const aiSplitterBlock = defineBlock({
             );
           }
           routes.set(entry.id, assignment.branchIndex);
-          ctx.log(
-            `${entry.id}: out-${assignment.branchIndex} (${params.branches[assignment.branchIndex]}), model ${model}; ${assignment.reason}`,
-          );
+          ctx.log(`Routed 1 primary item to out-${assignment.branchIndex}, model ${model}.`);
         }
         ctx.progress(
           routes.size / items.length,

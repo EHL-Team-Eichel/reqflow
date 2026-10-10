@@ -3,6 +3,7 @@ import { Actor } from "./audit";
 import { BlockKind } from "./blocks";
 import { DataKey } from "./pipeline";
 import { ProductScope } from "./scope";
+import { SplitterReport } from "./splitter-report";
 
 /**
  * A block placed on a workplace. `id` is unique across the whole workflow, inner workplaces
@@ -97,6 +98,7 @@ export const BlockRun = z.object({
   counts: z.partialRecord(DataKey, z.number().int().nonnegative()), // output size per data key
   logs: z.array(BlockRunLog),
   error: z.string().optional(),
+  splitterReport: SplitterReport.optional(),
 });
 export type BlockRun = z.infer<typeof BlockRun>;
 

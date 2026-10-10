@@ -6,16 +6,16 @@ Why the flow is built from blocks: [decisions/0003-building-blocks.md](decisions
 
 ## Stack
 
-| Concern         | Choice                                                                                | Why                                                                 |
-| --------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| Language        | TypeScript everywhere (npm workspaces)                                                | One shared contract for UI, engine and blocks                       |
-| App shell       | Electron 44 (pinned, Node 24 inside), electron-vite 5, electron-builder               | Same Chromium on every OS; Node in the main process runs the engine |
-| UI              | React 19 + React Router (hash routing) + Tailwind 4 + zustand 5                       | Renders from `file://` in the installed app; small, testable stores |
-| Workflow canvas | `@xyflow/react` (React Flow 12)                                                       | The standard n8n-style node editor                                  |
-| Schemas         | Zod 4                                                                                 | Runtime validation and TS types from one source                     |
-| LLM             | Claude API (`@anthropic-ai/sdk`) behind `LlmClient`, plus a `mock` provider           | Swappable; works offline and in tests                               |
-| Persistence     | SQLite via built-in `node:sqlite`, in the OS app-data folder                          | Zero setup, no native module to rebuild per OS                      |
-| Tests           | Vitest (colocated `*.test.ts`) + `npm run smoke` (clicks through the app in Electron) | Fast unit tests; a real-app check without clicking                  |
+| Concern         | Choice                                                                                | Why                                                                                                          |
+| --------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Language        | TypeScript everywhere (npm workspaces)                                                | One shared contract for UI, engine and blocks                                                                |
+| App shell       | Electron 44 (pinned, Node 24 inside), electron-vite 5, electron-builder               | Same Chromium on every OS; Node in the main process runs the engine                                          |
+| UI              | React 19 + React Router (hash routing) + Tailwind 4 + zustand 5                       | Renders from `file://` in the installed app; small, testable stores                                          |
+| Workflow canvas | `@xyflow/react` (React Flow 12)                                                       | The standard n8n-style node editor                                                                           |
+| Schemas         | Zod 4                                                                                 | Runtime validation and TS types from one source                                                              |
+| LLM             | Anthropic API and standalone Mastra Agent behind `LlmClient`, plus `mock`             | Swappable; works offline and in tests; Mastra is constructed per request without an attached Mastra instance |
+| Persistence     | SQLite via built-in `node:sqlite`, in the OS app-data folder                          | Zero setup, no native module to rebuild per OS                                                               |
+| Tests           | Vitest (colocated `*.test.ts`) + `npm run smoke` (clicks through the app in Electron) | Fast unit tests; a real-app check without clicking                                                           |
 
 ## Repo layout
 
@@ -73,10 +73,10 @@ it has an inner workplace):
 | Block       | Ports                                 | Inner workplace | Params (placeholders for now)                                                   |
 | ----------- | ------------------------------------- | --------------- | ------------------------------------------------------------------------------- |
 | Custom      | 1 in · 1 out                          | yes             | none                                                                            |
-| Raw         | no input · 1 out (data stream)        | no              | Excel upload or database, dataset, file/query                                   |
+| Raw         | no input · 1 out (data stream)        | no              | Excel/CSV/SQLite or Research JSON import, dataset, file/query                   |
 | Research    | no input · 1 out (same format as Raw) | yes             | question, source types, market, age, results                                    |
 | AI Filter   | 1 in · 1 out (kept)                   | yes             | criterion, model, min. confidence                                               |
-| AI Splitter | 1 in · one out **per branch**         | no              | split by, branches (list → ports), model                                        |
+| AI Splitter | 1 in · 2–10 outputs                   | yes             | customer priority, car parts, custom or legacy routing, branches, model         |
 | HIL         | 1 in · 1 out                          | no              | reviewer, instructions, approvals, edits                                        |
 | Add to Car  | one in **per priority** + context ins | no              | priorities, contexts (Auto / Sales volumes), max. requirements, vehicle, market |
 
@@ -134,7 +134,10 @@ analysts (map) ─┴→ synthesizer (themes) → code picks themes → architec
 ## Data flow: one envelope per port
 
 Every port carries a `PipelineData` envelope (`sources, records, findings, themes, requirements`).
-Raw and Research emit sources and records (the "unified data stream"). Later blocks enrich the same
+Raw and Research emit sources and records (the "unified data stream"). Raw accepts Excel, CSV,
+read-only SQLite queries, and declared Research JSON envelopes. JSON import validates core schemas
+and references but preserves the original objects, extensions, provenance and envelope metadata;
+it rejects duplicate identities and dangling evidence rather than dropping them. Later blocks enrich the same
 envelope: AI Filter keeps matching items (and extracts evidence-linked findings), AI Splitter routes
 items to one branch each, HIL passes on what the reviewer approved, and Add to Car's agents turn what
 arrives on its priority inputs into requirements (the input it arrives on sets the ranking; context
@@ -158,8 +161,8 @@ defineBlock({
    Custom) has an implementation (`BlockRegistry.missing()`). If anything fails, the run fails before it
    starts, with per-block errors.
 2. **Execute each workplace in topological order.** A block's input per port is the merge of what its
-   incoming edges carry. Store each block's output per port and push `BlockRun` status, counts, logs
-   and progress via `runs.onUpdate`.
+   incoming edges carry. Store each block's output per port and push `BlockRun` status, counts, logs,
+   progress and any analytical splitter report snapshot via `runs.onUpdate`.
 3. **Inner workplaces.** A block whose inner workplace contains blocks runs that sub-flow: each
    `block_input` emits what arrived on its parent port, and what reaches each `block_output` becomes
    the parent's output on that port. A Custom block always runs its sub-flow. Research and AI Filter run
@@ -211,6 +214,40 @@ Double-clicking a HIL block (or its report icon) opens `components/dataflow/repo
   incoming edges carried). Otherwise it says nothing has arrived yet; there is no demo data.
 - At run time the HIL block (`packages/blocks/src/hil/hil.ts`) pauses the run until the review is done
   and then passes the data on unchanged; edits go through the requirement API (audited).
+
+## AI Splitter: raw analysis and review
+
+The raw-data splitter uses a standalone Mastra `Agent` behind the existing injected `LlmClient`.
+It receives the run's model configuration and secret-store API key; the Agent is not attached to a
+Mastra instance, tools, storage, memory or tracing. Structured requests use strict Zod validation,
+one generation step and no retries. Tests can inject the Agent factory, while production defaults
+to the standalone implementation. Legacy `priority`, `category`, `sentiment` and `custom` routing
+modes remain available alongside raw-data `customer_priority`, `car_parts` and `custom` analysis.
+
+Raw analysis discovers candidate needs in batches of at most 20 records, consolidates them globally,
+then assigns against the consolidated catalog. Car-part/custom modes create exactly the configured
+2–10 global groups before assignment; customer-priority mode uses canonical needs and creates 2–10
+demand bands. Oversized prompts fail explicitly rather than truncating evidence. Code verifies
+complete item/need coverage and each cited source, record, locator and verbatim excerpt. The model
+does not return scores, unit IDs, routes or human decisions.
+
+Demand counts distinct expressed feedback units, not unique customers or population prevalence;
+customer count is unknown. Explicit original/provider identities and reimport evidence can deduplicate
+units, while distinct record/customer identities remain independent even if their text matches.
+Sales, equipment and other context are not votes. Frequency is the share of supporting feedback units
+relative to the highest-supporting global group and is weighted 70%; mean explicitly expressed
+supporting impact is weighted 30%. An absent impact anchor is `NULL`, not zero; without available
+impact or supporting feedback, the score is `NULL`. Opposing and unclear evidence remains visible,
+and confidence is not demand. Output retains a versioned analytical report with score method, group
+scores, item assignments, evidence, source matrix, limitations and human review history. The report
+is stored with the `BlockRun` snapshot and rendered as score, evidence-balance and source-by-group
+graphics with exact evidence drill-down.
+
+At a paused eligible HIL, a reviewer may correct individual item routes with a required rationale.
+Corrections update the run's routing report and audit history; computed scores and original evidence
+remain unchanged. The review is available only while the upstream splitter is behind the current
+paused HIL with reviewer edits enabled. It never edits or decides a requirement; requirement
+approval, rejection or deferral remains a separate human action on the Car page.
 
 ## Renderer state
 
