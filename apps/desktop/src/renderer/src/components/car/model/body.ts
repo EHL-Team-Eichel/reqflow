@@ -475,7 +475,7 @@ export function inWheelArch(q: Pick<Quad, "x" | "y" | "z" | "seg">): boolean {
 }
 
 /** Side window outline: front edge follows the A-pillar, rear edge the C-pillar, gap = B-pillar. */
-const windowFront = (y: number) => 0.8 - (y - 1.0) * 1.82 - 0.13;
+const windowFront = (y: number) => 0.8 - (y - 1.0) * 1.82 - 0.085;
 // The return at the foot of the C-pillar is BMW's characteristic Hofmeister kink.
 const windowRear = (y: number) =>
   y < 1.12 ? lerp(-1.48, -1.66, smoothstep(1.05, 1.12, y)) : -1.66 + (y - 1.12) * 1.08;
@@ -489,6 +489,25 @@ function inSideWindow(q: Quad): boolean {
     q.seg <= 6 &&
     q.glass > 0.08
   );
+}
+
+const windscreenHalfWidth = (x: number) => lerp(0.65, 0.855, smoothstep(-0.075, 0.79, x));
+
+/** Broad, tapered front glass with gently bowed top and cowl edges. */
+function inWindscreen(q: Quad): boolean {
+  const az = Math.abs(q.z);
+  const width = windscreenHalfWidth(q.x);
+  const edge = az / width;
+  return (
+    q.seg >= 5 && az < width && q.x > -0.075 + 0.04 * edge ** 2 && q.x < 0.805 - 0.075 * edge ** 4
+  );
+}
+
+/** Leave a slim painted strip between the front glass and the side windows. */
+function inAPillar(q: Quad): boolean {
+  const az = Math.abs(q.z);
+  const width = windscreenHalfWidth(q.x);
+  return q.seg >= 5 && q.x > -0.075 && q.x < 0.805 && az >= width && az < width + 0.055;
 }
 
 /**
@@ -522,10 +541,13 @@ export function bodyPanel(q: Quad): string | null {
     return "side_windows:chrome";
   // Below the window line: the cowl in front of the windscreen, the deck behind the rear window.
   if (q.y < belt + 0.02) return "body";
+  // The windscreen extends into the shoulder of the greenhouse instead of leaving
+  // the old broad painted strips on either side of a 1.2 m rectangular glass panel.
+  if (inWindscreen(q)) return "windshield:glass";
+  if (inAPillar(q)) return "roof";
   if (sideGlass && inSideWindow(q)) return "side_windows:glass";
   if (sideGlass && inBPillar(q.x)) return "roof:dark";
   if (q.seg >= 7 && az < 0.6) {
-    if (q.x > 0.02) return "windshield:glass";
     if (q.x < -1.28) return "rear_window:glass";
     if (az < 0.47 && q.x < -0.18 && q.x > -0.92) return "roof:glass";
   }
@@ -563,16 +585,46 @@ export function smoothPanelEdges(grid: BodyGrid, assign: (q: Quad) => string | n
     }
   }
   const p = grid.positions;
+  const original = p.slice();
   for (let pass = 0; pass < passes; pass++) {
     const next = new Map<number, [number, number, number]>();
     for (const [v, ns] of links) {
       if (ns.size !== 2) continue;
       const [a, b] = [...ns] as [number, number];
-      next.set(v, [
+      const point: [number, number, number] = [
         0.5 * p[v * 3]! + 0.25 * (p[a * 3]! + p[b * 3]!),
         0.5 * p[v * 3 + 1]! + 0.25 * (p[a * 3 + 1]! + p[b * 3 + 1]!),
         0.5 * p[v * 3 + 2]! + 0.25 * (p[a * 3 + 2]! + p[b * 3 + 2]!),
-      ]);
+      ];
+      const i = Math.floor(v / RING);
+      const j = v % RING;
+      if (original[v * 3]! > -0.1 && original[v * 3]! < 0.85 && segmentOf(j) >= 5) {
+        // Relax the thin glass/pillar boundaries along their original cross-section,
+        // never across adjacent vertices. This preserves both station and ring order
+        // instead of folding narrow triangles or leaving rejected, jagged edge steps.
+        const y = original[v * 3 + 1]!;
+        const z = original[v * 3 + 2]!;
+        const dy = point[1] - y;
+        const dz = point[2] - z;
+        let closest = Infinity;
+        const x = original[v * 3]!;
+        const before = original[vid(Math.max(0, i - 1), j) * 3]!;
+        const after = original[vid(Math.min(STATIONS - 1, i + 1), j) * 3]!;
+        point[0] = Math.max(x - 0.45 * (x - before), Math.min(x + 0.45 * (after - x), point[0]));
+        for (const col of [(j + RING - 1) % RING, (j + 1) % RING]) {
+          const neighbor = vid(i, col) * 3;
+          const ey = original[neighbor + 1]! - y;
+          const ez = original[neighbor + 2]! - z;
+          const t = Math.max(0, Math.min(0.45, (dy * ey + dz * ez) / (ey * ey + ez * ez)));
+          const distance = (dy - t * ey) ** 2 + (dz - t * ez) ** 2;
+          if (distance < closest) {
+            closest = distance;
+            point[1] = y + t * ey;
+            point[2] = z + t * ez;
+          }
+        }
+      }
+      next.set(v, point);
     }
     for (const [v, [x, y, z]] of next) {
       p[v * 3] = x;
