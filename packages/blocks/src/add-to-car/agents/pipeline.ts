@@ -873,8 +873,10 @@ export async function runAgents(ctx: BlockContext, input: AgentRunInput): Promis
   const actorModel = (m: string) => (archW.offline ? OFFLINE_MODEL : m);
   order.forEach(({ b, answers: judged, rank }, i) => {
     const id = formatRequirementId(input.scope.vehicleCode, input.scope.market, input.firstSeq + i);
-    const used = b.theme.support.filter((s) => b.draft.usedSignals.includes(s.ref));
-    const support = used.length ? used : b.theme.support;
+    // The whole theme backs the requirement (the architect only sees its strongest signals);
+    // the signals it cited lead the evidence shown in the thought process.
+    const support = b.theme.support;
+    const cited = support.filter((s) => b.draft.usedSignals.includes(s.ref));
     const facts = evidenceFacts(support, b.theme.conflicting, prepared.sources);
     const score = scoreFromReview(b.review.factors, ctx.settings.scoring, at);
     const priority = priorityForRank(rank, input.priorities.length);
@@ -940,7 +942,7 @@ export async function runAgents(ctx: BlockContext, input: AgentRunInput): Promis
       title: requirement.title,
       theme: b.theme.label,
       ranks: unique(support.map((s) => s.rank)).sort((x, y) => x - y),
-      evidence: traceEvidence(support, b.theme.conflicting),
+      evidence: traceEvidence(cited.length ? cited : support, b.theme.conflicting),
       thoughts: thoughtsFor(b, support, judged, briefs, input.scope),
       verdict: b.outcome,
       issues: b.outcome === "revised" ? b.firstIssues : b.openIssues,

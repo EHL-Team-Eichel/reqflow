@@ -340,6 +340,60 @@ describe("Add to Car (scripted models)", () => {
     );
   });
 
+  it("links every signal of the theme, not only the ones the architect cited", async () => {
+    const llm = scriptedLlm((contract, p) => {
+      if (contract.endsWith("analyst@1"))
+        return {
+          signals: [
+            {
+              kind: "complaint",
+              statement: "Rear knee room is short.",
+              category: "space_practicality",
+              inScope: true,
+              outOfScopeReason: "",
+              refs: ["r1", "r2"],
+              quotes: [],
+              sentiment: -0.5,
+            },
+            {
+              kind: "complaint",
+              statement: "Tall adults can't sit in the rear.",
+              category: "space_practicality",
+              inScope: true,
+              outOfScopeReason: "",
+              refs: ["r3"],
+              quotes: [],
+              sentiment: -0.5,
+            },
+          ],
+          ignored: ["r4", "r5", "r6"],
+        };
+      if (contract.endsWith("synthesizer@1"))
+        return {
+          themes: [
+            {
+              label: "Rear knee room",
+              need: "Adults fit in the rear.",
+              category: "space_practicality",
+              signals: ["s1", "s2"],
+              conflicting: [],
+            },
+          ],
+        };
+      if (contract.endsWith("architect@1")) return draft("Rear seats fit adults", ["s1"]);
+      if (contract.endsWith("critic@1"))
+        return { verdict: "accept", issues: [], fixes: [], rejectReason: "", factors };
+      throw new Error(contract);
+    });
+    const c = context(agents({ provider: "anthropic", llm }));
+    await addToCarBlock.run({ "in-0": mustHave }, params({ contexts: [] }), c.ctx);
+    const [{ requirements }] = c.added as [(typeof c.added)[number]];
+    expect(requirements[0]!.findingIds).toHaveLength(2);
+    const why = c.traces[0]!.requirements[0]!;
+    expect(new Set(why.evidence.map((e) => e.findingId)).size).toBe(1); // the cited one leads
+    expect(why.thoughts[0]!.text).toMatch(/^3 records on 1\. Priority back this/);
+  });
+
   it("keeps open issues visible when the rewrite still doesn't pass", async () => {
     const { services } = script(["revise", "revise"]);
     const c = context(services);
