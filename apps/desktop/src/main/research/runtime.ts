@@ -1,30 +1,21 @@
-import { copyFile, mkdir, readFile, stat, writeFile } from "node:fs/promises";
-import { basename, extname, join } from "node:path";
-import { randomUUID } from "node:crypto";
+import { writeFile } from "node:fs/promises";
 import { z } from "zod";
 import {
-  AuditEvent,
-  BlockId,
   ConnectionReport,
-  PipelineData,
-  ResearchDataset,
   ResearchLimits,
   ResearchProviderConfig,
   ResearchProviderId,
   SECRET_NAMES,
-  SecretName,
   Settings,
-  Workflow,
-  WorkflowRun,
-  validateGraph,
-  walkBlocks,
-  type AuditEventInput,
+  type AuditLogger,
+  type CollectedItem,
+  BlockId,
+  type ResearchCollector,
   type ResearchProviderStatus,
+  type WorkflowRun,
+  type ReqflowHandlers,
 } from "@reqflow/core";
-import type { AuditFilter, ReqflowHandlers, StoredFileInfo } from "@reqflow/core/ipc";
-import { BlockRegistry, executeWorkflow, type BlockContext } from "@reqflow/engine";
 import {
-  allBlockImplementations,
   RESEARCH_AGENTS,
   PROVIDER_SECRETS,
   createLocalDocumentReader,
@@ -37,83 +28,75 @@ import {
   mergeResearchDatasets,
   ProviderError,
   redactSecrets,
+  assertJsonByteBudget,
+  RESEARCH_DATASET_MAX_BYTES,
+  PERSISTED_JSON_MAX_BYTES,
+  jsonByteSize,
 } from "@reqflow/blocks";
+import type { LocalFileStore } from "@reqflow/db";
+import { ResearchDatasetRepository } from "../../../../../packages/db/src/research";
 import { ReqflowError } from "../dispatch";
-import { SecretStore, type SecureStorage } from "./secrets";
-import { ResearchStore, validRun } from "./storage";
+import type { SecretsStore } from "../secrets";
 
-type ResearchHandlers = Pick<
-  ReqflowHandlers,
-  "settings" | "workflows" | "runs" | "research" | "files" | "audit"
-> & { exports: Pick<ReqflowHandlers["exports"], "research"> };
-export interface RuntimeDeps {
-  dir: string;
-  secureStorage: SecureStorage;
-  platform?: NodeJS.Platform;
-  chooseImport(): Promise<string | null>;
-  chooseExport(format: "json" | "xlsx" | "csv", runId: string): Promise<string | null>;
-  publish(run: WorkflowRun): void;
-  fetchImpl?: typeof fetch;
+export interface ResearchOptions {
   xlsxWorkerPath?: string;
+  fetchImpl?: typeof globalThis.fetch;
 }
-const FileInfo = z.object({
-  id: z.string().regex(/^file_[A-Za-z0-9_-]+$/),
-  name: z.string(),
-  mimeType: z.string(),
-  sizeBytes: z.number().nonnegative(),
-  importedAt: z.iso.datetime(),
-  extension: z.enum([".xlsx", ".txt", ".pdf", ".docx", ".pptx"]),
-});
-const FILE_TYPES: Record<string, string> = {
-  ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  ".txt": "text/plain",
-  ".pdf": "application/pdf",
-  ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-};
-export async function createResearchRuntime(
-  deps: RuntimeDeps,
-): Promise<{ handlers: ResearchHandlers; shutdown(): Promise<void> }> {
-  const store = new ResearchStore(deps.dir);
-  const secrets = new SecretStore(deps.dir, deps.secureStorage, deps.platform);
-  await store.load();
-  await secrets.load();
-  const registry = new BlockRegistry();
-  for (const implementation of allBlockImplementations) registry.register(implementation);
+export interface ResearchServiceDeps extends ResearchOptions {
+  files: LocalFileStore;
+  secrets: SecretsStore;
+  datasets: ResearchDatasetRepository;
+  settings(): Settings;
+  saveSettings(settings: Settings): Settings;
+  getRun(runId: string): Promise<WorkflowRun>;
+  audit: AuditLogger;
+  chooseExport(format: "json" | "xlsx" | "csv", runId: string): Promise<string | null>;
+}
+const RunId = z.string().regex(/^run_[A-Za-z0-9_-]{1,100}$/);
+
+/** A collector/namespace/export service, never an alternative application state or executor. */
+export function createResearchService(deps: ResearchServiceDeps) {
+  const documents = createLocalDocumentReader({
+    resolveFile: (id) => deps.files.resolvePath(id),
+    xlsxWorkerPath: deps.xlsxWorkerPath,
+  });
   const adapters = createResearchAdapters();
   const reports = new Map<ResearchProviderId, ConnectionReport>();
   const versions = new Map<ResearchProviderId, number>();
-  const jobs = new Map<
-    string,
-    {
-      controller: AbortController;
-      promise: Promise<unknown>;
-      outputs: Record<string, Record<string, PipelineData>>;
-    }
-  >();
   const tests = new Map<ResearchProviderId, Promise<ResearchProviderStatus>>();
-  const startingWorkflows = new Set<string>();
-  const launchingRuns = new Set<string>();
-  const resumingRuns = new Set<string>();
-  const fileQueue = { promise: Promise.resolve() as Promise<unknown> };
-  const clone = <T>(value: T): T => structuredClone(value);
-  const actor = () => ({ type: "human" as const, ...store.state.settings.review.reviewer });
-  const credentials = () =>
-    Object.fromEntries(SECRET_NAMES.map((name) => [name, secrets.get(name)]));
-  const configured = (id: ResearchProviderId) => {
-    const status = secrets.status();
-    return Object.fromEntries(PROVIDER_SECRETS[id].map((name) => [name, status[name].configured]));
-  };
-  function status(id: ResearchProviderId): ResearchProviderStatus {
-    const flags = configured(id);
-    const required = id === "openalex" ? [] : PROVIDER_SECRETS[id];
+  const caches = new Map<string, Map<string, Promise<CollectedItem[]>>>();
+  const cacheBytes = new Map<string, number>();
+  const pending = new Map<string, Set<Promise<unknown>>>();
+  const safeValues = new Map<string, Set<string>>();
+  const active = new Set<AbortController>();
+  let accessEpoch = 0;
+  function revokeActive() {
+    accessEpoch++;
+    for (const controller of active)
+      controller.abort(new DOMException("Research access changed; start a new run.", "AbortError"));
+  }
+  const actor = () => ({ type: "human" as const, ...deps.settings().review.reviewer });
+  const credentials = async () =>
+    Object.fromEntries(
+      await Promise.all(
+        SECRET_NAMES.map(
+          async (name) => [name, (await deps.secrets.getSecret(name)) ?? undefined] as const,
+        ),
+      ),
+    );
+  async function status(id: ResearchProviderId): Promise<ResearchProviderStatus> {
+    const secrets = await deps.secrets.getStatus();
+    const flags = Object.fromEntries(
+      PROVIDER_SECRETS[id].map((name) => [name, secrets[name].configured]),
+    );
+    const missing = id !== "openalex" && PROVIDER_SECRETS[id].some((name) => !flags[name]);
     return {
       id,
-      config: clone(store.state.settings.research.apis[id]),
+      config: structuredClone(deps.settings().research.apis[id]),
       credentialsConfigured: flags,
       connection: reports.get(id) ?? {
-        state: required.some((key) => !flags[key]) ? "not_configured" : "untested",
-        message: required.some((key) => !flags[key])
+        state: missing ? "not_configured" : "untested",
+        message: missing
           ? "Required credentials are missing."
           : "Configured but not tested. No provider request has been made.",
         capabilities: [],
@@ -121,583 +104,275 @@ export async function createResearchRuntime(
       },
     };
   }
-  function invalidate(id: ResearchProviderId): void {
+  function invalidate(id: ResearchProviderId) {
     versions.set(id, (versions.get(id) ?? 0) + 1);
     reports.delete(id);
+    revokeActive();
   }
-  const audit = async (input: AuditEventInput) => {
-    const event = AuditEvent.parse({
-      ...input,
-      id: `aud_${randomUUID()}`,
-      at: new Date().toISOString(),
-      changes: input.changes ?? [],
-    });
-    await store.audit(event);
-    return event;
-  };
-  const resolveFile = async (id: string) => {
-    FileInfo.shape.id.parse(id);
-    const list = await store.read("files.json", z.array(FileInfo));
-    const entry = list.find((file) => file.id === id);
-    if (!entry) throw new ReqflowError("not_found", "Imported document is not available.");
+  function collector(runId: string, blockId: string, settings: Settings): ResearchCollector {
+    RunId.parse(runId);
+    BlockId.parse(blockId);
     return {
-      path: join(deps.dir, "uploads", `${entry.id}${entry.extension}`),
-      name: entry.name,
-      entry,
-    };
-  };
-  const documents = createLocalDocumentReader({ resolveFile, xlsxWorkerPath: deps.xlsxWorkerPath });
-  const getRun = (id: string) => {
-    validRun(id);
-    const run = store.state.runs.find((value) => value.id === id);
-    if (!run) throw new ReqflowError("not_found", "Workflow run not found.");
-    return run;
-  };
-  function publish(run: WorkflowRun): void {
-    deps.publish(clone(run));
-  }
-  async function launch(
-    input: WorkflowRun,
-    outputs: Record<string, Record<string, PipelineData>>,
-  ): Promise<WorkflowRun> {
-    if (jobs.has(input.id) || launchingRuns.has(input.id))
-      throw new ReqflowError("run_busy", "Run is already active.");
-    launchingRuns.add(input.id);
-    try {
-      if (getRun(input.id).status === "cancelled") return clone(getRun(input.id));
-      const snapshot = Settings.parse(clone(store.state.settings));
-      const keys = credentials();
-      const secretValues = Object.values(keys).filter((s): s is string => !!s);
-      const safe = (message: string) => redactSecrets(message, secretValues);
-      const controller = new AbortController();
-      const datasets = new Map<string, ResearchDataset>();
-      try {
-        datasets.set("previous", await store.dataset(input.id));
-      } catch (error) {
-        if (!(error instanceof ReqflowError) || error.code !== "not_found") throw error;
-      }
-      if (getRun(input.id).status === "cancelled") return clone(getRun(input.id));
-      const localCache = new Map<string, Promise<import("@reqflow/core").CollectedItem[]>>();
-      const cachedDocuments = {
-        ...documents,
-        read(id: string, maxPages: number, signal: AbortSignal) {
-          const key = `${id}:${maxPages}`;
-          let result = localCache.get(key);
-          if (!result) {
-            result = documents.read(id, maxPages, signal);
-            localCache.set(key, result);
-            result.catch(() => localCache.delete(key));
-          }
-          return result;
-        },
-      };
-      const pending = new Set<Promise<unknown>>();
-      const saveDataset = async (blockId: string, value: ResearchDataset) => {
-        datasets.set(blockId, value);
-        const aggregate = mergeResearchDatasets(...datasets.values());
-        await store.write(`${input.id}.research.json`, aggregate);
-        await store.write(`${input.id}.${BlockId.parse(blockId)}.research.json`, value);
-      };
-      const execute = async () => {
-        try {
-          await executeWorkflow({
-            run: input,
-            registry,
-            outputs,
-            context: (blockId): BlockContext => ({
-              runId: input.id,
-              blockId,
-              scope: input.scope,
-              settings: snapshot,
-              signal: controller.signal,
-              resumed: false,
-              llm: {
-                generateObject: async () => {
-                  throw new ReqflowError(
-                    "not_implemented",
-                    "Analytical LLM blocks are owned by their workstreams; raw Research does not analyze source content.",
-                  );
-                },
-                generateText: async () => {
-                  throw new ReqflowError(
-                    "not_implemented",
-                    "LLM text generation is not configured for this block.",
-                  );
-                },
-              },
-              audit: { record: audit },
-              files: {
-                get: async (id) => {
-                  const file = await resolveFile(id);
-                  return {
-                    id,
-                    name: file.name,
-                    mimeType: file.entry.mimeType,
-                    bytes: new Uint8Array(await readFile(file.path)),
-                  };
-                },
-              },
-              web: null,
-              car: {
-                add: async () => {
-                  throw new ReqflowError(
-                    "not_implemented",
-                    "Requirements persistence is not configured in the Research runtime.",
-                  );
-                },
-              },
-              log: () => {},
-              progress: () => {},
-              research: {
-                collect(request, ctx) {
-                  const collector = createResearchCollector({
-                    settings: snapshot,
-                    credentials: keys,
-                    documents: cachedDocuments,
-                    fetchImpl: deps.fetchImpl,
-                    save: (value) => saveDataset(blockId, value),
+      collect(request, context) {
+        assertJsonByteBudget(request, 1024 * 1024);
+        if (context.runId !== runId)
+          throw new ReqflowError("invalid_input", "Research collector run does not match context.");
+        let tasks = pending.get(runId);
+        if (!tasks) pending.set(runId, (tasks = new Set()));
+        // Reserve before asynchronous credential loading so policy changes cannot
+        // slip between startup and transport creation.
+        const controller = new AbortController();
+        const epoch = accessEpoch;
+        active.add(controller);
+        const signal = AbortSignal.any([context.signal, controller.signal]);
+        const work = (async () => {
+          try {
+            signal.throwIfAborted();
+            const keys = await credentials();
+            if (epoch !== accessEpoch)
+              controller.abort(new DOMException("Research access changed.", "AbortError"));
+            signal.throwIfAborted();
+            let values = safeValues.get(runId);
+            if (!values) safeValues.set(runId, (values = new Set()));
+            for (const key of Object.values(keys)) if (key) values.add(key);
+            let cache = caches.get(runId);
+            if (!cache) caches.set(runId, (cache = new Map()));
+            const cachedDocuments = {
+              ...documents,
+              read(id: string, maxPages: number, signal: AbortSignal) {
+                const key = `${id}:${maxPages}`;
+                let result = cache!.get(key);
+                if (!result) {
+                  if (cache!.size >= 1000)
+                    throw new ProviderError(
+                      "limit_reached",
+                      "Per-run document cache exceeds 1000 reads.",
+                    );
+                  result = documents.read(id, maxPages, signal).then((items) => {
+                    const bytes = jsonByteSize(items, PERSISTED_JSON_MAX_BYTES);
+                    if (bytes > PERSISTED_JSON_MAX_BYTES - (cacheBytes.get(runId) ?? 0))
+                      throw new ProviderError(
+                        "limit_reached",
+                        "Per-run document cache exceeds 64 MiB raw-data budget.",
+                      );
+                    cacheBytes.set(runId, (cacheBytes.get(runId) ?? 0) + bytes);
+                    return items;
                   });
-                  const promise = collector.collect(request, ctx);
-                  pending.add(promise);
-                  void promise.then(
-                    () => pending.delete(promise),
-                    () => pending.delete(promise),
-                  );
-                  return promise;
-                },
+                  cache!.set(key, result);
+                  void result.catch(() => cache!.delete(key));
+                }
+                return result;
               },
-            }),
-            onUpdate: async (value) => {
-              if (!["running", "queued"].includes(value.status))
-                await Promise.allSettled([...pending]);
-              const run = clone(value);
-              for (const block of run.blockRuns) {
-                if (block.error) block.error = safe(block.error);
-                for (const log of block.logs) log.message = safe(log.message);
-              }
-              if (run.error) run.error = safe(run.error);
-              const index = store.state.runs.findIndex((r) => r.id === run.id);
-              store.state.runs[index] = run;
-              await store.write(`${run.id}.outputs.json`, outputs);
-              await store.saveState();
-              publish(run);
-            },
-          });
-          const run = getRun(input.id);
-          await audit({
-            actor: { type: "system", component: "engine" },
-            action:
-              run.status === "completed"
-                ? "run.completed"
-                : run.status === "waiting_for_review"
-                  ? "run.paused"
-                  : run.status === "cancelled"
-                    ? "run.cancelled"
-                    : "run.failed",
-            entityType: "run",
-            entityId: run.id,
-            runId: run.id,
-            rationale: `Workflow execution ${run.status}. Raw collection outcomes are recorded separately.`,
-          });
-        } catch {
-          const run = getRun(input.id);
-          run.status = controller.signal.aborted ? "cancelled" : "failed";
-          run.error = "Run could not finish; preserved raw results remain available.";
-          run.finishedAt = new Date().toISOString();
-          await store.saveState();
-          publish(run);
-        } finally {
-          jobs.delete(input.id);
-        }
-      };
-      // Register before executing so cancel/start requests can never launch a duplicate job.
-      const initial = clone(input);
-      const promise = Promise.resolve().then(execute);
-      jobs.set(input.id, { controller, promise, outputs });
-      return initial;
-    } catch (error) {
-      const run = getRun(input.id);
-      run.status = "failed";
-      run.error =
-        "Research runtime could not be initialized. Check secure storage and local data availability.";
-      run.finishedAt = new Date().toISOString();
-      await store.saveState();
-      publish(run);
-      throw error;
-    } finally {
-      launchingRuns.delete(input.id);
-    }
-  }
-  const handlers: ResearchHandlers = {
-    settings: {
-      get: async () => clone(store.state.settings),
-      secrets: async () => secrets.status(),
-      save: async (input) => {
-        const settings = Settings.parse(input);
-        // Dedicated configure owns provider access flags; stale general-settings autosaves must
-        // not re-enable providers or undo an explicit approval/revocation.
-        settings.research.apis = clone(store.state.settings.research.apis);
-        store.state.settings = settings;
-        await store.saveState();
-        await audit({
-          actor: actor(),
-          action: "settings.changed",
-          entityType: "settings",
-          entityId: "app",
-          rationale: "General app settings saved; no credential values in audit.",
-        });
-        return clone(settings);
-      },
-      setSecret: async (name, value) => {
-        const key = SecretName.parse(name);
-        const result = await secrets.set(key, value);
-        for (const id of ResearchProviderId.options)
-          if (PROVIDER_SECRETS[id].includes(key)) invalidate(id);
-        await audit({
-          actor: actor(),
-          action: "settings.changed",
-          entityType: "settings",
-          entityId: `credential:${key}`,
-          rationale:
-            value === null
-              ? "Credential removed."
-              : "Credential stored using OS-backed encryption.",
-        });
-        return result;
-      },
-    },
-    workflows: {
-      list: async () => clone(store.state.workflows),
-      get: async (id) => {
-        z.string().startsWith("wf_").parse(id);
-        const wf = store.state.workflows.find((w) => w.id === id);
-        if (!wf) throw new ReqflowError("not_found", "Workflow not found.");
-        return clone(wf);
-      },
-      save: async (input) => {
-        const now = new Date().toISOString();
-        const previous = input.id
-          ? store.state.workflows.find((w) => w.id === input.id)
-          : undefined;
-        if (input.id && !previous)
-          throw new ReqflowError("not_found", "Workflow to update was not found.");
-        const workflow = Workflow.parse({
-          ...input,
-          id: previous?.id ?? `wf_${randomUUID()}`,
-          version: (previous?.version ?? 0) + 1,
-          createdAt: previous?.createdAt ?? now,
-          updatedAt: now,
-        });
-        const problems = validateGraph(workflow);
-        if (problems.length)
-          throw new ReqflowError("invalid_graph", "Workflow graph failed validation.", problems);
-        store.state.workflows = [
-          ...store.state.workflows.filter((w) => w.id !== workflow.id),
-          workflow,
-        ];
-        await store.saveState();
-        await audit({
-          actor: actor(),
-          action: "workflow.saved",
-          entityType: "workflow",
-          entityId: workflow.id,
-        });
-        return clone(workflow);
-      },
-      remove: async (id) => {
-        z.string().startsWith("wf_").parse(id);
-        store.state.workflows = store.state.workflows.filter((w) => w.id !== id);
-        await store.saveState();
-      },
-    },
-    runs: {
-      start: async (workflowId) => {
-        z.string().startsWith("wf_").parse(workflowId);
-        const workflow = store.state.workflows.find((w) => w.id === workflowId);
-        if (!workflow) throw new ReqflowError("not_found", "Workflow not found.");
-        if (
-          startingWorkflows.has(workflowId) ||
-          [...jobs.keys(), ...launchingRuns].some((id) => getRun(id).workflowId === workflowId)
-        )
-          throw new ReqflowError("run_busy", "This workflow already has an active run.");
-        startingWorkflows.add(workflowId);
-        try {
-          const run = WorkflowRun.parse({
-            id: `run_${randomUUID()}`,
-            workflowId,
-            workflowVersion: workflow.version,
-            graph: { blocks: workflow.blocks, edges: workflow.edges },
-            scope: workflow.scope,
-            status: "queued",
-            startedBy: actor(),
-            startedAt: new Date().toISOString(),
-            blockRuns: [...walkBlocks(workflow)].map(({ block }) => ({
-              blockId: block.id,
-              status: "pending",
-              counts: {},
-              logs: [],
-            })),
-          });
-          store.state.runs.push(run);
-          await store.saveState();
-          await audit({
-            actor: run.startedBy,
-            action: "run.started",
-            entityType: "run",
-            entityId: run.id,
-            runId: run.id,
-          });
-          return await launch(clone(run), {});
-        } finally {
-          startingWorkflows.delete(workflowId);
-        }
-      },
-      get: async (id) => clone(getRun(id)),
-      list: async (id) => {
-        if (id) z.string().startsWith("wf_").parse(id);
-        return clone(store.state.runs.filter((r) => !id || r.workflowId === id));
-      },
-      blockOutput: async (runId, blockId) => {
-        getRun(runId);
-        BlockId.parse(blockId);
-        const outputs = jobs.get(runId)?.outputs ?? (await store.outputs(runId));
-        const value = outputs[blockId];
-        if (!value) throw new ReqflowError("not_found", "This block has no preserved output.");
-        return clone(value);
-      },
-      resume: async (id) => {
-        const run = getRun(id);
-        if (resumingRuns.has(id) || jobs.has(id) || launchingRuns.has(id))
-          throw new ReqflowError("run_busy", "Run is already resuming or active.");
-        if (run.status !== "waiting_for_review")
-          throw new ReqflowError(
-            "invalid_state",
-            "Only a workflow waiting for human review can resume.",
-          );
-        resumingRuns.add(id);
-        try {
-          await audit({
-            actor: actor(),
-            action: "run.resumed",
-            entityType: "run",
-            entityId: run.id,
-            runId: run.id,
-          });
-          return await launch(clone(run), await store.outputs(id));
-        } finally {
-          resumingRuns.delete(id);
-        }
-      },
-      cancel: async (id) => {
-        const run = getRun(id);
-        const job = jobs.get(id);
-        if (job) {
-          job.controller.abort();
-          await job.promise;
-        } else if (run.status === "waiting_for_review" || run.status === "queued") {
-          run.status = "cancelled";
-          run.finishedAt = new Date().toISOString();
-          await store.saveState();
-          publish(run);
-        }
-        return clone(getRun(id));
-      },
-    },
-    files: {
-      import: async () => {
-        const path = await deps.chooseImport();
-        if (!path) return null;
-        const extension = FileInfo.shape.extension.parse(extname(path).toLowerCase());
-        const size = await stat(path);
-        if (!size.isFile() || size.size > 64 * 1024 * 1024)
-          throw new ReqflowError("invalid_file", "Choose a supported file no larger than 64 MiB.");
-        const file = FileInfo.parse({
-          id: `file_${randomUUID()}`,
-          name: basename(path),
-          mimeType: FILE_TYPES[extension],
-          sizeBytes: size.size,
-          importedAt: new Date().toISOString(),
-          extension,
-        });
-        await mkdir(join(deps.dir, "uploads"), { recursive: true, mode: 0o700 });
-        await copyFile(path, join(deps.dir, "uploads", `${file.id}${extension}`));
-        const operation = fileQueue.promise.then(async () => {
-          let files: z.infer<typeof FileInfo>[] = [];
-          try {
-            files = await store.read("files.json", z.array(FileInfo));
-          } catch (error) {
-            if (!(error instanceof ReqflowError) || error.code !== "not_found") throw error;
-          }
-          await store.write("files.json", [...files, file]);
-        });
-        fileQueue.promise = operation.catch(() => {});
-        await operation;
-        const { extension: _, ...info } = file;
-        return info as StoredFileInfo;
-      },
-    },
-    research: {
-      agents: async () => clone(RESEARCH_AGENTS),
-      providers: async () => ResearchProviderId.options.map(status),
-      configure: async (input, value) => {
-        const id = ResearchProviderId.parse(input);
-        const config = ResearchProviderConfig.parse(value);
-        store.state.settings.research.apis[id] = config;
-        invalidate(id);
-        await store.saveState();
-        await audit({
-          actor: actor(),
-          action: "settings.changed",
-          entityType: "settings",
-          entityId: `provider:${id}`,
-          rationale: "Provider enablement/access configuration saved. No credential values.",
-        });
-        return status(id);
-      },
-      test: async (input) => {
-        const id = ResearchProviderId.parse(input);
-        const previous = tests.get(id);
-        if (previous) return previous;
-        const generation = versions.get(id) ?? 0;
-        const config = clone(store.state.settings.research.apis[id]);
-        const promise = (async () => {
-          const flags = configured(id);
-          if (id !== "openalex" && PROVIDER_SECRETS[id].some((name) => !flags[name]))
-            return status(id);
-          const signal = AbortSignal.timeout(15000);
-          const limits = ResearchLimits.parse({
-            maxRequests: 3,
-            maxResults: 1,
-            maxDocumentPages: 1,
-            timeoutMs: 15000,
-            retries: 0,
-            concurrency: 1,
-          });
-          let report: ConnectionReport;
-          try {
-            report = ConnectionReport.parse(
-              await adapters.get(id)!.test({
-                http: createProviderHttp({ limits, signal, fetchImpl: deps.fetchImpl }),
-                credentials: credentials(),
-                config,
-                limits,
-                signal,
-                log: () => {},
-                now: () => new Date().toISOString(),
-                documents,
-              }),
-            );
-          } catch (error) {
-            report = {
-              state:
-                error instanceof ProviderError &&
-                [
-                  "invalid_credentials",
-                  "permission_required",
-                  "rate_limited",
-                  "unsupported",
-                ].includes(error.code)
-                  ? (error.code as "invalid_credentials")
-                  : "unreachable",
-              message: "Provider test failed. No sensitive response details retained.",
-              testedAt: new Date().toISOString(),
-              capabilities: [],
-              limitations: [],
             };
+            // The current access configuration is authoritative. A persisted/stale run cannot
+            // undo a provider revocation or widen global domain policy.
+            const live = deps.settings().research;
+            const snapshot = Settings.parse({
+              ...settings,
+              research: {
+                ...settings.research,
+                // Off is an immediate kill switch, not a new provider selection for old runs.
+                provider: live.provider === "off" ? "off" : settings.research.provider,
+                apis: live.apis,
+                allowedDomains: live.allowedDomains,
+                blockedDomains: live.blockedDomains,
+              },
+            });
+            return await createResearchCollector({
+              settings: snapshot,
+              credentials: keys,
+              documents: cachedDocuments,
+              fetchImpl: deps.fetchImpl,
+              async save(dataset) {
+                const parts = deps.datasets.blocks(runId);
+                // Migrated aggregate-only originals must survive the first new block save.
+                if (!parts.size) {
+                  const previous = deps.datasets.get(runId);
+                  if (previous) parts.set("legacy", previous);
+                }
+                parts.set(blockId, dataset);
+                const aggregate = mergeResearchDatasets(...parts.values());
+                assertJsonByteBudget(dataset, RESEARCH_DATASET_MAX_BYTES);
+                assertJsonByteBudget(aggregate, RESEARCH_DATASET_MAX_BYTES);
+                deps.datasets.save(runId, blockId, dataset, aggregate);
+              },
+            }).collect(request, { ...context, signal });
+          } finally {
+            active.delete(controller);
           }
-          const values = SECRET_NAMES.map((name) => {
-            try {
-              return secrets.get(name);
-            } catch {
-              return undefined;
-            }
-          }).filter((key): key is string => !!key);
-          report.message = redactSecrets(report.message, values);
-          report.limitations = report.limitations.map((m) => redactSecrets(m, values));
-          if ((versions.get(id) ?? 0) === generation) reports.set(id, report);
-          return status(id);
         })();
-        tests.set(id, promise);
-        try {
-          return await promise;
-        } finally {
-          tests.delete(id);
-        }
-      },
-      dataset: async (id) => {
-        getRun(id);
-        return store.dataset(id);
-      },
-    },
-    exports: {
-      research: async (input) => {
-        const { runId, format } = z
-          .strictObject({
-            runId: z.string().regex(/^run_[A-Za-z0-9_-]+$/),
-            format: z.enum(["json", "xlsx", "csv"]),
-          })
-          .parse(input);
-        getRun(runId);
-        const dataset = await store.dataset(runId);
-        const path = await deps.chooseExport(format, runId);
-        if (!path) return null;
-        await writeFile(
-          path,
-          format === "xlsx"
-            ? await exportResearchXlsx(dataset)
-            : format === "csv"
-              ? exportResearchCsv(dataset)
-              : exportResearchJson(dataset),
-          { mode: 0o600 },
+        tasks.add(work);
+        void work.then(
+          () => tasks!.delete(work),
+          () => tasks!.delete(work),
         );
-        await audit({
-          actor: actor(),
-          action: "export.created",
-          entityType: "export",
-          entityId: runId,
-          runId,
-          rationale: `Raw research exported as ${format}; no analysis generated.`,
-        });
-        return { path };
+        return work;
       },
+    };
+  }
+  const handlers: ReqflowHandlers["research"] = {
+    agents: async () => structuredClone(RESEARCH_AGENTS),
+    providers: async () => Promise.all(ResearchProviderId.options.map(status)),
+    configure: async (input, value) => {
+      const id = ResearchProviderId.parse(input),
+        config = ResearchProviderConfig.parse(value);
+      const settings = structuredClone(deps.settings());
+      settings.research.apis[id] = config;
+      deps.saveSettings(settings);
+      invalidate(id);
+      await deps.audit.record({
+        actor: actor(),
+        action: "settings.changed",
+        entityType: "settings",
+        entityId: `provider:${id}`,
+        rationale: "Provider access configuration saved. No credential values.",
+      });
+      return status(id);
     },
-    audit: {
-      list: async (input?: AuditFilter) => {
-        const filter = z
-          .object({
-            entityId: z.string().optional(),
-            entityType: AuditEvent.shape.entityType.optional(),
-            actorType: z.enum(["human", "ai", "system"]).optional(),
-            action: AuditEvent.shape.action.optional(),
-            runId: z.string().startsWith("run_").optional(),
-            limit: z.number().int().min(1).max(1000).default(100),
-          })
-          .strict()
-          .parse(input ?? {});
-        let events: AuditEvent[] = [];
+    test: async (input) => {
+      const id = ResearchProviderId.parse(input);
+      const previous = tests.get(id);
+      if (previous) return previous;
+      const generation = versions.get(id) ?? 0;
+      const config = structuredClone(deps.settings().research.apis[id]);
+      const work = (async () => {
+        const current = await status(id);
+        if (
+          id !== "openalex" &&
+          PROVIDER_SECRETS[id].some((name) => !current.credentialsConfigured[name])
+        )
+          return current;
+        // Explicit user-triggered authentication tests do not run actors or grant data access.
+        const keys = await credentials();
+        const signal = AbortSignal.timeout(15000);
+        const limits = ResearchLimits.parse({
+          maxRequests: 3,
+          maxResults: 1,
+          maxDocumentPages: 1,
+          timeoutMs: 15000,
+          retries: 0,
+          concurrency: 1,
+        });
+        let report: ConnectionReport;
         try {
-          events = await store.read("audit.json", z.array(AuditEvent));
+          report = ConnectionReport.parse(
+            await adapters.get(id)!.test({
+              http: createProviderHttp({ limits, signal, fetchImpl: deps.fetchImpl }),
+              credentials: keys,
+              config,
+              limits,
+              signal,
+              log() {},
+              now: () => new Date().toISOString(),
+              documents,
+            }),
+          );
         } catch (error) {
-          if (!(error instanceof ReqflowError) || error.code !== "not_found") throw error;
+          report = {
+            state:
+              error instanceof ProviderError &&
+              [
+                "invalid_credentials",
+                "permission_required",
+                "rate_limited",
+                "unsupported",
+              ].includes(error.code)
+                ? (error.code as "invalid_credentials")
+                : "unreachable",
+            message: "Provider test failed. No sensitive response details retained.",
+            testedAt: new Date().toISOString(),
+            capabilities: [],
+            limitations: [],
+          };
         }
-        return events
-          .filter(
-            (e) =>
-              (!filter.entityId || e.entityId === filter.entityId) &&
-              (!filter.entityType || e.entityType === filter.entityType) &&
-              (!filter.actorType || e.actor.type === filter.actorType) &&
-              (!filter.action || e.action === filter.action) &&
-              (!filter.runId || e.runId === filter.runId),
-          )
-          .slice(-filter.limit);
-      },
+        const values = Object.values(keys).filter((key): key is string => !!key);
+        report.message = redactSecrets(report.message, values).slice(0, 2048);
+        report.capabilities = report.capabilities
+          .slice(0, 50)
+          .map((text) => redactSecrets(text, values).slice(0, 512));
+        report.limitations = report.limitations
+          .slice(0, 50)
+          .map((text) => redactSecrets(text, values).slice(0, 512));
+        if ((versions.get(id) ?? 0) === generation) reports.set(id, report);
+        return status(id);
+      })();
+      tests.set(id, work);
+      try {
+        return await work;
+      } finally {
+        if (tests.get(id) === work) tests.delete(id);
+      }
+    },
+    dataset: async (input) => {
+      const id = RunId.parse(input);
+      await deps.getRun(id);
+      const dataset = deps.datasets.get(id);
+      if (!dataset)
+        throw new ReqflowError("not_found", "This run has no preserved research dataset.");
+      return dataset;
     },
   };
   return {
+    collector,
     handlers,
-    async shutdown() {
-      for (const job of jobs.values()) job.controller.abort();
-      await Promise.allSettled([...jobs.values()].map((job) => job.promise));
+    invalidateSecret(name: import("@reqflow/core").SecretName) {
+      // Planner keys are not provider adapter keys, but invalidate their active
+      // requests too. Saved-key deletion may leave an environment fallback.
+      revokeActive();
+      for (const id of ResearchProviderId.options)
+        if (PROVIDER_SECRETS[id].includes(name)) invalidate(id);
+    },
+    settingsChanged(previous: Settings, next: Settings) {
+      if (
+        JSON.stringify(previous.research) !== JSON.stringify(next.research) ||
+        JSON.stringify(previous.llm) !== JSON.stringify(next.llm)
+      )
+        revokeActive();
+    },
+    async settle(runId: string) {
+      await Promise.all([...(pending.get(runId) ?? [])]);
+    },
+    sanitize(run: WorkflowRun): WorkflowRun {
+      const snapshot = structuredClone(run),
+        keys = [...(safeValues.get(run.id) ?? [])];
+      if (snapshot.error) snapshot.error = redactSecrets(snapshot.error, keys);
+      for (const block of snapshot.blockRuns) {
+        if (block.error) block.error = redactSecrets(block.error, keys);
+        for (const log of block.logs) log.message = redactSecrets(log.message, keys);
+      }
+      return snapshot;
+    },
+    release(runId: string) {
+      caches.delete(runId);
+      cacheBytes.delete(runId);
+      pending.delete(runId);
+      safeValues.delete(runId);
+    },
+    async export(input: Parameters<ReqflowHandlers["exports"]["research"]>[0]) {
+      const { runId, format } = z
+        .strictObject({ runId: RunId, format: z.enum(["json", "xlsx", "csv"]) })
+        .parse(input);
+      const dataset = await handlers.dataset(runId);
+      const path = await deps.chooseExport(format, runId);
+      if (!path) return null;
+      await writeFile(
+        path,
+        format === "xlsx"
+          ? await exportResearchXlsx(dataset)
+          : format === "csv"
+            ? exportResearchCsv(dataset)
+            : exportResearchJson(dataset),
+        { mode: 0o600 },
+      );
+      await deps.audit.record({
+        actor: actor(),
+        action: "export.created",
+        entityType: "export",
+        entityId: runId,
+        runId,
+        rationale: `Raw research exported as ${format}; no analysis generated.`,
+      });
+      return { path };
     },
   };
 }

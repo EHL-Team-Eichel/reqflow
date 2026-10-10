@@ -1,8 +1,19 @@
-import { describe, expect, it, vi } from "vitest";
-import { createElement } from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import React, { createElement, type ButtonHTMLAttributes } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { createBlock, ResearchDataset, type Workflow } from "@reqflow/core";
+import { MemoryRouter } from "react-router";
+import {
+  createBlock,
+  DEFAULT_SETTINGS,
+  ResearchDataset,
+  type ReqflowApi,
+  type Workflow,
+  type WorkflowRun,
+} from "@reqflow/core";
 import { fixtureScope, fixtureRun, fixtureWorkflow } from "@reqflow/core/fixtures";
+import { createRunStore } from "./run-store";
+import { runStore } from "./run-session";
+import { RunControls } from "./RunControls";
 import {
   boundedRawPreview,
   cancelWorkflow,
@@ -11,6 +22,133 @@ import {
   reconcileRun,
   startEditorWorkflow,
 } from "./run-controls";
+
+// Exercise the real shared run store and control markup without adding a DOM dependency.
+vi.mock("../ui/Button", () => ({
+  Button: ({
+    variant: _variant,
+    size: _size,
+    ...props
+  }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: string; size?: string }) =>
+    createElement("button", props),
+}));
+vi.mock("../../lib/api", () => ({ api: {} }));
+vi.mock("../../lib/settings", () => ({
+  useSettings: (select: (state: { settings: typeof DEFAULT_SETTINGS }) => unknown) =>
+    select({ settings: DEFAULT_SETTINGS }),
+}));
+vi.mock("./store", () => ({
+  useDataflow: (select: (state: { name: string; root: typeof fixtureRun.graph }) => unknown) =>
+    select({ name: "Feedback to requirements", root: fixtureRun.graph }),
+  dataflowStore: { setState: vi.fn() },
+}));
+vi.mock("./run-session", () => ({ runStore: { current: null } }));
+vi.stubGlobal("React", React);
+
+describe("shared run controls integration", () => {
+  let store: ReturnType<typeof createRunStore>;
+  let emit: (run: WorkflowRun) => void;
+  let resume: ReturnType<typeof vi.fn<ReqflowApi["runs"]["resume"]>>;
+  let cancel: ReturnType<typeof vi.fn<ReqflowApi["runs"]["cancel"]>>;
+  const hil = createBlock("hil", { id: "review", position: { x: 150, y: 0 } });
+  const research = createBlock("research", { id: "research", position: { x: 0, y: 0 } });
+  const paused: WorkflowRun = {
+    ...fixtureRun,
+    status: "waiting_for_review",
+    graph: { blocks: [research, hil], edges: [] },
+    blockRuns: [
+      {
+        blockId: research.id,
+        status: "succeeded",
+        counts: { sources: 1, records: 2 },
+        logs: [{ at: fixtureRun.startedAt, message: "Synthetic originals collected" }],
+      },
+      { blockId: hil.id, status: "waiting_for_review", counts: {}, logs: [] },
+    ],
+  };
+  const render = () =>
+    renderToStaticMarkup(createElement(MemoryRouter, null, createElement(RunControls)));
+
+  beforeEach(() => {
+    const listeners = new Set<(run: WorkflowRun) => void>();
+    emit = (run) => listeners.forEach((listener) => listener(run));
+    resume = vi.fn<ReqflowApi["runs"]["resume"]>();
+    cancel = vi.fn<ReqflowApi["runs"]["cancel"]>().mockResolvedValue({
+      ...paused,
+      status: "cancelled",
+    });
+    store = createRunStore({
+      workflows: {} as ReqflowApi["workflows"],
+      runs: {
+        resume,
+        cancel,
+        start: vi.fn(),
+        list: vi.fn(),
+        blockOutput: vi.fn(),
+        get: vi.fn().mockResolvedValue(paused),
+        onUpdate: (listener) => {
+          listeners.add(listener);
+          return () => void listeners.delete(listener);
+        },
+      },
+    });
+    store.setState({ run: paused, workflowId: paused.workflowId });
+    // Every component reads this same instance, as Inspector/HilReport/templates do in the app.
+    Object.assign(runStore, store, { getInitialState: store.getState });
+  });
+
+  it("keeps Start/review controls, block counts/logs and both smoke selector families", () => {
+    const html = render();
+    expect(html).toContain('data-testid="flow-run" disabled=""');
+    expect(html).toContain("Review required");
+    expect(html).toContain('data-testid="flow-cancel"');
+    expect(html).toContain('data-testid="flow-review"');
+    expect(html).toContain('data-testid="flow-run-status"');
+    expect(html).toContain('data-testid="flow-run-details"');
+    expect(html).toContain('data-testid="run-controls"');
+    expect(html).toContain("1 sources · 2 records");
+    expect(html).toContain("Synthetic originals collected");
+    expect(html).toContain("Inspect output");
+    expect(html).toContain(paused.id);
+    expect(resume).not.toHaveBeenCalled();
+  });
+
+  it("shows running after explicit HIL resume and allows cancellation before resume replies", async () => {
+    let resolve!: (run: WorkflowRun) => void;
+    resume.mockImplementation(() => new Promise((yes) => (resolve = yes)));
+    const unsubscribe = store.getState().subscribe();
+    await Promise.resolve();
+    expect(render()).toContain("Waiting for human review");
+    const pending = store.getState().resume(paused.id, hil.id, true);
+    emit({ ...paused, status: "running" });
+    const html = render();
+    expect(html).toContain('data-testid="flow-run-status"');
+    expect(html).toContain("Running");
+    expect(html).not.toContain('data-testid="flow-review"');
+    expect(html).not.toContain("Waiting for human review");
+    expect(html).toContain('data-testid="flow-cancel"');
+    expect(html).not.toContain('data-testid="flow-cancel" disabled');
+    await store.getState().cancel();
+    expect(cancel).toHaveBeenCalledExactlyOnceWith(paused.id);
+    resolve({ ...paused, status: "running" });
+    await pending;
+    expect(store.getState().run?.status).toBe("cancelled");
+    expect(render()).toContain("Cancelled");
+    unsubscribe();
+  });
+
+  it("uses a terminal resume response and resets controls when the shared template session resets", async () => {
+    resume.mockResolvedValue({ ...paused, status: "completed" });
+    await store.getState().resume(paused.id, hil.id, true);
+    expect(render()).toContain("Completed");
+    expect(store.getState().reset()).toBe(true);
+    const html = render();
+    expect(html).not.toContain(paused.id);
+    expect(html).not.toContain('data-testid="flow-review"');
+    expect(html).not.toContain('data-testid="flow-cancel"');
+    expect(html).toContain("Start saves and runs the entire workflow");
+  });
+});
 
 const previewLimit = 20_000;
 const truncationMarker = "Source preview truncated; full original available through export.";

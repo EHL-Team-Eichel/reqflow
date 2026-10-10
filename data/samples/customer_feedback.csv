@@ -1,0 +1,38 @@
+﻿feedback_id,date,market,model,derivative,channel,rating,language,comment
+FB-0001,2026-03-02,DE,5 Series,Sedan,dealer survey,2,de,"Im Fond ist die Beinfreiheit für Erwachsene zu knapp, auf langen Fahrten unbequem."
+FB-0002,2026-03-04,DE,5 Series,Sedan,app review,2,de,"Das Infotainment hat zu viele Untermenüs, die Klimaanlage per Touch zu bedienen nervt während der Fahrt."
+FB-0003,2026-03-05,FR,5 Series,Sedan,dealer survey,3,fr,"La recharge rapide est correcte, mais l'autonomie annoncée n'est jamais atteinte sur autoroute en hiver."
+FB-0004,2026-03-07,IT,5 Series,Sedan,call center,4,it,"Sedili anteriori molto comodi, però il bagagliaio è troppo piccolo per le valigie di una famiglia."
+FB-0005,2026-03-08,GB,5 Series,Sedan,dealer survey,2,en,Rear legroom is too tight for adults; my teenagers complain on every longer trip.
+FB-0006,2026-03-09,GB,5 Series,Sedan,app review,1,en,"The digital key stopped working twice after a phone update, which left me standing at the car."
+FB-0007,2026-03-11,DE,5 Series,Touring,dealer survey,5,de,"Fahrgefühl ist hervorragend, die Lenkung präzise. Genau deshalb fahre ich BMW."
+FB-0008,2026-03-12,NL,5 Series,Sedan,app review,3,en,"Voice assistant understands navigation commands, but not ""make it warmer"", which is what I actually say."
+FB-0009,2026-03-14,DE,5 Series,Sedan,call center,2,de,Wind- und Abrollgeräusche ab 130 km/h sind lauter als bei meinem vorherigen Fahrzeug.
+FB-0010,2026-03-15,FR,5 Series,Sedan,dealer survey,4,fr,"L'éclairage d'ambiance est superbe, l'intérieur fait vraiment premium."
+FB-0011,2026-03-16,IT,5 Series,Sedan,app review,2,it,Il sistema di parcheggio automatico è troppo lento e si interrompe spesso.
+FB-0012,2026-03-18,GB,5 Series,Sedan,dealer survey,3,en,"Wireless charging pad overheats the phone, so I stopped using it, which is a shame."
+FB-0013,2026-03-19,DE,5 Series,Sedan,dealer survey,2,de,"Zu wenig Ablagen in der Mittelkonsole, wohin mit Handy, Schlüssel und Sonnenbrille?"
+FB-0014,2026-03-21,ES,5 Series,Sedan,call center,3,es,La pantalla es muy grande pero los menús son demasiado complicados para usar mientras conduces.
+FB-0015,2026-03-22,DE,5 Series,Sedan,app review,4,de,"Die App zeigt den Ladestand zuverlässig, Vorklimatisieren im Winter ist ein echter Mehrwert."
+FB-0016,2026-03-24,GB,5 Series,Sedan,dealer survey,2,en,"Charging on public chargers is unpredictable, the car doesn't tell me which ones actually work."
+FB-0017,2026-03-25,FR,5 Series,Touring,dealer survey,5,fr,"Le Touring est parfait pour la famille, coffre immense et attelage très pratique."
+FB-0018,2026-03-27,DE,5 Series,Sedan,call center,2,de,"Kopffreiheit hinten ist für Personen über 1,85 m nicht ausreichend."
+FB-0019,2026-03-28,IT,5 Series,Sedan,dealer survey,3,it,"Mi piacerebbe un sedile posteriore riscaldato di serie, d'inverno i bambini hanno freddo."
+FB-0020,2026-03-30,GB,5 Series,Sedan,app review,2,en,"Lane keeping assistant is too nervous on narrow country roads, I switch it off every time."
+FB-0021,2026-04-01,DE,5 Series,Sedan,dealer survey,3,de,"Ein Head-up-Display sollte in dieser Klasse Serie sein, nicht Teil eines teuren Pakets."
+FB-0022,2026-04-02,NL,5 Series,Sedan,dealer survey,4,en,"Seats are excellent on long drives, no back pain even after 600 km."
+FB-0023,2026-04-04,FR,5 Series,Sedan,app review,2,fr,Les mises à jour à distance prennent trop de temps et la voiture est inutilisable pendant ce temps.
+FB-0024,2026-04-05,DE,5 Series,Sedan,call center,1,de,Das Kofferraumvolumen der Limousine reicht nicht für einen Kinderwagen plus Gepäck.
+FB-0025,2026-04-07,GB,5 Series,Sedan,dealer survey,3,en,"Competitor models offer massage seats in the rear, which my chauffeur clients ask for."
+FB-0026,2026-04-08,IT,5 Series,Sedan,dealer survey,4,it,"Il suono dell'impianto audio è eccellente, ma il controllo del volume al volante è scomodo."
+FB-0027,2026-04-10,DE,5 Series,Sedan,app review,2,de,Die Sprachsteuerung versteht keine Dialekte und schaltet oft das falsche Radio ein.
+FB-0028,2026-04-11,ES,5 Series,Sedan,dealer survey,3,es,"El aire acondicionado trasero no es suficiente en verano, los pasajeros pasan calor."
+FB-0029,2026-04-13,GB,5 Series,Sedan,call center,2,en,"Getting in and out of the back is awkward, the door opening is too small for older passengers."
+FB-0030,2026-04-14,DE,5 Series,Sedan,dealer survey,4,de,"Laserlicht ist beeindruckend, nachts fühle ich mich deutlich sicherer."
+FB-0031,2026-04-16,FR,5 Series,Sedan,dealer survey,2,fr,"Trop de fonctions sont devenues des abonnements, je préfère payer une fois.
+C'est frustrant."
+FB-0032,2026-04-17,DE,5 Series,Sedan,app review,3,de,"Die Reichweitenanzeige springt bei Kälte stark, ich kann der Prognose nicht vertrauen."
+FB-0033,2026-04-19,GB,5 Series,Sedan,dealer survey,5,en,"Best driving dynamics in the segment, the car feels lighter than it is."
+FB-0034,2026-04-20,IT,5 Series,Sedan,call center,2,it,"Il portellone del bagagliaio non è elettrico di serie, nella mia auto precedente lo era."
+FB-0035,2026-04-22,DE,5 Series,Sedan,dealer survey,3,de,
+FB-0036,2026-04-23,NL,5 Series,Sedan,app review,2,en,Phone mirroring disconnects in tunnels and takes ages to reconnect.

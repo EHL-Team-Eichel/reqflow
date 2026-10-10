@@ -16,7 +16,7 @@ export function newId(prefix: IdPrefix): string {
   return `${prefix}_${crypto.randomUUID().replaceAll("-", "").slice(0, 16)}`;
 }
 
-/** Requirement IDs are human-readable and stable across versions, e.g. `REQ-5S-EU-007`. */
+/** Requirement IDs are human-readable and stable across versions, e.g. `REQ-F70-EU-007`. */
 export const REQUIREMENT_ID_PATTERN = /^REQ-[A-Z0-9]+-[A-Z0-9]+-\d{3,}$/;
 
 const CODE_PATTERN = /^[A-Z0-9]+$/;

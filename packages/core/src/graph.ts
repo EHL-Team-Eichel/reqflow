@@ -90,6 +90,27 @@ export function createBlock(
   return block;
 }
 
+/** Expand legacy splitters in memory; existing workplaces and saved files stay intact. */
+export function withSplitterWorkplaces<T extends WorkflowGraph>(graph: T): T {
+  let changed = false;
+  const blocks = graph.blocks.map((block) => {
+    let inner = block.inner;
+    if (block.kind === "ai_splitter" && !inner) {
+      const params = parseBlockParams(block.kind, block.params);
+      inner = {
+        blocks: boundaryBlocks(block.id, BLOCK_SPECS.ai_splitter.ports(params)),
+        edges: [],
+      };
+    } else if (inner) {
+      inner = withSplitterWorkplaces(inner);
+    }
+    if (inner === block.inner) return block;
+    changed = true;
+    return { ...block, inner };
+  });
+  return changed ? { ...graph, blocks } : graph;
+}
+
 /** Every block in the tree, depth-first, with the path of the workplace it sits on. */
 export function* walkBlocks(
   graph: WorkflowGraph,
@@ -270,20 +291,25 @@ export function setBlockParams(
   const next: WorkflowBlock = { ...block, params: parseBlockParams(block.kind, params) };
   const ports = blockPorts(next);
   if (next.inner) next.inner = syncBoundaries(next.inner, next.id, ports);
+  else if (BLOCK_SPECS[block.kind].hasInnerWorkplace) {
+    next.inner = { blocks: boundaryBlocks(next.id, ports), edges: [] };
+  }
   const inputs = new Set(ports.inputs.map((p) => p.id));
   const outputs = new Set(ports.outputs.map((p) => p.id));
-  const removedEdges = graph.edges.filter(
+  const removedOuterEdges = graph.edges.filter(
     (e) =>
       (e.source === id && !outputs.has(e.sourcePort)) ||
       (e.target === id && !inputs.has(e.targetPort)),
   );
-  const removed = new Set(removedEdges.map((e) => e.id));
+  const removed = new Set(removedOuterEdges.map((e) => e.id));
+  const keptInnerEdges = new Set(next.inner?.edges.map((e) => e.id));
+  const removedInnerEdges = block.inner?.edges.filter((e) => !keptInnerEdges.has(e.id)) ?? [];
   return {
     graph: {
       blocks: graph.blocks.map((b) => (b.id === id ? next : b)),
       edges: graph.edges.filter((e) => !removed.has(e.id)),
     },
-    removedEdges,
+    removedEdges: [...removedOuterEdges, ...removedInnerEdges],
   };
 }
 

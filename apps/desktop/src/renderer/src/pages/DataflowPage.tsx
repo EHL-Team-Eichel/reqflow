@@ -1,12 +1,12 @@
 import { useRef } from "react";
 import { ReactFlowProvider, useReactFlow } from "@xyflow/react";
-import { BlockPalette } from "@/components/dataflow/BlockPalette";
+import { WorkflowSidebar } from "@/components/dataflow/WorkflowSidebar";
 import { Breadcrumb } from "@/components/dataflow/Breadcrumb";
-import { RunControls } from "@/components/dataflow/RunControls";
 import { dataflowStore, useDataflow } from "@/components/dataflow/store";
 import { Workplace } from "@/components/dataflow/Workplace";
 import { Button } from "@/components/ui/Button";
 import { Panel } from "@/components/ui/Panel";
+import { RunControls } from "@/components/dataflow/RunControls";
 
 function WorkplaceActions() {
   const path = useDataflow((s) => s.path);
@@ -29,20 +29,30 @@ function WorkplaceActions() {
   );
 }
 
+import { HilReport } from "@/components/dataflow/report/HilReport";
+
 export function DataflowPage() {
   const canvasRef = useRef<HTMLDivElement>(null);
+  const name = useDataflow((s) => s.name);
 
   return (
     <ReactFlowProvider>
       <div className="flex h-full flex-col gap-2">
-        <h1 className="sr-only">Data Flow</h1>
         <RunControls />
         <div className="flex min-h-0 flex-1 gap-2">
-          <Panel title="Building Blocks" className="w-1/4 min-w-64 max-w-sm" testId="palette">
-            <BlockPalette canvasRef={canvasRef} />
-          </Panel>
+          <h1 className="sr-only">Data Flow</h1>
+          <WorkflowSidebar canvasRef={canvasRef} />
           <Panel
-            title={<Breadcrumb />}
+            title={
+              <span className="flex min-w-0 items-center gap-3">
+                <Breadcrumb />
+                {name !== "Data Flow" && (
+                  <span className="truncate text-sm font-normal text-muted" title={name}>
+                    {name}
+                  </span>
+                )}
+              </span>
+            }
             actions={<WorkplaceActions />}
             className="flex-1"
             testId="workplace"
@@ -51,6 +61,7 @@ export function DataflowPage() {
           </Panel>
         </div>
       </div>
+      <HilReport />
     </ReactFlowProvider>
   );
 }

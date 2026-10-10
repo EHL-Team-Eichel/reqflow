@@ -1,6 +1,6 @@
 # Raw research in ReqFlow
 
-Implementation snapshot: **2026-10-10**. ReqFlow is a **native Electron desktop app**, not a hosted
+Implementation snapshot: **2026-10-11**, `ws6-ai-providers`. ReqFlow is a **native Electron desktop app**, not a hosted
 research service. Use a Research block to collect provider-returned originals and authorized local
 documents, inspect access/completeness limitations, and export the raw dataset. Collection does not
 create findings, sentiment, reliability scores, priorities, requirements, or human decisions.
@@ -22,17 +22,18 @@ responses; they do not establish live access or production readiness. See
    paid probe, not a research run. Read the returned capabilities and limitations; a successful
    probe does not prove source access, platform permission, or complete collection.
 4. Go to **Data Flow** and click or drag **Research** from **Building Blocks** onto the root
-   workplace. For the first run, use only Research blocks: unrelated Raw/AI/HIL/Add to Car
-   implementations and requirement handlers are separate workstreams and may fail with
-   `not_implemented`. No downstream connection is required to collect or export.
+   workplace. No downstream connection is required to collect or export raw research, though
+   completed upstream blocks (Raw Ingestion, AI Filter, AI Splitter, Human in the Loop, and Add to Car)
+   can connect with Research in full pipelines.
 5. Select the block. Set **Research question**, **Market**, **Research agents**, and the result,
-   request, document-page, time, and concurrency limits. Select at least one agent. The current
-   collector uses **Research agents**; the older **Look at** categories do not select agents.
-   Leave **Mastra query planning (paid Anthropic request)** off for deterministic query building.
+   request, document-page, time, and concurrency limits. Select at least one agent. The Social media dropdown
+   and agent selector operate on canonical `agents` chips and `scopeJson` (see [customization](customization.md)).
+   Leave **Mastra query planning** off for deterministic query building. Opt-in planning uses the
+   app's configured LLM provider (Anthropic Claude, OpenAI, or Google Gemini; see [LLM providers](llm-providers.md)).
 6. Optionally enter **Advanced research scope (JSON)** or use **Local original document** to
    open the native file picker. Keep the Research inner workplace untouched to use the builtin
    collector. Adding inner blocks or even a boundary-to-boundary edge overrides that builtin.
-7. Click **Run workflow**. The controls save the **whole root graph** and its scope before
+7. Click **Start**. The controls save the **whole root graph** and its scope before
    starting. Expand **Last run** for block states and logs; **Inspect output** shows a preview
    limited to 20,000 characters, not the complete dataset.
 8. Read the research summary's per-agent states, record/request counts, and limitations. Once the
@@ -93,15 +94,18 @@ Use the masked Settings inputs, not scope JSON, workflow parameters, prompts, or
 submission, errors, and leaving the section. Stored values are never returned to credential inputs.
 
 Main encrypts credential values with Electron `safeStorage` and persists only ciphertext in
-`secrets.enc.json`. Reads across IPC return configured booleans/source status, never saved keys.
+`secrets.enc.json` via a unified fail-closed `SecretsStore`. Reads across IPC return configured booleans/source status, never saved keys.
 Unavailable OS encryption fails explicitly; Linux's `basic_text` backend is rejected instead of
-allowing plaintext fallback. The implemented Research secret store does not read environment keys,
-even though the broader IPC status type/UI can represent `env` for compatibility.
+allowing plaintext fallback. The unified `SecretsStore` can also use main-process environment
+credentials; status identifies `saved` versus `env` without returning values. Removing a saved
+credential can reveal a still-configured environment fallback. Smoke explicitly disables both.
 
 General settings autosave cannot change provider enablement/approval/actor flags: dedicated
 `research.configure` owns them. Credential/configuration changes invalidate old connection reports.
-Running jobs use their starting settings/credential snapshot. Revoking access applies to subsequent
-runs; press **Cancel run** to stop an active collection immediately.
+Jobs retain their starting settings for reproducibility. Changing Research access, web/domain policy,
+LLM settings, or credentials also cancels active Research collection immediately; no new request uses
+the revoked snapshot. Earlier originals survive, including when a transport ignores cancellation.
+Cancellation preserves bounded paid cleanup; **Cancel** also stops a run explicitly.
 Connection states are `not_configured`, `untested`, `success`, `invalid_credentials`,
 `permission_required`, `rate_limited`, `unreachable`, and `unsupported`. These are distinct from
 collection outcomes. See [Settings](settings.md) for controller behavior.
@@ -141,13 +145,18 @@ web access is narrowed to `bmwgroup.com` and `press.bmwgroup.com` before retriev
 
 The default neutral query builder is deterministic **query construction**, not mock research.
 It still retrieves real originals through the explicitly configured adapters. To opt into paid
-planning, select **Anthropic Claude** in AI & research, set **Fast model** to an Anthropic model ID
-your account actually supports, save an Anthropic key in **API keys**, and turn on the block's
-**Mastra query planning** toggle. Do not assume the preset model strings prove account access.
+planning, select your provider in **AI & research** (**Anthropic Claude**, **OpenAI**, or
+**Google Gemini**; see [LLM providers](llm-providers.md)), ensure the selected model or **Fast model**
+is supported by your account (using custom model IDs or provider profiles if configured), save the
+provider's credential in **API keys** (where the selected masked key is stored in the fail-closed `SecretsStore`),
+and turn on the block's **Mastra query planning** toggle. Do not assume preset model strings prove account access.
+Note that autonomous coding subagents are strictly Gemini-only (see [AGENT_ROUTING.md](../AGENT_ROUTING.md)),
+which is completely distinct from the runtime app's multi-provider API support.
 
 `mastra.ts` constructs **13 real standalone `@mastra/core` Agent instances** (installed 1.75.0)
-with `{ providerId: "anthropic", modelId, apiKey }`. The key and user-configured model ID are
-injected explicitly; there is no environment-key lookup, model substitution, or fake Mastra model.
+using the active provider (`anthropic`, `openai`, or `google`), model ID, and injected API key.
+The selected provider and user-configured model ID are injected explicitly; there is no
+environment-key lookup, model substitution, or fake Mastra model.
 Construction makes no model request. Eligible query-based agents may each make one planning call;
 local reads and explicit Eurostat requests do not need planning. Planning is gated by enabled access,
 credentials, approval, domains, remaining results/requests, and cancellation.
@@ -384,13 +393,18 @@ fixed `internal` message. Provider/collection reports carry their own access and
 Implementation map:
 
 - Contracts: `packages/core/src/research.ts`, `blocks.ts`, `services.ts`, `ipc.ts`.
-- Native wiring, encrypted credentials, local JSON persistence: `apps/desktop/src/main/research/`.
+- Main handlers and services: `apps/desktop/src/main/handlers.ts` is the single authoritative
+  `createHandlers` composition using SQLite repositories (`@reqflow/db`), the shared uploaded-file
+  store (`LocalFileStore`), and unified fail-closed `SecretsStore`. Research runtime helper
+  (`apps/desktop/src/main/research/runtime.ts`) delegates to these shared stores and does not own
+  separate settings, workflow persistence, or run state.
 - Agent definitions/planning, adapters, normalization, HTTP, exports:
   `packages/blocks/src/research/`.
-- Shared executor: `packages/engine/src/executor.ts`; renderer controls:
-  `apps/desktop/src/renderer/src/components/dataflow/RunControls.tsx`.
+- Shared executor and runtime: `packages/engine/src/executor.ts` (`WorkflowExecutor` public lifecycle);
+  renderer controls: `apps/desktop/src/renderer/src/components/dataflow/RunControls.tsx`.
 
 Further reading: [workflow](workflow.md), [runtime](runtime.md), [Mastra](mastra.md),
+[customization](customization.md), [LLM providers](llm-providers.md),
 [web providers](web-providers.md), [social providers](social-providers.md), [Apify](apify.md),
 [documents/statistics](documents-statistics.md), [HTTP](http.md), [Settings](settings.md),
 [exports](exports.md), and [verification](verification.md). Official provider-documentation links

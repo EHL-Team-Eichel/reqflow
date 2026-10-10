@@ -1,12 +1,22 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { Agent, type AgentExecutionOptions } from "@mastra/core/agent";
-import { RESEARCH_AGENT_IDS, ResearchScope, type ResearchAgentId } from "@reqflow/core";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  RESEARCH_AGENT_IDS,
+  ResearchScope,
+  type LiveLlmProvider,
+  type ResearchAgentId,
+} from "@reqflow/core";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildQueries } from "./agents";
 import { createMastraQueryPlanner, createMastraResearchAgents } from "./mastra";
 
 const options = { apiKey: "synthetic-injected-key", modelId: "claude-haiku-4-5" };
+const liveModels: { provider: LiveLlmProvider; modelId: string; environment: string }[] = [
+  { provider: "anthropic", modelId: "claude-haiku-4-5", environment: "ANTHROPIC_API_KEY" },
+  { provider: "openai", modelId: "gpt-4.1-mini", environment: "OPENAI_API_KEY" },
+  { provider: "google", modelId: "gemini-2.5-flash", environment: "GOOGLE_GENERATIVE_AI_API_KEY" },
+];
 const scope = ResearchScope.parse({
   currentGeneration: "G60",
   previousGeneration: "G30",
@@ -37,6 +47,10 @@ function mockOutput(object: unknown) {
     .spyOn(agentPrototype, "generate")
     .mockResolvedValue({ object } as Awaited<ReturnType<Agent["generate"]>>);
 }
+
+beforeEach(() => {
+  vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("Unexpected model network request"));
+});
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -101,9 +115,247 @@ describe("createMastraResearchAgents", () => {
       /process\s*\.\s*env|node:fs|node:http|from ["']\.\/providers|new Mastra\(|createWorkflow\(/,
     );
   });
+
+  it.each(liveModels)(
+    "constructs every expert with injected $provider credentials, never environment credentials or network discovery",
+    async ({ provider, modelId, environment }) => {
+      vi.stubEnv(environment, "synthetic-env-key-not-selected");
+      const fetch = vi
+        .spyOn(globalThis, "fetch")
+        .mockRejectedValue(new Error("Unexpected network"));
+      for (const suppliedId of [modelId, `${provider}/${modelId}`]) {
+        const agents = createMastraResearchAgents({ ...options, provider, modelId: suppliedId });
+        expect(Object.keys(agents)).toEqual([...RESEARCH_AGENT_IDS]);
+        for (const agent of Object.values(agents)) {
+          expect(await agent.listTools()).toEqual({});
+          expect(await agent.listErrorProcessors()).toEqual([]);
+          expect(await agent.getMemory()).toBeUndefined();
+          expect(agent.getMastraInstance()).toBeUndefined();
+          const model = await agent.getModel();
+          expect(model.provider).toContain(provider);
+          expect(model.modelId).toBe(modelId);
+          expect(
+            (model as unknown as { config: { apiKey: string } }).config.apiKey === options.apiKey,
+          ).toBe(true);
+          expect(await agent.getDefaultOptions()).toMatchObject({
+            maxSteps: 1,
+            modelSettings: { temperature: 0, maxOutputTokens: 768, maxRetries: 0 },
+          });
+        }
+      }
+      for (const apiKey of ["", "   "]) {
+        expect(() => createMastraResearchAgents({ provider, modelId, apiKey })).toThrow();
+      }
+      expect(fetch).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    ["anthropic", "custom-planner.v2:preview", "custom-planner.v2:preview"],
+    ["openai", "openai/custom-planner.v2:preview", "custom-planner.v2:preview"],
+    ["google", "models/gemini-2.5-flash", "gemini-2.5-flash"],
+    ["google", "google/models/gemini-2.5-flash", "gemini-2.5-flash"],
+    ["google", "models/custom-planner.v2", "custom-planner.v2"],
+    ["openai", "ft:gpt-4.1-mini:synthetic:planner:abc", "ft:gpt-4.1-mini:synthetic:planner:abc"],
+  ] as const)(
+    "normalizes %s model %s without a model allowlist",
+    async (provider, supplied, normalized) => {
+      const fetch = vi
+        .spyOn(globalThis, "fetch")
+        .mockRejectedValue(new Error("Unexpected network"));
+      const agents = createMastraResearchAgents({ ...options, provider, modelId: ` ${supplied} ` });
+      expect((await agents.reddit.getModel()).modelId).toBe(normalized);
+      expect(fetch).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(liveModels)("rejects invalid or cross-provider $provider model IDs", ({ provider }) => {
+    const mismatches = liveModels
+      .filter((entry) => entry.provider !== provider)
+      .flatMap((entry) => [entry.modelId, `${entry.provider}/${entry.modelId}`]);
+    for (const modelId of [
+      ...mismatches,
+      "",
+      " ",
+      "model with spaces",
+      "model\ncontrol",
+      "https://models.example.org/model",
+      "custom/model",
+      `${provider}//model`,
+      `${provider}/model/extra`,
+      "model?query=1",
+      "model#fragment",
+      "../model",
+      "model\\path",
+      "x".repeat(201),
+    ]) {
+      expect(() => createMastraResearchAgents({ ...options, provider, modelId })).toThrow();
+    }
+  });
+
+  it("rejects mock, unknown providers and extra transport configuration", () => {
+    for (const provider of ["mock", "vertex", "unknown"]) {
+      expect(() =>
+        createMastraResearchAgents({ ...options, provider: provider as LiveLlmProvider }),
+      ).toThrow();
+    }
+    expect(() =>
+      createMastraResearchAgents({
+        ...options,
+        url: "https://models.example.org",
+      } as typeof options),
+    ).toThrow();
+  });
 });
 
 describe("createMastraQueryPlanner", () => {
+  it.each(liveModels)(
+    "plans once with $provider, preserving raw-only inputs and execution limits",
+    async ({ provider, modelId }) => {
+      const generate = mockOutput({ queries: [buildQueries("editorial_reviews", scope)[0]] });
+      const fetch = vi
+        .spyOn(globalThis, "fetch")
+        .mockRejectedValue(new Error("Unexpected network"));
+      const controller = new AbortController();
+      const result = await createMastraQueryPlanner({ ...options, provider, modelId })(
+        "editorial_reviews",
+        scope,
+        controller.signal,
+      );
+      expect(result).toEqual([buildQueries("editorial_reviews", scope)[0]]);
+      expect(generate).toHaveBeenCalledTimes(1);
+      const agent = generate.mock.contexts[0] as Agent;
+      expect((await agent.getModel()).provider).toContain(provider);
+      const [prompt, execution] = generate.mock.calls[0]!;
+      expect(prompt).not.toContain(options.apiKey);
+      expect(prompt).not.toContain("private-source");
+      expect(prompt).not.toContain("file_private");
+      expect(execution).toMatchObject({
+        abortSignal: controller.signal,
+        maxSteps: 1,
+        toolChoice: "none",
+        activeTools: [],
+        maxProcessorRetries: 0,
+        savePerStep: false,
+        structuredOutput: { errorStrategy: "strict" },
+        modelSettings: { temperature: 0, maxOutputTokens: 768, maxRetries: 0 },
+        tracingOptions: { hideInput: true, hideOutput: true },
+      });
+      expect(execution?.structuredOutput).not.toHaveProperty("model");
+      expect(fetch).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    "o1",
+    "openai/o1-mini",
+    "o3-2025-04-16",
+    "o4-mini",
+    "gpt-5",
+    "gpt-5-mini",
+    "gpt-5.1",
+    "gpt-5.2-pro",
+    "ft:gpt-5:synthetic:planner:abc",
+    "ft:o3:synthetic:planner:abc",
+  ])(
+    "omits temperature for OpenAI reasoning model %s at both execution boundaries",
+    async (modelId) => {
+      const generate = mockOutput({ queries: ["cabin dimensions"] });
+      await createMastraQueryPlanner({ ...options, provider: "openai", modelId })(
+        "reddit",
+        scope,
+        new AbortController().signal,
+      );
+      const agent = generate.mock.contexts[0] as Agent;
+      expect((await agent.getDefaultOptions()).modelSettings).not.toHaveProperty("temperature");
+      expect(generate.mock.calls[0]?.[1]?.modelSettings).not.toHaveProperty("temperature");
+      expect(generate.mock.calls[0]?.[1]?.modelSettings).toMatchObject({
+        maxOutputTokens: 768,
+        maxRetries: 0,
+      });
+      expect(generate).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it.each(["gpt-4.1-mini", "gpt-5-chat-latest", "ft:gpt-4.1-mini:synthetic:planner:abc"])(
+    "keeps temperature zero for non-reasoning OpenAI model %s",
+    async (modelId) => {
+      const generate = mockOutput({ queries: ["cabin dimensions"] });
+      await createMastraQueryPlanner({ ...options, provider: "openai", modelId })(
+        "reddit",
+        scope,
+        new AbortController().signal,
+      );
+      expect(generate.mock.calls[0]?.[1]?.modelSettings?.temperature).toBe(0);
+    },
+  );
+
+  it.each(liveModels)(
+    "rejects unsuccessful $provider completion even with a valid query object",
+    async ({ provider, modelId }) => {
+      const generate = mockOutput({ queries: ["cabin dimensions"] });
+      for (const finishReason of [
+        "length",
+        "content-filter",
+        "refusal",
+        "error",
+        "tool-calls",
+        "unknown",
+        "suspended",
+        "",
+      ]) {
+        generate.mockResolvedValueOnce({
+          object: { queries: ["cabin dimensions"] },
+          finishReason,
+        } as Awaited<ReturnType<Agent["generate"]>>);
+        await expect(
+          createMastraQueryPlanner({ ...options, provider, modelId })(
+            "reddit",
+            scope,
+            new AbortController().signal,
+          ),
+        ).rejects.toThrow(/completion|finish|refus/i);
+      }
+      expect(generate).toHaveBeenCalledTimes(8);
+    },
+  );
+
+  it.each(liveModels)("accepts successful $provider completion", async ({ provider, modelId }) => {
+    const generate = mockOutput({ queries: ["cabin dimensions"] });
+    generate.mockResolvedValueOnce({
+      object: { queries: ["cabin dimensions"] },
+      finishReason: "stop",
+    } as Awaited<ReturnType<Agent["generate"]>>);
+    expect(
+      await createMastraQueryPlanner({ ...options, provider, modelId })(
+        "reddit",
+        scope,
+        new AbortController().signal,
+      ),
+    ).toHaveLength(2);
+    expect(generate).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(liveModels)(
+    "enforces original strict query bounds locally for $provider, regardless of SDK schema adaptation",
+    async ({ provider, modelId }) => {
+      const generate = mockOutput({ queries: ["search"] });
+      const planner = createMastraQueryPlanner({ ...options, provider, modelId });
+      for (const object of [
+        { queries: [] },
+        { queries: ["a", "b", "c", "d"] },
+        { queries: [" "] },
+        { queries: ["x".repeat(501)] },
+        { queries: ["search"], evidence: [] },
+      ]) {
+        generate.mockResolvedValueOnce({ object, finishReason: "stop" } as Awaited<
+          ReturnType<Agent["generate"]>
+        >);
+        await expect(planner("reddit", scope, new AbortController().signal)).rejects.toThrow();
+      }
+      expect(generate).toHaveBeenCalledTimes(5);
+    },
+  );
   it.each(RESEARCH_AGENT_IDS)(
     "calls the selected real %s Agent once and preserves its deterministic root",
     async (id) => {

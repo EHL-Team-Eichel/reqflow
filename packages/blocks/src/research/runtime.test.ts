@@ -2,17 +2,19 @@ import { Agent } from "@mastra/core/agent";
 import {
   CollectedItem,
   DEFAULT_SETTINGS,
+  LLM_SECRET_NAMES,
   RESEARCH_AGENT_IDS,
   RESEARCH_PROVIDER_IDS,
   ResearchRequest,
   SECRET_NAMES,
+  type LiveLlmProvider,
   type ResearchAgentId,
   type ResearchCollector,
   type ResearchDataset,
   type ResearchProviderId,
   type SecretName,
 } from "@reqflow/core";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   ProviderError,
   type CollectionOutcome,
@@ -40,6 +42,11 @@ const routes: [ResearchAgentId, ResearchProviderId[]][] = [
   ["technology", ["firecrawl", "openalex"]],
   ["bmw_sales", ["firecrawl", "local_documents"]],
   ["bmw_strategy", ["firecrawl", "local_documents"]],
+];
+const liveModels: { provider: LiveLlmProvider; modelId: string; secretName: SecretName }[] = [
+  { provider: "anthropic", modelId: "claude-haiku-4-5", secretName: "anthropic_api_key" },
+  { provider: "openai", modelId: "gpt-4.1-mini", secretName: "openai_api_key" },
+  { provider: "google", modelId: "gemini-2.5-flash", secretName: "google_api_key" },
 ];
 function original(
   provider: ResearchProviderId,
@@ -83,10 +90,9 @@ function setup() {
       allowedActors: ["apify/instagram-scraper", "clockworks/tiktok-scraper"],
     };
   const credentials: Partial<Record<SecretName, string>> = Object.fromEntries(
-    SECRET_NAMES.filter((name) => name !== "anthropic_api_key").map((name) => [
-      name,
-      `synthetic-${name}`,
-    ]),
+    SECRET_NAMES.filter((name) => !Object.values(LLM_SECRET_NAMES).some((key) => key === name)).map(
+      (name) => [name, `synthetic-${name}`],
+    ),
   );
   const calls: [ResearchAgentId, ResearchProviderId][] = [];
   const adapters = new Map(
@@ -159,8 +165,14 @@ function replace(
   return adapter.collect;
 }
 
+beforeEach(() => {
+  vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("Unexpected model network request"));
+  vi.spyOn(Agent.prototype, "generate").mockRejectedValue(new Error("Unexpected paid model call"));
+});
+
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllEnvs();
 });
 
 describe("Research collector routing and access gates", () => {
@@ -838,187 +850,233 @@ describe("original local data and query-planner isolation", () => {
     expect(dataset.records[0]?.publishedAt).toBeUndefined();
     expect(h.fetchImpl).not.toHaveBeenCalled();
   });
+});
 
-  it("passes only search scope to real Mastra planners, never previously collected source text or credentials", async () => {
-    const h = setup();
-    h.settings.llm.provider = "anthropic";
-    h.credentials.anthropic_api_key = "synthetic-anthropic-injected-key";
-    h.context.planQueries = true;
-    const sourceText = "SYNTHETIC-ORIGINAL-DO-NOT-SEND-TO-MODEL";
-    replace(h, "youtube", async () => ({
-      items: [
-        original("youtube", "private", {
-          text: sourceText,
-          metadata: { originalText: sourceText },
-        }),
-      ],
-      status: "success",
-      limitations: [],
-    }));
-    const prompts: string[] = [];
-    const generate = vi.spyOn(Agent.prototype, "generate").mockImplementation(async (prompt) => {
-      const text = String(prompt);
-      prompts.push(text);
-      const plan = JSON.parse(text) as { neutralQuery: string };
-      return { object: { queries: [plan.neutralQuery] } } as Awaited<ReturnType<Agent["generate"]>>;
+describe.each(liveModels)(
+  "optional $provider query-planner isolation",
+  ({ provider, modelId, secretName }) => {
+    function selectPlanner(h: ReturnType<typeof setup>) {
+      h.settings.llm.provider = provider;
+      h.settings.llm.fastModel = modelId;
+      h.credentials[secretName] = `synthetic-${provider}-injected-key`;
+    }
+
+    it("passes only search scope to real Mastra planners, never previously collected source text or credentials", async () => {
+      const h = setup();
+      selectPlanner(h);
+      for (const entry of liveModels)
+        h.credentials[entry.secretName] = `synthetic-${entry.provider}-injected-key`;
+      const factory = vi.spyOn(mastra, "createMastraQueryPlanner");
+      h.context.planQueries = true;
+      const sourceText = "SYNTHETIC-ORIGINAL-DO-NOT-SEND-TO-MODEL";
+      replace(h, "youtube", async () => ({
+        items: [
+          original("youtube", "private", {
+            text: sourceText,
+            metadata: { originalText: sourceText },
+          }),
+        ],
+        status: "success",
+        limitations: [],
+      }));
+      const prompts: string[] = [];
+      const generate = vi.spyOn(Agent.prototype, "generate").mockImplementation(async (prompt) => {
+        const text = String(prompt);
+        prompts.push(text);
+        const plan = JSON.parse(text) as { neutralQuery: string };
+        return { object: { queries: [plan.neutralQuery] } } as Awaited<
+          ReturnType<Agent["generate"]>
+        >;
+      });
+
+      const dataset = await h.collect(
+        request(
+          ["youtube", "x"],
+          {},
+          {
+            documentIds: ["file_synthetic_private"],
+            urls: ["https://sources.example.org/private-document"],
+          },
+        ),
+      );
+
+      expect(generate).toHaveBeenCalledTimes(2);
+      expect(factory).toHaveBeenCalledExactlyOnceWith({
+        provider,
+        modelId,
+        apiKey: h.credentials[secretName],
+      });
+      expect(dataset.records[0]?.text).toBe(sourceText);
+      for (const prompt of prompts) {
+        expect(prompt).not.toContain(sourceText);
+        expect(prompt).not.toContain("file_synthetic_private");
+        expect(prompt).not.toContain("private-document");
+        for (const key of Object.values(h.credentials)) expect(prompt).not.toContain(key!);
+      }
+      expect(dataset.results.map((result) => result.requests)).toEqual([1, 1]);
+      expect(h.fetchImpl).not.toHaveBeenCalled();
     });
 
-    const dataset = await h.collect(
-      request(
-        ["youtube", "x"],
-        {},
-        {
-          documentIds: ["file_synthetic_private"],
-          urls: ["https://sources.example.org/private-document"],
-        },
-      ),
+    it.each([undefined, "", "   "])(
+      "does not plan queries without a nonblank selected provider credential (%s)",
+      async (apiKey) => {
+        const h = setup();
+        selectPlanner(h);
+        h.credentials[secretName] = apiKey;
+        for (const entry of liveModels) {
+          if (entry.provider !== provider)
+            h.credentials[entry.secretName] = `synthetic-${entry.provider}-unused-key`;
+        }
+        for (const environment of [
+          "ANTHROPIC_API_KEY",
+          "OPENAI_API_KEY",
+          "GOOGLE_API_KEY",
+          "GOOGLE_GENERATIVE_AI_API_KEY",
+        ])
+          vi.stubEnv(environment, "synthetic-env-key-not-selected");
+        h.context.planQueries = true;
+        const factory = vi.spyOn(mastra, "createMastraQueryPlanner");
+        const generate = vi.spyOn(Agent.prototype, "generate").mockImplementation(async () => {
+          throw new Error("Unexpected paid model call");
+        });
+
+        const dataset = await h.collect(request(["youtube"]));
+
+        expect(generate).not.toHaveBeenCalled();
+        expect(factory).not.toHaveBeenCalled();
+        expect(dataset.results[0]?.requests).toBe(0);
+        expect(dataset.results[0]?.status).toBe("success");
+      },
     );
 
-    expect(generate).toHaveBeenCalledTimes(2);
-    expect(dataset.records[0]?.text).toBe(sourceText);
-    for (const prompt of prompts) {
-      expect(prompt).not.toContain(sourceText);
-      expect(prompt).not.toContain("file_synthetic_private");
-      expect(prompt).not.toContain("private-document");
-      for (const key of Object.values(h.credentials)) expect(prompt).not.toContain(key!);
-    }
-    expect(dataset.results.map((result) => result.requests)).toEqual([1, 1]);
-    expect(h.fetchImpl).not.toHaveBeenCalled();
-  });
-
-  it("does not plan queries without an explicitly injected Anthropic credential", async () => {
-    const h = setup();
-    h.settings.llm.provider = "anthropic";
-    h.context.planQueries = true;
-    const generate = vi.spyOn(Agent.prototype, "generate").mockImplementation(async () => {
-      throw new Error("Unexpected paid model call");
-    });
-
-    const dataset = await h.collect(request(["youtube"]));
-
-    expect(generate).not.toHaveBeenCalled();
-    expect(dataset.results[0]?.requests).toBe(0);
-  });
-
-  it("charges query planning and provider HTTP calls to the same shared request budget", async () => {
-    const h = setup();
-    h.settings.llm.provider = "anthropic";
-    h.credentials.anthropic_api_key = "synthetic-anthropic-injected-key";
-    h.context.planQueries = true;
-    const generate = vi.spyOn(Agent.prototype, "generate").mockImplementation(async (prompt) => {
-      const plan = JSON.parse(String(prompt)) as { neutralQuery: string };
-      return { object: { queries: [plan.neutralQuery] } } as Awaited<ReturnType<Agent["generate"]>>;
-    });
-    h.fetchImpl.mockImplementation(async () => Response.json({ synthetic: true }));
-    replace(h, "youtube", async (_input, ctx) => {
-      for (let page = 0; page < 2; page++)
-        await ctx.http.json(`https://www.googleapis.com/youtube/v3/search?synthetic-page=${page}`);
-      return { items: [original("youtube", "budget")], status: "success", limitations: [] };
-    });
-
-    const dataset = await h.collect(request(["youtube", "x"], { maxRequests: 2 }));
-
-    expect(generate).toHaveBeenCalledTimes(1);
-    expect(h.fetchImpl).toHaveBeenCalledTimes(1);
-    expect(dataset.results.reduce((total, result) => total + result.requests, 0)).toBe(2);
-    expect(dataset.results.every((result) => result.status !== "success")).toBe(true);
-    expect(h.adapters.get("x")!.collect).not.toHaveBeenCalled();
-  });
-
-  it("does not initialize paid planning without explicit opt-in, even with configured Anthropic credentials", async () => {
-    const h = setup();
-    h.settings.llm.provider = "anthropic";
-    h.credentials.anthropic_api_key = "synthetic-anthropic-injected-key";
-    const planner = vi.spyOn(mastra, "createMastraQueryPlanner");
-    const dataset = await h.collect(request(["youtube"]));
-    expect(planner).not.toHaveBeenCalled();
-    expect(dataset.results[0]?.requests).toBe(0);
-    expect(h.calls).toEqual([["youtube", "youtube"]]);
-  });
-
-  it("supports explicit collector-option opt-in while a false context override keeps planning disabled", async () => {
-    const h = setup();
-    h.settings.llm.provider = "anthropic";
-    h.credentials.anthropic_api_key = "synthetic-anthropic-injected-key";
-    const generate = vi
-      .spyOn(Agent.prototype, "generate")
-      .mockImplementation(
-        async (prompt) =>
-          ({ object: { queries: [JSON.parse(String(prompt)).neutralQuery] } }) as Awaited<
-            ReturnType<Agent["generate"]>
-          >,
-      );
-    const collector = createResearchCollector({ ...h, queryPlanning: true });
-    expect((await collector.collect(request(["youtube"]), h.context)).results[0]?.requests).toBe(1);
-    h.context.planQueries = false;
-    expect((await collector.collect(request(["youtube"]), h.context)).results[0]?.requests).toBe(0);
-    expect(generate).toHaveBeenCalledTimes(1);
-  });
-
-  it("keeps collection deterministic when no request remains for both planning and collection", async () => {
-    const h = setup();
-    h.settings.llm.provider = "anthropic";
-    h.credentials.anthropic_api_key = "synthetic-anthropic-injected-key";
-    h.context.planQueries = true;
-    const planner = vi.spyOn(mastra, "createMastraQueryPlanner");
-    h.fetchImpl.mockImplementation(async () => Response.json({ synthetic: true }));
-    replace(h, "youtube", async (_input, ctx) => {
-      await ctx.http.json("https://www.googleapis.com/youtube/v3/search");
-      return { items: [original("youtube", "only-request")], status: "success", limitations: [] };
-    });
-    const dataset = await h.collect(request(["youtube"], { maxRequests: 1 }));
-    expect(planner).not.toHaveBeenCalled();
-    expect(dataset.results[0]).toMatchObject({ status: "success", requests: 1 });
-  });
-
-  it("counts HTTP retry attempts and planning in one global request budget", async () => {
-    const h = setup();
-    h.settings.llm.provider = "anthropic";
-    h.credentials.anthropic_api_key = "synthetic-anthropic-injected-key";
-    h.context.planQueries = true;
-    const generate = vi
-      .spyOn(Agent.prototype, "generate")
-      .mockImplementation(
-        async (prompt) =>
-          ({ object: { queries: [JSON.parse(String(prompt)).neutralQuery] } }) as Awaited<
-            ReturnType<Agent["generate"]>
-          >,
-      );
-    h.fetchImpl
-      .mockResolvedValueOnce(new Response(null, { status: 503, headers: { "Retry-After": "0" } }))
-      .mockResolvedValueOnce(Response.json({ synthetic: true }));
-    replace(h, "youtube", async (_input, ctx) => {
-      await ctx.http.json("https://www.googleapis.com/youtube/v3/search");
-      return { items: [original("youtube", "retry")], status: "success", limitations: [] };
-    });
-    const dataset = await h.collect(request(["youtube", "x"], { maxRequests: 3, retries: 1 }));
-    expect(generate).toHaveBeenCalledTimes(1);
-    expect(h.fetchImpl).toHaveBeenCalledTimes(2);
-    expect(dataset.results.map((result) => result.requests)).toEqual([3, 0]);
-    expect(h.adapters.get("x")!.collect).not.toHaveBeenCalled();
-  });
-
-  it("does not initialize planning for local documents and explicit Eurostat datasets", async () => {
-    const h = setup();
-    h.settings.research.provider = "off";
-    h.settings.llm.provider = "anthropic";
-    h.credentials.anthropic_api_key = "synthetic-anthropic-injected-key";
-    h.context.planQueries = true;
-    const planner = vi.spyOn(mastra, "createMastraQueryPlanner");
-    await h.collect(request(["regional_context", "bmw_sales"]));
-    expect(planner).not.toHaveBeenCalled();
-    expect(h.calls).toEqual([
-      ["regional_context", "eurostat"],
-      ["bmw_sales", "local_documents"],
-    ]);
-  });
-
-  it.each(["disabled", "credentials", "approval", "actor", "domain", "off", "cancelled"] as const)(
-    "does not initialize planning when collection is gated by %s",
-    async (gate) => {
+    it("charges query planning and provider HTTP calls to the same shared request budget", async () => {
       const h = setup();
-      h.settings.llm.provider = "anthropic";
-      h.credentials.anthropic_api_key = "synthetic-anthropic-injected-key";
+      selectPlanner(h);
+      h.context.planQueries = true;
+      const generate = vi.spyOn(Agent.prototype, "generate").mockImplementation(async (prompt) => {
+        const plan = JSON.parse(String(prompt)) as { neutralQuery: string };
+        return { object: { queries: [plan.neutralQuery] } } as Awaited<
+          ReturnType<Agent["generate"]>
+        >;
+      });
+      h.fetchImpl.mockImplementation(async () => Response.json({ synthetic: true }));
+      replace(h, "youtube", async (_input, ctx) => {
+        for (let page = 0; page < 2; page++)
+          await ctx.http.json(
+            `https://www.googleapis.com/youtube/v3/search?synthetic-page=${page}`,
+          );
+        return { items: [original("youtube", "budget")], status: "success", limitations: [] };
+      });
+
+      const dataset = await h.collect(request(["youtube", "x"], { maxRequests: 2 }));
+
+      expect(generate).toHaveBeenCalledTimes(1);
+      expect(h.fetchImpl).toHaveBeenCalledTimes(1);
+      expect(dataset.results.reduce((total, result) => total + result.requests, 0)).toBe(2);
+      expect(dataset.results.every((result) => result.status !== "success")).toBe(true);
+      expect(h.adapters.get("x")!.collect).not.toHaveBeenCalled();
+    });
+
+    it("does not initialize paid planning without explicit opt-in, even with configured credentials", async () => {
+      const h = setup();
+      selectPlanner(h);
+      const planner = vi.spyOn(mastra, "createMastraQueryPlanner");
+      const dataset = await h.collect(request(["youtube"]));
+      expect(planner).not.toHaveBeenCalled();
+      expect(dataset.results[0]?.requests).toBe(0);
+      expect(h.calls).toEqual([["youtube", "youtube"]]);
+    });
+
+    it("supports explicit collector-option opt-in while a false context override keeps planning disabled", async () => {
+      const h = setup();
+      selectPlanner(h);
+      const generate = vi
+        .spyOn(Agent.prototype, "generate")
+        .mockImplementation(
+          async (prompt) =>
+            ({ object: { queries: [JSON.parse(String(prompt)).neutralQuery] } }) as Awaited<
+              ReturnType<Agent["generate"]>
+            >,
+        );
+      const collector = createResearchCollector({ ...h, queryPlanning: true });
+      expect((await collector.collect(request(["youtube"]), h.context)).results[0]?.requests).toBe(
+        1,
+      );
+      h.context.planQueries = false;
+      expect((await collector.collect(request(["youtube"]), h.context)).results[0]?.requests).toBe(
+        0,
+      );
+      expect(generate).toHaveBeenCalledTimes(1);
+    });
+
+    it("keeps collection deterministic when no request remains for both planning and collection", async () => {
+      const h = setup();
+      selectPlanner(h);
+      h.context.planQueries = true;
+      const planner = vi.spyOn(mastra, "createMastraQueryPlanner");
+      h.fetchImpl.mockImplementation(async () => Response.json({ synthetic: true }));
+      replace(h, "youtube", async (_input, ctx) => {
+        await ctx.http.json("https://www.googleapis.com/youtube/v3/search");
+        return { items: [original("youtube", "only-request")], status: "success", limitations: [] };
+      });
+      const dataset = await h.collect(request(["youtube"], { maxRequests: 1 }));
+      expect(planner).not.toHaveBeenCalled();
+      expect(dataset.results[0]).toMatchObject({ status: "success", requests: 1 });
+    });
+
+    it("counts HTTP retry attempts and planning in one global request budget", async () => {
+      const h = setup();
+      selectPlanner(h);
+      h.context.planQueries = true;
+      const generate = vi
+        .spyOn(Agent.prototype, "generate")
+        .mockImplementation(
+          async (prompt) =>
+            ({ object: { queries: [JSON.parse(String(prompt)).neutralQuery] } }) as Awaited<
+              ReturnType<Agent["generate"]>
+            >,
+        );
+      h.fetchImpl
+        .mockResolvedValueOnce(new Response(null, { status: 503, headers: { "Retry-After": "0" } }))
+        .mockResolvedValueOnce(Response.json({ synthetic: true }));
+      replace(h, "youtube", async (_input, ctx) => {
+        await ctx.http.json("https://www.googleapis.com/youtube/v3/search");
+        return { items: [original("youtube", "retry")], status: "success", limitations: [] };
+      });
+      const dataset = await h.collect(request(["youtube", "x"], { maxRequests: 3, retries: 1 }));
+      expect(generate).toHaveBeenCalledTimes(1);
+      expect(h.fetchImpl).toHaveBeenCalledTimes(2);
+      expect(dataset.results.map((result) => result.requests)).toEqual([3, 0]);
+      expect(h.adapters.get("x")!.collect).not.toHaveBeenCalled();
+    });
+
+    it("does not initialize planning for local documents and explicit Eurostat datasets", async () => {
+      const h = setup();
+      h.settings.research.provider = "off";
+      selectPlanner(h);
+      h.context.planQueries = true;
+      const planner = vi.spyOn(mastra, "createMastraQueryPlanner");
+      await h.collect(request(["regional_context", "bmw_sales"]));
+      expect(planner).not.toHaveBeenCalled();
+      expect(h.calls).toEqual([
+        ["regional_context", "eurostat"],
+        ["bmw_sales", "local_documents"],
+      ]);
+    });
+
+    it.each([
+      "disabled",
+      "credentials",
+      "approval",
+      "actor",
+      "adapter",
+      "domain",
+      "policy",
+      "off",
+      "cancelled",
+    ] as const)("does not initialize planning when collection is gated by %s", async (gate) => {
+      const h = setup();
+      selectPlanner(h);
       h.context.planQueries = true;
       const planner = vi.spyOn(mastra, "createMastraQueryPlanner");
       let agent: ResearchAgentId = "reddit";
@@ -1034,53 +1092,191 @@ describe("original local data and query-planner isolation", () => {
         h.settings.research.provider = "off";
       }
       if (gate === "domain") h.settings.research.allowedDomains = ["bmwgroup.com"];
+      if (gate === "policy") h.settings.research.allowedDomains = ["localhost"];
+      if (gate === "adapter") h.adapters.delete("reddit");
       if (gate === "cancelled") h.controller.abort();
       const dataset = await h.collect(request([agent]));
       expect(planner).not.toHaveBeenCalled();
       expect(h.calls).toEqual([]);
       expect(dataset.results[0]?.requests).toBe(0);
-    },
-  );
+    });
 
-  it("does not plan after the shared result allowance is exhausted", async () => {
-    const h = setup();
-    h.settings.llm.provider = "anthropic";
-    h.credentials.anthropic_api_key = "synthetic-anthropic-injected-key";
-    h.context.planQueries = true;
-    const generate = vi
-      .spyOn(Agent.prototype, "generate")
-      .mockImplementation(
+    it("does not plan after the shared result allowance is exhausted", async () => {
+      const h = setup();
+      selectPlanner(h);
+      h.context.planQueries = true;
+      const generate = vi
+        .spyOn(Agent.prototype, "generate")
+        .mockImplementation(
+          async (prompt) =>
+            ({ object: { queries: [JSON.parse(String(prompt)).neutralQuery] } }) as Awaited<
+              ReturnType<Agent["generate"]>
+            >,
+        );
+      const dataset = await h.collect(request(["youtube", "x"], { maxResults: 1 }));
+      expect(generate).toHaveBeenCalledTimes(1);
+      expect(dataset.results[1]?.status).toBe("partial");
+    });
+
+    it("reports planning failure without deterministic fallback and preserves earlier agents' saved originals", async () => {
+      const h = setup();
+      selectPlanner(h);
+      h.context.planQueries = true;
+      vi.spyOn(Agent.prototype, "generate")
+        .mockImplementationOnce(
+          async (prompt) =>
+            ({ object: { queries: [JSON.parse(String(prompt)).neutralQuery] } }) as Awaited<
+              ReturnType<Agent["generate"]>
+            >,
+        )
+        .mockRejectedValueOnce(new Error("Synthetic planning failure"));
+      const dataset = await h.collect(request(["youtube", "x"]));
+      expect(dataset.records).toHaveLength(1);
+      expect(dataset.results[1]).toMatchObject({ status: "error", requests: 1, recordIds: [] });
+      expect(dataset.results[1]?.limitations.join(" ")).toMatch(/planning failed/i);
+      expect(h.adapters.get("x")!.collect).not.toHaveBeenCalled();
+      expect(h.saved.at(-1)).toEqual(dataset);
+    });
+
+    it("rejects an invalid selected model before any paid attempt, without replacing it", async () => {
+      const h = setup();
+      selectPlanner(h);
+      h.settings.llm.fastModel = liveModels.find((entry) => entry.provider !== provider)!.modelId;
+      h.context.planQueries = true;
+      const dataset = await h.collect(request(["youtube"]));
+      expect(Agent.prototype.generate).not.toHaveBeenCalled();
+      expect(h.calls).toEqual([]);
+      expect(dataset.results[0]).toMatchObject({ status: "error", requests: 0, recordIds: [] });
+      expect(dataset.results[0]?.limitations.join(" ")).toMatch(/planning failed/i);
+    });
+
+    it("uses the selected custom fast model with provider-aware normalization and no model discovery", async () => {
+      const h = setup();
+      selectPlanner(h);
+      h.settings.llm.fastModel =
+        provider === "google" ? "google/models/custom-planner.v2" : `${provider}/custom-planner.v2`;
+      h.context.planQueries = true;
+      const generate = vi.spyOn(Agent.prototype, "generate").mockImplementation(
         async (prompt) =>
-          ({ object: { queries: [JSON.parse(String(prompt)).neutralQuery] } }) as Awaited<
-            ReturnType<Agent["generate"]>
-          >,
+          ({
+            object: { queries: [JSON.parse(String(prompt)).neutralQuery] },
+            finishReason: "stop",
+          }) as Awaited<ReturnType<Agent["generate"]>>,
       );
-    const dataset = await h.collect(request(["youtube", "x"], { maxResults: 1 }));
-    expect(generate).toHaveBeenCalledTimes(1);
-    expect(dataset.results[1]?.status).toBe("partial");
-  });
+      const dataset = await h.collect(request(["youtube"]));
+      const agent = generate.mock.contexts[0] as Agent;
+      const model = await agent.getModel();
+      expect(model.provider).toContain(provider);
+      expect(model.modelId).toBe("custom-planner.v2");
+      expect(generate).toHaveBeenCalledTimes(1);
+      expect(globalThis.fetch).not.toHaveBeenCalled();
+      expect(dataset.results[0]).toMatchObject({ status: "success", requests: 1 });
+    });
 
-  it("reports planning failure without deterministic fallback and preserves earlier agents' saved originals", async () => {
-    const h = setup();
-    h.settings.llm.provider = "anthropic";
-    h.credentials.anthropic_api_key = "synthetic-anthropic-injected-key";
-    h.context.planQueries = true;
-    vi.spyOn(Agent.prototype, "generate")
-      .mockImplementationOnce(
-        async (prompt) =>
-          ({ object: { queries: [JSON.parse(String(prompt)).neutralQuery] } }) as Awaited<
+    it("keeps mock LLM collection deterministic even when every live credential is configured", async () => {
+      const h = setup();
+      selectPlanner(h);
+      h.settings.llm.provider = "mock";
+      for (const entry of liveModels)
+        h.credentials[entry.secretName] = `synthetic-${entry.provider}-unused-key`;
+      h.context.planQueries = true;
+      const planner = vi.spyOn(mastra, "createMastraQueryPlanner");
+      const dataset = await h.collect(request(["youtube"]));
+      expect(planner).not.toHaveBeenCalled();
+      expect(dataset.results[0]).toMatchObject({ status: "success", requests: 0 });
+    });
+
+    it("does not initialize planning for a blank selected fast model", async () => {
+      const h = setup();
+      selectPlanner(h);
+      h.settings.llm.fastModel = "   ";
+      h.context.planQueries = true;
+      const planner = vi.spyOn(mastra, "createMastraQueryPlanner");
+      const dataset = await h.collect(request(["youtube"]));
+      expect(planner).not.toHaveBeenCalled();
+      expect(dataset.results[0]).toMatchObject({ status: "success", requests: 0 });
+    });
+
+    it.each([
+      ["instagram", []],
+      ["instagram", ["https://www.instagram.com/p/synthetic/"]],
+      ["tiktok", ["https://www.tiktok.com/@synthetic/video/1"]],
+    ] as const)(
+      "does not plan unsupported or explicit URL-only %s work (%j)",
+      async (agentId, urls) => {
+        const h = setup();
+        selectPlanner(h);
+        h.context.planQueries = true;
+        const planner = vi.spyOn(mastra, "createMastraQueryPlanner");
+        const dataset = await h.collect(request([agentId], {}, { urls: [...urls] }));
+        expect(planner).not.toHaveBeenCalled();
+        expect(dataset.results[0]?.requests).toBe(0);
+        expect(h.calls).toEqual([[agentId, "apify"]]);
+      },
+    );
+
+    it("counts refused planning once and keeps independent local originals without query fallback", async () => {
+      const h = setup();
+      selectPlanner(h);
+      h.context.planQueries = true;
+      const generate = vi.spyOn(Agent.prototype, "generate").mockResolvedValue({
+        object: { queries: ["published tables"] },
+        finishReason: "content-filter",
+      } as Awaited<ReturnType<Agent["generate"]>>);
+      const dataset = await h.collect(request(["bmw_sales"]));
+      expect(generate).toHaveBeenCalledTimes(1);
+      expect(h.calls).toEqual([["bmw_sales", "local_documents"]]);
+      expect(dataset.results[0]).toMatchObject({ status: "partial", requests: 1 });
+      expect(dataset.records).toHaveLength(1);
+      expect(h.saved.at(-1)).toEqual(dataset);
+    });
+
+    it("counts a cancelled in-flight planner and preserves earlier originals, ignoring late output", async () => {
+      const h = setup();
+      selectPlanner(h);
+      h.context.planQueries = true;
+      const generate = vi
+        .spyOn(Agent.prototype, "generate")
+        .mockImplementationOnce(
+          async (prompt) =>
+            ({
+              object: { queries: [JSON.parse(String(prompt)).neutralQuery] },
+            }) as Awaited<ReturnType<Agent["generate"]>>,
+        )
+        .mockImplementationOnce(async () => {
+          h.controller.abort();
+          return { object: { queries: ["cabin dimensions"] } } as Awaited<
             ReturnType<Agent["generate"]>
-          >,
-      )
-      .mockRejectedValueOnce(new Error("Synthetic planning failure"));
-    const dataset = await h.collect(request(["youtube", "x"]));
-    expect(dataset.records).toHaveLength(1);
-    expect(dataset.results[1]).toMatchObject({ status: "error", requests: 1, recordIds: [] });
-    expect(dataset.results[1]?.limitations.join(" ")).toMatch(/planning failed/i);
-    expect(h.adapters.get("x")!.collect).not.toHaveBeenCalled();
-    expect(h.saved.at(-1)).toEqual(dataset);
-  });
-});
+          >;
+        });
+      const dataset = await h.collect(request(["youtube", "x", "owner_forums"]));
+      expect(generate).toHaveBeenCalledTimes(2);
+      expect(h.calls).toEqual([["youtube", "youtube"]]);
+      expect(dataset.records).toEqual(h.saved[0]?.records);
+      expect(dataset.results.map((result) => [result.status, result.requests])).toEqual([
+        ["success", 1],
+        ["cancelled", 1],
+        ["cancelled", 0],
+      ]);
+      expect(h.saved.at(-1)).toEqual(dataset);
+    });
+
+    it("cancels a planner that ignores its signal without waiting for model output", async () => {
+      const h = setup();
+      selectPlanner(h);
+      h.context.planQueries = true;
+      const generate = vi.spyOn(Agent.prototype, "generate").mockImplementation(async () => {
+        h.controller.abort();
+        return new Promise<Awaited<ReturnType<Agent["generate"]>>>(() => {});
+      });
+      const dataset = await h.collect(request(["youtube"]));
+      expect(generate).toHaveBeenCalledTimes(1);
+      expect(h.calls).toEqual([]);
+      expect(dataset.results[0]).toMatchObject({ status: "cancelled", requests: 1 });
+      expect(h.saved.at(-1)).toEqual(dataset);
+    });
+  },
+);
 
 describe("Research source-domain policy", () => {
   it.each([

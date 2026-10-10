@@ -3,6 +3,46 @@
 Open **Settings → Research APIs & Zugänge** to manage research access. This section is separate
 from the existing AI model and web-search settings. It does not start research or select a model.
 
+## Select an AI provider and models
+
+Use **Settings → AI & research → Provider** to select **Anthropic Claude**, **OpenAI**,
+**Google Gemini**, or **Mock (offline demo)**. Google here means the Gemini model API, not
+YouTube research access. Each live provider has a separate credential namespace:
+
+| AI provider      | Secret name         | Quality default      | Fast default              |
+| ---------------- | ------------------- | -------------------- | ------------------------- |
+| Anthropic Claude | `anthropic_api_key` | `claude-opus-5-5`    | `claude-haiku-5-5`        |
+| OpenAI           | `openai_api_key`    | `gpt-4.1-2025-04-14` | `gpt-4.1-mini-2025-04-14` |
+| Google Gemini    | `google_api_key`    | `gemini-3.8-flash`   | `gemini-3.5-flash-lite`   |
+| Mock             | None                | Inactive             | Inactive                  |
+
+Defaults are supplied by `LLM_MODEL_DEFAULTS` in the shared contract. They are presets, not
+live account model discovery or a promise that your account can use a model. Choosing a provider
+does not test access, run a model, change the web-search provider, enable research access, or
+opt into paid query planning.
+
+- **Quality model (QUALITY)** and **Fast model (FAST)** each offer that provider's quality and
+  fast defaults plus **Custom model ID**. Choose Custom to edit a provider-native ID. Both tiers
+  are independent; a preset can be used for either tier.
+- Custom IDs must be nonempty, trimmed, at most 200 characters, and contain no whitespace.
+  Obvious Claude/OpenAI/Gemini vendor mismatches are rejected. Unknown private/custom IDs remain
+  allowed; actual model availability, account access, and parameter support are checked by main
+  during an explicit run. Existing mismatched settings show a warning rather than being silently
+  rewritten on opening the section.
+- `settings.llm.model` and `fastModel` remain the canonical runtime fields. Switching away from
+  a live provider remembers those current fields in optional `modelProfiles[provider]`. Switching
+  to another live provider restores its valid remembered pair or its shared defaults. Canonical
+  fields take precedence over an older active profile. Older settings with custom Anthropic IDs
+  and no profiles are preserved on the first switch; no eager settings migration is needed.
+- Mock disables live model/temperature controls and has no key editor. It never makes paid model
+  calls. Switching to Mock remembers the outgoing live profile and leaves its model fields inactive;
+  Mock's inherited IDs are never attributed to another live provider. Switching back restores the
+  matching profile. **Reset AI** resets AI settings and profiles, not saved credentials.
+- Temperature is saved independently. The OpenAI adapter omits it for GPT-5/GPT-6 and o1/o3/o4
+  reasoning model families, including matching fine-tuned IDs. The UI explains this whenever
+  either tier selects such a model; it does not silently change the saved value or imply that
+  temperature controls reasoning effort. Other custom model restrictions remain provider-specific.
+
 ## Select web research explicitly
 
 Use **Settings → AI & research → Web research → Provider** to select **Firecrawl (recommended)**
@@ -22,10 +62,12 @@ or changing the selector does not start collection.
 
 ### Optional Mastra query planning
 
-The Anthropic key in **AI & research → API keys** can support optional Mastra query planning.
-Planning also requires the Research block's explicit query-planning toggle, **off by default**.
-Saving an Anthropic key or selecting an AI model does not opt a block into planning. When enabled,
-an explicit run may make paid Anthropic model calls using the configured planning model.
+The selected live provider's key in **AI & research → API keys** can support optional Mastra
+query planning. Help reflects the selected Claude, OpenAI, or Google Gemini provider. Planning
+also requires the Research block's explicit query-planning toggle, **off by default**.
+Saving a key or selecting an AI model does not opt a block into planning. When enabled,
+an explicit run may make paid calls to the selected live provider using the block's planning
+model. Custom planning IDs must match that provider. Mock remains offline and never buys model calls.
 
 Planning generates retrieval queries only. It cannot enable providers, bypass missing credentials
 or required platform approvals, override the web selector, or invent source evidence. Deterministic
@@ -88,9 +130,13 @@ message, `testedAt` when present, capabilities, and limitations. The supported c
 successful connection. Missing statuses are displayed as unavailable, never replaced with demo
 or fabricated results. Loading and error states provide an explicit status reload action.
 
-The existing **AI & research → API keys** area now accepts a masked Anthropic key in the same
-`anthropic_api_key` namespace. Saving/removing it reloads secret status without changing `llm`
-settings. The existing Tavily status points to the new Research API section for editing.
+**AI & research → API keys** shows one masked editor for the selected live provider, using
+`LLM_SECRET_NAMES` for the exact namespace above. Saving/removing it reloads secret status without
+changing `llm` settings. Drafts also clear immediately on provider switches; other providers' saved
+keys are not removed. Only main's configured/source status is shown, never a stored key. A write's
+response is ignored; refreshed read statuses are validated and projected to configured/source
+fields only, discarding extra response fields. **Reload credential status** retries failed reads
+without testing a connection. The existing Tavily status points to Research APIs & Zugänge for editing.
 
 ## IPC boundary and persistence
 
@@ -101,13 +147,15 @@ api.research.providers(): Promise<ResearchProviderStatus[]>
 api.research.configure(id, config): Promise<ResearchProviderStatus>
 api.research.test(id): Promise<ResearchProviderStatus>
 api.settings.get(): Promise<Settings>
+api.settings.secrets(): Promise<SecretStatus>
 api.settings.setSecret(name, valueOrNull): Promise<SecretStatus>
 ```
 
-Anthropic status is read with `api.settings.secrets()`. Secrets are never included in provider
+AI credential status is read with `api.settings.secrets()`. Secrets are never included in provider
 configuration or the settings autosave store. The renderer performs no network, filesystem, or
 Node operations. Only sanitized `ReqflowError.message` strings from main are displayed for
-rejected calls; arbitrary errors, raw objects, and error details are not rendered.
+rejected calls; arbitrary errors, raw objects, and error details are not rendered. Credential drafts
+exist only in the mounted section controller, not Settings, model profiles, or local storage.
 
 Configuration uses the complete validated current `ResearchProviderConfig`, preserving fields
 not edited by the control. After `configure` succeeds, the UI awaits
@@ -125,8 +173,11 @@ These UI guards do not replace the main-process ownership rule below.
 
 Research operations are serialized within the section. Inputs and action buttons are disabled
 while an operation is pending. Generation guards discard stale responses after unmount or effect
-replay, and credential drafts are discarded on unmount. Anthropic has an independent pending guard
-and request generation. These guards do not cancel an IPC write that main has already received.
+replay, and credential drafts are discarded on unmount. AI credentials have an independent pending
+guard and request generation; switching providers invalidates old reads, writes, notices, and errors.
+An old response cannot overwrite a newer provider's status or clear its new draft, including a
+switch away and back to the same provider. These guards do not cancel an IPC write that main has
+already received. Such a write still affects only the originally submitted secret namespace.
 
 ### Main-process assumptions
 
@@ -142,12 +193,19 @@ and request generation. These guards do not cancel an IPC write that main has al
 - Credential changes invalidate or otherwise accurately update any previous connection report;
   `providers()` must not return an old success as a test of the new credential.
 - `setSecret(name, null)` removes the saved credential; environment fallback may remain.
+- `settings.secrets()` returns every `SECRET_NAMES` entry, including the new OpenAI and Google
+  entries, each with a boolean `configured` and `source` of `keychain`, `env`, or `null`.
+- `settings.save` persists optional `llm.modelProfiles` and canonical runtime model fields together.
+  Runtime selection uses `llm.provider`, `llm.model`, and `llm.fastModel`, not a stale profile.
 - Secrets and connection reports returned by main contain no credential values and use sanitized
   messages. For credentials, only configured booleans and source (`keychain`/`env`) cross the read boundary.
 - Main/block execution enforces Off and unsupported legacy web values without network requests or
   vendor fallback. Other providers remain independently controlled.
-- The Research block's query-planning toggle defaults to false. Main supplies an Anthropic planner
-  only for an explicitly opted-in block with configured access; planning never bypasses provider gates.
+- The Research block's query-planning toggle defaults to false. Main supplies a planner for the
+  selected live provider only for an explicitly opted-in block with configured access; planning
+  never bypasses provider gates. Mock cannot make paid model calls even if the block toggle is on.
+- Main's model adapter enforces provider-specific request restrictions, including omission of
+  temperature for supported OpenAI reasoning families. Renderer help does not enforce HTTP parameters.
 
 ## Focused verification
 
@@ -155,6 +213,7 @@ No live provider checks or real credentials are used by the tests.
 
 ```sh
 npm exec -- vitest run apps/desktop/src/renderer/src/lib/settings-store.test.ts apps/desktop/src/renderer/src/components/settings/sections/ResearchApisSection.test.ts
+npm exec -- vitest run apps/desktop/src/renderer/src/components/settings/sections/AiSection.helpers.test.ts apps/desktop/src/renderer/src/components/settings/sections/AiSection.test.ts
 npm exec -- tsc --noEmit -p apps/desktop/tsconfig.web.json
 ```
 
@@ -167,6 +226,13 @@ also cover unchanged debounce timing, rapid edits, out-of-order save/reload succ
 and reconciliation overlapping an in-flight save. AI presentation tests verify the Firecrawl
 selector, explicit Off, independently controlled providers, legacy compatibility, and planning help.
 Static rendering tests use existing React DOM support; no new test package is required.
+AI helper tests cover live-provider round-trips, lazy migration of custom Anthropic models,
+canonical/profile precedence, safe defaults for mismatched profiles, mock isolation, vendor mismatch
+validation, temperature help, exact credential namespaces, blank-save safety, explicit removal and
+environment fallback, draft clearing, malformed/extra IPC fields, and stale success/error responses
+after provider switches and unmount/remount. AI presentation tests exercise both model tiers,
+selected-provider masked editors, matching planning help, mock restrictions, and unchanged research
+settings. Existing Research provider tests and credential helpers remain unchanged.
 
 The main-process smoke script includes `settings-section-research-apis`. The parent integration
 session owns full-root typecheck/tests and smoke verification. Do not run live connection tests

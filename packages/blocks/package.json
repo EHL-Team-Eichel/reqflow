@@ -10,11 +10,12 @@
     "typecheck": "tsc --noEmit -p ."
   },
   "dependencies": {
-    "@mastra/core": "^1.75.0",
     "@reqflow/core": "*",
     "@reqflow/engine": "*",
+    "read-excel-file": "9.3.10",
+    "zod": "^4.6.5",
+    "@mastra/core": "^1.75.0",
     "exceljs": "^4.4.0",
-    "jszip": "^3.10.2",
-    "zod": "^4.6.5"
+    "jszip": "^3.10.2"
   }
 }

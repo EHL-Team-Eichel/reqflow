@@ -1,6 +1,8 @@
 import { isIP } from "node:net";
 import {
   CollectedItem,
+  LiveLlmProvider,
+  LLM_SECRET_NAMES,
   ResearchDataset,
   ResearchRequest,
   type ResearchCollector,
@@ -243,11 +245,21 @@ export function createResearchCollector(options: ResearchCollectorOptions): Rese
         (context as typeof context & { planQueries?: boolean }).planQueries ??
         options.queryPlanning ??
         false;
-      const canPlan =
+      const selectedLlm = LiveLlmProvider.safeParse(options.settings.llm.provider);
+      const plannerKey = selectedLlm.success
+        ? options.credentials[LLM_SECRET_NAMES[selectedLlm.data]]
+        : undefined;
+      const plannerOptions =
         planQueries === true &&
-        options.settings.llm.provider === "anthropic" &&
-        !!options.credentials.anthropic_api_key?.trim() &&
-        !!options.settings.llm.fastModel?.trim();
+        selectedLlm.success &&
+        plannerKey?.trim() &&
+        options.settings.llm.fastModel?.trim()
+          ? {
+              provider: selectedLlm.data,
+              apiKey: plannerKey,
+              modelId: options.settings.llm.fastModel,
+            }
+          : undefined;
       let scope = request.scope;
       let policyError: string | undefined;
       try {
@@ -414,16 +426,13 @@ export function createResearchCollector(options: ResearchCollectorOptions): Rese
           );
           if (
             !queryError &&
-            canPlan &&
+            plannerOptions &&
             planningWork &&
             budget.used + 1 < request.limits.maxRequests
           ) {
             try {
               signal.throwIfAborted();
-              planner ??= createMastraQueryPlanner({
-                apiKey: options.credentials.anthropic_api_key!,
-                modelId: options.settings.llm.fastModel,
-              });
+              planner ??= createMastraQueryPlanner(plannerOptions);
               budget.used += 1;
               plannerRequests += 1;
               queries = await withAbort(planner(agentId, scope, signal), signal);

@@ -30,3 +30,8 @@ data/*.db-*
 
 # Electron build output
 release/
+# BMW hackathon files by name, in case they're ever copied outside data/raw/
+**/F70_feedback_hackathon.xlsx
+**/F70_G60_G68_G70_customer_studies.xlsx
+**/F70_OptionList.PDF
+**/sales_volumes.xlsx

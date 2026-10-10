@@ -1,139 +1,123 @@
-# Raw research verification
+# Research and multi-provider integration verification
 
-**Final integration record — 2026-10-10**, working tree on `ws6-research`.
+**Final integration record — 2026-10-11**, branch `ws6-ai-providers`.
 Host: macOS (`darwin`, arm64), Node v24.21.0, npm 11.19.0.
-This record supersedes intermediate slice verification and integration TODOs in the provider docs.
+Integrated upstream `main` at `9228fb3`, preserving its SQLite services, Car, HIL,
+splitter workplaces, templates, lineage and Raw ingestion alongside Research.
 
-## Completed acceptance gates
+## Completed gates
 
-| Gate                                               | Actual result                                                                                                                                                                                  |
-| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run typecheck`                                | Passed for every workspace.                                                                                                                                                                    |
-| `npm test`                                         | **37 test files, 992 tests passed**, no failures or skips.                                                                                                                                     |
-| `npm run check`                                    | Passed at 21:26 local time after the dev-start fix: root typecheck, all 992 tests, repository Prettier check.                                                                                  |
-| `npm run dev`                                      | Passed: actual development renderer displayed Data Flow and successfully invoked the typed IPC bridge, with addon opt-out flags unset.                                                         |
-| `npm run smoke`                                    | Passed: native Electron, **17 screenshots, 69 research checks**, zero provider/model requests.                                                                                                 |
-| `npm run package:dir --workspace @reqflow/desktop` | Passed: unsigned macOS arm64 `.app` directory build.                                                                                                                                           |
-| Packaged application smoke                         | Passed: **17 screenshots, 69 research checks** using the actual packaged app and ASAR-unpacked Worker.                                                                                         |
-| Bundled WebSocket fallback                         | Passed in actual dev, rebuilt production, and rebuilt packaged ASAR: guarded optional imports, 64/65-byte mask/unmask and JavaScript/Node UTF-8 paths.                                         |
-| Independent code review                            | Seven reported correctness/architecture findings fixed and re-reviewed; 502 focused tests passed. No remaining blocker found in the reviewed scope.                                            |
-| Independent security review                        | Six initial findings and a subsequently discovered XLSX provenance-amplification finding fixed and independently reproduced as closed. No remaining blocker established in the reviewed scope. |
-| `git diff --check`                                 | Passed.                                                                                                                                                                                        |
+| Gate                                               | Actual result                                                                                                                           |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run check`                                    | Passed at 00:52 local time: all-workspace typecheck, **71 test files / 1,625 tests passed / 25 skipped**, repository Prettier check.    |
+| `npm run smoke`                                    | Passed: native Electron, **36 screenshots / 85 Research checks**, zero application-provider/model requests.                             |
+| `npm run package:dir --workspace @reqflow/desktop` | Passed: unsigned macOS arm64 directory app.                                                                                             |
+| Packaged application smoke                         | Passed: **36 screenshots / 86 Research checks** in the actual `.app`, including ASAR-unpacked XLSX Worker execution.                    |
+| Package inventory                                  | Passed: 22 ASAR entries, compiled main/preload/renderer plus manifest only; no agent logs, smoke user data, credentials or source data. |
+| Packaged WebSocket fallback                        | Passed: actual emitted ASAR helpers, guarded optional imports, 64/65-byte masking and JavaScript/Node UTF-8 paths.                      |
+| Independent LLM review                             | No actionable blocker found; **205 focused tests across 13 suites** passed. Live vendor compatibility remains unverified.               |
+| Independent requirement-integrity re-review        | Concurrent-update and mutation/audit atomicity findings closed; **32 focused synthetic tests** passed.                                  |
+| Independent Research access re-review              | Active-revocation finding closed; **22 integration tests** passed, including all five non-cooperative-transport revocation cases.       |
 
-The native and packaged reports are generated, gitignored artifacts:
+The 25 skipped tests require absent private BMW fixtures. They were not supplied,
+read or uploaded. All executed test data and API transports are synthetic.
+
+Generated reports, screenshots, model-routing diagnostics and delegate logs are gitignored:
 
 - `apps/desktop/out/smoke/report.json`
-- `apps/desktop/out/smoke-packaged/report.json`
-- `apps/desktop/out/dev-launch/report.json`
+- `apps/desktop/out/smoke-packaged-ai-providers/report.json`
+- `apps/desktop/out/agents/`
 
-Screenshots actually opened during parent verification: `dataflow.png`, `dataflow-inner.png`,
-`dataflow-research-result.png`, `settings-ai.png`, `settings-research-apis.png`, and the packaged
-`dataflow-research-result.png`. Light/dark layouts, navigation, provider controls, honest partial
-statuses, and export actions were visually inspected; no blocking layout issue was observed.
+Parent inspection opened native `settings-ai-openai.png`, `settings-ai-google.png`,
+`dataflow-research-configuration.png`, `dataflow-research-result.png`, and packaged
+`dataflow-research-result.png`. Provider/model controls, social dropdown, layout,
+honest partial results and export controls were inspected.
 
 ### What native execution proved
 
-The GUI imported a synthetic twelve-column XLSX through the typed IPC/native-file boundary,
-saved and started the actual Research workflow, and parsed it in a **real compiled Worker thread**.
-The packaged Worker entry was:
+- Upstream synthetic Raw, splitter, HIL, Car, lineage and template workflows still execute.
+- Settings selects OpenAI/Gemini, switches quality/fast presets and remembers custom model IDs.
+  These GUI checks use no keys and perform no live model request.
+- The social-media dropdown replaces only social agent selections, preserving non-social agents.
+- A synthetic twelve-column XLSX is imported through native-file/typed IPC boundaries and parsed
+  by the real compiled Worker. Packaged execution uses
+  `ReqFlow.app/Contents/Resources/app.asar.unpacked/out/main/research-xlsx-worker.js`.
+- Both BMW agents share one source and two raw records: one independent feedback opinion with
+  two original association rows and all source-supplied VFC values. Original IDs, text, metadata,
+  source rows, escaped HTML and unknown attribution remain intact.
+- Both BMW agents honestly report `partial` while web access is Off, with zero API requests.
+  JSON/XLSX/CSV exports are read back and checked against SQLite datasets, outputs and audit.
 
-```text
-ReqFlow.app/Contents/Resources/app.asar.unpacked/out/main/research-xlsx-worker.js
-```
+Smoke isolates user data, skips dotenv/development URLs, disables environment credentials,
+uses synthetic native-dialog inputs, and rejects outbound application transport. The packaged
+probe receives only the repository's synthetic `data/samples` path through its smoke-only setting.
 
-Both BMW agents produced one shared source and two raw records, including **one independent
-feedback opinion with two source-supplied VFC associations**. Verbatim feedback, original IDs,
-metadata, source rows, escaped HTML, and unknown reliability/market/vehicle values survived.
-Both agents honestly reported `partial` because web research was Off, with **zero API requests**.
-JSON/XLSX/CSV exports were written and read back; JSON/Excel IDs, association rows, persisted
-datasets/outputs, and audit events were checked.
+## Correctness and security coverage
 
-Smoke mode isolates Electron user data, skips dotenv and development renderer URLs, uses only
-synthetic dialog inputs, and rejects outbound transport. No real keys or BMW originals were read.
+The previous Research branch's resource, provenance, cancellation and export protections remain
+covered: bounded ZIP/Worker/header/normalized JSON sizes, pre-stringification persistence limits,
+bounded escaped previews, latest-retrieved deduplication, formula safety, CRLF/Unicode and overflow
+round trips, paginated official APIs, partial preservation, domain/access gates and shared budgets.
 
-### Development startup regression
+This integration additionally verifies:
 
-Vite resolved `ws`'s optional `bufferutil` and `utf-8-validate` imports to eager throwing modules
-in development and empty stubs in production. That defeated the upstream guarded imports:
-development failed at app load, while production could fail later when masking longer frames.
-The main-process Rollup configuration now leaves only these optional native probes external,
-preserving `ws`'s working JavaScript fallback without shipping native addons.
+- **LLM transports:** OpenAI Responses and Gemini `generateContent`, text/object generation,
+  original Zod validation, provider-specific schemas, optional/null handling, refusals/safety/
+  unsuccessful termination, cancellation, custom models and sanitized errors. Anthropic/mock remain.
+- **Mastra:** selected provider/key/fast model, explicit opt-in, scope-only prompts, one step,
+  zero retries, strict local query validation and no silent paid fallback.
+- **Unified persistence:** one main composition root and execution kernel; SQLite datasets and
+  settings snapshots, queued persistence before execution, restart recovery, HIL restore,
+  partial outputs, rollback-safe legacy migration and reversible imported-file copies.
+- **Requirement integrity:** immutable versions, expected-current-version compare-and-swap,
+  no late challenge overwrites or deletion resurrection, and atomic mutation/evidence/audit
+  savepoints. No network or asynchronous yield occurs inside these database transactions.
+- **Immediate Research revocation:** disabling access, deleting credentials, setting web Off,
+  tightening an allowlist or adding a blocklist aborts active collection. A held search deliberately
+  ignores its signal; the run settles before release, no following scrape dispatches, no late
+  evidence enters the dataset, and earlier originals remain unchanged.
+- **Coding-agent routing:** resolved project configuration enforces Gemini-only delegated roles
+  despite installed role-file overrides; low/medium/high reasoning profiles match actual task
+  effort. This is independent of the app's three live LLM providers. Restart interactive OpenCode.
 
-`apps/desktop/src/main/ws-bundle.test.ts` bundles the real helpers using the application configuration
-in both modes, deliberately hides the optional addons, and exercises their guarded fallbacks.
-Independent network-free probes also executed unchanged helper sections from the actual emitted
-development/production bundles and the rebuilt packaged ASAR. All passed with opt-out flags unset.
-Actual `npm run dev` startup and development UI/IPC were verified against isolated research state;
-native and packaged smoke were rerun after the fix.
+The Vite optional-`ws`-addon regression remains covered by `ws-bundle.test.ts` in development and
+production. Fresh package helper probes passed. Actual dev UI/IPC was verified on the earlier
+`ws6-research` branch; it was not rerun as a separate acceptance gate for this integration.
 
 ## Reproduce
 
-From the repository root with dependencies installed and Node ≥22.13:
+From the repository root, with dependencies installed and Node ≥22.13:
 
 ```sh
-npm run typecheck && npm test
-npm test -- apps/desktop/src/main/ws-bundle.test.ts
 npm run check
 npm run smoke
 npm run package:dir --workspace @reqflow/desktop
-"apps/desktop/release/mac-arm64/ReqFlow.app/Contents/MacOS/ReqFlow" --smoke=apps/desktop/out/smoke-packaged
+REQFLOW_SMOKE_SAMPLES_DIR="$PWD/data/samples" \
+  "apps/desktop/release/mac-arm64/ReqFlow.app/Contents/MacOS/ReqFlow" \
+  --smoke=apps/desktop/out/smoke-packaged-ai-providers
 ```
 
-The final command is macOS arm64-specific. The built directory app is unsigned; no signed/notarized
-installer, Windows installer, or Linux package is claimed.
+The last command is macOS arm64-specific. No signed/notarized installer, Windows installer
+or Linux package is claimed.
 
-## Automated coverage and review corrections
+## Dependency audit and remaining limits
 
-All test originals, credentials, transports, encryption doubles, and parser executables are synthetic.
-Mastra tests instantiate real Agents and mock generation; they do not buy model calls.
+Fresh `npm audit --json` reports **12 moderate, 0 high, 0 critical** advisories (exit 1).
+This is not a clean audit. ExcelJS resolves the overridden `uuid` 11.1.1; remaining chains
+include Mastra's gray-matter/js-yaml/argparse/sprintf-js and Electron-builder's global-agent/roarr.
+Suggested breaking downgrades were not applied. The build still warns about gray-matter `eval`;
+review found no raw-source execution path through these tool/workspace-free query-planning Agents.
 
-- **Contracts/agents:** exact thirteen IDs, strict input validation, neutral query builders,
-  selected-agent routing, explicit provider Off/legacy behavior, no fallback, credentials/approval/
-  actor/domain gates, and opt-in scope-only Mastra planning.
-- **Providers/HTTP:** original payloads, unknown/coarse dates, paginated comments/replies/cursors,
-  401/403/429/schema failures, bounded rate-limit retries, shared planner/HTTP budgets, FIFO
-  concurrency, request/body cancellation, endpoint/redirect restrictions, redacted credentials,
-  and known-run Apify abort cleanup after ordinary cancellation or budget exhaustion.
-- **Documents/resources:** ZIP declared and actual expansion, sparse-workbook cell budgets,
-  Worker termination/isolation, header limits, post-normalization JSON byte budgets, safe
-  persistence before stringification, and bounded renderer preview without executing getters.
-  A 10,437-byte malicious synthetic workbook with a 3 MiB header is rejected; a separate 65 MiB
-  persistence probe performed zero stringifications/writes and preserved earlier stored content.
-- **Raw/export fidelity:** latest-retrieved revision selection, provenance unions, source-supplied
-  feedback associations, twelve-column compatibility, formula-injection guards, CRLF/Unicode,
-  reconstructable XLSX overflow, tables/units/flags/nulls, and written-byte round trips.
-- **Main/renderer/executor:** partial/cancel/restart preservation, serialized concurrent audit
-  appends, synchronous start/resume reservations, partial credential-store reload/removal,
-  fail-closed Linux encryption doubles, sanitized IPC errors, stale report invalidation,
-  settings reconciliation preserving unrelated pending edits, branch/subflow/HIL-resume contracts.
-
-## Dependency audit
-
-Fresh `npm audit --json` on 2026-10-10 reports **12 moderate, 0 high, 0 critical** advisories
-(command exit 1). This is **not a clean audit**. The ExcelJS `uuid` override resolves to 11.1.1,
-removing its previous advisory. Remaining chains involve Mastra's `gray-matter`/`js-yaml`/
-`argparse`/`sprintf-js` and the existing Electron-builder `global-agent`/`roarr` chain.
-Suggested audit remedies are breaking-version downgrades, not compatible patches; they were
-not blindly applied. The bundle still emits a gray-matter `eval` warning. Review established no
-raw-source execution path into that code: these Mastra Agents configure no skills, workspace,
-tools, or source-content prompts. This does not remove the advisories or prove general immunity.
-
-## Material limits and unverified access
-
-- **Live providers:** real credentials, billing, Reddit approval, Apify usage rights, X archive
-  entitlement, complete conversations, captions/transcripts, and full-text studies were not tested.
-  Official documentation was checked; that is not live access or permission evidence.
-- **Private data:** no BMW files or Windows reference workbook were inspected. The supplied
-  4,076 association rows / 2,128 unique IDs remain unverified reference figures; synthetic
-  twelve-column/association behavior was verified instead.
-- **Docling:** unavailable on this host. Real local Python/model-backed PDF/DOCX/PPTX conversion
-  and model provisioning remain unverified; OCR is disabled and no cloud fallback exists.
-- **Other platforms/OS encryption:** Windows/Linux native execution and real platform keyrings
-  were not tested. Encryption rejection/reload tests use doubles; the smoke writes no keys.
-- **Budgets/revocation:** limits apply per Research block, not workflow-wide monetary totals.
-  Apify caps are per actor; up to four cleanup attempts are supplemental to ordinary request
-  limits. Cancellation cannot guarantee a remote stop/refund. Revocation affects subsequent run
-  snapshots; cancel active runs for immediate stopping. Vendor-side DNS/redirect behavior is not
-  independently verified.
-- **Product scope:** this is raw collection/export. Other workstreams' analytical blocks and
-  requirement persistence remain unimplemented; no end-to-end BMW decision-making claim is made.
+- **Live APIs:** real Anthropic/OpenAI/Gemini generation, account model availability, billing,
+  platform approvals, X archive access, Apify rights and complete conversations were not tested.
+  Presets and official documentation are not proof of account access.
+- **Private data:** no BMW originals or Windows reference workbook were inspected. The supplied
+  4,076 association-row / 2,128 opinion figures remain unverified reference counts.
+- **Docling/platforms/keyrings:** real local Docling conversion/model provisioning, Windows/Linux
+  native execution and real OS encryption were not exercised. Encryption tests use doubles and
+  smoke stores no keys. There is no cloud parser fallback.
+- **Budgets:** limits are per Research block, not workflow-wide monetary totals. Apify charge caps
+  are per actor; up to four independent cleanup attempts supplement ordinary request limits.
+  Abort cannot guarantee a remote stop or refund; vendor-side DNS/redirect behavior is unverified.
+- **Product depth:** native synthetic integration is verified, not an end-to-end private BMW
+  decision-making validation. Existing HIL/reviewer metadata is not a separate authentication system.

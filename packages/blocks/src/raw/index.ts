@@ -1,5 +1,5 @@
 import type { BlockImplementation } from "@reqflow/engine";
+import { rawBlock } from "./raw";
 
-// Owner: WS5 — the Raw block: Excel upload or database → one unified data stream.
-// One file per concern (e.g. ./excel.ts, ./database.ts) + colocated *.test.ts; export the block here.
-export const rawImplementations: BlockImplementation<"raw">[] = [];
+// Owner: WS5 — the Raw block: Excel/CSV upload or SQLite query → one unified data stream.
+export const rawImplementations: BlockImplementation<"raw">[] = [rawBlock];

@@ -36,6 +36,7 @@ export const AuditAction = z.enum([
   "requirement.challenged",
   "requirement.challenge_answered",
   "requirement.viewed", // access event
+  "requirement.deleted", // removed by the PM (Car page → Reset); the id is never reused
   "workflow.saved",
   "run.started",
   "run.paused",
@@ -80,7 +81,7 @@ export const AuditEvent = z.object({
   changes: z.array(FieldChange),
   rationale: z.string().optional(),
   runId: z.string().startsWith("run_").optional(),
-  nodeId: z.string().optional(),
+  blockId: z.string().optional(), // the block that acted, when it happened inside a run
 });
 export type AuditEvent = z.infer<typeof AuditEvent>;
 

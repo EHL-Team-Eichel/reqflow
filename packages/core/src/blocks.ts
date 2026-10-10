@@ -160,9 +160,10 @@ export const BLOCK_SPECS: { readonly [K in PaletteBlockKind]: BlockSpec & { kind
       },
       {
         key: "file",
-        label: "Excel file",
+        label: "Excel or CSV file",
         type: "file",
-        accept: [".xlsx", ".xls", ".csv"],
+        accept: [".xlsx", ".csv"],
+        help: "Old .xls files: save them as .xlsx or .csv first.",
         visibleWhen: { key: "source", equals: "excel" },
       },
       {
@@ -171,28 +172,29 @@ export const BLOCK_SPECS: { readonly [K in PaletteBlockKind]: BlockSpec & { kind
         type: "text",
         default: "",
         placeholder: "First sheet",
+        help: "Excel only. Leave empty for the first sheet.",
         visibleWhen: { key: "source", equals: "excel" },
       },
       {
         key: "dbType",
         label: "Database type",
         type: "select",
-        default: "postgres",
+        default: "sqlite",
         options: [
-          { value: "postgres", label: "PostgreSQL" },
-          { value: "mysql", label: "MySQL" },
-          { value: "sqlserver", label: "SQL Server" },
           { value: "sqlite", label: "SQLite" },
+          { value: "postgres", label: "PostgreSQL (not supported yet)" },
+          { value: "mysql", label: "MySQL (not supported yet)" },
+          { value: "sqlserver", label: "SQL Server (not supported yet)" },
         ],
         visibleWhen: { key: "source", equals: "database" },
       },
       {
         key: "connection",
-        label: "Host or file",
+        label: "Database file or host",
         type: "text",
         default: "",
-        placeholder: "db.example.internal:5432",
-        help: "Never put passwords here. Credentials will live in the OS keychain.",
+        placeholder: "/path/to/data.sqlite",
+        help: "SQLite files work today (read-only). Never put passwords here.",
         visibleWhen: { key: "source", equals: "database" },
       },
       {
@@ -201,6 +203,7 @@ export const BLOCK_SPECS: { readonly [K in PaletteBlockKind]: BlockSpec & { kind
         type: "textarea",
         default: "",
         placeholder: "SELECT * FROM customer_feedback",
+        help: "One read-only SELECT statement.",
         visibleWhen: { key: "source", equals: "database" },
       },
     ],
@@ -272,10 +275,10 @@ export const BLOCK_SPECS: { readonly [K in PaletteBlockKind]: BlockSpec & { kind
       },
       {
         key: "queryPlanning",
-        label: "Mastra query planning (paid Anthropic request)",
+        label: "Mastra query planning (optional model request)",
         type: "toggle",
         default: false,
-        help: "Optional neutral search-query planning. Requires configured Anthropic access. Original source content is never sent to the planner.",
+        help: "Optional neutral search-query planning using the selected Anthropic, OpenAI or Google Gemini fast model. Requires its API key and may incur usage costs. Original source content is never sent to the planner.",
       },
       {
         key: "document",
@@ -352,7 +355,7 @@ export const BLOCK_SPECS: { readonly [K in PaletteBlockKind]: BlockSpec & { kind
     label: "AI Splitter",
     description: "Sorts every item into one of several branches. Each branch is its own output.",
     group: "ai",
-    hasInnerWorkplace: false,
+    hasInnerWorkplace: true,
     params: [
       {
         key: "splitBy",
@@ -372,7 +375,7 @@ export const BLOCK_SPECS: { readonly [K in PaletteBlockKind]: BlockSpec & { kind
         type: "list",
         default: ["Must have", "Should have", "Could have"],
         minItems: 2,
-        maxItems: 8,
+        maxItems: 10,
         itemPlaceholder: "Branch name",
       },
       {

@@ -23,6 +23,7 @@ import {
   updateGraphAt,
   validateGraph,
   wouldCreateCycle,
+  withSplitterWorkplaces,
 } from "./graph";
 import type { WorkflowGraph } from "./workflow";
 
@@ -55,7 +56,7 @@ describe("block specs", () => {
     expect(ports("add_to_car").outputs).toHaveLength(0);
     expect(BLOCK_SPECS.custom.params).toHaveLength(0);
     const expandable = PALETTE_BLOCK_KINDS.filter((k) => BLOCK_SPECS[k].hasInnerWorkplace);
-    expect(expandable).toEqual(["custom", "research", "ai_filter"]);
+    expect(expandable).toEqual(["custom", "research", "ai_filter", "ai_splitter"]);
   });
 
   it("rejects unknown keys and wrong values instead of dropping them", () => {
@@ -83,6 +84,22 @@ describe("block specs", () => {
     expect(isParamVisible(file, params)).toBe(true);
     expect(isParamVisible(query, params)).toBe(false);
     expect(isParamVisible(query, { ...params, source: "database" })).toBe(true);
+  });
+
+  it("supports two through ten splitter outputs", () => {
+    for (const count of [2, 10]) {
+      const params = parseBlockParams("ai_splitter", {
+        ...defaultBlockParams("ai_splitter"),
+        branches: Array.from({ length: count }, (_, i) => `Branch ${i + 1}`),
+      });
+      expect(blockPorts({ kind: "ai_splitter", params }).outputs).toHaveLength(count);
+    }
+    expect(() =>
+      parseBlockParams("ai_splitter", {
+        ...defaultBlockParams("ai_splitter"),
+        branches: Array(11).fill("Branch"),
+      }),
+    ).toThrow();
   });
 });
 
@@ -148,6 +165,51 @@ describe("graph operations", () => {
     expect(blockPorts(graph.blocks[0]!).outputs.map((p) => p.label)).toEqual(["Keep", "Also keep"]);
     expect(() => setBlockParams(g, "s1", { ...params, branches: [] })).toThrow();
     expect(() => setBlockParams(g, "s1", { ...params, extra: true })).toThrow();
+  });
+
+  it("synchronizes splitter boundaries and reports removed inner connections", () => {
+    const splitter = createBlock("ai_splitter", { id: "split", position: at() });
+    let graph: WorkflowGraph = { blocks: [splitter], edges: [] };
+    graph = updateGraphAt(graph, ["split"], (inner) =>
+      connect(moveBlock(inner, "split--out-0", at(700, 80)), {
+        source: "split--in",
+        sourcePort: "out",
+        target: "split--out-2",
+        targetPort: "in",
+      }),
+    );
+    const result = setBlockParams(graph, "split", { ...splitter.params, branches: ["A", "B"] });
+    expect(result.removedEdges).toHaveLength(1);
+    expect(graphAt(result.graph, ["split"]).edges).toEqual([]);
+    expect(
+      graphAt(result.graph, ["split"]).blocks.find((b) => b.id === "split--out-0"),
+    ).toMatchObject({ label: "A", position: at(700, 80) });
+    const expanded = setBlockParams(result.graph, "split", {
+      ...splitter.params,
+      branches: Array.from({ length: 10 }, (_, i) => `Branch ${i}`),
+    }).graph;
+    expect(graphAt(expanded, ["split"]).blocks).toHaveLength(11);
+    expect(validateGraph(expanded)).toEqual([]);
+  });
+
+  it("expands legacy splitters recursively without changing saved data or existing workplaces", () => {
+    const legacy = createBlock("ai_splitter", { id: "split", position: at() });
+    delete legacy.inner;
+    const parent = createBlock("custom", { id: "parent", position: at() });
+    parent.inner!.blocks.push(legacy);
+    const graph = { blocks: [parent], edges: [], version: 3 };
+    const upgraded = withSplitterWorkplaces(graph);
+    expect(legacy.inner).toBeUndefined();
+    expect(upgraded.version).toBe(3);
+    expect(graphAt(upgraded, ["parent", "split"]).blocks.map((b) => b.kind)).toEqual([
+      "block_input",
+      "block_output",
+      "block_output",
+      "block_output",
+    ]);
+    expect(validateGraph(upgraded)).toEqual([]);
+    expect(withSplitterWorkplaces(upgraded)).toBe(upgraded);
+    expect(graphAt(upgraded, ["parent"]).blocks[0]).toBe(parent.inner!.blocks[0]);
   });
 
   it("navigates and updates inner workplaces immutably", () => {

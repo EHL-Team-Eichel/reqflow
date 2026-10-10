@@ -1,5 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import ExcelJS from "exceljs";
 import { ResearchDataset, type ResearchRecord } from "@reqflow/core";
 import { FEEDBACK_COLUMNS } from "@reqflow/blocks";
@@ -11,6 +12,7 @@ export const SYNTHETIC_FEEDBACK =
 export const SYNTHETIC_FEEDBACK_ID = "SYNTHETIC-OPINION-001";
 export const SYNTHETIC_MARKER = "Generated smoke fixture. Synthetic only; no BMW or customer data.";
 export const SYNTHETIC_VFC = ["Synthetic seat comfort", "Synthetic seat adjustment"] as const;
+const SYNTHETIC_VFC_PARENT = "Synthetic seats";
 
 /** Generated at runtime only. These two original rows describe one opinion, not two customers. */
 export async function writeSmokeResearchFixture(outDir: string): Promise<string> {
@@ -31,7 +33,7 @@ export async function writeSmokeResearchFixture(outDir: string): Promise<string>
       "Synthetic source-supplied classification",
       SYNTHETIC_FEEDBACK,
       vfc,
-      "Synthetic seats",
+      SYNTHETIC_VFC_PARENT,
       vfc,
     ]);
   }
@@ -89,6 +91,15 @@ export function verifySmokeResearchDataset(
       opinion.table?.rows.length === 2,
     "verbatim feedback, original ID, 12 columns and both source rows preserved",
   );
+  const originalFields = opinion.fields?.original as Record<string, unknown> | undefined;
+  ensure(
+    JSON.stringify(originalFields) === JSON.stringify(opinion.metadata) &&
+      JSON.stringify(opinion.fields?.table) === JSON.stringify(opinion.table) &&
+      JSON.stringify(originalFields?.sourceRows) === "[2,3]" &&
+      JSON.stringify(originalFields?.vfcAssociations) ===
+        JSON.stringify([SYNTHETIC_VFC[0], SYNTHETIC_VFC_PARENT, SYNTHETIC_VFC[1]]),
+    "SourceRecord.fields retains the original structured data and source-row provenance",
+  );
   const associations = opinion.metadata.sourceAssociations;
   ensure(
     Array.isArray(associations) && associations.length === 2,
@@ -115,18 +126,50 @@ export async function verifySmokeResearchFiles(
   outDir: string,
   dataDir: string,
   dataset: ResearchDataset,
+  blockId: string,
   ensure: SmokeAssertion,
 ): Promise<string[]> {
   const exported = ResearchDataset.parse(
     JSON.parse(await readFile(join(outDir, "research-export.json"), "utf8")),
   );
-  const saved = ResearchDataset.parse(
-    JSON.parse(await readFile(join(dataDir, `${dataset.runId}.research.json`), "utf8")),
+  const db = new DatabaseSync(join(dataDir, "reqflow.db"));
+  let saved: ResearchDataset | null = null;
+  let output: { out?: { records?: unknown[] } } | null = null;
+  let actions: string[] = [];
+  try {
+    const savedRow = db
+      .prepare("SELECT json FROM research_datasets WHERE run_id = ? AND block_id = ''")
+      .get(dataset.runId) as { json: string } | undefined;
+    saved = savedRow ? ResearchDataset.parse(JSON.parse(savedRow.json)) : null;
+    const outputRow = db
+      .prepare("SELECT outputs FROM block_outputs WHERE run_id = ? AND block_id = ?")
+      .get(dataset.runId, blockId) as { outputs: string } | undefined;
+    output = outputRow ? JSON.parse(outputRow.outputs) : null;
+    actions = (
+      db
+        .prepare("SELECT action FROM audit_events WHERE run_id = ? ORDER BY at, id")
+        .all(dataset.runId) as { action: string }[]
+    ).map((row) => row.action);
+  } finally {
+    db.close();
+  }
+  ensure(
+    !!saved && JSON.stringify(saved) === JSON.stringify(dataset),
+    "SQLite-persisted Research dataset validates and matches renderer IPC dataset",
   );
   ensure(
-    JSON.stringify(exported) === JSON.stringify(dataset) &&
-      JSON.stringify(saved) === JSON.stringify(dataset),
-    "persisted and exported JSON validate and match renderer IPC dataset",
+    JSON.stringify(exported) === JSON.stringify(dataset),
+    "exported JSON validates and matches renderer IPC dataset",
+  );
+  ensure(
+    !!output && JSON.stringify(output.out?.records) === JSON.stringify(dataset.records),
+    "SQLite-persisted block output retains every Research record and its fields provenance",
+  );
+  ensure(
+    actions.includes("run.started") &&
+      actions.includes("run.completed") &&
+      actions.filter((action) => action === "export.created").length === 3,
+    "SQLite audit records run start, completion and all three exports",
   );
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.readFile(join(outDir, "research-export.xlsx"));

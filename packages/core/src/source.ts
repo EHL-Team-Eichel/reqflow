@@ -6,6 +6,7 @@ export const SourceKind = z.enum([
   "equipment_data",
   "sales_volume",
   "customer_study",
+  "other_internal", // any other BMW-provided table (Raw block, dataset "Other")
   // external enrichment
   "competitor",
   "review",

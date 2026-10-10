@@ -43,29 +43,44 @@ export const RESEARCH_AGENTS: ResearchAgentDefinition[];
 
 export function buildQueries(agentId: ResearchAgentId, scope: ResearchScope): string[];
 
-export function createMastraResearchAgents(options: {
+export interface MastraResearchOptions {
+  provider?: LiveLlmProvider; // "anthropic" | "openai" | "google"; default: "anthropic"
   apiKey: string;
   modelId: string;
-}): Record<ResearchAgentId, Agent>;
+}
 
-export function createMastraQueryPlanner(options: {
-  apiKey: string;
-  modelId: string;
-}): (agentId: ResearchAgentId, scope: ResearchScope, signal: AbortSignal) => Promise<string[]>;
+export function createMastraResearchAgents(
+  options: MastraResearchOptions,
+): Record<ResearchAgentId, Agent>;
+
+export function createMastraQueryPlanner(
+  options: MastraResearchOptions,
+): (agentId: ResearchAgentId, scope: ResearchScope, signal: AbortSignal) => Promise<string[]>;
 ```
 
 `buildQueryRoot(scope)` is the shared deterministic anchor used by both modules. It is not a
 collection API and never attributes a customer to a market.
 
 Constructing either factory performs no model request. The model is configured with the object
-`{ providerId: "anthropic", modelId, apiKey }`, not a router string that looks up credentials.
+`{ providerId: provider, modelId, apiKey }`, not a router string that looks up credentials.
+Anthropic, OpenAI and Google Gemini use their actual selected providers; no provider is emulated.
+Omitting `provider` preserves existing Anthropic callers. `mock` is not a Mastra provider here.
 The injected key is required; the factory never reads environment variables or a secrets store.
 The key is supplied only to the model transport, never to instructions, prompts, tools or logs.
-A bare Anthropic model ID or `anthropic/<model-id>` is accepted. The prefix is removed before
-setting `modelId`. Other provider prefixes, blank IDs and blank keys fail validation.
+
+Model IDs are trimmed and limited to 200 characters. Bare IDs and a matching
+`anthropic/`, `openai/` or `google/` prefix are accepted. The selected provider prefix is removed
+before configuring the model. Google also accepts `models/<id>` and `google/models/<id>`;
+the native `models/` prefix is removed. The resulting ID starts with an ASCII letter or digit
+and contains only ASCII letters, digits, `.`, `_`, `:`, and `-`. OpenAI fine-tune IDs such as
+`ft:gpt-4.1-mini:synthetic:planner:abc` and custom aliases such as `custom-planner.v2` are accepted
+without a model allowlist. Known Claude, GPT/chatGPT/o-series/fine-tune and Gemini families cannot
+be routed to another provider. Foreign provider prefixes, URLs, residual paths, whitespace,
+query strings, fragments, blank IDs and blank keys fail validation. Custom aliases do not prove
+that the provider serves that model or that the model supports structured output.
 The factory does not substitute a model, fake response or fallback provider.
 
-The parent must call the planner **only after Anthropic query planning is explicitly enabled**.
+The parent must call the planner **only after query planning is explicitly enabled for the selected provider**.
 A `mock` LLM setting, missing key or disabled optional planning must use `buildQueries` directly,
 not construct a fake Mastra model. Deterministic raw collection is a valid complete mode; it does
 not need optional LLM calls. A planner failure propagates. Any user-authorized deterministic-only
@@ -120,13 +135,22 @@ await agent.generate(prompt, {
   toolChoice: "none",
   activeTools: [],
   modelSettings: {
-    temperature: 0,
+    // Include temperature: 0 only when supported by the selected provider/model family.
     maxOutputTokens: 768,
     maxRetries: 0,
   },
   tracingOptions: { hideInput: true, hideOutput: true },
 });
 ```
+
+Anthropic, Google and non-reasoning OpenAI models receive `temperature: 0`. OpenAI o-series
+and reasoning GPT-5+ families omit temperature at both the agent defaults and call options;
+fine-tuned models use their base model family for this check. GPT chat variants retain zero
+temperature. OpenAI search-preview models also omit temperature. The wrapper does not change
+reasoning effort to enable sampling parameters. Unknown custom aliases receive zero temperature;
+their capabilities cannot be inferred. A custom model with incompatible sampling settings fails
+without retry or substitution. Reasoning tokens may consume the 768-token output allowance,
+leaving insufficient room for a query plan; truncation is an explicit failure, not repaired output.
 
 There is **no** `structuredOutput.model`: the official guide documents that this would add a
 second structuring-agent call and additional latency/cost. Native structured output is used;
@@ -141,7 +165,16 @@ characters, 3 questions of 500 characters and 20 keywords of 100 characters. Roo
 query are each capped at 500 characters. Source documents have no prompt budget because they
 are never accepted as model context.
 
-The returned `result.object` is explicitly parsed again with the strict Zod schema. Missing
+An explicit `result.error` propagates. When Mastra exposes `finishReason`, only normalized `stop`
+is accepted. Truncation, content filtering/refusal, tool calls, suspension, errors and unknown
+completion reasons fail even if the result contains a valid-looking query object. Older response
+shapes that omit `finishReason` remain compatible; their completion state cannot be checked
+beyond the explicit error and strict object validation.
+
+The returned `result.object` is explicitly parsed again with the original strict Zod schema.
+Google's SDK removes string and array bounds from its transport schema, so those remote schema
+constraints are not relied upon. Local parsing still enforces every count and length bound.
+Missing
 output, extra fields such as sentiment/evidence/recommendations, empty queries and excess
 count/length fail. Conservative checks also reject quoted or multiline content and obvious
 interpretations such as “owners are dissatisfied” or “BMW should improve charging”. These checks
@@ -185,15 +218,21 @@ without reviewing the privacy boundary.
   counter therefore does not count model calls. The parent must reserve/count one planning request
   per invocation, including failed attempts, separately or against its overall `maxRequests` budget.
   Any parent retry is another counted, potentially paid request. Source-provider credits and Apify
-  charge limits are unrelated to the Anthropic query-planning charge.
+  charge limits are unrelated to the selected LLM's query-planning charge.
 
 ## Verification
 
-The tests use the real installed `Agent` constructor and model configuration. Only `generate`
-is mocked, so tests make no paid request. They cover exact 13-ID/provider coverage, neutral and
+The tests use the real installed `Agent` constructor and model configuration. `generate`
+is mocked and network access is stubbed to reject unexpected requests, so tests make no paid request.
+The provider matrix covers all 13 experts with Anthropic, OpenAI and Google, normalized/custom
+model IDs, mismatched providers, missing injected credentials, model-specific temperature,
+unsuccessful completion and strict local query bounds. Existing tests retain neutral and
 bounded queries, full vehicle/market/date context, configured competitors, BMW domains, language
 filter separation, no analytical fields, direct credentials without environment fallback, no
 tools/memory/runtime, strict output validation and cancellation before/during generation.
+The collector tests additionally exercise all three providers with opt-in, Off/access gates,
+shared HTTP/planner request budgets, retries, in-flight cancellation and retained partial originals.
+These offline tests do not certify live model availability or endpoint compatibility.
 
 ```sh
 npm test -- packages/blocks/src/research/agents.test.ts packages/blocks/src/research/mastra.test.ts

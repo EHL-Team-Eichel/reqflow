@@ -94,8 +94,8 @@ describe("Research block", () => {
     const request = ResearchRequest.parse(collect.mock.calls[0]![0]);
     expect(request.scope).toMatchObject({
       brand: "BMW",
-      model: "5 Series",
-      derivative: "Sedan",
+      model: context.scope.vehicleLine,
+      derivative: context.scope.derivative,
       markets: ["US"],
       horizonYears: 3,
       questions: [],

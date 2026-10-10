@@ -1,367 +1,404 @@
 import {
-  blockPorts,
-  countPipelineData,
-  emptyPipelineData,
   isBoundaryBlockKind,
-  mergePipelineData,
-  parseBlockParams,
-  PipelineData,
+  newId,
+  Settings,
   validateGraph,
-  walkBlocks,
+  withSplitterWorkplaces,
   WorkflowRun,
-  type BlockRun,
-  type WorkflowBlock,
+  type Actor,
+  type AuditLogger,
+  type FileStore,
+  type LlmClient,
+  type PipelineData,
+  type ResearchCollector,
+  type Workflow,
   type WorkflowGraph,
+  type WebSearch,
 } from "@reqflow/core";
-import type { BlockContext, BlockInputs, BlockResult } from "./block";
+import type { BlockContext, CarService } from "./block";
 import type { BlockRegistry } from "./registry";
+import {
+  collectAllBlocks,
+  EngineError,
+  executeWorkflow,
+  prepareWorkflowRun,
+  usesInnerWorkplace,
+  type WorkflowOutputs,
+} from "./research-kernel";
 
-export type WorkflowOutputs = Record<string, Record<string, PipelineData>>;
-export interface ExecuteWorkflowOptions {
-  run: WorkflowRun;
+// Both entry points execute the same kernel. Keep the original standalone API available.
+export {
+  collectAllBlocks,
+  EngineError,
+  executeWorkflow,
+  getDownstreamBlockIds,
+  topologicalSortBlocks,
+  type ExecuteWorkflowOptions,
+  type ExecuteWorkflowResult,
+  type WorkflowOutputs,
+} from "./research-kernel";
+
+export interface BlockOutputStore {
+  saveBlockOutput(
+    runId: string,
+    blockId: string,
+    outputs: Record<string, PipelineData>,
+  ): Promise<void>;
+  getBlockOutput(runId: string, blockId: string): Promise<Record<string, PipelineData> | null>;
+}
+
+export interface WorkflowExecutorOptions {
   registry: BlockRegistry;
-  context: (blockId: string) => BlockContext;
-  /** Pass the same output map back on resume. New outputs are written before their status update. */
-  outputs?: WorkflowOutputs;
-  onUpdate: (run: WorkflowRun) => void | Promise<void>;
-}
-export interface ExecuteWorkflowResult {
-  run: WorkflowRun;
-  outputs: WorkflowOutputs;
+  services: {
+    llm: LlmClient | ((settings: Settings) => Promise<LlmClient>);
+    audit: AuditLogger;
+    files: FileStore;
+    web: WebSearch | null;
+    car: CarService;
+    research?: (
+      runId: string,
+      blockId: string,
+      settings: Settings,
+    ) => ResearchCollector | undefined;
+  };
+  outputStore?: BlockOutputStore;
+  /** Persist the snapshot and then push it. The executor awaits this callback. */
+  onUpdate?: (run: WorkflowRun) => void | Promise<void>;
 }
 
+type RunSession = {
+  run: WorkflowRun;
+  settings: Settings;
+  controller: AbortController;
+  outputs: WorkflowOutputs;
+  /** Only durable outputs are visible to getBlockOutput and update subscribers. */
+  savedOutputs: WorkflowOutputs;
+  savedReferences: Map<string, Record<string, PipelineData>>;
+  busy: boolean;
+  operation?: Promise<WorkflowRun>;
+};
+const terminal = new Set(["completed", "failed", "cancelled"]);
 const now = () => new Date().toISOString();
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error));
-const terminal = new Set(["completed", "failed", "cancelled"]);
 
-/** Boundaries alone are the default placeholder, not a user-authored subflow. */
-function usesInner(block: WorkflowBlock): boolean {
-  return (
-    !!block.inner &&
-    (block.kind === "custom" ||
-      block.inner.edges.length > 0 ||
-      block.inner.blocks.some((child) => !isBoundaryBlockKind(child.kind)))
-  );
-}
+/** Lifecycle adapter: admission, service wiring, durable outputs, audit, and persisted review resume. */
+export class WorkflowExecutor {
+  private readonly sessions = new Map<string, RunSession>();
+  private readonly admissions = new Map<string, string>();
 
-function topological(graph: WorkflowGraph): WorkflowBlock[] {
-  const degree = new Map(graph.blocks.map((block) => [block.id, 0]));
-  const next = new Map<string, string[]>();
-  const blocks = new Map(graph.blocks.map((block) => [block.id, block]));
-  for (const edge of graph.edges) {
-    degree.set(edge.target, degree.get(edge.target)! + 1);
-    next.set(edge.source, [...(next.get(edge.source) ?? []), edge.target]);
-  }
-  const queue = graph.blocks.filter((block) => degree.get(block.id) === 0);
-  for (let i = 0; i < queue.length; i++) {
-    for (const id of next.get(queue[i]!.id) ?? []) {
-      const remaining = degree.get(id)! - 1;
-      degree.set(id, remaining);
-      if (remaining === 0) queue.push(blocks.get(id)!);
-    }
-  }
-  return queue;
-}
+  constructor(private readonly options: WorkflowExecutorOptions) {}
 
-/** Validate without stripping ResearchRecord provenance extensions from the shared envelope. */
-function validateOutputs(
-  block: WorkflowBlock,
-  outputs: unknown,
-): asserts outputs is Record<string, PipelineData> {
-  if (!outputs || typeof outputs !== "object" || Array.isArray(outputs)) {
-    throw new Error(`Block "${block.id}" returned invalid outputs`);
+  private session(runId: string): RunSession {
+    const session = this.sessions.get(runId);
+    if (!session) throw new EngineError(`Run not found: ${runId}`);
+    return session;
   }
-  const expected = blockPorts(block).outputs.map((port) => port.id);
-  const actual = Object.keys(outputs);
-  const missing = expected.filter((port) => !actual.includes(port));
-  const extra = actual.filter((port) => !expected.includes(port));
-  if (missing.length || extra.length) {
-    throw new Error(
-      `Block "${block.id}" output ports mismatch (missing: ${missing.join(", ") || "none"}; unexpected: ${extra.join(", ") || "none"})`,
-    );
-  }
-  for (const [port, envelope] of Object.entries(outputs)) {
-    const parsed = PipelineData.safeParse(envelope);
-    if (!parsed.success)
-      throw new Error(`Block "${block.id}" output "${port}" is invalid: ${parsed.error.message}`);
-  }
-}
 
-/** Stop waiting even if an implementation ignores cancellation. Its late results are never published. */
-async function cancellable<T>(work: () => Promise<T>, signal: AbortSignal): Promise<T> {
-  signal.throwIfAborted();
-  let abort: () => void = () => {};
-  const stopped = new Promise<never>((_resolve, reject) => {
-    abort = () => reject(signal.reason ?? new Error("Run cancelled"));
-    signal.addEventListener("abort", abort, { once: true });
-  });
-  try {
-    return await Promise.race([
-      Promise.resolve().then(() => {
-        signal.throwIfAborted();
-        return work();
-      }),
-      stopped,
-    ]);
-  } finally {
-    signal.removeEventListener("abort", abort);
+  private reserve(run: WorkflowRun): void {
+    const active = this.admissions.get(run.workflowId);
+    if (active && active !== run.id)
+      throw new EngineError(`Workflow ${run.workflowId} already has an active run: ${active}`);
+    if (!terminal.has(run.status)) this.admissions.set(run.workflowId, run.id);
   }
-}
 
-/**
- * One executor for root and nested workplaces. Persistence, audit events, human decisions, and
- * ResearchCollector construction remain in main. Independent branches retain their successful data.
- */
-export async function executeWorkflow(
-  options: ExecuteWorkflowOptions,
-): Promise<ExecuteWorkflowResult> {
-  const issues = validateGraph(options.run.graph);
-  if (issues.length) {
-    throw new Error(
-      `Invalid workflow graph: ${issues.map((issue) => `${issue.blockId ?? issue.edgeId ?? issue.path.join("/")}: ${issue.message}`).join("; ")}`,
-    );
+  private release(session: RunSession): void {
+    session.busy = false;
+    if (
+      terminal.has(session.run.status) &&
+      this.admissions.get(session.run.workflowId) === session.run.id
+    )
+      this.admissions.delete(session.run.workflowId);
   }
-  const run = WorkflowRun.parse(structuredClone(options.run));
-  if (terminal.has(run.status)) throw new Error(`Cannot execute a ${run.status} run`);
-  const outputs = options.outputs ?? {};
-  const allBlocks = [...walkBlocks(run.graph)].map(({ block }) => block);
-  const states = new Map(run.blockRuns.map((state) => [state.blockId, state]));
-  if (
-    states.size !== run.blockRuns.length ||
-    run.blockRuns.some((state) => !allBlocks.some((block) => block.id === state.blockId))
-  ) {
-    throw new Error("Run contains duplicate or unknown block states");
-  }
-  for (const block of allBlocks) {
-    if (!states.has(block.id))
-      states.set(block.id, { blockId: block.id, status: "pending", counts: {}, logs: [] });
-    if (states.get(block.id)!.status === "succeeded") {
-      if (!Object.hasOwn(outputs, block.id))
-        throw new Error(`Cannot continue block "${block.id}" without stored outputs`);
-      validateOutputs(block, outputs[block.id]);
-    } else {
-      // Failed or paused blocks must not accidentally route stale data from an earlier attempt.
-      delete outputs[block.id];
-    }
-  }
-  run.blockRuns = allBlocks.map((block) => states.get(block.id)!);
-  const contexts = new Map<string, BlockContext>();
-  const getContext = (id: string) => {
-    let ctx = contexts.get(id);
-    if (!ctx) {
-      ctx = options.context(id);
-      contexts.set(id, ctx);
-    }
-    return ctx;
-  };
-  // Main supplies one shared run AbortSignal. The first block also observes pre-start cancellation.
-  const signal = allBlocks.length ? getContext(allBlocks[0]!.id).signal : undefined;
-  let cancelled = signal?.aborted ?? false;
-  let updates = Promise.resolve();
-  let updateFailed = false;
-  let updateError: unknown;
-  const publish = () => {
-    const snapshot = structuredClone(run);
-    updates = updates
-      .then(async () => {
-        if (!updateFailed) await options.onUpdate(snapshot);
-      })
-      .catch((error: unknown) => {
-        updateFailed = true;
-        updateError = error;
-      });
-  };
-  const flush = async () => {
-    await updates;
-    if (updateFailed) throw updateError;
-  };
-  const log = (state: BlockRun, text: string) => state.logs.push({ at: now(), message: text });
-  const skip = (block: WorkflowBlock, reason: string) => {
-    const state = states.get(block.id)!;
-    if (state.status === "succeeded" || state.status === "failed" || state.status === "skipped")
-      return;
-    state.status = "skipped";
-    state.finishedAt = now();
-    log(state, reason);
-    if (block.inner) for (const child of block.inner.blocks) skip(child, reason);
-    publish();
-  };
-  const inputsFor = (graph: WorkflowGraph, block: WorkflowBlock): BlockInputs =>
-    Object.fromEntries(
-      blockPorts(block).inputs.map((port) => [
-        port.id,
-        structuredClone(
-          mergePipelineData(
-            ...graph.edges
-              .filter((edge) => edge.target === block.id && edge.targetPort === port.id)
-              .map((edge) => {
-                const data = outputs[edge.source]?.[edge.sourcePort];
-                if (!data)
-                  throw new Error(`Stored output "${edge.source}.${edge.sourcePort}" is missing`);
-                return data;
-              }),
-          ),
-        ),
-      ]),
-    );
 
-  type Outcome = "ok" | "failed" | "paused" | "cancelled";
-  async function workplace(graph: WorkflowGraph, parentInputs: BlockInputs = {}): Promise<Outcome> {
-    for (const block of topological(graph)) {
-      if (cancelled || signal?.aborted) {
-        cancelled = true;
-        break;
-      }
-      const state = states.get(block.id)!;
-      if (state.status === "succeeded" || state.status === "failed" || state.status === "skipped")
-        continue;
-      const upstream = graph.edges
-        .filter((edge) => edge.target === block.id)
-        .map((edge) => states.get(edge.source)!);
-      if (upstream.some((source) => source.status === "failed" || source.status === "skipped")) {
-        skip(block, "Skipped because an upstream block failed or was skipped");
-        await flush();
-        continue;
-      }
-      if (upstream.some((source) => source.status !== "succeeded")) continue;
-      const resumed = state.status === "waiting_for_review" && block.kind === "hil";
-      state.status = "running";
-      state.startedAt ??= now();
-      delete state.finishedAt;
-      delete state.error;
-      state.progress = 0;
-      // Empty Research/AI Filter workplaces are placeholders; their boundaries are not executed.
-      if (block.inner && !usesInner(block)) {
-        for (const child of block.inner.blocks)
-          skip(child, "Inner workplace unused; built-in implementation selected");
-      }
-      publish();
-      await flush();
-      let active = true;
-      try {
-        const inputs = inputsFor(graph, block);
-        let result: BlockResult;
-        if (block.kind === "block_input") {
-          result = {
-            status: "ok",
-            outputs: { out: parentInputs[String(block.params.port)] ?? emptyPipelineData() },
-          };
-        } else if (block.kind === "block_output") {
-          result = { status: "ok", outputs: {} };
-        } else if (usesInner(block)) {
-          const outcome = await workplace(block.inner!, inputs);
-          if (outcome === "cancelled") {
-            cancelled = true;
-            break;
-          }
-          if (outcome === "failed") throw new Error(`Inner workplace of "${block.id}" failed`);
-          if (outcome === "paused") {
-            state.status = "waiting_for_review";
-            log(state, "Waiting for human review in inner workplace");
-            publish();
-            await flush();
-            continue;
-          }
-          const routed = Object.fromEntries(
-            block
-              .inner!.blocks.filter((child) => child.kind === "block_output")
-              .map((child) => [String(child.params.port), inputsFor(block.inner!, child).in!]),
+  createInitialRun(workflow: Workflow, startedBy: Actor): WorkflowRun {
+    workflow = withSplitterWorkplaces(structuredClone(workflow));
+    const run = WorkflowRun.parse({
+      id: newId("run"),
+      workflowId: workflow.id,
+      workflowVersion: workflow.version,
+      graph: { blocks: workflow.blocks, edges: workflow.edges },
+      scope: workflow.scope,
+      status: "queued",
+      startedBy,
+      startedAt: now(),
+      blockRuns: collectAllBlocks(workflow).map((block) => ({
+        blockId: block.id,
+        status: "pending",
+        counts: {},
+        logs: [],
+      })),
+    });
+    return run;
+  }
+
+  validateBeforeRun(workflow: Workflow): void {
+    workflow = withSplitterWorkplaces(workflow);
+    const issues = validateGraph(workflow);
+    if (issues.length)
+      throw new EngineError(
+        `Workflow validation failed: ${issues.map((issue) => issue.message).join("; ")}`,
+        issues,
+      );
+    const visit = (graph: WorkflowGraph) => {
+      for (const block of graph.blocks) {
+        if (usesInnerWorkplace(block)) visit(block.inner!);
+        else if (!isBoundaryBlockKind(block.kind) && !this.options.registry.has(block.kind))
+          throw new EngineError(
+            `Block "${block.label}" (${block.id}) has no implementation for kind "${block.kind}"`,
           );
-          result = { status: "ok", outputs: routed };
-        } else {
-          const base = getContext(block.id);
-          const ctx: BlockContext = {
-            ...base,
-            resumed,
-            log(text) {
-              if (!active || cancelled || base.signal.aborted) return;
-              log(state, text);
-              base.log(text);
-              publish();
-            },
-            progress(fraction, text) {
-              if (!active || cancelled || base.signal.aborted) return;
-              if (!Number.isFinite(fraction) || fraction < 0 || fraction > 1)
-                throw new Error("Block progress must be between 0 and 1");
-              state.progress = fraction;
-              if (text !== undefined) log(state, text);
-              base.progress(fraction, text);
-              publish();
-            },
-          };
-          result = await cancellable(
-            () =>
-              options.registry
-                .get(block.kind as Exclude<WorkflowBlock["kind"], "block_input" | "block_output">)
-                .run(inputs, parseBlockParams(block.kind, block.params), ctx),
-            base.signal,
-          );
-        }
-        if (signal?.aborted) {
-          cancelled = true;
-          break;
-        }
-        if (result.status === "paused") {
-          if (block.kind !== "hil")
-            throw new Error("Only HIL implementations may pause for review");
-          if (typeof result.message !== "string")
-            throw new Error("HIL pause must include a review message");
-          state.status = "waiting_for_review";
-          log(state, result.message);
-        } else {
-          if (result.status !== "ok")
-            throw new Error(`Block "${block.id}" returned an unknown result status`);
-          validateOutputs(block, result.outputs);
-          outputs[block.id] = structuredClone(result.outputs);
-          state.counts = countPipelineData(mergePipelineData(...Object.values(result.outputs)));
-          state.status = "succeeded";
-          state.progress = 1;
-          state.finishedAt = now();
-        }
-      } catch (error) {
-        if (signal?.aborted || contexts.get(block.id)?.signal.aborted) {
-          cancelled = true;
-          break;
-        }
-        // Subscriber failures are infrastructure failures, not block implementation failures.
-        if (updateFailed) throw updateError;
-        state.status = "failed";
-        state.error = message(error);
-        state.finishedAt = now();
-        delete outputs[block.id];
-        log(state, state.error);
-      } finally {
-        active = false;
       }
-      publish();
-      await flush();
-    }
-    if (cancelled) return "cancelled";
-    const statuses = graph.blocks.map((block) => states.get(block.id)!.status);
-    // A failed independent branch does not prevent another branch from reaching human review.
-    if (statuses.some((status) => status === "waiting_for_review" || status === "pending"))
-      return "paused";
-    return statuses.some((status) => status === "failed" || status === "skipped") ? "failed" : "ok";
+    };
+    visit(workflow);
   }
 
-  run.status = "running";
-  delete run.finishedAt;
-  delete run.error;
-  publish();
-  await flush();
-  const outcome = await workplace(run.graph);
-  if (outcome === "cancelled") {
-    for (const block of allBlocks) skip(block, "Run cancelled");
-    run.status = "cancelled";
-  } else {
-    run.status =
-      outcome === "paused" ? "waiting_for_review" : outcome === "failed" ? "failed" : "completed";
+  private admit(workflow: Workflow, startedBy: Actor, settings: Settings): RunSession {
+    this.validateBeforeRun(workflow);
+    const snapshot = Settings.parse(structuredClone(settings));
+    const run = this.createInitialRun(workflow, startedBy);
+    // Admission happens before the first await, including the queued persistence callback.
+    this.reserve(run);
+    const session: RunSession = {
+      run,
+      settings: snapshot,
+      controller: new AbortController(),
+      outputs: {},
+      savedOutputs: {},
+      savedReferences: new Map(),
+      busy: true,
+    };
+    this.sessions.set(run.id, session);
+    return session;
   }
-  const failures = run.blockRuns.filter((state) => state.status === "failed");
-  if (failures.length)
-    run.error = failures.map((state) => `${state.blockId}: ${state.error}`).join("; ");
-  if (run.status !== "waiting_for_review") run.finishedAt = now();
-  publish();
-  await flush();
-  return { run, outputs };
+
+  /** Register a persisted snapshot and its per-port outputs without restarting any block. */
+  restore(
+    run: WorkflowRun,
+    settings: Settings,
+    outputs: Record<string, Record<string, PipelineData>>,
+  ): void {
+    const existing = this.sessions.get(run.id);
+    if (existing?.busy) throw new EngineError(`Run ${run.id} is already active`);
+    const normalized = {
+      ...structuredClone(run),
+      graph: withSplitterWorkplaces(structuredClone(run.graph)),
+    };
+    const restoredOutputs = structuredClone(outputs);
+    const restoredRun = prepareWorkflowRun(normalized, restoredOutputs);
+    const restoredSettings = Settings.parse(structuredClone(settings));
+    this.reserve(restoredRun);
+    this.sessions.set(run.id, {
+      run: restoredRun,
+      settings: restoredSettings,
+      outputs: restoredOutputs,
+      savedOutputs: structuredClone(restoredOutputs),
+      savedReferences: new Map(Object.entries(restoredOutputs)),
+      controller: new AbortController(),
+      busy: false,
+    });
+  }
+
+  async getBlockOutput(
+    runId: string,
+    blockId: string,
+  ): Promise<Record<string, PipelineData> | null> {
+    const saved = this.sessions.get(runId)?.savedOutputs[blockId];
+    if (saved) return structuredClone(saved);
+    const stored = await this.options.outputStore?.getBlockOutput(runId, blockId);
+    return stored ? structuredClone(stored) : null;
+  }
+
+  private async publish(session: RunSession, update: WorkflowRun): Promise<void> {
+    // Install the operation promise before invoking a synchronous subscriber (which may cancel).
+    await Promise.resolve();
+    for (const state of update.blockRuns) {
+      if (state.status !== "succeeded") continue;
+      const outputs = session.outputs[state.blockId];
+      if (!outputs || session.savedReferences.get(state.blockId) === outputs) continue;
+      const snapshot = structuredClone(outputs);
+      await this.options.outputStore?.saveBlockOutput(update.id, state.blockId, snapshot);
+      session.savedOutputs[state.blockId] = structuredClone(snapshot);
+      session.savedReferences.set(state.blockId, outputs);
+    }
+    session.run = WorkflowRun.parse(structuredClone(update));
+    await this.options.onUpdate?.(structuredClone(session.run));
+  }
+
+  private async recordAudit(
+    action:
+      | "run.started"
+      | "run.resumed"
+      | "run.paused"
+      | "run.completed"
+      | "run.failed"
+      | "run.cancelled",
+    run: WorkflowRun,
+  ): Promise<void> {
+    await this.options.services.audit.record({
+      actor: { type: "system", component: "engine" },
+      action,
+      entityType: "run",
+      entityId: run.id,
+      runId: run.id,
+      ...(run.error ? { rationale: run.error } : {}),
+    });
+  }
+
+  private context(session: RunSession, blockId: string): BlockContext {
+    const services = this.options.services;
+    const llm = services.llm;
+    return {
+      runId: session.run.id,
+      blockId,
+      scope: session.run.scope,
+      settings: session.settings,
+      llm:
+        typeof llm === "function"
+          ? {
+              generateObject: async (request) =>
+                (await llm(session.settings)).generateObject(request),
+              generateText: async (request) => (await llm(session.settings)).generateText(request),
+            }
+          : llm,
+      audit: services.audit,
+      files: services.files,
+      web: services.web,
+      car: services.car,
+      research: services.research?.(session.run.id, blockId, session.settings),
+      signal: session.controller.signal,
+      resumed: false,
+      // The kernel owns logs and progress, including immutable ordered updates.
+      log() {},
+      progress() {},
+    };
+  }
+
+  private async drive(
+    session: RunSession,
+    action?: "run.started" | "run.resumed",
+  ): Promise<WorkflowRun> {
+    if (action) await this.recordAudit(action, session.run);
+    const audited = new Set<string>();
+    await executeWorkflow({
+      run: session.run,
+      registry: this.options.registry,
+      outputs: session.outputs,
+      context: (blockId) => this.context(session, blockId),
+      signal: session.controller.signal,
+      onUpdate: async (update) => {
+        await this.publish(session, update);
+        if (update.status === "queued" || update.status === "running" || audited.has(update.status))
+          return;
+        // Pre-start cancellation and recursive skips can publish intermediate cancelled snapshots.
+        if (
+          update.status === "cancelled" &&
+          update.blockRuns.some(
+            (state) =>
+              state.status === "pending" ||
+              state.status === "running" ||
+              state.status === "waiting_for_review",
+          )
+        )
+          return;
+        await this.recordAudit(
+          update.status === "waiting_for_review"
+            ? "run.paused"
+            : update.status === "completed"
+              ? "run.completed"
+              : update.status === "cancelled"
+                ? "run.cancelled"
+                : "run.failed",
+          update,
+        );
+        audited.add(update.status);
+      },
+    });
+    return structuredClone(session.run);
+  }
+
+  private async fail(session: RunSession, error: unknown): Promise<never> {
+    // Infrastructure failures must be observable, not mistaken for successful blocks or swallowed.
+    const run = structuredClone(session.run);
+    run.status = session.controller.signal.aborted ? "cancelled" : "failed";
+    run.error = message(error);
+    run.finishedAt = now();
+    for (const state of run.blockRuns) {
+      if (state.status === "succeeded" && session.savedOutputs[state.blockId]) continue;
+      if (state.status === "failed" || state.status === "skipped") continue;
+      state.status = state.status === "running" ? "failed" : "skipped";
+      state.finishedAt = run.finishedAt;
+      if (state.status === "failed") state.error = run.error;
+    }
+    session.run = run;
+    try {
+      await this.recordAudit(run.status === "cancelled" ? "run.cancelled" : "run.failed", run);
+    } catch {
+      // The original infrastructure error remains the operation's rejection.
+    }
+    // A failed persistence channel may fail again. Retain the failure in memory and reject the operation.
+    try {
+      await this.options.onUpdate?.(structuredClone(run));
+    } catch {
+      /* Original error is rethrown below. */
+    }
+    throw error;
+  }
+
+  private observe(session: RunSession, work: Promise<WorkflowRun>): Promise<WorkflowRun> {
+    const operation = work
+      .catch((error: unknown) => this.fail(session, error))
+      .finally(() => this.release(session));
+    session.operation = operation;
+    // start is intentionally nonblocking. Its background rejection is reported by fail, then observed here.
+    void operation.catch(() => {});
+    return operation;
+  }
+
+  async execute(workflow: Workflow, startedBy: Actor, settings: Settings): Promise<WorkflowRun> {
+    const session = this.admit(workflow, startedBy, settings);
+    return this.observe(
+      session,
+      this.publish(session, session.run).then(() => this.drive(session, "run.started")),
+    );
+  }
+
+  async start(workflow: Workflow, startedBy: Actor, settings: Settings): Promise<WorkflowRun> {
+    const session = this.admit(workflow, startedBy, settings);
+    const initial = structuredClone(session.run);
+    const ready = this.publish(session, initial);
+    this.observe(
+      session,
+      ready.then(() => this.drive(session, "run.started")),
+    );
+    await ready;
+    return initial;
+  }
+
+  async resume(runId: string): Promise<WorkflowRun> {
+    const session = this.session(runId);
+    if (session.busy) throw new EngineError(`Run ${runId} is already active`);
+    if (session.run.status !== "waiting_for_review")
+      throw new EngineError(
+        `Cannot resume run ${runId}: status is "${session.run.status}", expected "waiting_for_review"`,
+      );
+    session.busy = true;
+    session.controller = new AbortController();
+    const update = { ...structuredClone(session.run), status: "running" as const };
+    return this.observe(
+      session,
+      this.publish(session, update).then(() => this.drive(session, "run.resumed")),
+    );
+  }
+
+  async cancel(runId: string): Promise<WorkflowRun> {
+    const session = this.session(runId);
+    if (!session.busy && terminal.has(session.run.status)) return structuredClone(session.run);
+    session.controller.abort(new EngineError("Run cancelled"));
+    if (session.busy && session.operation) {
+      await session.operation;
+      return structuredClone(session.run);
+    }
+    session.busy = true;
+    // Paused/persisted runs take the kernel's cancellation path too; no second status machine.
+    return this.observe(session, this.drive(session));
+  }
 }

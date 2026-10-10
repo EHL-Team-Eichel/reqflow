@@ -12,6 +12,18 @@ import type {
   ResearchCollector,
 } from "@reqflow/core";
 
+/** Evidence behind requirements, stored with them so the Car page can show it. */
+export type CarEvidence = Partial<
+  Pick<PipelineData, "sources" | "records" | "findings" | "themes">
+>;
+
+/** Where Add to Car hands its requirements (WS1 wires this to the database). */
+export interface CarService {
+  add(requirements: Requirement[], evidence?: CarEvidence): Promise<void>;
+  /** Next unused requirement number for the scope (ids are never reused). Absent = start at 1. */
+  nextSeq?(scope: ProductScope): Promise<number>;
+}
+
 /** Everything a block may touch while running. Blocks must not import DB, env or Electron code. */
 export interface BlockContext {
   runId: string;
@@ -23,7 +35,7 @@ export interface BlockContext {
   files: FileStore;
   web: WebSearch | null; // null when Settings.research.provider === "off"
   /** Requirements handed to the Car page (Add to Car). WS1 wires this to the database. */
-  car: { add(requirements: Requirement[]): Promise<void> };
+  car: CarService;
   log(message: string): void; // shown on the block in the editor
   progress(fraction: number, message?: string): void; // 0–1
   signal: AbortSignal; // run cancelled → stop promptly

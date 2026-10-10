@@ -16,8 +16,7 @@ import {
 import type { ReqflowHandlers, StoredFileInfo } from "@reqflow/core/ipc";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { dispatch } from "../dispatch";
-import { createHandlers } from "../handlers";
-import { createResearchRuntime, type RuntimeDeps } from "./runtime";
+import { createResearchRuntime, type RuntimeDeps } from "./legacy-runtime";
 import type { SecureStorage } from "./secrets";
 
 // Any accidental Electron dependency should fail collection, not silently run a desktop process.
@@ -118,10 +117,8 @@ async function setup(overrides: Partial<RuntimeDeps> = {}) {
   };
   const runtime = await createResearchRuntime(deps);
   runtimes.push(runtime);
-  const api: ReqflowHandlers = createHandlers({
-    appInfo: () => ({ version: "synthetic", platform: "darwin", dataDir: dir, isPackaged: false }),
-    research: runtime.handlers,
-  });
+  // Isolated compatibility proof. Production composes Research into SQLite handlers instead.
+  const api = runtime.handlers as ReqflowHandlers;
   return {
     dir: deps.dir,
     deps,

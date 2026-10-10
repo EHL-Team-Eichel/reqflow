@@ -2,17 +2,39 @@
 
 ## Scope and acceptance
 
-This slice adds one generic executor to `@reqflow/engine` and exposes the existing run IPC contract
-on the Data Flow page. It does not implement AI blocks, register blocks, construct research providers,
-change shared schemas, persist data, or make human decisions. Those responsibilities remain in main
-and the owning block implementations.
+This document describes generic workflow execution and run lifecycle management. The engine executes
+validated workflow graphs with correct port routing, independent branch preservation, boundary routing,
+cancellation, and resumable nested HIL pauses. Upstream analytical blocks (Raw Ingestion, AI Filter,
+AI Splitter, Human in the Loop, and Add to Car) and requirement handlers are fully implemented across
+the pipeline.
 
 Acceptance is an offline run of a validated workflow graph with correct port routing, independent
 branch preservation, boundary routing, cancellation, and resumable nested HIL pauses. The renderer
 saves the root graph before starting, displays live run states and research collection limitations,
 and delegates exports to the native main-process save dialog.
 
-## Engine API
+## Engine and Executor API
+
+The low-level execution kernel `executeWorkflow` is driven by the higher-level public lifecycle coordinator
+`WorkflowExecutor` (exported from `@reqflow/engine`):
+
+```ts
+export class WorkflowExecutor {
+  constructor(options: WorkflowExecutorOptions);
+  execute(workflow: Workflow, startedBy: Actor, settings: Settings): Promise<WorkflowRun>;
+  start(workflow: Workflow, startedBy: Actor, settings: Settings): Promise<WorkflowRun>;
+  resume(runId: string): Promise<WorkflowRun>;
+  cancel(runId: string): Promise<WorkflowRun>;
+  restore(
+    run: WorkflowRun,
+    settings: Settings,
+    outputs: Record<string, Record<string, PipelineData>>,
+  ): void;
+  getBlockOutput(runId: string, blockId: string): Promise<Record<string, PipelineData> | null>;
+}
+```
+
+The underlying kernel function and named types are also exported from `@reqflow/engine`:
 
 ```ts
 type WorkflowOutputs = Record<string, Record<string, PipelineData>>;
@@ -22,11 +44,10 @@ function executeWorkflow(options: {
   registry: BlockRegistry;
   context: (blockId: string) => BlockContext;
   outputs?: WorkflowOutputs;
+  signal?: AbortSignal;
   onUpdate: (run: WorkflowRun) => void | Promise<void>;
 }): Promise<{ run: WorkflowRun; outputs: WorkflowOutputs }>;
 ```
-
-The function and named option/result/output types are exported from `@reqflow/engine`.
 
 - `validateGraph` runs before contexts or updates. Invalid graphs reject immediately.
 - Each workplace runs in stable topological order. Multiple incoming edges merge in graph edge order
@@ -38,7 +59,7 @@ The function and named option/result/output types are exported from `@reqflow/en
 - `block_input.out` carries its parent's named input. `block_output.in` becomes the parent's named
   output. Boundaries are engine-owned and do not require registry entries.
 - A missing builtin fails that block with a clear registry error. Failed descendants are skipped;
-  independent branches continue and keep their outputs. There are no placeholder AI implementations.
+  independent branches continue and keep their outputs.
 - Implementations must return exactly the output ports declared by `blockPorts`. Every envelope is
   schema-validated before publication. Validation preserves research provenance extensions instead
   of stripping extended record fields. Sink outputs are `{}`.
@@ -50,47 +71,44 @@ The function and named option/result/output types are exported from `@reqflow/en
 - Terminal runs cannot be re-executed. Successful and failed blocks are not replayed when continuing.
   Only previously paused HIL receives `ctx.resumed = true`; newly reached HIL still pauses normally.
 - Cancellation stops awaiting even an implementation that ignores its signal. Successful data stays
-  available; unfinished states become skipped, and the run becomes cancelled. Late engine logs,
-  progress, and results are ignored. Blocks must still obey their signal before external side effects:
-  the executor cannot undo a provider request or database write performed by an uncooperative block.
+  available; unfinished states become skipped, and the run becomes cancelled. Cancellations preserve prior
+  records and bounded paid cleanup. Late engine logs, progress, and results are ignored. Blocks must still
+  obey their signal before external side effects.
 - Log/progress callbacks preserve the supplied context callbacks and emit immutable run snapshots.
   Subscriber calls are serialized and awaited. Persistence/subscriber errors reject instead of being
   silently reported as successful execution.
 
 ## Main-process integration requirements
 
-There must be **no second orchestrator** in the IPC handlers. Main starts this executor in the
-background and retains/observes its promise; `runs.start` returns the initial snapshot promptly.
+There is **no second orchestrator** in the IPC handlers: `apps/desktop/src/main/handlers.ts` is one
+authoritative `createHandlers` composition using SQLite repositories (`@reqflow/db`), the shared
+uploaded-file store (`LocalFileStore`), and unified fail-closed `SecretsStore`. Research runtime
+(`apps/desktop/src/main/research/runtime.ts`) delegates to these shared stores and does not own
+separate settings, workflows, or run state. Execution uses `WorkflowExecutor`'s public lifecycle
+(`execute`, `start`, `resume`, `cancel`, `restore`) driving the single execution kernel. Upstream
+shared runStore, HIL, Car review, AI splitter workplaces, and templates are fully preserved.
 
-1. Register every builtin actually used by the selected workflow in `BlockRegistry`. A customized
-   expandable subflow does not require that parent's builtin, but its inner leaf implementations do.
+1. Register builtins used by workflows in `BlockRegistry`. A customized expandable subflow runs its
+   inner workplace, while uncustomized blocks use their registered builtin.
 2. Build `WorkflowRun` from the saved workflow version and graph/scope snapshot. Supply contexts
    with one shared run `AbortSignal`, settings snapshot, audit/files/LLM/car services, and `ctx.research`
-   for the registered Research implementation. The executor does not construct a collector or resolve
-   advanced research scope; the registered block and shared parameter contract own that behavior.
-3. Pass an explicit mutable `outputs` map. The executor writes a validated output before emitting its
-   succeeded snapshot. `onUpdate` can persist the snapshot and newly succeeded outputs atomically,
-   then push `IPC_EVENTS.runUpdate`. Persist all output maps, including `{}` for sinks and boundaries.
-   Do not parse extended research records into a stripped-down persistence representation.
+   for the registered Research implementation.
+3. Pass `outputStore` to `WorkflowExecutor`. The executor writes validated block outputs before emitting
+   succeeded snapshots. `onUpdate` awaits run persistence before pushing updates. Initial queued
+   run and settings-snapshot insertion share one SQLite savepoint.
 4. Record run lifecycle audit events in main, based on actual status transitions. Blocks remain
    responsible for their domain audit events. The executor does not approve/reject/defer requirements.
-5. Retain one `AbortController` and active execution promise per run. `runs.cancel` aborts it and
-   waits for the executor's final cancelled snapshot. To cancel a persisted paused run after its
-   execution promise has settled, main must also persist a cancelled status or re-enter the executor
-   with that paused snapshot and an already-aborted signal.
-6. `runs.resume` accepts a waiting run only, reloads the same graph and every successful block's
-   persisted per-port outputs, applies already-audited human edits through main's existing review
-   services, supplies a fresh non-aborted context signal, and calls this same executor. Missing stored
-   successful outputs reject clearly; they are never silently rebuilt or replaced with empty data.
-7. Persist collector `ResearchDataset` results under the run ID before final run completion reaches
-   the renderer. `research.dataset` should return successful and partial collections, including
-   blocked/missing-credential outcomes with zero records. Keep these distinct from an absent dataset.
+5. Manage run lifecycle through `WorkflowExecutor`. Calling `runs.cancel` aborts the active run's
+   `AbortController` and awaits the engine snapshot; cancellations preserve prior records and bounded
+   paid cleanup. Paused and resumed runs also route through `WorkflowExecutor`.
+6. Legacy migration (`migrateLegacyResearch`) is an additive migration that leaves legacy original files
+   intact and copies runs, settings snapshots, datasets, outputs, and audit into SQLite repositories.
+   Settings and workflows use the authoritative settings file and individual workflow files.
+7. Persist collector `ResearchDataset` results under the run ID via `ResearchDatasetRepository`.
+   `research.dataset` returns successful and partial collections, including blocked/missing-credential
+   outcomes with zero records.
 8. Implement `exports.research({ runId, format })` for JSON, XLSX, and CSV with a native save dialog.
    Return `null` for dialog cancellation; surface real errors through the existing IPC error contract.
-
-Because `onUpdate` receives only the run snapshot, main must use its explicit shared output map when
-persisting per-port data during execution. Awaiting only the final result would lose outputs on an
-application shutdown during human review.
 
 ## Renderer behavior
 

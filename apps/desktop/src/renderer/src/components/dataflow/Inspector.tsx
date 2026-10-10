@@ -15,6 +15,9 @@ import { BlockIcon } from "./BlockIcon";
 import { confirmDelete } from "./confirm-delete";
 import { GROUP_STYLE } from "./groups";
 import { ParamField } from "./ParamField";
+import { RawPreview } from "./RawPreview";
+import { ResearchConfiguration } from "./ResearchConfiguration";
+import { canPreview } from "./usePreview";
 import { dataflowStore, selectInspectedBlock, useDataflow } from "./store";
 
 /** Side panel for the selected block: name, ports, inner workplace, parameters, delete. */
@@ -58,7 +61,14 @@ function BlockInspector({ block, kind }: { block: WorkflowBlock; kind: PaletteBl
   const style = GROUP_STYLE[spec.group];
   const ports = blockPorts(block);
   const innerCount = block.inner?.blocks.filter((b) => !isBoundaryBlockKind(b.kind)).length ?? 0;
-  const params = spec.params.filter((p) => isParamVisible(p, block.params));
+  const params = spec.params.filter(
+    (p) =>
+      isParamVisible(p, block.params) &&
+      // Research owns its validated scope and canonical agent controls. Keep every budget generic.
+      (kind !== "research" || !["agents", "scopeJson", "sources"].includes(p.key)),
+  );
+  const researchQuestion =
+    kind === "research" ? params.find((p) => p.key === "question") : undefined;
   const portList = (list: { label: string }[]) =>
     list.length ? list.map((p) => p.label).join(", ") : "none";
 
@@ -117,16 +127,50 @@ function BlockInspector({ block, kind }: { block: WorkflowBlock; kind: PaletteBl
             {innerCount === 0 ? "empty" : `${innerCount} block${innerCount === 1 ? "" : "s"}`}
           </Button>
         )}
+        {block.kind === "ai_splitter" && (
+          <p className="text-xs text-muted">
+            The empty workplace uses AI routing. Add connections or blocks inside to define your own
+            routing instead. Priority mode uses named Must / Should / Could / Won’t branches; use
+            category, sentiment or a custom instruction for other labels.
+          </p>
+        )}
+        {block.kind === "hil" && (
+          <Button
+            data-testid="inspector-open-report"
+            onClick={() => dataflowStore.getState().openReport(block.id)}
+          >
+            Open review report
+          </Button>
+        )}
         <section className="flex flex-col gap-4">
           <h3 className="text-xs font-semibold tracking-wide text-muted uppercase">Parameters</h3>
+          {researchQuestion && <ParamField block={block} spec={researchQuestion} />}
+          {kind === "research" && <ResearchConfiguration block={block} />}
           {spec.params.length === 0 ? (
             <p className="text-sm text-muted">
               No parameters. Build this block's logic in its workplace.
             </p>
           ) : (
-            params.map((p) => <ParamField key={p.key} block={block} spec={p} />)
+            params
+              .filter((p) => p !== researchQuestion)
+              .map((p) => (
+                <ParamField
+                  key={p.key}
+                  block={block}
+                  spec={
+                    kind === "research" && p.key === "market"
+                      ? {
+                          ...p,
+                          label: "Fallback market (legacy)",
+                          help: "Used only when the Research scope has no Markets override. The scope form writes only scopeJson.",
+                        }
+                      : p
+                  }
+                />
+              ))
           )}
         </section>
+        {canPreview(block) && <RawPreview block={block} />}
       </div>
     </Shell>
   );

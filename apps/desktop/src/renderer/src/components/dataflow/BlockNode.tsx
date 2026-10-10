@@ -5,9 +5,10 @@ import { BlockIcon } from "./BlockIcon";
 import { GROUP_STYLE } from "./groups";
 import { dataflowStore } from "./store";
 import { isBoundaryBlockKind, isPaletteBlockKind, type ParamSpec } from "@reqflow/core";
-import { ExpandIcon } from "@/components/ui/icons";
+import { ExpandIcon, ReportIcon } from "@/components/ui/icons";
 import { useSettings } from "@/lib/settings";
 import { cx } from "@/lib/cx";
+import { summarizeParams } from "./summary";
 
 export const BlockNode = memo(function BlockNode({ data, selected }: NodeProps<BlockFlowNode>) {
   const { block, ports, spec } = data;
@@ -16,7 +17,6 @@ export const BlockNode = memo(function BlockNode({ data, selected }: NodeProps<B
   if (!spec || !isPaletteBlockKind(block.kind)) return null; // boundary blocks use BoundaryNode
 
   const style = GROUP_STYLE[spec.group];
-  const fromSettings: Record<string, string> = { vehicle: scope.vehicleLine, market: scope.market };
   const isRenamed = block.label !== spec.label;
 
   const innerBlocks = block.inner?.blocks.filter((b) => !isBoundaryBlockKind(b.kind)) ?? [];
@@ -26,14 +26,7 @@ export const BlockNode = memo(function BlockNode({ data, selected }: NodeProps<B
       : `${innerBlocks.length} block${innerBlocks.length === 1 ? "" : "s"} inside`;
 
   // One-line param summary: the current values of the first two select params.
-  const summaryLabels = spec.params
-    .filter((p): p is Extract<ParamSpec, { type: "select" }> => p.type === "select")
-    .slice(0, 2)
-    .map((p) => {
-      const value = block.params[p.key];
-      if (value === "global") return fromSettings[p.key] ?? "From Settings";
-      return p.options.find((o) => o.value === value)?.label ?? String(value);
-    });
+  const summaryLabels = summarizeParams(block, scope, spec.params);
 
   const numRows = Math.max(ports.inputs.length, ports.outputs.length);
 
@@ -69,20 +62,37 @@ export const BlockNode = memo(function BlockNode({ data, selected }: NodeProps<B
           </div>
         </div>
 
-        {spec.hasInnerWorkplace && (
-          <button
-            type="button"
-            data-testid="block-expand"
-            className="nodrag shrink-0 rounded-md p-1 text-muted hover:bg-panel-2 hover:text-ink"
-            aria-label={`Open the inside of ${block.label}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              dataflowStore.getState().openInner(block.id);
-            }}
-          >
-            <ExpandIcon className="size-4" />
-          </button>
-        )}
+        <div className="flex shrink-0 items-center gap-1">
+          {block.kind === "hil" && (
+            <button
+              type="button"
+              data-testid="block-report"
+              className="nodrag shrink-0 rounded-md p-1 text-muted hover:bg-panel-2 hover:text-ink"
+              aria-label={`Open the review report of ${block.label}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                dataflowStore.getState().openReport(block.id);
+              }}
+            >
+              <ReportIcon className="size-4" />
+            </button>
+          )}
+
+          {spec.hasInnerWorkplace && (
+            <button
+              type="button"
+              data-testid="block-expand"
+              className="nodrag shrink-0 rounded-md p-1 text-muted hover:bg-panel-2 hover:text-ink"
+              aria-label={`Open the inside of ${block.label}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                dataflowStore.getState().openInner(block.id);
+              }}
+            >
+              <ExpandIcon className="size-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {(spec.hasInnerWorkplace || summaryLabels.length > 0) && (

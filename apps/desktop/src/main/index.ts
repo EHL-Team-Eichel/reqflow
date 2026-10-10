@@ -1,17 +1,24 @@
 import { join } from "node:path";
-import { app, BrowserWindow, dialog, safeStorage, shell, type IpcMainInvokeEvent } from "electron";
+import type { WorkflowRun } from "@reqflow/core";
 import { IPC_EVENTS } from "@reqflow/core/ipc";
-import { createResearchRuntime } from "./research/runtime";
+import { createFileStore } from "@reqflow/db";
+import { app, BrowserWindow, dialog, safeStorage, shell, type IpcMainInvokeEvent } from "electron";
 import { createHandlers } from "./handlers";
 import { registerIpc } from "./ipc";
-import { dataDir, loadDevEnv } from "./paths";
+import { dataDir, loadDevEnv, uploadsDir } from "./paths";
+import { SecretsStore } from "./secrets";
 import { parseSmokeArg, runSmoke } from "./smoke";
 
 const smokeDir = parseSmokeArg(process.argv);
-// Native smoke always runs with isolated local state and a rejecting transport.
-if (smokeDir) app.setPath("userData", join(smokeDir, "electron-user-data"));
+const rejectSmokeFetch: typeof globalThis.fetch = async () => {
+  throw new Error("Outbound provider requests are disabled during native smoke.");
+};
+if (smokeDir) {
+  app.setPath("userData", join(smokeDir, "electron-user-data"));
+  globalThis.fetch = rejectSmokeFetch;
+}
 
-// One instance per user avoids competing writers to local state, credentials and the audit trail.
+// One instance per user avoids competing state, credential and audit writers.
 if (!smokeDir && !app.requestSingleInstanceLock()) app.quit();
 
 function createWindow(): BrowserWindow {
@@ -28,16 +35,13 @@ function createWindow(): BrowserWindow {
       contextIsolation: true,
       sandbox: true,
       nodeIntegration: false,
-      // The smoke test renders off screen: it paints even when the display sleeps or the window
-      // is covered, and never steals focus.
       offscreen: smokeDir !== null,
+      backgroundThrottling: smokeDir === null,
     },
   });
   win.once("ready-to-show", () => {
     if (!smokeDir) win.show();
   });
-
-  // The window never navigates away from the app; http(s) links open in the user's browser.
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https?:\/\//.test(url)) void shell.openExternal(url);
     return { action: "deny" };
@@ -66,92 +70,107 @@ app.on("second-instance", () => {
     win.focus();
   }
 });
-
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
 });
 
 void app
   .whenReady()
-  .then(async () => {
+  .then(() => {
     if (!smokeDir) loadDevEnv();
     const dir = dataDir(smokeDir ? join(smokeDir, "data") : null);
-    const runtime = await createResearchRuntime({
-      dir,
-      secureStorage: safeStorage,
-      fetchImpl: smokeDir
-        ? async () => {
-            throw new Error("Outbound provider requests are disabled during native smoke.");
-          }
-        : undefined,
-      xlsxWorkerPath: join(
-        __dirname.replace(/app\.asar(?=[\\/])/, "app.asar.unpacked"),
-        "research-xlsx-worker.js",
-      ),
-      chooseImport: async () => {
+    const files = createFileStore(uploadsDir(dir));
+    const pushRunUpdate = (run: WorkflowRun) => {
+      for (const win of BrowserWindow.getAllWindows())
+        if (!win.isDestroyed()) win.webContents.send(IPC_EVENTS.runUpdate, run);
+    };
+    const handlers = createHandlers({
+      files,
+      dataDir: dir,
+      pushRunUpdate,
+      secretsStore: new SecretsStore(dir, {
+        secureStorage: safeStorage,
+        environment: smokeDir ? {} : undefined,
+      }),
+      researchOptions: {
+        fetchImpl: smokeDir ? rejectSmokeFetch : undefined,
+        xlsxWorkerPath: join(
+          __dirname.replace(/app\.asar(?=[\\/])/, "app.asar.unpacked"),
+          "research-xlsx-worker.js",
+        ),
+      },
+      pickFile: async () => {
         if (smokeDir) return join(smokeDir, "original.synthetic.xlsx");
-        const choice = await dialog.showOpenDialog({
-          title: "Import original research document",
+        const options: Electron.OpenDialogOptions = {
+          title: "Import a dataset or original research document",
           properties: ["openFile"],
           filters: [
-            { name: "Original documents", extensions: ["xlsx", "txt", "pdf", "docx", "pptx"] },
+            {
+              name: "Datasets and documents",
+              extensions: ["xlsx", "csv", "txt", "pdf", "docx", "pptx", "db", "sqlite", "sqlite3"],
+            },
           ],
-        });
-        return choice.canceled ? null : (choice.filePaths[0] ?? null);
+        };
+        const parent = BrowserWindow.getFocusedWindow();
+        const result = parent
+          ? await dialog.showOpenDialog(parent, options)
+          : await dialog.showOpenDialog(options);
+        return result.canceled ? null : (result.filePaths[0] ?? null);
       },
-      chooseExport: async (format, runId) => {
-        if (smokeDir) return join(smokeDir, `research-export.${format}`);
-        const choice = await dialog.showSaveDialog({
-          title: "Export raw research",
-          defaultPath: `${runId}.${format}`,
-          filters: [{ name: format.toUpperCase(), extensions: [format] }],
-        });
-        return choice.canceled ? null : (choice.filePath ?? null);
+      saveDialog: async (options) => {
+        if (smokeDir) {
+          const format = options.filters?.[0]?.extensions[0] ?? "json";
+          return { canceled: false, filePath: join(smokeDir, `research-export.${format}`) };
+        }
+        const parent = BrowserWindow.getFocusedWindow();
+        return parent ? dialog.showSaveDialog(parent, options) : dialog.showSaveDialog(options);
       },
-      publish: (run) => {
-        for (const win of BrowserWindow.getAllWindows())
-          if (!win.isDestroyed()) win.webContents.send(IPC_EVENTS.runUpdate, run);
-      },
+      appInfo: () => ({
+        version: app.getVersion(),
+        platform: process.platform,
+        dataDir: dir,
+        isPackaged: app.isPackaged,
+      }),
     });
+    registerIpc(handlers, isTrustedSender);
+
     let shuttingDown = false;
     app.on("before-quit", (event) => {
-      if (!shuttingDown) {
-        event.preventDefault();
-        shuttingDown = true;
-        void runtime.shutdown().finally(() => app.quit());
-      }
+      if (shuttingDown) return;
+      event.preventDefault();
+      shuttingDown = true;
+      void handlers.runs
+        .list()
+        .then((runs) =>
+          Promise.all(
+            runs
+              .filter((run) => run.status === "queued" || run.status === "running")
+              .map((run) => handlers.runs.cancel(run.id)),
+          ),
+        )
+        .catch(() => console.error("ReqFlow could not finish every run during shutdown."))
+        .finally(() => app.quit());
     });
-    registerIpc(
-      createHandlers({
-        research: runtime.handlers,
-        appInfo: () => ({
-          version: app.getVersion(),
-          platform: process.platform,
-          dataDir: dir,
-          isPackaged: app.isPackaged,
-        }),
-      }),
-      isTrustedSender,
-    );
 
     const win = createWindow();
-    if (smokeDir) {
-      void runSmoke(win, smokeDir).then(
+    if (smokeDir)
+      void runSmoke(win, smokeDir, {
+        files,
+        samplesDir:
+          process.env.REQFLOW_SMOKE_SAMPLES_DIR ?? join(app.getAppPath(), "../../data/samples"),
+        bmwDir: join(app.getAppPath(), "../../data/raw"),
+      }).then(
         (code) => app.exit(code),
-        (err) => {
-          console.error("[smoke] crashed:", err);
+        () => {
+          console.error("[smoke] crashed; inspect the isolated smoke report.");
           app.exit(1);
         },
       );
-    }
-
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();
     });
   })
   .catch(() => {
-    console.error(
-      "ReqFlow startup failed; local state or secure storage could not be initialized.",
-    );
+    console.error("ReqFlow could not initialize its main-process services.");
     app.exit(1);
   });

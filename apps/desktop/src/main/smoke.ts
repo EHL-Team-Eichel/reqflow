@@ -1,8 +1,23 @@
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { Worker } from "node:worker_threads";
-import { PALETTE_BLOCK_KINDS, ResearchDataset, Settings, WorkflowRun } from "@reqflow/core";
+import { DatabaseSync } from "node:sqlite";
+import {
+  BLOCK_SPECS,
+  PALETTE_BLOCK_KINDS,
+  LLM_MODEL_DEFAULTS,
+  ResearchDataset,
+  Settings,
+  WorkflowRun,
+  connect,
+  createBlock,
+  DEFAULT_SETTINGS,
+  defaultBlockParams,
+  setBlockParams,
+  type WorkflowGraph,
+} from "@reqflow/core";
 import { ipcChannel, type AppInfo, type IpcResult, type ReqflowHandlers } from "@reqflow/core/ipc";
+import type { LocalFileStore } from "@reqflow/db";
 import type { BrowserWindow, NativeImage } from "electron";
 import {
   SYNTHETIC_FEEDBACK,
@@ -40,8 +55,17 @@ export function parseSmokeArg(argv: readonly string[]): string | null {
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const slug = (route: string) => route.replace(/^\//, "").replace(/[^a-zA-Z0-9]+/g, "-") || "root";
 
-export async function runSmoke(win: BrowserWindow, outDir: string): Promise<number> {
+export async function runSmoke(
+  win: BrowserWindow,
+  outDir: string,
+  deps: { files: LocalFileStore; samplesDir: string; bmwDir: string },
+): Promise<number> {
   mkdirSync(outDir, { recursive: true });
+  // Never leave an earlier successful report behind if this run aborts before completion.
+  writeFileSync(
+    join(outDir, "report.json"),
+    JSON.stringify({ ok: false, errors: ["Smoke run has not completed."], screens: [] }, null, 2),
+  );
   const errors: string[] = [];
   const screens: { name: string; file: string }[] = [];
   const wc = win.webContents;
@@ -66,6 +90,21 @@ export async function runSmoke(win: BrowserWindow, outDir: string): Promise<numb
   };
   const check = (ok: boolean, message: string) => {
     if (!ok) errors.push(message);
+  };
+  const llmSettings = async () => Settings.parse(await invoke("settings", "get")).llm;
+  const waitForLlm = async (expected: Partial<Settings["llm"]>) => {
+    const deadline = Date.now() + 10000;
+    while (Date.now() < deadline) {
+      const current = await llmSettings();
+      if (
+        Object.entries(expected).every(
+          ([key, value]) => current[key as keyof typeof current] === value,
+        )
+      )
+        return current;
+      await delay(100);
+    }
+    throw new Error("Timed out waiting for selected AI settings to persist.");
   };
   const go = async (route: string) => {
     await js(`location.hash = ${JSON.stringify(`#${route}`)}`);
@@ -112,6 +151,13 @@ export async function runSmoke(win: BrowserWindow, outDir: string): Promise<numb
     wc.sendInputEvent({ type: "mouseUp", ...b, button: "left", clickCount: 1 });
     await delay(300);
   };
+  /** Sets a <select> the way React notices (native setter + change event). */
+  const setSelect = async (selector: string, value: string) => {
+    const ok = await js<boolean>(
+      `(() => { const el = document.querySelector(${JSON.stringify(selector)}); if (!el) return false; Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value").set.call(el, ${JSON.stringify(value)}); el.dispatchEvent(new Event("change", { bubbles: true })); return true; })()`,
+    );
+    check(ok, `select: no ${selector}`);
+  };
   /** Focus + select the field, then type each chunk as a separate input event. */
   const type = async (selector: string, chunks: string[]) => {
     const found = await js<boolean>(
@@ -131,13 +177,16 @@ export async function runSmoke(win: BrowserWindow, outDir: string): Promise<numb
       writeFileSync(file, (await wc.capturePage()).toPNG());
     } else {
       await delay(100); // let React commit and React Flow settle before forcing the frame
-      const seen = frames;
-      wc.invalidate();
-      const deadline = Date.now() + 3000;
-      while (frames === seen && Date.now() < deadline) await delay(20);
-      if (frames === seen || !frame) {
-        errors.push(`${name}: no frame was painted`);
-        return;
+      // Two forced frames: a frame already on its way when we start may still show the old state.
+      for (let pass = 0; pass < 2; pass++) {
+        const seen = frames;
+        wc.invalidate();
+        const deadline = Date.now() + 3000;
+        while (frames === seen && Date.now() < deadline) await delay(20);
+        if (frames === seen || !frame) {
+          errors.push(`${name}: no frame was painted`);
+          return;
+        }
       }
       writeFileSync(file, (frame as NativeImage).toPNG());
     }
@@ -154,19 +203,61 @@ export async function runSmoke(win: BrowserWindow, outDir: string): Promise<numb
     );
   }
   const unbuilt = await js<{ ok?: boolean; error?: { code?: string } }>(
-    `window.reqflowBridge.invoke("reqflow:requirements.list")`,
+    `window.reqflowBridge.invoke("reqflow:runs.get", "run_unbuilt")`,
   );
   check(
     unbuilt?.ok === false && !!unbuilt.error?.code,
-    `requirements.list should return a structured error, got ${JSON.stringify(unbuilt)}`,
+    `runs.get should return a structured error, got ${JSON.stringify(unbuilt)}`,
   );
   const blocked = await js<string>(
     `window.reqflowBridge.invoke("not-a-channel").then(() => "allowed", () => "blocked")`,
   );
   check(blocked === "blocked", "preload allowed an unknown IPC channel");
 
+  // Repeated smoke runs retain their isolated Settings history. Explicitly select
+  // Mock before any analytical workflow, including after an interrupted provider check.
+  await go("/settings");
+  check(await click('[data-testid="settings-section-ai"]'), "settings: open offline AI setup");
+  await delay(200);
+  await setSelect("#llm-provider", "mock");
+  await waitForLlm({ provider: "mock" });
+
+  // Raw block end to end in the packaged code: import the synthetic samples, preview them over IPC
+  // (CSV with German formatting, and an Excel workbook through the bundled reader).
+  for (const [file, dataset, minRecords] of [
+    ["equipment_take_rates.csv", "equipment_data", 17],
+    ["customer_study.xlsx", "customer_study", 7],
+  ] as const) {
+    try {
+      const info = await deps.files.importFile(join(deps.samplesDir, file));
+      const params = {
+        ...defaultBlockParams("raw"),
+        dataset,
+        file: { fileId: info.id, name: info.name },
+      };
+      const request = { kind: "raw", params, scope: DEFAULT_SETTINGS.defaultScope };
+      const res = await js<{
+        ok: boolean;
+        value?: { outputs: { out: { records: unknown[] } } };
+        error?: unknown;
+      }>(`window.reqflowBridge.invoke("reqflow:blocks.preview", ${JSON.stringify(request)})`);
+      const records = res.value?.outputs.out.records.length ?? 0;
+      check(
+        res.ok && records === minRecords,
+        `raw preview of ${file}: ${JSON.stringify(res.error ?? records)}`,
+      );
+    } catch (err) {
+      check(false, `raw preview of ${file} crashed: ${String(err)}`);
+    }
+  }
+
+  // Optional private BMW-file smoke is deliberately disabled: native smoke reads synthetic samples only.
+  console.log("smoke: optional private BMW-file preview skipped (synthetic fixtures only)");
+
   // Start from a known theme (the default "system" follows the OS), dark mode comes last.
   await go("/settings");
+  check(await click('[data-testid="settings-section-app"]'), "settings: open app appearance");
+  await delay(200);
   check(await click('[data-testid="theme-light"]'), "settings: no light theme option");
   await delay(200);
   check(
@@ -227,6 +318,63 @@ export async function runSmoke(win: BrowserWindow, outDir: string): Promise<numb
   //    (spaces between words, new lines in a list, an empty name while retyping).
   check(await click('[data-testid="block-ai_splitter"]'), "typing: can't select the splitter");
   await delay(300);
+  const addBranch = () =>
+    js<boolean>(`(() => {
+    const button = [...document.querySelectorAll('[data-testid="inspector"] button')]
+      .find((b) => b.textContent.trim() === '+ Add');
+    if (!button) return false;
+    button.click(); return true;
+  })()`);
+  for (let i = 3; i < 10; i++) {
+    check(await addBranch(), "splitter: no add branch button");
+    await delay(100);
+  }
+  check(
+    (await count('[data-testid="block-ai_splitter"] .react-flow__handle.source')) === 10,
+    "splitter: ten output handles expected",
+  );
+  check(
+    await js<boolean>(`[...document.querySelectorAll('[data-testid="inspector"] button')]
+    .find((b) => b.textContent.trim() === '+ Add')?.disabled === true`),
+    "splitter: maximum ten branches must be enforced",
+  );
+  await shot("splitter-ten-outputs");
+  await js(`document.querySelector('[data-testid="block-ai_splitter"]')
+    .dispatchEvent(new MouseEvent("dblclick", { bubbles: true }))`);
+  await delay(600);
+  check(
+    (await count('[data-testid="boundary-input"]')) === 1 &&
+      (await count('[data-testid="boundary-output"]')) === 10,
+    "splitter: double-click should open one input and ten output boundaries",
+  );
+  await shot("splitter-inner-ten");
+  check(await click('[data-testid="crumb-0"]'), "splitter: breadcrumb back missing");
+  await delay(400);
+  check(await click('[data-testid="block-ai_splitter"]'), "splitter: cannot reselect");
+  await delay(200);
+  for (let i = 10; i > 2; i--) {
+    check(await click(`[aria-label="Remove entry ${i}"]`), "splitter: cannot remove branch");
+    await delay(100);
+  }
+  check(
+    (await count('[data-testid="block-ai_splitter"] .react-flow__handle.source')) === 2,
+    "splitter: removing branches should update output handles",
+  );
+  check(
+    await js<boolean>(`document.querySelector('[aria-label="Remove entry 1"]')?.disabled === true`),
+    "splitter: minimum two branches must be enforced",
+  );
+  check(await click('[data-testid="inspector-open-inner"]'), "splitter: no inner workplace button");
+  await delay(600);
+  check(
+    (await count('[data-testid="boundary-output"]')) === 2,
+    "splitter: removed boundaries should disappear inside",
+  );
+  await shot("splitter-inner-two");
+  check(await click('[data-testid="crumb-0"]'), "splitter: breadcrumb back missing");
+  await delay(400);
+  check(await click('[data-testid="block-ai_splitter"]'), "typing: can't reselect the splitter");
+  await delay(200);
   await type('[aria-label="Branch name 1"]', ["Top ", "priority"]);
   check(
     (await text('[data-testid="block-ai_splitter"]')).includes("Top priority"),
@@ -255,6 +403,145 @@ export async function runSmoke(win: BrowserWindow, outDir: string): Promise<numb
   await drag(handle("custom", "source"), handle("ai_filter", "target")); // would close a loop
   check((await count(".react-flow__edge")) === 2, "dataflow: a loop must be refused");
   await shot("dataflow-connected");
+
+  // HIL review report: double-click the HIL block → lineage chart + data at this point.
+  await drag(handle("custom", "source"), handle("hil", "target"));
+  check((await count(".react-flow__edge")) === 3, "dataflow: custom → HIL should connect");
+  await js(
+    `document.querySelector('[data-testid="block-hil"]').dispatchEvent(new MouseEvent("dblclick", { bubbles: true }))`,
+  );
+  await delay(600);
+  check((await count('[data-testid="hil-report"]')) === 1, "report: double-click didn't open it");
+  const steps = await count('[data-testid="hil-report"] [data-testid="lineage-step"]');
+  check(steps === 4, `report: lineage should show raw → filter → custom → HIL, got ${steps} steps`);
+  check((await count('[data-testid="data-empty"]')) === 1, "report: no-data state missing");
+  check(
+    (await count('[data-testid="data-sample"]')) === 0,
+    "report: demo data must be gone (no synthetic sample button)",
+  );
+  await shot("hil-report");
+  check(
+    await click('[data-testid="lineage-step"][data-step-id^="raw-"] [data-testid="step-data"]'),
+    "report: raw step has no data icon",
+  );
+  await delay(300);
+  check(
+    /Raw/.test(await text('[data-testid="data-panel"]')),
+    "report: data panel should switch to the Raw step",
+  );
+  check(
+    /Choose an Excel or CSV file/.test(await text('[data-testid="data-panel"]')),
+    "report: a Raw step without a file should show the block's own error (real preview path)",
+  );
+  await shot("hil-report-raw");
+  check(await click('[aria-label="Close report"]'), "report: no close button");
+  await delay(300);
+  check((await count('[data-testid="hil-report"]')) === 0, "report: didn't close");
+
+  // Raw block with real data through the UI only: a SQLite source (the file dialog can't be scripted).
+  const dbPath = join(outDir, "data", "smoke-feedback.sqlite");
+  const db = new DatabaseSync(dbPath);
+  db.exec("DROP TABLE IF EXISTS feedback; CREATE TABLE feedback (market TEXT, comment TEXT)");
+  db.exec(
+    "INSERT INTO feedback VALUES ('DE', 'Im Fond ist es für Erwachsene zu eng'), ('GB', 'Rear legroom is too tight for adults'), ('FR', 'Le coffre est trop petit')",
+  );
+  db.close();
+  check(await click('[data-testid="block-raw"]'), "raw: can't select the Raw block");
+  await delay(300);
+  await setSelect('[data-testid="inspector"] select', "database");
+  await delay(200);
+  await type('input[placeholder="/path/to/data.sqlite"]', [dbPath]);
+  await type('textarea[placeholder="SELECT * FROM customer_feedback"]', ["SELECT * FROM feedback"]);
+  check(await click('[data-testid="preview-load"]'), "raw: no preview button");
+  await delay(800);
+  const counts = await text('[data-testid="preview-counts"]');
+  check(/3 records/.test(counts), `raw: preview should read 3 records, got "${counts}"`);
+  await shot("raw-preview");
+
+  // The built splitter, real Raw reader, workflow executor and LLM settings over packaged IPC.
+  let splitGraph: WorkflowGraph = {
+    blocks: [
+      createBlock("raw", { id: "smoke-raw", position: { x: 0, y: 0 } }),
+      createBlock("ai_splitter", { id: "smoke-split", position: { x: 300, y: 0 } }),
+    ],
+    edges: [],
+  };
+  splitGraph = setBlockParams(splitGraph, "smoke-raw", {
+    ...defaultBlockParams("raw"),
+    source: "database",
+    connection: dbPath,
+    query: "SELECT * FROM feedback",
+  }).graph;
+  splitGraph = setBlockParams(splitGraph, "smoke-split", {
+    ...defaultBlockParams("ai_splitter"),
+    splitBy: "custom",
+    branches: ["Adults", "Other"],
+    instruction:
+      "Route feedback explicitly mentioning adults to Adults; all other feedback to Other.",
+  }).graph;
+  splitGraph = connect(splitGraph, {
+    source: "smoke-raw",
+    sourcePort: "out",
+    target: "smoke-split",
+    targetPort: "in",
+  });
+  const splitWorkflow = await js<{ ok: boolean; value?: { id: string }; error?: unknown }>(
+    `window.reqflowBridge.invoke("reqflow:workflows.save", ${JSON.stringify({
+      ...splitGraph,
+      name: "Synthetic splitter smoke",
+      scope: DEFAULT_SETTINGS.defaultScope,
+    })})`,
+  );
+  check(splitWorkflow.ok, `splitter: workflow save failed ${JSON.stringify(splitWorkflow.error)}`);
+  if (splitWorkflow.value) {
+    const started = await js<{ ok: boolean; value?: { id: string }; error?: unknown }>(
+      `window.reqflowBridge.invoke("reqflow:runs.start", ${JSON.stringify(splitWorkflow.value.id)})`,
+    );
+    check(started.ok, `splitter: run start failed ${JSON.stringify(started.error)}`);
+    if (started.value) {
+      const runId = JSON.stringify(started.value.id);
+      const deadline = Date.now() + 5000;
+      let status = "running";
+      while (status === "running" && Date.now() < deadline) {
+        await delay(100);
+        status = await js<string>(`window.reqflowBridge.invoke("reqflow:runs.get", ${runId})
+          .then((r) => r.value?.status ?? "error")`);
+      }
+      check(status === "completed", `splitter: synthetic run ended ${status}`);
+      const output = await js<{
+        ok: boolean;
+        value?: Record<string, { records: { id: string }[] }>;
+        error?: unknown;
+      }>(`window.reqflowBridge.invoke("reqflow:runs.blockOutput", ${runId}, "smoke-split")`);
+      const ids = Object.values(output.value ?? {}).flatMap((data) =>
+        data.records.map((record) => record.id),
+      );
+      check(
+        output.ok &&
+          Object.keys(output.value ?? {}).length === 2 &&
+          ids.length === 3 &&
+          new Set(ids).size === 3,
+        `splitter: two outputs must route all three records exactly once ${JSON.stringify(output.error ?? ids.length)}`,
+      );
+    }
+  }
+  await js(
+    `document.querySelector('[data-testid="block-hil"]').dispatchEvent(new MouseEvent("dblclick", { bubbles: true }))`,
+  );
+  await delay(500);
+  check(
+    await click('[data-testid="lineage-step"][data-step-id^="raw-"] [data-testid="step-data"]'),
+    "report: raw step has no data icon",
+  );
+  await delay(800);
+  check(
+    (await count('[data-testid="data-real"]')) === 1,
+    "report: Raw step should show its real data",
+  );
+  check((await count('[data-testid="data-table"] tbody tr')) === 3, "report: 3 real rows expected");
+  await shot("hil-report-real");
+  check(await click('[aria-label="Close report"]'), "report: no close button");
+  await delay(300);
   await go("/settings");
   check(await click('[data-testid="settings-section-ai"]'), "settings: no ai section");
   await delay(200);
@@ -265,6 +552,161 @@ export async function runSmoke(win: BrowserWindow, outDir: string): Promise<numb
     )) === "a.example\nb.example",
     "typing: allowed domains should keep both lines",
   );
+
+  // Real requirements for the car, made the way the app makes them: Raw → Add to Car on a small
+  // synthetic feedback file (two topics, two comments each). No demo data is seeded any more.
+  let carRequirements = 0;
+  try {
+    const csv = join(outDir, "car-feedback.csv");
+    writeFileSync(
+      csv,
+      [
+        "id,comment",
+        "F1,The rear seats are uncomfortable on long journeys",
+        "F2,The rear seats are uncomfortable and need better support",
+        "F3,The infotainment screen is too slow and freezes often",
+        "F4,The infotainment screen freezes and is too slow to respond",
+      ].join("\n"),
+    );
+    const info = await deps.files.importFile(csv);
+    let carGraph: WorkflowGraph = {
+      blocks: [
+        createBlock("raw", { id: "smoke-car-raw", position: { x: 0, y: 0 } }),
+        createBlock("add_to_car", { id: "smoke-car", position: { x: 300, y: 0 } }),
+      ],
+      edges: [],
+    };
+    carGraph = setBlockParams(carGraph, "smoke-car-raw", {
+      ...defaultBlockParams("raw"),
+      dataset: "customer_feedback",
+      file: { fileId: info.id, name: info.name },
+    }).graph;
+    carGraph = connect(carGraph, {
+      source: "smoke-car-raw",
+      sourcePort: "out",
+      target: "smoke-car",
+      targetPort: "in-0",
+    });
+    const saved = await js<{ ok: boolean; value?: { id: string }; error?: unknown }>(
+      `window.reqflowBridge.invoke("reqflow:workflows.save", ${JSON.stringify({
+        ...carGraph,
+        name: "Synthetic feedback to car (smoke)",
+        scope: DEFAULT_SETTINGS.defaultScope,
+      })})`,
+    );
+    const started = saved.value
+      ? await js<{ ok: boolean; value?: { id: string }; error?: unknown }>(
+          `window.reqflowBridge.invoke("reqflow:runs.start", ${JSON.stringify(saved.value.id)})`,
+        )
+      : null;
+    check(!!started?.ok, `car: feedback run didn't start ${JSON.stringify(started?.error)}`);
+    if (started?.value) {
+      const runId = JSON.stringify(started.value.id);
+      let status = "running";
+      for (const deadline = Date.now() + 10_000; status === "running" && Date.now() < deadline;) {
+        await delay(100);
+        status = await js<string>(`window.reqflowBridge.invoke("reqflow:runs.get", ${runId})
+          .then((r) => r.value?.status ?? "error")`);
+      }
+      check(status === "completed", `car: feedback run ended ${status}`);
+    }
+    carRequirements = await js<number>(
+      `window.reqflowBridge.invoke("reqflow:requirements.list").then((r) => r.value?.length ?? -1)`,
+    );
+    check(carRequirements >= 2, `car: the run should add ≥ 2 requirements, got ${carRequirements}`);
+  } catch (err) {
+    check(false, `car: making requirements crashed: ${String(err)}`);
+  }
+
+  // Car: the 3D car renders, parts are clickable (badge, list and a real click on the canvas),
+  // and the classifier explains where each requirement went.
+  await go("/car");
+  for (let i = 0; i < 40 && (await count('[data-testid="car-canvas"]')) === 0; i++)
+    await delay(100);
+  check((await count('[data-testid="car-canvas"]')) === 1, "car: no 3D canvas");
+  await delay(600);
+  await shot("car-3d");
+  check(
+    (await count('[data-testid^="car-part-"]')) >= 30,
+    "car: part index should list every part",
+  );
+  check(
+    (await count('[data-testid="car-source-sample"]')) === 0,
+    "car: demo data must be gone (no synthetic sample source)",
+  );
+  await delay(400);
+  check((await count('[data-testid^="car-badge-"]')) >= 1, "car: requirements should badge parts");
+  const badge = await js<string | null>(
+    `document.querySelector('[data-testid^="car-badge-"]')?.dataset.testid ?? null`,
+  );
+  check(!!badge && (await click(`[data-testid="${badge}"]`)), "car: no badge to click");
+  await delay(400);
+  check(!!(await text('[data-testid="car-part-title"]')), "car: badge click should select a part");
+  check(
+    (await count('[data-testid="car-requirement"]')) >= 1,
+    `car: the part behind ${badge} shows no requirement`,
+  );
+  check(
+    (await text('[data-testid="car-classifier-reason"]')).length > 0,
+    "car: classifier should explain itself",
+  );
+  await shot("car-part-selected");
+  for (const view of ["side", "rear", "top"]) {
+    check(await click(`[data-testid="car-camera-${view}"]`), `car: no ${view} camera`);
+    await delay(900);
+    await shot(`car-${view}`);
+  }
+  check(await click('[data-testid="car-camera-side"]'), "car: no side camera");
+  await delay(900);
+  const canvas = await centre('[data-testid="car-canvas"]');
+  if (canvas) {
+    // A real click on the middle of the car (the side view puts a door there).
+    const at = { x: canvas.x, y: canvas.y + 10 };
+    wc.sendInputEvent({ type: "mouseMove", ...at });
+    await delay(150);
+    wc.sendInputEvent({ type: "mouseDown", ...at, button: "left", clickCount: 1 });
+    wc.sendInputEvent({ type: "mouseUp", ...at, button: "left", clickCount: 1 });
+    await delay(400);
+    const picked = await text('[data-testid="car-part-title"]');
+    check(
+      picked !== "" && picked !== "Rear seats",
+      `car: clicking the 3D car selected "${picked}"`,
+    );
+    await shot("car-clicked");
+  }
+  check(await click('[data-testid="car-view-interior"]'), "car: no interior view");
+  check(await click('[data-testid="car-camera-front"]'), "car: no front camera");
+  await delay(900);
+  await shot("car-interior");
+  check(await click('[data-testid="car-view-exterior"]'), "car: no exterior view");
+  await delay(300);
+
+  // Reset: asks in place, removes every requirement, and the car is empty afterwards.
+  check(await click('[data-testid="car-reset"]'), "car: no reset button");
+  await delay(200);
+  check((await count('[data-testid="car-reset-confirm"]')) === 1, "car: reset didn't ask first");
+  await shot("car-reset-confirm");
+  check(await click('[data-testid="car-reset-confirm-button"]'), "car: no confirm button");
+  await delay(600);
+  check(
+    (await text('[data-testid="car-reset-message"]')).startsWith("Removed "),
+    "car: reset should report what it removed",
+  );
+  check((await count('[data-testid^="car-badge-"]')) === 0, "car: badges left after reset");
+  const left = await js<number>(
+    `window.reqflowBridge.invoke("reqflow:requirements.list").then((r) => r.value?.length ?? -1)`,
+  );
+  check(left === 0, `car: ${left} requirements left after reset`);
+  const deleted = await js<number>(
+    `window.reqflowBridge.invoke("reqflow:audit.list", { action: "requirement.deleted" })
+      .then((r) => r.value?.length ?? -1)`,
+  );
+  check(deleted >= carRequirements, "car: reset should audit every removed requirement");
+  check(
+    await js<boolean>(`document.querySelector('[data-testid="car-reset"]').disabled`),
+    "car: reset should be disabled when there is nothing to remove",
+  );
+  await shot("car-after-reset");
 
   // 4. Settings: every section, then dark mode across pages.
   await go("/settings");
@@ -281,6 +723,108 @@ export async function runSmoke(win: BrowserWindow, outDir: string): Promise<numb
     }
     await shot(`settings-${id}`);
   }
+  check(await click('[data-testid="settings-section-ai"]'), "settings: reopen AI section");
+  await delay(200);
+  const liveModels: Record<"openai" | "google", { quality: string; fast: string }> = {
+    openai: {
+      quality: "gpt-smoke-private-quality",
+      fast: "gpt-smoke-private-fast",
+    },
+    google: {
+      quality: "gemini-smoke-private-quality",
+      fast: "gemini-smoke-private-fast",
+    },
+  };
+  const checkModelSelection = async (
+    provider: "openai" | "google",
+    expected = LLM_MODEL_DEFAULTS[provider],
+  ) => {
+    const llm = await waitForLlm({ provider, ...expected });
+    const selection = await js<{
+      qualityPreset: string;
+      fastPreset: string;
+      qualityCustom: string;
+      fastCustom: string;
+    }>(`({
+      qualityPreset: document.querySelector('#llm-quality-preset')?.value ?? '',
+      fastPreset: document.querySelector('#llm-fast-preset')?.value ?? '',
+      qualityCustom: document.querySelector('#llm-quality-custom')?.value ?? '',
+      fastCustom: document.querySelector('#llm-fast-custom')?.value ?? '',
+    })`);
+    check(
+      llm.provider === provider &&
+        llm.model === expected.model &&
+        llm.fastModel === expected.fastModel &&
+        selection.qualityPreset ===
+          (expected.model === LLM_MODEL_DEFAULTS[provider].model ? expected.model : "custom") &&
+        selection.fastPreset ===
+          (expected.fastModel === LLM_MODEL_DEFAULTS[provider].fastModel
+            ? expected.fastModel
+            : "custom") &&
+        (selection.qualityPreset !== "custom" || selection.qualityCustom === expected.model) &&
+        (selection.fastPreset !== "custom" || selection.fastCustom === expected.fastModel),
+      `settings: ${provider} quality and fast model controls match persisted IDs`,
+    );
+    return llm;
+  };
+  for (const provider of ["openai", "google"] as const) {
+    check(
+      await (async () => {
+        await setSelect("#llm-provider", provider);
+        await delay(150);
+        // A repeated smoke run may remember its previous custom profile. Select the
+        // presets explicitly through the GUI before checking persistence.
+        await setSelect("#llm-quality-preset", LLM_MODEL_DEFAULTS[provider].model);
+        await setSelect("#llm-fast-preset", LLM_MODEL_DEFAULTS[provider].fastModel);
+        const llm = await checkModelSelection(provider);
+        const passwordsEmpty = await js<boolean>(
+          `[...document.querySelectorAll('input[type="password"]')].every(input => input.value === '')`,
+        );
+        check(passwordsEmpty, `settings: ${provider} API key remains empty`);
+        return llm.provider === provider;
+      })(),
+      `settings: select ${provider}`,
+    );
+    await shot(provider === "openai" ? "settings-ai-openai" : "settings-ai-google");
+    await setSelect("#llm-quality-preset", "custom");
+    await setSelect("#llm-fast-preset", "custom");
+    await delay(100);
+    await type("#llm-quality-custom", [liveModels[provider].quality]);
+    await type("#llm-fast-custom", [liveModels[provider].fast]);
+    const llm = await waitForLlm({
+      provider,
+      model: liveModels[provider].quality,
+      fastModel: liveModels[provider].fast,
+    });
+    check(
+      llm.provider === provider &&
+        llm.model === liveModels[provider].quality &&
+        llm.fastModel === liveModels[provider].fast,
+      `settings: ${provider} custom quality and fast model IDs persist without a credential`,
+    );
+  }
+  await setSelect("#llm-provider", "openai");
+  await delay(350);
+  await checkModelSelection("openai", {
+    model: liveModels.openai.quality,
+    fastModel: liveModels.openai.fast,
+  });
+  await setSelect("#llm-provider", "google");
+  await delay(350);
+  await checkModelSelection("google", {
+    model: liveModels.google.quality,
+    fastModel: liveModels.google.fast,
+  });
+  const rememberedGoogle = await llmSettings();
+  check(
+    rememberedGoogle.modelProfiles?.google?.model === liveModels.google.quality,
+    "settings: Google Gemini custom IDs remain in the provider profile",
+  );
+  await setSelect("#llm-provider", "mock");
+  check(
+    (await waitForLlm({ provider: "mock" })).provider === "mock",
+    "settings: restore offline Mock before workflow run",
+  );
   check(await click('[data-testid="settings-section-app"]'), "settings: no app section");
   await delay(200);
   check(await click('[data-testid="theme-dark"]'), "settings: no dark theme option");
@@ -454,11 +998,59 @@ export async function runSmoke(win: BrowserWindow, outDir: string): Promise<numb
     );
     await delay(300);
     const agentsSelector = await fieldSelector("Research agents");
+    const initialAgents = await js<{ label: string; selected: boolean }[]>(
+      `[...document.querySelector(${JSON.stringify(agentsSelector)}).querySelectorAll('button')].map(button => ({ label: button.textContent.trim(), selected: button.getAttribute('aria-pressed') === 'true' }))`,
+    );
+    const agentSpec = BLOCK_SPECS.research.params.find((param) => param.key === "agents");
+    ensure(
+      agentSpec?.type === "multiselect",
+      "Research agent options are defined by the shared contract",
+    );
+    const agentLabel = (id: string) => {
+      const option =
+        agentSpec.type === "multiselect"
+          ? agentSpec.options.find((option) => option.value === id)
+          : undefined;
+      ensure(option, `Research agent option ${id} is present`);
+      return option.label;
+    };
+    const socialLabels = ["reddit", "youtube", "instagram", "tiktok", "x"].map(agentLabel);
+    const nonSocialBefore = initialAgents
+      .filter((entry) => entry.selected && !socialLabels.includes(entry.label))
+      .map((entry) => entry.label)
+      .sort();
+    ensure(nonSocialBefore.length > 0, "Research has a non-social agent to preserve");
+    const selectedAgentLabels = () =>
+      js<string[]>(
+        `[...document.querySelector(${JSON.stringify(agentsSelector)}).querySelectorAll('button[aria-pressed="true"]')].map(button => button.textContent.trim()).sort()`,
+      );
+    await setSelect('[data-testid="research-social-media"]', "all");
+    await delay(150);
+    ensure(
+      JSON.stringify(await selectedAgentLabels()) ===
+        JSON.stringify([...nonSocialBefore, ...socialLabels].sort()),
+      "social dropdown All replaces the social subset and preserves non-social agents",
+    );
+    await setSelect('[data-testid="research-social-media"]', "reddit");
+    await delay(150);
+    ensure(
+      JSON.stringify(await selectedAgentLabels()) ===
+        JSON.stringify([...nonSocialBefore, agentLabel("reddit")].sort()),
+      "social dropdown Reddit replaces all social agents and preserves non-social agents",
+    );
+    await setSelect('[data-testid="research-social-media"]', "none");
+    await delay(150);
+    ensure(
+      JSON.stringify(await selectedAgentLabels()) === JSON.stringify(nonSocialBefore),
+      "social dropdown None removes social agents and preserves non-social agents",
+    );
+    await shot("dataflow-research-configuration");
     const options = await js<{ label: string; selected: boolean }[]>(
       `[...document.querySelector(${JSON.stringify(agentsSelector)}).querySelectorAll('button')].map(button => ({ label: button.textContent.trim(), selected: button.getAttribute('aria-pressed') === 'true' }))`,
     );
     // Select local-document agents first, so deselecting the three defaults never produces no agents.
-    for (const desired of ["bmw sales", "bmw strategy"]) {
+    const localDocumentAgents = ["bmw_sales", "bmw_strategy"].map(agentLabel);
+    for (const desired of localDocumentAgents) {
       const option = options.find((entry) => entry.label === desired);
       ensure(option, `agent option ${desired} exists`);
       if (!option.selected)
@@ -466,7 +1058,7 @@ export async function runSmoke(win: BrowserWindow, outDir: string): Promise<numb
       await delay(100);
     }
     for (const option of options) {
-      if (option.selected && !["bmw sales", "bmw strategy"].includes(option.label)) {
+      if (option.selected && !localDocumentAgents.includes(option.label)) {
         ensure(
           await clickButton(agentsSelector, option.label),
           `deselect default ${option.label} agent`,
@@ -481,7 +1073,7 @@ export async function runSmoke(win: BrowserWindow, outDir: string): Promise<numb
       JSON.stringify(selected) === '["bmw sales","bmw strategy"]',
       "only the two local-document agents selected",
     );
-    const planningSelector = await fieldSelector("Mastra query planning (paid Anthropic request)");
+    const planningSelector = await fieldSelector("Mastra query planning (optional model request)");
     ensure(
       await js<boolean>(
         `document.querySelector(${JSON.stringify(planningSelector)})?.getAttribute('aria-checked') === 'false'`,
@@ -502,26 +1094,37 @@ export async function runSmoke(win: BrowserWindow, outDir: string): Promise<numb
     ensure(await click('[aria-label="Close details"]'), "close Research inspector before running");
 
     process.on("worker", onWorker);
-    ensure(await click('[data-testid="run-start"]'), "start actual workflow through RunControls");
+    ensure(await click('[data-testid="flow-run"]'), "start actual workflow through RunControls");
+    const immediateStatus = await text('[data-testid="flow-run-status"]');
+    if (immediateStatus.includes("Running"))
+      ensure(
+        (await count('[data-testid="flow-cancel"]')) === 1,
+        "active workflow exposes its Cancel run control",
+      );
     await waitFor(
       "completed live Research UI and dataset summary",
       async () => {
+        const status = await text('[data-testid="flow-run-status"]');
         const controls = await text('[data-testid="run-controls"]');
-        if (controls.includes("Run failed") || controls.includes("Could not start workflow:"))
+        if (status.includes("Failed") || controls.includes("Could not start workflow:"))
           throw new Error(
             "Native Research workflow failed; inspect run logs in isolated smoke data.",
           );
         return (
-          controls.includes("Run completed") &&
-          /Research: 1 sources\s*·\s*2 raw records/.test(controls)
+          status.includes("Completed") &&
+          /Research: 1 sources\s*·\s*2 raw records/.test(
+            await text('[data-testid="research-results"]'),
+          )
         );
       },
       45000,
     );
     const controls = await text('[data-testid="run-controls"]');
+    const salesStatus = await text('[data-testid="research-agent-bmw_sales"]');
+    const strategyStatus = await text('[data-testid="research-agent-bmw_strategy"]');
     // Summary owns the ID. Whole-section textContent concatenates the following block label to it.
     const runId = /run_[A-Za-z0-9_-]+/.exec(
-      await text('[data-testid="run-controls"] details summary'),
+      await text('[data-testid="flow-run-details"] summary'),
     )?.[0];
     ensure(runId, "current run ID visible in RunControls");
     nativeResearch.runId = runId;
@@ -568,10 +1171,10 @@ export async function runSmoke(win: BrowserWindow, outDir: string): Promise<numb
       "both agents honestly report partial local collection, blocked web and zero API requests",
     );
     ensure(
-      controls.includes("bmw sales:") &&
-        controls.includes("bmw strategy:") &&
-        controls.includes("Partial collection") &&
-        controls.includes("0 requests"),
+      salesStatus.includes("Partial collection") &&
+        strategyStatus.includes("Partial collection") &&
+        salesStatus.includes("0 requests") &&
+        strategyStatus.includes("0 requests"),
       "renderer displays honest agent statuses and record/request counts",
     );
     const output = await invoke("runs", "blockOutput", run.id, block.id);
@@ -584,24 +1187,24 @@ export async function runSmoke(win: BrowserWindow, outDir: string): Promise<numb
         output.out.requirements.length === 0,
       "real block-output IPC contains originals only, with no analysis or requirements",
     );
-    ensure(await click('[data-testid="run-controls"] details summary'), "open native run details");
+    ensure(await click('[data-testid="flow-run-details"] summary'), "open native run details");
     ensure(
-      await clickButton('[data-testid="run-controls"]', "Inspect output"),
+      await click(`[data-testid="research-inspect-${block.id}"]`),
       "inspect output through renderer button",
     );
     await waitFor("verbatim source output preview", async () =>
-      (await text('[data-testid="run-controls"] pre')).includes(SYNTHETIC_FEEDBACK),
+      (await text('[data-testid="research-output-preview"]')).includes(SYNTHETIC_FEEDBACK),
     );
     ensure(
       await js<boolean>(`(() => {
-        const pre = document.querySelector('[data-testid="run-controls"] pre');
+        const pre = document.querySelector('[data-testid="research-output-preview"]');
         return pre?.innerHTML.includes('&lt;script&gt;synthetic&lt;/script&gt;') &&
           !pre.querySelector('script') && typeof window.__reqflowSmokeExecuted === 'undefined';
       })()`),
       "source HTML renders as escaped text; no script executes",
     );
     ensure(
-      await click('[data-testid="run-controls"] details summary'),
+      await click('[data-testid="flow-run-details"] summary'),
       "collapse output details for result screenshot",
     );
     await js(`document.querySelector('[data-testid="run-controls"]').scrollTop = 0`);
@@ -609,16 +1212,22 @@ export async function runSmoke(win: BrowserWindow, outDir: string): Promise<numb
 
     for (const format of ["json", "xlsx", "csv"] as const) {
       ensure(
-        await clickButton('[data-testid="run-controls"]', `Export ${format.toUpperCase()}`),
+        await click(`[data-testid="research-export-${format}"]`),
         `export ${format.toUpperCase()} through renderer`,
       );
       await waitFor(`native ${format.toUpperCase()} export`, async () =>
-        (await text('[data-testid="run-controls"]')).includes(
+        (await text('[aria-label="Research collection results"]')).includes(
           `Export saved: ${join(outDir, `research-export.${format}`)}`,
         ),
       );
     }
-    nativeResearch.exports = await verifySmokeResearchFiles(outDir, dataDir, dataset, ensure);
+    nativeResearch.exports = await verifySmokeResearchFiles(
+      outDir,
+      dataDir,
+      dataset,
+      block.id,
+      ensure,
+    );
     const audit = await invoke("audit", "list", { runId, limit: 100 });
     ensure(
       audit.some((event) => event.action === "run.started") &&
