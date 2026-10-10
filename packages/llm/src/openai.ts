@@ -143,7 +143,9 @@ export function openAiClient(o: {
     const reqEffort = request.effort ?? o.effort;
 
     const baseMaxTokens = request.maxTokens ?? 4096;
-    let headroom = 0;
+    // Gemini and OpenAI's current models think by default even without reasoning_effort,
+    // and their thinking counts against the token cap: give "off" the low-effort headroom.
+    let headroom = reqEffort === "off" && o.provider !== "openai_compatible" ? 8000 : 0;
     if (reqEffort === "low") headroom = 8000;
     else if (reqEffort === "medium") headroom = 16000;
     else if (reqEffort === "high") headroom = 32000;

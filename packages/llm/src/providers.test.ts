@@ -289,9 +289,9 @@ describe("openai client", () => {
     await make("openai").generateObject({ prompt: "p", schema });
     await make("gemini").generateObject({ prompt: "p", schema });
     expect(f.requests[0]!.body.temperature).toBeUndefined();
-    expect(f.requests[0]!.body.max_completion_tokens).toBe(4096);
+    expect(f.requests[0]!.body.max_completion_tokens).toBe(4096 + 8000); // reasons by default
     expect(f.requests[1]!.body.temperature).toBe(0.3);
-    expect(f.requests[1]!.body.max_tokens).toBe(4096);
+    expect(f.requests[1]!.body.max_tokens).toBe(4096 + 8000); // Gemini thinks by default too
   });
 });
 

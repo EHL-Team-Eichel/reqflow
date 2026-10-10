@@ -14,7 +14,7 @@ import {
 import { createBlockRegistry } from "@reqflow/blocks";
 import type { BlockContext, CarEvidence } from "@reqflow/engine";
 import { createLlmClient } from "@reqflow/llm";
-import { createAgentServices } from "./agents";
+import { createAgentServices, testSetup, type AgentDeps } from "./agents";
 import { SecretsStore } from "./secrets";
 import { loadSettings } from "./settings-storage";
 
@@ -109,7 +109,7 @@ export async function runEvalF70(
   );
 
   const secrets = new SecretsStore(o.dataDir);
-  const agents = createAgentServices(settings, {
+  const deps: AgentDeps = {
     defaultLlm: async (s) => {
       const apiKey =
         s.llm.provider === "anthropic"
@@ -121,7 +121,16 @@ export async function runEvalF70(
       return createLlmClient(s.llm, { apiKey });
     },
     getKey: (id) => secrets.getSecret(`setup:${id}`),
-  });
+  };
+  // Check every setup the agents use before reading anything: a bad key fails in seconds.
+  for (const id of new Set(Object.values(settings.agents.roles))) {
+    const result = await testSetup(settings, id, deps);
+    print(
+      `setup ${id}: ${result.ok ? `ok · ${result.model} · ${result.ms} ms` : `FAILED · ${result.message}`}`,
+    );
+    if (!result.ok) return 1;
+  }
+  const agents = createAgentServices(settings, deps);
   for (const role of ["context", "analyst", "synthesizer", "architect", "critic"] as const) {
     const { info } = await agents.writer(role);
     print(
