@@ -299,7 +299,8 @@
           "root": "/Users/jonas/Documents/reqflow"
         },
         "time": {
-          "created": 1791649311310
+          "created": 1791649311310,
+          "completed": 1791649314762
         },
         "role": "assistant",
         "tokens": {
@@ -322,13 +323,19 @@
           "tool": "bash",
           "callID": "01M4K9XTJE6NPDV3AD24CSRX6X",
           "state": {
-            "status": "running",
+            "status": "completed",
             "time": {
-              "start": 1791649311310
+              "start": 1791649311310,
+              "end": 1791649314762
             },
             "input": {
               "command": "git commit -m \"ws0: enable Entire for OpenCode\""
-            }
+            },
+            "title": "",
+            "metadata": {
+              "output": "[ws0-entire-opencode ef10448] ws0: enable Entire for OpenCode\n 3 files changed, 295 insertions(+)\n create mode 100644 .opencode/plugins/entire.ts\n create mode 100644 docs/STATUS.md\n"
+            },
+            "output": "[ws0-entire-opencode ef10448] ws0: enable Entire for OpenCode\n 3 files changed, 295 insertions(+)\n create mode 100644 .opencode/plugins/entire.ts\n create mode 100644 docs/STATUS.md\n"
           },
           "id": "prt_1269eea4e002tprGIxhkAmMDY5",
           "sessionID": "ses_ed96a75eeffeytIQCCfRZvEr3k",
