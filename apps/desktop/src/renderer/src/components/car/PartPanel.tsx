@@ -2,7 +2,8 @@ import { CATEGORY_LABELS, type Priority } from "@reqflow/core";
 import { cx } from "@/lib/cx";
 import { XIcon } from "@/components/ui/icons";
 import { label, type ClassifiedRequirement, type Confidence } from "./classify";
-import { CAR_PARTS, PART_GROUP_LABELS, PARTS_BY_ID, WHOLE_CAR, type PartGroup } from "./parts";
+import { PART_GROUP_LABELS, PARTS_BY_ID, WHOLE_CAR, type PartGroup } from "./parts";
+import { menuCount, PART_SUBCLASSES, subclassParts } from "./partMenu";
 
 const PRIORITY_LABELS: Record<Priority, string> = {
   must: "Must",
@@ -56,25 +57,54 @@ function PartIndex({ counts, total, emptyHint, onSelect }: Props) {
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
         <PartRow id={WHOLE_CAR.id} name={WHOLE_CAR.label} count={whole} onSelect={onSelect} />
-        {groups.map((g) => (
-          <div key={g} className="mt-3">
-            <h3 className="px-2 pb-1 text-[11px] font-semibold tracking-wide text-muted uppercase">
-              {PART_GROUP_LABELS[g]}
-            </h3>
-            {CAR_PARTS.filter((p) => p.group === g).map((p) => (
-              <PartRow
-                key={p.id}
-                id={p.id}
-                name={p.label}
-                count={counts.get(p.id) ?? 0}
-                onSelect={onSelect}
-              />
-            ))}
-          </div>
-        ))}
+        {groups.map((g) => {
+          const subclasses = PART_SUBCLASSES.filter((subclass) => subclass.group === g);
+          return (
+            <details key={g} open className="mt-3" data-testid={`car-part-group-${g}`}>
+              <summary className="cursor-pointer rounded-md px-2 py-2 text-xs font-semibold tracking-wide text-ink uppercase hover:bg-panel-2 focus-visible:outline-brand">
+                {PART_GROUP_LABELS[g]}
+                <MenuCount
+                  count={menuCount(
+                    subclasses.flatMap((s) => s.partIds),
+                    counts,
+                  )}
+                />
+              </summary>
+              <div className="ml-3 border-l border-line pl-2">
+                {subclasses.map((subclass) => (
+                  <details key={subclass.id} open data-testid={`car-part-subclass-${subclass.id}`}>
+                    <summary className="cursor-pointer rounded-md px-2 py-1.5 text-sm font-medium text-ink hover:bg-panel-2 focus-visible:outline-brand">
+                      {subclass.label}
+                      <MenuCount count={menuCount(subclass.partIds, counts)} />
+                    </summary>
+                    <div className="ml-3 border-l border-line pl-2">
+                      {subclassParts(subclass).map((p) => (
+                        <PartRow
+                          key={p.id}
+                          id={p.id}
+                          name={p.label}
+                          count={counts.get(p.id) ?? 0}
+                          onSelect={onSelect}
+                        />
+                      ))}
+                    </div>
+                  </details>
+                ))}
+              </div>
+            </details>
+          );
+        })}
       </div>
     </div>
   );
+}
+
+function MenuCount({ count }: { count: number }) {
+  return count > 0 ? (
+    <span className="ml-2 rounded-full bg-brand-soft px-1.5 py-0.5 text-xs font-semibold text-brand normal-case">
+      {count}
+    </span>
+  ) : null;
 }
 
 function PartRow(props: {

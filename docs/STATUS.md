@@ -220,6 +220,18 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 **Log**
 
+- 2026-10-10: OpenCode claimed the expandable parts-menu slice on the current branch:
+  Exterior / Interior / Technology sections with broader subclasses (Doors, Seats, etc.)
+  and all existing detailed parts visible by default. Preserve concurrent model edits.
+
+- 2026-10-10: Expandable menu complete: all 34 parts appear exactly once beneath general
+  subclasses, including Doors and Seats; sections/subclasses open by default and show rolled-up
+  requirement counts. Existing part IDs, classifier and selection stay unchanged. Typecheck and
+  290 tests pass (25 skipped); isolated native Electron probe passed group/Doors collapse-expand
+  and detailed door/seat selection with zero requirements. Reviewed light Exterior and dark
+  Interior submenu screenshots. Shared smoke produced 29 screenshots but still fails the seven
+  obsolete sample-toggle checks noted above; WS1 follow-up unchanged. Commit only this slice.
+
 - 2026-10-10: Removed the Car tab's top-right synthetic-sample source control; the panel now
   uses flow requirements only and its empty state no longer offers the removed sample.
   Added two regressions. Typecheck and all 285 tests pass (25 skipped); reviewed `car-3d.png`.
