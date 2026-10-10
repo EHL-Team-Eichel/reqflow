@@ -65,7 +65,7 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 ## WS1 — Engine, persistence & main process
 
-**Status:** in progress · **Owner:** OpenCode (Gemini 3.8 Flash) · **Branch:** ws1-blocks
+**Status:** done · **Owner:** OpenCode (Gemini 3.8 Flash) · **Branch:** ws1-blocks
 **Unblocks:** everyone. Do tasks 1–4 first; they are small and make the UIs real.
 
 **Tasks**
@@ -81,20 +81,21 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
       return `StoredFileInfo`. The Raw block's "Choose file…" button already calls it.
 - [x] Read-only `requirements.list/get` and `audit.list` serving `@reqflow/core/fixtures`, so WS3
       works against real IPC before the database exists.
-- [ ] Executor in `packages/engine` (ARCHITECTURE.md → Engine semantics) with tests on fake blocks:
+- [x] Executor in `packages/engine` (ARCHITECTURE.md → Engine semantics) with tests on fake blocks:
       topological order per workplace, merge per input port, splitter fan-out, inner workplaces via
       boundary blocks, failure → downstream `skipped`, cancel via `AbortSignal`.
-- [ ] HIL block (`packages/blocks/src/hil/`): pause → run `waiting_for_review`; `runs.resume` re-runs it with `ctx.resumed`.
-- [ ] `runs.start/get/list/blockOutput/resume/cancel` handlers; push every change via `IPC_EVENTS.runUpdate`;
+- [x] HIL block (`packages/blocks/src/hil/`): pause → run `waiting_for_review`; `runs.resume` re-runs it with `ctx.resumed`.
+- [x] `runs.start/get/list/blockOutput/resume/cancel` handlers; push every change via `IPC_EVENTS.runUpdate`;
       wire `BlockContext` (llm, web, files, audit, `car.add`).
-- [ ] SQLite in `packages/db` (`node:sqlite`): versioned requirements, append-only audit log,
+- [x] SQLite in `packages/db` (`node:sqlite`): versioned requirements, append-only audit log,
       `requirements.edit/decide`, `exports.requirements` (JSON / CSV / Markdown via the save dialog).
-- [ ] API keys: `settings.secrets` / `settings.setSecret` with Electron `safeStorage`.
-- [ ] Extend `apps/desktop/src/main/smoke.ts` for each new capability (e.g. save a flow, restart, reload it).
+- [x] API keys: `settings.secrets` / `settings.setSecret` with Electron `safeStorage`.
+- [x] Extend `apps/desktop/src/main/smoke.ts` for each new capability (e.g. save a flow, restart, reload it).
 
 **Log**
 
 - Slice 1: Implemented `settings.get/save` with atomic file storage & missing-section fallback; `workflows.list/get/save/remove` with block tree storage and `validateGraph` checking; `files.import` with native open dialog & copy to uploads; read-only fixture handlers for `requirements.list/get` and `audit.list`. All unit tests and smoke tests passing.
+- Slice 2: Implemented topological workplace executor in `@reqflow/engine` with port merging, splitter fan-out, boundary blocks for inner workplaces, downstream failure skipping, and cancel; HIL block in `packages/blocks/src/hil/`; SQLite repositories in `packages/db` for versioned requirements, append-only audit log, runs, and block outputs; all IPC handlers in `apps/desktop/src/main/handlers.ts` (`runs.*`, `requirements.*`, `settings.secrets`, `exports.requirements`); smoke tests extended with IPC flow persistence checks. 70 unit tests passing, smoke tests passing with 15 screenshots.
 
 ## WS2 — Data Flow editor UI
 

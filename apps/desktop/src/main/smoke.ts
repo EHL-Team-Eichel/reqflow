@@ -249,6 +249,25 @@ export async function runSmoke(win: BrowserWindow, outDir: string): Promise<numb
     await shot(`${slug(route)}-dark`);
   }
 
+  // 5. IPC workflow persistence check: save a flow and list it
+  const savedFlow = await js<{ ok: boolean; value?: { id: string } }>(
+    `window.reqflowBridge.invoke("reqflow:workflows.save", {
+      name: "Smoke Test Flow",
+      scope: { vehicleLine: "5 Series", derivative: "Sedan", vehicleCode: "5S", market: "EU", horizonYears: 5 },
+      blocks: [],
+      edges: []
+    })`,
+  );
+  check(savedFlow?.ok === true && !!savedFlow.value?.id, "smoke: workflows.save failed via IPC");
+
+  const listFlows = await js<{ ok: boolean; value?: Array<{ id: string }> }>(
+    `window.reqflowBridge.invoke("reqflow:workflows.list")`,
+  );
+  check(
+    listFlows?.ok === true && (listFlows.value?.length ?? 0) >= 1,
+    "smoke: workflows.list did not return saved flow",
+  );
+
   const report = { ok: errors.length === 0, platform: process.platform, errors, screens };
   writeFileSync(join(outDir, "report.json"), JSON.stringify(report, null, 2));
   console.log(
