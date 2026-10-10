@@ -149,8 +149,48 @@ describe("Data Flow execution wiring", () => {
     expect(listeners.size).toBe(0);
     const stopAgain = store.getState().subscribe();
     await Promise.resolve();
-    expect(store.getState().run?.status).toBe("running");
+    expect(store.getState().run?.status).toBe("failed");
     stopAgain();
+  });
+
+  it.each(["completed", "failed", "cancelled"] as const)(
+    "does not regress %s to active after a stale fetch or event",
+    async (status) => {
+      const { store, emit } = setup();
+      await store.getState().start(graph, scope);
+      store.setState({ run: { ...run, status } });
+      const stop = store.getState().subscribe();
+      await Promise.resolve();
+      emit({ ...run, status: "running" });
+      emit({ ...run, status: "waiting_for_review" });
+      expect(store.getState().run?.status).toBe(status);
+      stop();
+    },
+  );
+
+  it("shows recovered live status after a catch-up error", async () => {
+    const { store, get, emit } = setup();
+    await store.getState().start(graph, scope);
+    get.mockRejectedValueOnce(new Error("Status unavailable"));
+    const stop = store.getState().subscribe();
+    await Promise.resolve();
+    expect(store.getState().error).toBe("Status unavailable");
+    emit({ ...run, status: "completed" });
+    expect(store.getState()).toMatchObject({ run: { status: "completed" }, error: null });
+    stop();
+  });
+
+  it("saves every nested workplace rather than just the open sub-flow", async () => {
+    const { store, save, start } = setup();
+    const custom = createBlock("custom", { id: "custom", position: { x: 0, y: 0 } });
+    custom.inner = {
+      blocks: [...custom.inner!.blocks, ...structuredClone(graph.blocks)],
+      edges: structuredClone(graph.edges),
+    };
+    const root = { blocks: [custom], edges: [] };
+    await store.getState().start(root, scope);
+    expect(save).toHaveBeenCalledExactlyOnceWith({ ...root, scope, name: "Data Flow" });
+    expect(start).toHaveBeenCalledExactlyOnceWith("wf_test");
   });
 
   it("cancels the active run explicitly and displays cancellation errors", async () => {

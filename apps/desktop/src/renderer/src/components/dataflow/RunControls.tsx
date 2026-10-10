@@ -7,6 +7,7 @@ import { api } from "@/lib/api";
 import { useSettings } from "@/lib/settings";
 import { useDataflow } from "./store";
 import { createRunStore } from "./run-store";
+import { startControl } from "./start-control";
 
 const runStore = createRunStore(api);
 const STATUS_LABELS = {
@@ -25,6 +26,7 @@ export function RunControls() {
   const busy = useStore(runStore, (s) => s.busy);
   const error = useStore(runStore, (s) => s.error);
   const active = run && ["queued", "running", "waiting_for_review"].includes(run.status);
+  const start = startControl(run?.status ?? null, busy, root.blocks.length);
   const labels = new Map(
     run ? [...walkBlocks(run.graph)].map(({ block }) => [block.id, block.label]) : [],
   );
@@ -36,10 +38,14 @@ export function RunControls() {
       <Button
         variant="primary"
         data-testid="flow-run"
-        disabled={busy || !!active || root.blocks.length === 0}
+        disabled={start.disabled}
+        title={start.title}
         onClick={() => void runStore.getState().start(root, scope)}
       >
-        {busy ? "Working…" : "Save & run"}
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M8 5v14l11-7Z" />
+        </svg>
+        {start.label}
       </Button>
       {active && (
         <Button
@@ -75,8 +81,8 @@ export function RunControls() {
           </div>
         ) : (
           <p className="text-xs text-muted">
-            Connections configure the flow. Run it to publish proposed requirements through Add to
-            Car.
+            Start saves and runs the entire workflow, including inner workplaces. It pauses at HIL
+            for human review.
           </p>
         )}
       </div>
