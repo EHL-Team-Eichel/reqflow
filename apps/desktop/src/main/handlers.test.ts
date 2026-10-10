@@ -5,10 +5,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { allBlockImplementations, BMW_DEFAULT_TEMPLATE } from "@reqflow/blocks";
 import {
   DEFAULT_SETTINGS,
+  connect,
+  createBlock,
   defaultBlockParams,
   emptyPipelineData,
+  setBlockParams,
   type WorkflowRun,
 } from "@reqflow/core";
+import { fixtureRecords, fixtureSources } from "@reqflow/core/fixtures";
 import { createFileStore } from "@reqflow/db";
 import { BlockRegistry, defineBlock } from "@reqflow/engine";
 import { createHandlers } from "./handlers";
@@ -27,7 +31,7 @@ describe("handlers (All IPC methods against SQLite and stores)", () => {
     rmSync(tempDir, { recursive: true, force: true });
   });
 
-  const setup = () => {
+  const setup = (registry?: BlockRegistry) => {
     const pushedRuns: WorkflowRun[] = [];
     const secretsStore = new SecretsStore(tempDir);
     const files = createFileStore(join(tempDir, "uploads"));
@@ -36,6 +40,7 @@ describe("handlers (All IPC methods against SQLite and stores)", () => {
       dbPath,
       files,
       secretsStore,
+      registry,
       pushRunUpdate: (r) => pushedRuns.push(r),
       pickFile: vi.fn().mockResolvedValue(null),
       saveDialog: vi.fn(),
@@ -100,6 +105,65 @@ describe("handlers (All IPC methods against SQLite and stores)", () => {
 
     await handlers.workflows.remove(saved.id);
     expect(await handlers.workflows.list()).toHaveLength(0);
+  });
+
+  it("runs the real ten-output splitter through IPC handlers with the configured offline LLM", async () => {
+    const registry = new BlockRegistry([
+      ...allBlockImplementations.filter((b) => b.kind !== "raw"),
+      defineBlock({
+        kind: "raw",
+        async run() {
+          return {
+            status: "ok",
+            outputs: {
+              out: {
+                ...emptyPipelineData(),
+                sources: fixtureSources,
+                records: fixtureRecords,
+              },
+            },
+          };
+        },
+      }),
+    ]);
+    const { handlers } = setup(registry);
+    const split = createBlock("ai_splitter", { id: "split", position: { x: 300, y: 0 } });
+    let graph = setBlockParams(
+      { blocks: [createBlock("raw", { id: "raw", position: { x: 0, y: 0 } }), split], edges: [] },
+      "split",
+      {
+        ...split.params,
+        splitBy: "category",
+        branches: Array.from({ length: 10 }, (_, i) => `Group ${i}`),
+      },
+    ).graph;
+    graph = connect(graph, { source: "raw", sourcePort: "out", target: "split", targetPort: "in" });
+    const workflow = await handlers.workflows.save({
+      ...graph,
+      name: "Split records",
+      scope: DEFAULT_SETTINGS.defaultScope,
+    });
+    const initial = await handlers.runs.start(workflow.id);
+    let run = await handlers.runs.get(initial.id);
+    const deadline = Date.now() + 2000;
+    while (run.status === "running" && Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      run = await handlers.runs.get(initial.id);
+    }
+    expect(run.error).toBeUndefined();
+    expect(run.status).toBe("completed");
+    const outputs = await handlers.runs.blockOutput(run.id, "split");
+    expect(Object.keys(outputs)).toHaveLength(10);
+    expect(
+      Object.values(outputs)
+        .flatMap((data) => data.records.map((r) => r.id))
+        .sort(),
+    ).toEqual(fixtureRecords.map((r) => r.id).sort());
+    expect(
+      run.blockRuns
+        .find((b) => b.blockId === "split")!
+        .logs.some((log) => /model mock:default/.test(log.message)),
+    ).toBe(true);
   });
 
   it("handles requirements listing, detail view, editing, decisions, and audit trail", async () => {

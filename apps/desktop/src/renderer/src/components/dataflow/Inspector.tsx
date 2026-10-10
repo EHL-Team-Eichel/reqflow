@@ -119,6 +119,13 @@ function BlockInspector({ block, kind }: { block: WorkflowBlock; kind: PaletteBl
             {innerCount === 0 ? "empty" : `${innerCount} block${innerCount === 1 ? "" : "s"}`}
           </Button>
         )}
+        {block.kind === "ai_splitter" && (
+          <p className="text-xs text-muted">
+            The empty workplace uses AI routing. Add connections or blocks inside to define your own
+            routing instead. Priority mode uses named Must / Should / Could / Won’t branches; use
+            category, sentiment or a custom instruction for other labels.
+          </p>
+        )}
         {block.kind === "hil" && (
           <Button
             data-testid="inspector-open-report"

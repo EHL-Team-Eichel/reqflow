@@ -1,7 +1,15 @@
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { DEFAULT_SETTINGS, defaultBlockParams, PALETTE_BLOCK_KINDS } from "@reqflow/core";
+import {
+  connect,
+  createBlock,
+  DEFAULT_SETTINGS,
+  defaultBlockParams,
+  PALETTE_BLOCK_KINDS,
+  setBlockParams,
+  type WorkflowGraph,
+} from "@reqflow/core";
 import type { LocalFileStore } from "@reqflow/db";
 import type { BrowserWindow, NativeImage } from "electron";
 
@@ -277,6 +285,63 @@ export async function runSmoke(
   //    (spaces between words, new lines in a list, an empty name while retyping).
   check(await click('[data-testid="block-ai_splitter"]'), "typing: can't select the splitter");
   await delay(300);
+  const addBranch = () =>
+    js<boolean>(`(() => {
+    const button = [...document.querySelectorAll('[data-testid="inspector"] button')]
+      .find((b) => b.textContent.trim() === '+ Add');
+    if (!button) return false;
+    button.click(); return true;
+  })()`);
+  for (let i = 3; i < 10; i++) {
+    check(await addBranch(), "splitter: no add branch button");
+    await delay(100);
+  }
+  check(
+    (await count('[data-testid="block-ai_splitter"] .react-flow__handle.source')) === 10,
+    "splitter: ten output handles expected",
+  );
+  check(
+    await js<boolean>(`[...document.querySelectorAll('[data-testid="inspector"] button')]
+    .find((b) => b.textContent.trim() === '+ Add')?.disabled === true`),
+    "splitter: maximum ten branches must be enforced",
+  );
+  await shot("splitter-ten-outputs");
+  await js(`document.querySelector('[data-testid="block-ai_splitter"]')
+    .dispatchEvent(new MouseEvent("dblclick", { bubbles: true }))`);
+  await delay(600);
+  check(
+    (await count('[data-testid="boundary-input"]')) === 1 &&
+      (await count('[data-testid="boundary-output"]')) === 10,
+    "splitter: double-click should open one input and ten output boundaries",
+  );
+  await shot("splitter-inner-ten");
+  check(await click('[data-testid="crumb-0"]'), "splitter: breadcrumb back missing");
+  await delay(400);
+  check(await click('[data-testid="block-ai_splitter"]'), "splitter: cannot reselect");
+  await delay(200);
+  for (let i = 10; i > 2; i--) {
+    check(await click(`[aria-label="Remove entry ${i}"]`), "splitter: cannot remove branch");
+    await delay(100);
+  }
+  check(
+    (await count('[data-testid="block-ai_splitter"] .react-flow__handle.source')) === 2,
+    "splitter: removing branches should update output handles",
+  );
+  check(
+    await js<boolean>(`document.querySelector('[aria-label="Remove entry 1"]')?.disabled === true`),
+    "splitter: minimum two branches must be enforced",
+  );
+  check(await click('[data-testid="inspector-open-inner"]'), "splitter: no inner workplace button");
+  await delay(600);
+  check(
+    (await count('[data-testid="boundary-output"]')) === 2,
+    "splitter: removed boundaries should disappear inside",
+  );
+  await shot("splitter-inner-two");
+  check(await click('[data-testid="crumb-0"]'), "splitter: breadcrumb back missing");
+  await delay(400);
+  check(await click('[data-testid="block-ai_splitter"]'), "typing: can't reselect the splitter");
+  await delay(200);
   await type('[aria-label="Branch name 1"]', ["Top ", "priority"]);
   check(
     (await text('[data-testid="block-ai_splitter"]')).includes("Top priority"),
@@ -359,6 +424,74 @@ export async function runSmoke(
   const counts = await text('[data-testid="preview-counts"]');
   check(/3 records/.test(counts), `raw: preview should read 3 records, got "${counts}"`);
   await shot("raw-preview");
+
+  // The built splitter, real Raw reader, workflow executor and LLM settings over packaged IPC.
+  let splitGraph: WorkflowGraph = {
+    blocks: [
+      createBlock("raw", { id: "smoke-raw", position: { x: 0, y: 0 } }),
+      createBlock("ai_splitter", { id: "smoke-split", position: { x: 300, y: 0 } }),
+    ],
+    edges: [],
+  };
+  splitGraph = setBlockParams(splitGraph, "smoke-raw", {
+    ...defaultBlockParams("raw"),
+    source: "database",
+    connection: dbPath,
+    query: "SELECT * FROM feedback",
+  }).graph;
+  splitGraph = setBlockParams(splitGraph, "smoke-split", {
+    ...defaultBlockParams("ai_splitter"),
+    splitBy: "custom",
+    branches: ["Adults", "Other"],
+    instruction:
+      "Route feedback explicitly mentioning adults to Adults; all other feedback to Other.",
+  }).graph;
+  splitGraph = connect(splitGraph, {
+    source: "smoke-raw",
+    sourcePort: "out",
+    target: "smoke-split",
+    targetPort: "in",
+  });
+  const splitWorkflow = await js<{ ok: boolean; value?: { id: string }; error?: unknown }>(
+    `window.reqflowBridge.invoke("reqflow:workflows.save", ${JSON.stringify({
+      ...splitGraph,
+      name: "Synthetic splitter smoke",
+      scope: DEFAULT_SETTINGS.defaultScope,
+    })})`,
+  );
+  check(splitWorkflow.ok, `splitter: workflow save failed ${JSON.stringify(splitWorkflow.error)}`);
+  if (splitWorkflow.value) {
+    const started = await js<{ ok: boolean; value?: { id: string }; error?: unknown }>(
+      `window.reqflowBridge.invoke("reqflow:runs.start", ${JSON.stringify(splitWorkflow.value.id)})`,
+    );
+    check(started.ok, `splitter: run start failed ${JSON.stringify(started.error)}`);
+    if (started.value) {
+      const runId = JSON.stringify(started.value.id);
+      const deadline = Date.now() + 5000;
+      let status = "running";
+      while (status === "running" && Date.now() < deadline) {
+        await delay(100);
+        status = await js<string>(`window.reqflowBridge.invoke("reqflow:runs.get", ${runId})
+          .then((r) => r.value?.status ?? "error")`);
+      }
+      check(status === "completed", `splitter: synthetic run ended ${status}`);
+      const output = await js<{
+        ok: boolean;
+        value?: Record<string, { records: { id: string }[] }>;
+        error?: unknown;
+      }>(`window.reqflowBridge.invoke("reqflow:runs.blockOutput", ${runId}, "smoke-split")`);
+      const ids = Object.values(output.value ?? {}).flatMap((data) =>
+        data.records.map((record) => record.id),
+      );
+      check(
+        output.ok &&
+          Object.keys(output.value ?? {}).length === 2 &&
+          ids.length === 3 &&
+          new Set(ids).size === 3,
+        `splitter: two outputs must route all three records exactly once ${JSON.stringify(output.error ?? ids.length)}`,
+      );
+    }
+  }
   await js(
     `document.querySelector('[data-testid="block-hil"]').dispatchEvent(new MouseEvent("dblclick", { bubbles: true }))`,
   );

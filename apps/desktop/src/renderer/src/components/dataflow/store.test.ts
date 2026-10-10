@@ -1,4 +1,4 @@
-import { boundaryBlockId, graphAt, validateGraph } from "@reqflow/core";
+import { boundaryBlockId, createBlock, graphAt, validateGraph } from "@reqflow/core";
 import { describe, expect, it } from "vitest";
 import { toFlowEdges, toFlowNodes } from "./flow";
 import { breadcrumbOf, createDataflowStore, selectInspectedBlock, selectWorkplace } from "./store";
@@ -120,6 +120,35 @@ describe("dataflow store", () => {
     store.getState().selectBlock(input);
     store.getState().deleteSelection();
     expect(selectWorkplace(store.getState()).blocks.map((b) => b.id)).toContain(input);
+  });
+
+  it("opens a legacy splitter and keeps two-to-ten boundaries in sync with the editor", () => {
+    const legacy = createBlock("ai_splitter", { id: "split", position: at });
+    delete legacy.inner;
+    const store = createDataflowStore({ blocks: [legacy], edges: [] });
+    store.getState().openInner("split");
+    expect(selectWorkplace(store.getState()).blocks).toHaveLength(4);
+    store.getState().connect({
+      source: "split--in",
+      sourceHandle: "out",
+      target: "split--out-2",
+      targetHandle: "in",
+    });
+    store.getState().goTo(0);
+    expect(
+      store.getState().setParams("split", { ...legacy.params, branches: ["A", "B"] }),
+    ).toBeNull();
+    expect(store.getState().notice?.message).toMatch(/Removed 1 connection/);
+    expect(
+      store.getState().setParams("split", {
+        ...legacy.params,
+        branches: Array.from({ length: 10 }, (_, i) => `Branch ${i}`),
+      }),
+    ).toBeNull();
+    store.getState().openInner("split");
+    expect(selectWorkplace(store.getState()).blocks).toHaveLength(11);
+    expect(validateGraph(store.getState().root)).toEqual([]);
+    expect(legacy.inner).toBeUndefined();
   });
 
   it("maps the workplace to React Flow nodes and edges", () => {

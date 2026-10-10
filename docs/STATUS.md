@@ -292,17 +292,18 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 ## WS7 — AI blocks: AI Filter, AI Splitter, Add to Car
 
-**Status:** in progress (Add to Car done, AI Splitter in progress) · **Owner:** Claude Code (Add to Car), OpenCode (AI Splitter) · **Branch:** `main`, `ws7-ai-splitter`
+**Status:** in progress (Add to Car and AI Splitter done; AI Filter open) · **Owner:** Claude Code (Add to Car), OpenCode (AI Splitter) · **Branch:** `main`, `ws7-ai-splitter`
 **Depends on:** nothing for tasks 1–2; WS8 for the splitter's priority mode.
 
 **Tasks**
 
-- [ ] `packages/llm`: `createLlmClient(settings.llm, { apiKey })` with an `anthropic` provider (use the
+- [x] `packages/llm`: `createLlmClient(settings.llm, { apiKey })` with an `anthropic` provider (use the
       `claude-api` skill) and a deterministic `mock`; `generateObject` validates with Zod; tests use the mock.
 - [ ] AI Filter: keep items matching the criterion, extract findings with verbatim-excerpt
       verification, log every excluded item with a reason.
-- [ ] AI Splitter: route each item to exactly one branch (`out-<i>`); "priority" uses WS8's scoring,
-      "category" / "sentiment" / "custom" use the LLM.
+- [x] AI Splitter: route each primary item to exactly one branch (`out-<i>`); priority preserves
+      existing priorities or uses Settings-weighted factors; category / sentiment / custom use the LLM.
+- [ ] AI Splitter: replace provisional missing-factor judgement with WS8's scorer when available.
 - [x] Add to Car: cluster and derive requirements (IDs via `formatRequirementId`, targets, evidence level
       A–D, Kano class, assumptions, uncertainties, conflicts), priority from the input port, hand them to `ctx.car.add`.
 - [ ] `answerChallenge(...)` for the Car tab's challenge flow.
@@ -312,6 +313,22 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 **Log**
 
+- 2026-10-10: **AI Splitter built** at the existing `ai_splitter` entry point (human requested replacing
+  the previous splitter). One input, 2–10 named outputs, priority/category/sentiment/custom modes,
+  exact-once primary routing and linked evidence/conflicts retained. No human decisions or requirements
+  are changed. Missing priority factors are explicitly provisional; WS8 scoring remains open.
+  - Built-in routing runs for an untouched boundary-only inner workplace. Adding blocks/connections
+    overrides it with an authored sub-flow. Branch changes synchronize boundaries and report removed
+    connections. Legacy saved splitters gain boundaries in memory, without rewriting their files.
+  - Main-process LLM uses the run Settings snapshot and SecretsStore. Offline deterministic mock is
+    clearly labelled; Anthropic structured-output schema adaptation and validation use fake HTTP tests.
+    No live-provider call was made. Abort rejections keep a run cancelled instead of marking it failed.
+  - Verification: root typecheck, 181 tests passed (24 unrelated real-data tests skipped), format check;
+    `npm run smoke` passed with 22 screenshots. Inspected `splitter-ten-outputs.png`,
+    `splitter-inner-ten.png`, `splitter-inner-two.png`; packaged IPC Raw SQLite → Splitter routes
+    three synthetic records exactly once. Use `npm run check` and `npm run smoke` for the handoff gate.
+  - Next: WS8 scorer integration and the existing AI Filter/end-to-end checklist. The original WS6
+    checkout and its active user/research changes were preserved in place.
 - 2026-10-10: OpenCode claimed the AI Splitter slice on `ws7-ai-splitter`, in an isolated worktree
   based on latest `origin/main` (`cea8a29`). Human authorized the focused shared-contract/UI/engine
   changes required for 1 input, 2–10 outputs and an inner workplace. Implement routing and offline
