@@ -1,0 +1,10 @@
+"Finish the parent-delegated integration tests ONLY in apps/desktop/src/main/splitter-review.test.ts in /Users/jonas/Documents/reqflow-ws7-ai-splitter on ws7-mastra-splitter. Luna wrote this file but terminated before finishing. Fix its TS graph edges type (currently ReturnType<typeof createBlock>[] instead of WorkflowGraph) and optional output.out dereference. Read current contracts. Run only its targeted Vitest suite, workspace typecheck as relevant and formatting; correct test assumptions if needed. Tests must actually cover merged Research JSON + SQLite + committed synthetic Excel input across three splitter modes, historical structured report roundtrip, paused editable HIL audited human route correction with stale version/invalid/noneditable failures and correction consumed on resume, atomic rollback if straightforward. No changes outside this one test file, no dependency/secret/raw BMW reads or commits, no other agents. Existing main IPC/engine/database implementation belongs to parent. Report real bugs rather than patch production. Return concise file changes, pass counts and blockers. All input is synthetic. Preserve unrelated changes."
+
+---
+
+▣ DCP | -39.5K removed, +363 summary
+
+│⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿██│
+▣ Compression #1 -31.6K removed, +363 summary
+→ Topic: Complete Splitter Review Integration Tests
+→ Items: 56 messages and 55 tools compressed

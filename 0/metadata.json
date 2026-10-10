@@ -1,0 +1,59 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4KZ7R9SQGQYZRTFD6YW6Y72",
+  "session_id": "ses_ed8133610ffewo2GDz4GwdQ4i0",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-10T22:34:17.033151Z",
+  "branch": "ws7-mastra-splitter",
+  "checkpoints_count": 1,
+  "save_step_count": 1,
+  "files_touched": [
+    "apps/desktop/src/main/handlers.ts",
+    "apps/desktop/src/main/index.ts",
+    "apps/desktop/src/main/splitter-review.test.ts",
+    "packages/blocks/src/ai-splitter/ai-splitter.test.ts",
+    "packages/blocks/src/ai-splitter/ai-splitter.ts",
+    "packages/blocks/src/ai-splitter/priority.ts",
+    "packages/blocks/src/ai-splitter/protocol.ts",
+    "packages/blocks/src/raw/index.ts",
+    "packages/blocks/src/raw/raw.ts",
+    "packages/core/src/audit.ts",
+    "packages/core/src/blocks.ts",
+    "packages/core/src/graph.ts",
+    "packages/core/src/index.ts",
+    "packages/core/src/ipc.ts",
+    "packages/core/src/lineage.test.ts",
+    "packages/core/src/pipeline.ts",
+    "packages/core/src/workflow.ts",
+    "packages/db/src/audit.ts",
+    "packages/db/src/runs.ts",
+    "packages/engine/src/block.ts",
+    "packages/engine/src/executor.ts"
+  ],
+  "agent": "OpenCode",
+  "model": "gemini-3.8-flash",
+  "turn_id": "3d46e027cc0a",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 286024,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 3263732,
+    "output_tokens": 6983,
+    "api_call_count": 58
+  },
+  "session_metrics": {
+    "turn_count": 1
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-10T22:34:17.020045Z",
+    "agent_lines": 770,
+    "agent_removed": 66,
+    "human_added": 2853,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 3623,
+    "total_lines_changed": 3689,
+    "agent_percentage": 22.66196801301166,
+    "metric_version": 2
+  }
+}
