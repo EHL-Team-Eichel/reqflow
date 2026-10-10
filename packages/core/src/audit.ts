@@ -36,6 +36,7 @@ export const AuditAction = z.enum([
   "requirement.challenged",
   "requirement.challenge_answered",
   "requirement.viewed", // access event
+  "requirement.deleted", // removed by the PM (Car page → Reset); the id is never reused
   "workflow.saved",
   "run.started",
   "run.paused",

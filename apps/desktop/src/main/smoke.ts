@@ -382,10 +382,10 @@ export async function runSmoke(
   const steps = await count('[data-testid="hil-report"] [data-testid="lineage-step"]');
   check(steps === 4, `report: lineage should show raw → filter → custom → HIL, got ${steps} steps`);
   check((await count('[data-testid="data-empty"]')) === 1, "report: no-data state missing");
-  check(await click('[data-testid="data-sample"]'), "report: no sample preview button");
-  await delay(300);
-  const rows = await count('[data-testid="data-table"] tbody tr');
-  check(rows > 0, "report: sample data should fill the table");
+  check(
+    (await count('[data-testid="data-sample"]')) === 0,
+    "report: demo data must be gone (no synthetic sample button)",
+  );
   await shot("hil-report");
   check(
     await click('[data-testid="lineage-step"][data-step-id^="raw-"] [data-testid="step-data"]'),
@@ -520,6 +520,71 @@ export async function runSmoke(
     "typing: allowed domains should keep both lines",
   );
 
+  // Real requirements for the car, made the way the app makes them: Raw → Add to Car on a small
+  // synthetic feedback file (two topics, two comments each). No demo data is seeded any more.
+  let carRequirements = 0;
+  try {
+    const csv = join(outDir, "car-feedback.csv");
+    writeFileSync(
+      csv,
+      [
+        "id,comment",
+        "F1,The rear seats are uncomfortable on long journeys",
+        "F2,The rear seats are uncomfortable and need better support",
+        "F3,The infotainment screen is too slow and freezes often",
+        "F4,The infotainment screen freezes and is too slow to respond",
+      ].join("\n"),
+    );
+    const info = await deps.files.importFile(csv);
+    let carGraph: WorkflowGraph = {
+      blocks: [
+        createBlock("raw", { id: "smoke-car-raw", position: { x: 0, y: 0 } }),
+        createBlock("add_to_car", { id: "smoke-car", position: { x: 300, y: 0 } }),
+      ],
+      edges: [],
+    };
+    carGraph = setBlockParams(carGraph, "smoke-car-raw", {
+      ...defaultBlockParams("raw"),
+      dataset: "customer_feedback",
+      file: { fileId: info.id, name: info.name },
+    }).graph;
+    carGraph = connect(carGraph, {
+      source: "smoke-car-raw",
+      sourcePort: "out",
+      target: "smoke-car",
+      targetPort: "in-0",
+    });
+    const saved = await js<{ ok: boolean; value?: { id: string }; error?: unknown }>(
+      `window.reqflowBridge.invoke("reqflow:workflows.save", ${JSON.stringify({
+        ...carGraph,
+        name: "Synthetic feedback to car (smoke)",
+        scope: DEFAULT_SETTINGS.defaultScope,
+      })})`,
+    );
+    const started = saved.value
+      ? await js<{ ok: boolean; value?: { id: string }; error?: unknown }>(
+          `window.reqflowBridge.invoke("reqflow:runs.start", ${JSON.stringify(saved.value.id)})`,
+        )
+      : null;
+    check(!!started?.ok, `car: feedback run didn't start ${JSON.stringify(started?.error)}`);
+    if (started?.value) {
+      const runId = JSON.stringify(started.value.id);
+      let status = "running";
+      for (const deadline = Date.now() + 10_000; status === "running" && Date.now() < deadline;) {
+        await delay(100);
+        status = await js<string>(`window.reqflowBridge.invoke("reqflow:runs.get", ${runId})
+          .then((r) => r.value?.status ?? "error")`);
+      }
+      check(status === "completed", `car: feedback run ended ${status}`);
+    }
+    carRequirements = await js<number>(
+      `window.reqflowBridge.invoke("reqflow:requirements.list").then((r) => r.value?.length ?? -1)`,
+    );
+    check(carRequirements >= 2, `car: the run should add ≥ 2 requirements, got ${carRequirements}`);
+  } catch (err) {
+    check(false, `car: making requirements crashed: ${String(err)}`);
+  }
+
   // Car: the 3D car renders, parts are clickable (badge, list and a real click on the canvas),
   // and the classifier explains where each requirement went.
   await go("/car");
@@ -532,21 +597,24 @@ export async function runSmoke(
     (await count('[data-testid^="car-part-"]')) >= 30,
     "car: part index should list every part",
   );
-  check(await click('[data-testid="car-source-sample"]'), "car: no sample source option");
-  await delay(400);
-  check((await count('[data-testid^="car-badge-"]')) >= 4, "car: sample should badge ≥ 4 parts");
-  check(await click('[data-testid="car-badge-rear_seats"]'), "car: no badge on the rear seats");
-  await delay(400);
   check(
-    (await text('[data-testid="car-part-title"]')) === "Rear seats",
-    "car: badge click should select the rear seats",
+    (await count('[data-testid="car-source-sample"]')) === 0,
+    "car: demo data must be gone (no synthetic sample source)",
   );
+  await delay(400);
+  check((await count('[data-testid^="car-badge-"]')) >= 1, "car: requirements should badge parts");
+  const badge = await js<string | null>(
+    `document.querySelector('[data-testid^="car-badge-"]')?.dataset.testid ?? null`,
+  );
+  check(!!badge && (await click(`[data-testid="${badge}"]`)), "car: no badge to click");
+  await delay(400);
+  check(!!(await text('[data-testid="car-part-title"]')), "car: badge click should select a part");
   check(
     (await count('[data-testid="car-requirement"]')) >= 1,
-    "car: rear seats show no requirement",
+    `car: the part behind ${badge} shows no requirement`,
   );
   check(
-    (await text('[data-testid="car-classifier-reason"]')).includes("rear seats"),
+    (await text('[data-testid="car-classifier-reason"]')).length > 0,
     "car: classifier should explain itself",
   );
   await shot("car-part-selected");
@@ -578,7 +646,34 @@ export async function runSmoke(
   await delay(900);
   await shot("car-interior");
   check(await click('[data-testid="car-view-exterior"]'), "car: no exterior view");
-  check(await click('[data-testid="car-source-app"]'), "car: no app source option");
+  await delay(300);
+
+  // Reset: asks in place, removes every requirement, and the car is empty afterwards.
+  check(await click('[data-testid="car-reset"]'), "car: no reset button");
+  await delay(200);
+  check((await count('[data-testid="car-reset-confirm"]')) === 1, "car: reset didn't ask first");
+  await shot("car-reset-confirm");
+  check(await click('[data-testid="car-reset-confirm-button"]'), "car: no confirm button");
+  await delay(600);
+  check(
+    (await text('[data-testid="car-reset-message"]')).startsWith("Removed "),
+    "car: reset should report what it removed",
+  );
+  check((await count('[data-testid^="car-badge-"]')) === 0, "car: badges left after reset");
+  const left = await js<number>(
+    `window.reqflowBridge.invoke("reqflow:requirements.list").then((r) => r.value?.length ?? -1)`,
+  );
+  check(left === 0, `car: ${left} requirements left after reset`);
+  const deleted = await js<number>(
+    `window.reqflowBridge.invoke("reqflow:audit.list", { action: "requirement.deleted" })
+      .then((r) => r.value?.length ?? -1)`,
+  );
+  check(deleted >= carRequirements, "car: reset should audit every removed requirement");
+  check(
+    await js<boolean>(`document.querySelector('[data-testid="car-reset"]').disabled`),
+    "car: reset should be disabled when there is nothing to remove",
+  );
+  await shot("car-after-reset");
 
   // 4. Settings: every section, then dark mode across pages.
   await go("/settings");

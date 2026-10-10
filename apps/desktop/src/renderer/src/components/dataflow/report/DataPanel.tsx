@@ -1,9 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { type LineageStep, type WorkflowGraph, type WorkflowRun } from "@reqflow/core";
-import { Button } from "@/components/ui/Button";
 import { TableIcon } from "@/components/ui/icons";
 import { TextInput } from "@/components/ui/controls";
-import { sampleDataAt } from "./sample";
 import { type PreviewState } from "../usePreview";
 import { api } from "@/lib/api";
 import { useSettings } from "@/lib/settings";
@@ -24,22 +22,12 @@ interface Props {
   onReviewReady?: (ready: boolean) => void;
   step: LineageStep;
   isTarget: boolean;
-  showSample: boolean;
-  onShowSample: (show: boolean) => void;
 }
 
 const TABS = ["Requirements", "Themes", "Findings", "Records", "Sources"] as const;
 type Tab = (typeof TABS)[number];
 
-export function DataPanel({
-  root,
-  run,
-  step,
-  isTarget,
-  showSample,
-  onShowSample,
-  onReviewReady,
-}: Props) {
+export function DataPanel({ root, run, step, isTarget, onReviewReady }: Props) {
   const [filter, setFilter] = useState("");
   const [activeTab, setActiveTab] = useState<Tab | null>(null);
 
@@ -98,11 +86,8 @@ export function DataPanel({
     return () => onReviewReady?.(false);
   }, [run?.id, isTarget, state.status, onReviewReady]);
 
-  // Real data wins. The synthetic sample is only for steps whose data needs a run.
-  const data = useMemo(() => {
-    if (previewable) return real;
-    return showSample ? sampleDataAt(step.block.kind) : null;
-  }, [previewable, real, showSample, step.block.kind]);
+  // Only real data: a source's own output, a HIL's connected sources, or a saved run.
+  const data = real;
 
   const counts = useMemo(() => {
     if (!data) return null;
@@ -158,15 +143,10 @@ export function DataPanel({
             <div>
               <div className="mb-1 font-medium text-ink">No data yet</div>
               <div className="text-sm text-muted">
-                This flow hasn't run, so nothing has reached this point. Once flows can run, the
-                data that arrived here appears in this view.
+                Nothing has reached this point yet. Start the flow to see the data that arrives
+                here.
               </div>
             </div>
-          )}
-          {!previewable && (
-            <Button data-testid="data-sample" onClick={() => onShowSample(true)}>
-              Preview with synthetic sample data
-            </Button>
           )}
         </div>
       </div>
@@ -179,22 +159,13 @@ export function DataPanel({
     <div data-testid="data-panel" className="flex flex-col h-full border-l border-line bg-panel">
       <div className="border-b border-line p-4 text-sm font-medium text-ink">{headerLabel}</div>
 
-      {real ? (
-        <div data-testid="data-real" className="bg-brand-soft px-4 py-2 text-xs text-brand">
-          {run
-            ? "Saved data from this run. Reviewing or continuing the flow does not approve its requirements."
-            : step.block.kind === "hil"
-              ? "Preview of connected source inputs, read just now. This flow has not run; no review or approval has been recorded."
-              : `Read from the block's ${step.block.params.source === "database" ? "database" : "file"} just now: its own output, not a run.`}
-        </div>
-      ) : (
-        <div className="flex items-center justify-between bg-warn-soft px-4 py-2 text-xs text-warn">
-          <span>Synthetic sample — F70 demo fixtures, not data from this flow.</span>
-          <button className="font-medium hover:underline" onClick={() => onShowSample(false)}>
-            Hide
-          </button>
-        </div>
-      )}
+      <div data-testid="data-real" className="bg-brand-soft px-4 py-2 text-xs text-brand">
+        {run
+          ? "Saved data from this run. Reviewing or continuing the flow does not approve its requirements."
+          : step.block.kind === "hil"
+            ? "Preview of connected source inputs, read just now. This flow has not run; no review or approval has been recorded."
+            : `Read from the block's ${step.block.params.source === "database" ? "database" : "file"} just now: its own output, not a run.`}
+      </div>
 
       <div className="border-b border-line px-4 pt-2">
         <div role="tablist" className="flex gap-4">

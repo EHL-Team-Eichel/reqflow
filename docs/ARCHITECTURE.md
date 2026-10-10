@@ -154,6 +154,7 @@ validates every argument with the Zod schemas, because the renderer counts as un
 | `requirements.list(filter)` · `requirements.get(id)` | Latest versions · `RequirementDetail` (findings, evidence, sources, versions)                                                             |
 | `requirements.edit(id, RequirementEdit)`             | PM edit, rationale required → new version and audit                                                                                       |
 | `requirements.decide(id, RequirementDecision)`       | Approve / reject / defer / challenge / reopen. A challenge makes the AI answer (`challenge_answered`) and returns it to `in_review`       |
+| `requirements.reset()`                               | Removes every requirement (Car page → Reset). Writes one `requirement.deleted` audit event each; ids are never reused                     |
 | `audit.list(filter)`                                 | Audit events, ascending by time                                                                                                           |
 | `settings.get/save` · `settings.secrets/setSecret`   | `Settings` (save logs `settings.changed` with a diff) · API-key status / store a key in the keychain                                      |
 | `exports.requirements({ runId, format })`            | Native save dialog → JSON / CSV / Markdown (logs `export.created`)                                                                        |
@@ -169,10 +170,9 @@ Double-clicking a HIL block (or its report icon) opens `components/dataflow/repo
   data passes through on its way into the block. It leaves inner workplaces through their
   `block_input` and traces through the sub-flow of upstream blocks that have blocks inside.
 - **Data at a step** (table icon on every step; the HIL itself = "data at this point"). Steps without
-  inputs (Raw) show their **real data** via `blocks.preview`. Other steps need a run, which can't happen
-  yet, so the panel says so and offers a clearly labelled **synthetic sample** (`report/sample.ts`).
-  Once runs exist, it shows `api.runs.blockOutput()` of the step (for the HIL: the merge of what its
-  incoming edges carried).
+  inputs (Raw) show their **real data** via `blocks.preview`, and so does a HIL fed directly by them.
+  After a run it shows `api.runs.blockOutput()` of the step (for the HIL: the merge of what its
+  incoming edges carried). Otherwise it says nothing has arrived yet; there is no demo data.
 - At run time the HIL block (`packages/blocks/src/hil/hil.ts`) pauses the run until the review is done
   and then passes the data on unchanged; edits go through the requirement API (audited).
 

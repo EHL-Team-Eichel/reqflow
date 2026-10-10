@@ -8,4 +8,5 @@ export * from "./audit";
 export * from "./requirements";
 export * from "./runs";
 export * from "./formatters";
+export * from "./demo-data";
 export * from "./seed";

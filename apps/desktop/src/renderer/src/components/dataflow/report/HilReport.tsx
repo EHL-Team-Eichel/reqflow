@@ -55,7 +55,7 @@ export function HilReport() {
   }, [report, block]);
 
   if (!report || !block) return null;
-  // Keyed by block: selection and sample toggle start fresh for every report.
+  // Keyed by block: the selection starts fresh for every report.
   return (
     <ReportDialog
       key={`${run?.id ?? "preview"}:${block.id}`}
@@ -80,7 +80,6 @@ function ReportDialog({
 }) {
   const lineage = useMemo(() => traceLineage(root, path, block.id), [root, path, block.id]);
   const [selectedStepId, setSelectedStepId] = useState(block.id);
-  const [showSample, setShowSample] = useState(false);
   const [reviewReady, setReviewReady] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const busy = useStore(runStore, (s) => s.busy);
@@ -223,8 +222,6 @@ function ReportDialog({
               onReviewReady={setReviewReady}
               step={currentStep}
               isTarget={currentStep.block.id === lineage.targetId}
-              showSample={showSample}
-              onShowSample={setShowSample}
             />
           </div>
         </div>
