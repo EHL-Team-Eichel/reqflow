@@ -3,35 +3,6 @@ import * as THREE from "three";
 import { projectSketchLine } from "./decals";
 
 describe("projectSketchLine", () => {
-  it("stops bonnet strokes at glazing rather than projecting them through onto the floor", () => {
-    const material = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
-    const hood = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 1), material);
-    hood.rotation.x = -Math.PI / 2;
-    hood.position.set(0.75, 1, 0);
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(2, 1), material);
-    floor.rotation.x = Math.PI / 2;
-    floor.position.y = 0.2;
-    for (const mesh of [hood, floor]) mesh.updateMatrixWorld(true);
-    const geometry = projectSketchLine(
-      [hood, floor],
-      [
-        [0.95, 0.2],
-        [-0.5, 0.2],
-      ],
-      "top",
-    );
-    const positions = geometry.getAttribute("position");
-    expect(positions.count).toBeGreaterThan(20);
-    for (let i = 0; i < positions.count; i++) {
-      expect(positions.getX(i)).toBeGreaterThanOrEqual(0.5);
-      expect(positions.getY(i)).toBeCloseTo(1.003, 5);
-    }
-    geometry.dispose();
-    hood.geometry.dispose();
-    floor.geometry.dispose();
-    material.dispose();
-  });
-
   it("breaks strokes at openings and ignores the panel on the opposite side", () => {
     const material = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
     const panel = (x: number, z: number, width: number) => {

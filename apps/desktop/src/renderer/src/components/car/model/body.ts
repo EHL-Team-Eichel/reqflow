@@ -447,11 +447,11 @@ export function inWheelArch(q: Pick<Quad, "x" | "y" | "z" | "seg">): boolean {
 }
 
 /** Side window outline: front edge follows the A-pillar, rear edge the C-pillar, gap = B-pillar. */
-const windowFront = (y: number) => 0.8 - (y - 1.0) * 1.82 - 0.065;
+const windowFront = (y: number) => 0.8 - (y - 1.0) * 1.82 - 0.13;
 // The return at the foot of the C-pillar is BMW's characteristic Hofmeister kink.
 const windowRear = (y: number) =>
-  (y < 1.12 ? lerp(-1.48, -1.66, smoothstep(1.05, 1.12, y)) : -1.66 + (y - 1.12) * 1.08) - 0.045;
-const inBPillar = (x: number) => x > -0.283 && x < -0.217;
+  y < 1.12 ? lerp(-1.48, -1.66, smoothstep(1.05, 1.12, y)) : -1.66 + (y - 1.12) * 1.08;
+const inBPillar = (x: number) => x > -0.31 && x < -0.19;
 
 function inSideWindow(q: Quad): boolean {
   return (
@@ -491,24 +491,20 @@ export function bodyPanel(q: Quad): string | null {
   }
 
   // Top of the car: bonnet, windscreen, roof, rear window, boot lid.
-  // Bring the lower windscreen forward into the cowl, keeping bonnet shoulders
-  // either side. The wider opening leaves a slimmer frame along the A-pillars.
-  const inWindshield = q.seg >= 7 && az < 0.64 && q.x > -0.035 && q.x <= 0.98;
-  if (q.x > 0.86 && !inWindshield) return "hood";
+  if (q.x > 0.86) return "hood";
   if (q.x < -1.97) return "trunk_lid";
   const belt = beltLine(q.x);
   const sideGlass = q.seg === 5 || q.seg === 6;
   // Chrome strip along the window line, under the side windows.
   if (sideGlass && q.y < belt + 0.022 && q.x < windowFront(belt) && q.x > windowRear(belt))
     return "side_windows:chrome";
-  // The glass meets the bonnet directly instead of stopping above a broad painted cowl.
-  if (inWindshield) return "windshield:glass";
   // Below the window line: the cowl in front of the windscreen, the deck behind the rear window.
   if (q.y < belt + 0.02) return "body";
   if (sideGlass && inSideWindow(q)) return "side_windows:glass";
   if (sideGlass && inBPillar(q.x)) return "roof:dark";
-  if (q.seg >= 7 && az < 0.64) {
-    if (q.x < -1.24) return "rear_window:glass";
+  if (q.seg >= 7 && az < 0.6) {
+    if (q.x > 0.02) return "windshield:glass";
+    if (q.x < -1.28) return "rear_window:glass";
     if (az < 0.47 && q.x < -0.18 && q.x > -0.92) return "roof:glass";
   }
   return "roof";

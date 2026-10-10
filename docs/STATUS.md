@@ -220,18 +220,6 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 **Log**
 
-- 2026-10-10: Windshield/pillar adjustment complete: the windscreen reaches 0.12 m farther
-  forward to meet the bonnet, its opening is wider, and A/B/C window pillars are slimmer.
-  Panels retain a shared seam; bonnet strokes stop at glass instead of projecting to the floor.
-  All 68 selectable forms and the interior remain. Added four focused regressions. Verified
-  typecheck, 421 passing tests (25 skipped), production build, native WebGL/preset/selection/
-  light/dark/interior probe and six reviewed screenshots. Shared smoke renders 32 screens but
-  retains the 12 previously documented collapsed-menu marker assertions (WS1/WS0 follow-up).
-  Commit only this slice and its handoff; existing documentation reordering stays untouched.
-
-- 2026-10-10: Claimed windshield/pillar adjustment: extend the windscreen toward the
-  bonnet, widen its opening and thin A/B/C pillars; preserve the cabin and selectable parts.
-
 - 2026-10-10: BMW door character lines complete: a stronger shoulder crease runs below
   the handles through both doors into the rear haunch; a lower scallop rises into the rear
   arch. Individual sketch strokes have a clear ink hierarchy and soften in interior view.

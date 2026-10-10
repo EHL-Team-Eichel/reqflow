@@ -117,11 +117,7 @@ export function projectSketchLine(
     // hidden surface as a stroke across the near wheel.
     const oppositeSide =
       hit && ((view === "left" && hit.point.z >= 0) || (view === "right" && hit.point.z <= 0));
-    // Enlarged glazing can expose the underfloor to a bonnet ray. Stop the
-    // stroke at the glass edge instead of dropping it onto that downward face.
-    const underside = view === "top" && hit?.face && hit.face.normal.y <= 0;
-    const point =
-      hit && !oppositeSide && !underside ? hit.point.clone().addScaledVector(dir, -0.003) : null;
+    const point = hit && !oppositeSide ? hit.point.clone().addScaledVector(dir, -0.003) : null;
     if (previous && point) positions.push(...previous.toArray(), ...point.toArray());
     previous = point;
   }
