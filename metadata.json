@@ -1,0 +1,34 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4KFKBEQB6PZ677SGRDVJV7V",
+  "strategy": "manual-commit",
+  "branch": "ws3-car-model",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "apps/desktop/src/main/smoke.ts",
+    "apps/desktop/src/renderer/src/components/car/CarViewer.tsx",
+    "apps/desktop/src/renderer/src/components/car/PartPanel.tsx",
+    "apps/desktop/src/renderer/src/components/car/model/body.ts",
+    "apps/desktop/src/renderer/src/components/car/model/buildCar.ts",
+    "apps/desktop/src/renderer/src/components/car/model/decals.ts",
+    "apps/desktop/src/renderer/src/components/car/model/sketch.ts",
+    "apps/desktop/src/renderer/src/components/car/useCarRequirements.ts",
+    "apps/desktop/src/renderer/src/pages/CarPage.tsx"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 150,
+    "cache_creation_tokens": 269991,
+    "cache_read_tokens": 14392593,
+    "output_tokens": 147690,
+    "api_call_count": 75
+  }
+}
