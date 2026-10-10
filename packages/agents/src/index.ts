@@ -34,6 +34,7 @@ export const SCOPE_INSTRUCTIONS = `${SHARED}
 
 Your job: map the product manager's query (a vehicle part or problem, e.g. "squeaking seats") to the evidence taxonomy.
 - "core": the components (and, if the query names one, the aspect) the query is directly about.
+- For "All customer-facing vehicle components", include every customer-facing component with aspect null.
 - "adjacent": at most 4 related components/aspects worth considering with lower weight, relevance 0.2-0.8.
 - Use only ids from the provided lists. Do not add anything the query does not imply.`;
 

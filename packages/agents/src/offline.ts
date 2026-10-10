@@ -6,7 +6,19 @@ export function createOfflineJudgingAgents(): JudgingAgents {
     model: "mock/judge (offline demonstration, no model calls)",
     async resolveScope(prompt) {
       const query = /Query: "([^"]+)"/.exec(prompt)?.[1]?.toLowerCase() ?? "";
-      const entries = [...prompt.matchAll(/^- ([a-z_]+): (.+)$/gm)];
+      const entries = [
+        ...(prompt.split("Aspects (id: label):")[0] ?? prompt).matchAll(/^- ([a-z_]+): (.+)$/gm),
+      ];
+      if (query.startsWith("all customer-facing vehicle components"))
+        return {
+          interpretation: "Offline demonstration across supplied customer-facing topics",
+          core: entries.map(([, id]) => ({
+            component: id!,
+            aspect: null,
+            reason: "Explicit all-component scope",
+          })),
+          adjacent: [],
+        };
       const component = entries.find(
         ([, id, label]) =>
           query.includes(id!.replaceAll("_", " ")) ||
@@ -29,13 +41,13 @@ export function createOfflineJudgingAgents(): JudgingAgents {
     },
     async proposeActions(prompt) {
       const refs = [...new Set([...prompt.matchAll(/\[(E\d+)\]/g)].map((m) => m[1]!))];
+      const problem = /Problem: ([^\n]+)/.exec(prompt)?.[1] ?? "the reported customer problem";
       return {
         actions: [
           {
-            title: "Investigate the reported customer problem",
+            title: `Investigate ${problem}`,
             type: "investigate",
-            description:
-              "Review the linked customer evidence and validate the problem before selecting a remedy. This is an offline demonstration, not an AI-generated solution.",
+            description: `Review the linked evidence for ${problem} and validate the problem before selecting a remedy. This is an offline demonstration, not an AI-generated solution.`,
             acceptanceCriteria: [
               "A human reviewer records the confirmed problem and the next validation step.",
             ],

@@ -365,7 +365,7 @@ export const BLOCK_SPECS: { readonly [K in PaletteBlockKind]: BlockSpec & { kind
     kind: "add_to_car",
     label: "Add to Car",
     description:
-      "Adds what arrives to the car's requirements. The input an item arrives on sets its ranking.",
+      "Turns connected datasets into evidence-linked car proposals using scope, solution and judging agents. Human decisions stay on the Car tab.",
     group: "output",
     hasInnerWorkplace: false,
     params: [
@@ -377,6 +377,7 @@ export const BLOCK_SPECS: { readonly [K in PaletteBlockKind]: BlockSpec & { kind
         minItems: 1,
         maxItems: 6,
         itemPlaceholder: "Ranking name",
+        help: "With agents, inputs are evidence sources ordered from highest to lowest weight. Rules-only mode uses the input names as priorities.",
       },
       {
         key: "vehicle",
@@ -403,6 +404,74 @@ export const BLOCK_SPECS: { readonly [K in PaletteBlockKind]: BlockSpec & { kind
         ],
       },
       { key: "mergeDuplicates", label: "Merge duplicates", type: "toggle", default: true },
+      {
+        key: "method",
+        label: "Requirement generation",
+        type: "select",
+        default: "agents",
+        options: [
+          { value: "agents", label: "AI agents (OpenAI)" },
+          { value: "offline", label: "Offline agent demo (no model calls)" },
+          { value: "deterministic", label: "Existing classification rules" },
+        ],
+        help: "AI agents send selected evidence to OpenAI. No agent approves requirements. Older saved flows keep their rules-only behavior.",
+      },
+      {
+        key: "query",
+        label: "Part or problem",
+        type: "text",
+        default: "",
+        placeholder: "All customer-facing topics, or e.g. seats",
+        help: "Leave blank to judge customer-facing topics across the supplied datasets.",
+      },
+      {
+        key: "model",
+        label: "OpenAI model",
+        type: "text",
+        default: "openai/gpt-6-luna",
+        visibleWhen: { key: "method", equals: "agents" },
+        help: "Save an OpenAI key in Settings → AI & research.",
+      },
+      {
+        key: "reasoningEffort",
+        label: "Reasoning effort",
+        type: "select",
+        default: "max",
+        visibleWhen: { key: "method", equals: "agents" },
+        options: [
+          { value: "max", label: "Max" },
+          { value: "high", label: "High" },
+          { value: "medium", label: "Medium (faster)" },
+          { value: "low", label: "Low (fastest)" },
+        ],
+      },
+      {
+        key: "webResearch",
+        label: "Research empty inputs on the web",
+        type: "toggle",
+        default: false,
+        visibleWhen: { key: "method", equals: "agents" },
+      },
+      {
+        key: "maxProblems",
+        label: "Problems to expand",
+        type: "number",
+        default: 3,
+        min: 1,
+        max: 10,
+        step: 1,
+      },
+      {
+        key: "salesYear",
+        label: "Weight markets by sales of",
+        type: "select",
+        default: "2025",
+        options: [
+          { value: "2024", label: "2024" },
+          { value: "2025", label: "2025" },
+          { value: "2030", label: "2030 forecast" },
+        ],
+      },
     ],
     ports: (params) => ({ inputs: listPorts(params, "rankings", "in"), outputs: [] }),
   },
@@ -537,7 +606,29 @@ export function blockParamsSchema(kind: BlockKind): z.ZodType<BlockParams> {
     schema = isBoundaryBlockKind(kind)
       ? BoundaryParams
       : z.strictObject(
-          Object.fromEntries(BLOCK_SPECS[kind].params.map((p) => [p.key, paramSchema(p)])),
+          Object.fromEntries(
+            BLOCK_SPECS[kind].params.map((p) => {
+              const addedToCar =
+                kind === "add_to_car" &&
+                [
+                  "method",
+                  "query",
+                  "model",
+                  "reasoningEffort",
+                  "webResearch",
+                  "maxProblems",
+                  "salesYear",
+                ].includes(p.key);
+              return [
+                p.key,
+                addedToCar
+                  ? paramSchema(p).default(
+                      p.key === "method" ? "deterministic" : "default" in p ? p.default : undefined,
+                    )
+                  : paramSchema(p),
+              ];
+            }),
+          ),
         );
     paramsSchemaCache.set(kind, schema);
   }

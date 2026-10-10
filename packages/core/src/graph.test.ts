@@ -37,6 +37,17 @@ function withBlocks(...specs: [Parameters<typeof createBlock>[0], string][]): Wo
 }
 
 describe("block specs", () => {
+  it("keeps old Add to Car flows valid and rules-only while new blocks use agents", () => {
+    const legacy = {
+      rankings: ["Must have", "Should have"],
+      vehicle: "global",
+      market: "global",
+      mergeDuplicates: true,
+    };
+    expect(parseBlockParams("add_to_car", legacy).method).toBe("deterministic");
+    expect(blockPorts({ kind: "add_to_car", params: legacy }).inputs).toHaveLength(2);
+    expect(defaultBlockParams("add_to_car").method).toBe("agents");
+  });
   it("every palette kind has valid default params and the documented ports", () => {
     for (const kind of PALETTE_BLOCK_KINDS) {
       expect(() => parseBlockParams(kind, defaultBlockParams(kind))).not.toThrow();

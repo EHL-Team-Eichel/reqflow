@@ -69,6 +69,14 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 **Log**
 
+- 2026-10-10: User requested agents inside the existing Add to Car sink, not a separate workflow
+  architecture. Reusing the judging implementation/services with unchanged input ports, existing
+  executor/Car storage. Implemented generation selector (live agents / explicit offline demo /
+  existing rules), optional part query (blank = all customer-facing topics), and preserved legacy
+  saved flows. Tested by configuring feedback and study Raw blocks in the UI, dragging both into
+  Add to Car, pressing Start, and opening published Car proposals with confidence/source excerpts.
+  No separate Judge node required. Verified typecheck, formatting, 275 tests (25 local-data skips),
+  and native smoke with 34 screenshots. No live API calls or BMW data used.
 - 2026-10-10: Mastra desktop integration implemented on `integrate-mastra-judge`: four main-process
   agents, OpenAI protected-key entry/status/removal, an explicit `mock/judge` demo, ranked source
   inputs and validated proposal output. AI Judge now feeds HIL → Add to Car rather than publishing

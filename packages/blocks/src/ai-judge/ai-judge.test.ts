@@ -228,6 +228,17 @@ describe("AI Judge evidence", () => {
 });
 
 describe("AI Judge block", () => {
+  it("fails instead of reporting success when solution generation fails", async () => {
+    const agents = mockAgents();
+    agents.proposeActions = async () => {
+      throw new Error("Synthetic provider failure");
+    };
+    const c = context(agents);
+    await expect(
+      aiJudgeBlock.run({ "in-0": feedback }, params({ sources: ["Feedback"] }), c.ctx),
+    ).rejects.toThrow(/no proposals/);
+    expect(c.added).toHaveLength(0);
+  });
   it("does not inflate confidence when the judge returns no quote checks", async () => {
     const agents = mockAgents();
     agents.judge = async () => ({

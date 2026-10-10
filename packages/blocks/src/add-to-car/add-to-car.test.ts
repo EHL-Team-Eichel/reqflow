@@ -13,7 +13,7 @@ import {
 } from "@reqflow/core";
 import { fixtureRecords, fixtureScope, fixtureSources } from "@reqflow/core/fixtures";
 import type { BlockContext, BlockInputs } from "@reqflow/engine";
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import { rawBlock } from "../raw/raw";
 import { addToCarBlock, priorityForRanking, scopeFor } from "./add-to-car";
 import { deriveRequirements, MIN_COMMENTS_FOR_REQUIREMENT, type RankedInput } from "./derive";
@@ -52,6 +52,7 @@ function context(scope = DEFAULT_SETTINGS.defaultScope, file?: StoredFile) {
 
 const params = (patch: Record<string, unknown> = {}) => ({
   ...defaultBlockParams("add_to_car"),
+  method: "deterministic",
   ...patch,
 });
 
@@ -75,6 +76,103 @@ const must = (data: PipelineData): RankedInput[] => [
 // ---------------------------------------------------------------- pure rules (no data needed)
 
 describe("Add to Car rules", () => {
+  it("judges datasets inside the existing sink and publishes scores, evidence and audit without a Judge node", async () => {
+    const source = {
+      ...fixtureSources[0]!,
+      title: "Synthetic F70 feedback",
+      kind: "customer_feedback" as const,
+    };
+    const data = PipelineData.parse({
+      ...emptyPipelineData(),
+      sources: [source],
+      records: Array.from({ length: 8 }, (_, i) => ({
+        id: `rec_direct${i}`,
+        sourceId: source.id,
+        market: "DE",
+        text: "The seats squeak over bumps during every journey",
+      })),
+    });
+    const c = context();
+    const scope = vi.fn(async () => ({
+      interpretation: "Seat noise",
+      core: [{ component: "seats", aspect: null, reason: "Named part" }],
+      adjacent: [],
+    }));
+    const propose = vi.fn(async () => ({
+      actions: [
+        {
+          title: "Reduce seat squeaking",
+          type: "quality_improvement" as const,
+          description: "Reduce seat squeaking over bumps for occupants.",
+          acceptanceCriteria: ["Occupants report no seat squeaking during the evaluation drive."],
+          addresses: ["E1", "E2"],
+          rationale: "Synthetic complaint evidence",
+          assumptions: [],
+          risks: [],
+        },
+      ],
+    }));
+    const judge = vi.fn(async () => ({
+      quoteChecks: Array.from({ length: 8 }, (_, i) => ({
+        ref: `E${i + 1}`,
+        describesProblem: true,
+        note: "Synthetic seat-noise evidence",
+      })),
+      solutionSupport: "moderate" as const,
+      solutionReasoning: "Synthetic check",
+      whyNotHigher: ["Prototype testing is still required"],
+      toRaiseIt: [],
+    }));
+    c.ctx.agents = async () => ({
+      model: "synthetic-test-model",
+      resolveScope: scope,
+      proposeActions: propose,
+      judge,
+      research: async () => ({ items: [], searchNotes: "No web research" }),
+    });
+    const stored: PipelineData[] = [];
+    c.ctx.car = {
+      nextSeq: async () => 42,
+      add: async (requirements, evidence) => {
+        stored.push(PipelineData.parse({ ...emptyPipelineData(), ...evidence, requirements }));
+      },
+    };
+    expect(
+      await addToCarBlock.run(
+        { "in-0": data },
+        params({ method: "agents", query: "seats" }),
+        c.ctx,
+      ),
+    ).toEqual({ status: "ok", outputs: {} });
+    expect(scope).toHaveBeenCalled();
+    expect(propose).toHaveBeenCalled();
+    expect(judge).toHaveBeenCalled();
+    const out = stored[0]!;
+    expect(out.requirements.length).toBeGreaterThan(0);
+    expect(out.requirements[0]!.id).toBe("REQ-F70-EU-042");
+    expect(
+      out.requirements.every(
+        (r) => r.status === "proposed" && r.score!.method.startsWith("ai-judge@"),
+      ),
+    ).toBe(true);
+    expect(
+      out.findings.every((f) =>
+        f.evidence.every((e) =>
+          out.records.some((r) => r.id === e.recordId && r.text.includes(e.excerpt)),
+        ),
+      ),
+    ).toBe(true);
+    expect(c.audit.some((e) => e.action === "requirement.proposed")).toBe(true);
+  });
+
+  it("fails clearly rather than silently using rules when agents are selected without a key", async () => {
+    const c = context();
+    const data = { ...emptyPipelineData(), sources: fixtureSources, records: fixtureRecords };
+    await expect(
+      addToCarBlock.run({ "in-0": data }, params({ method: "agents" }), c.ctx),
+    ).rejects.toThrow(/OpenAI API key/);
+    expect(c.added).toHaveLength(0);
+  });
   it("maps ranking names to priorities, by name first and position second", () => {
     expect(
       ["Must have", "Should have", "Could have", "Won't have"].map(priorityForRanking),

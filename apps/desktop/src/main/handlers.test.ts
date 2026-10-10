@@ -176,6 +176,7 @@ describe("handlers (All IPC methods against SQLite and stores)", () => {
       const file = await createFileStore(join(tempDir, "uploads")).importFile(BMW_FEEDBACK);
       const raw = createBlock("raw", { id: "raw", position: { x: 0, y: 0 } });
       const car = createBlock("add_to_car", { id: "car", position: { x: 300, y: 0 } });
+      car.params.method = "deterministic"; // This local-data parser test must never call a live agent.
       let graph = setBlockParams({ blocks: [raw, car], edges: [] }, "raw", {
         ...raw.params,
         dataset: "customer_feedback",

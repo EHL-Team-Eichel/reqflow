@@ -9,6 +9,7 @@ import {
 } from "@reqflow/core";
 import { defineBlock, type BlockContext } from "@reqflow/engine";
 import { ADD_TO_CAR_ACTOR, deriveRequirements, type DeriveStats, type RankedInput } from "./derive";
+import { aiJudgeBlock } from "../ai-judge/ai-judge";
 
 /** Mirrors BLOCK_SPECS.add_to_car.params (validated by parseBlockParams before use). */
 interface AddToCarParams {
@@ -16,6 +17,13 @@ interface AddToCarParams {
   vehicle: string; // "global" = from Settings
   market: string;
   mergeDuplicates: boolean;
+  method: "agents" | "offline" | "deterministic";
+  query: string;
+  model: string;
+  reasoningEffort: string;
+  webResearch: boolean;
+  maxProblems: number;
+  salesYear: string;
 }
 
 const BY_POSITION: Priority[] = ["must", "should", "could", "wont"];
@@ -35,7 +43,10 @@ export function priorityForRanking(name: string, position: number): Priority {
   return BY_POSITION[Math.min(position, BY_POSITION.length - 1)]!;
 }
 
-export function scopeFor(params: AddToCarParams, base: ProductScope): ProductScope {
+export function scopeFor(
+  params: Pick<AddToCarParams, "vehicle" | "market">,
+  base: ProductScope,
+): ProductScope {
   const scope = { ...base };
   if (params.vehicle !== "global" && params.vehicle !== base.vehicleLine) {
     scope.vehicleLine = params.vehicle;
@@ -86,7 +97,7 @@ function report(stats: DeriveStats): string[] {
  * Add to Car: sorts what arrives into component › aspect themes (BMW's own classification first,
  * keyword rules on untagged comments), derives one requirement per theme with complaints or
  * requests, and hands them to the Car page. The input an item arrives on sets its priority.
- * Fully deterministic: no LLM call, so it runs offline and gives the same result every time.
+ * Reuses the existing judging agents when selected; rules-only behavior remains available for old flows.
  */
 export const addToCarBlock = defineBlock({
   kind: "add_to_car",
@@ -122,9 +133,39 @@ export const addToCarBlock = defineBlock({
       return { status: "ok", outputs: {} };
     }
     ctx.signal.throwIfAborted();
+    const scope = scopeFor(params, ctx.scope);
+    if (params.method !== "deterministic") {
+      ctx.log(
+        params.method === "offline"
+          ? "Running the explicit offline agent demonstration (no model calls)."
+          : "Judging the connected datasets with the configured AI agents.",
+      );
+      const result = await aiJudgeBlock.run(
+        inputs,
+        {
+          query: params.query.trim() || "All customer-facing vehicle components",
+          sources: params.rankings,
+          model: params.method === "offline" ? "mock/judge" : params.model,
+          reasoningEffort: params.reasoningEffort,
+          webResearch: params.method === "agents" && params.webResearch,
+          market: "global",
+          maxProblems: params.maxProblems,
+          salesYear: params.salesYear,
+        },
+        { ...ctx, scope },
+      );
+      if (result.status !== "ok" || !result.outputs.out)
+        throw new Error("The judging agents did not return requirement proposals");
+      ctx.signal.throwIfAborted();
+      const proposals = result.outputs.out;
+      await ctx.car.add(proposals.requirements, proposals);
+      ctx.log(
+        `Added ${proposals.requirements.length} judged proposals with source evidence. Human approval is still required on the Car tab.`,
+      );
+      return { status: "ok", outputs: {} };
+    }
     ctx.progress(0.1, "Sorting feedback into themes");
 
-    const scope = scopeFor(params, ctx.scope);
     const derived = deriveRequirements(ranked, {
       scope,
       runId: ctx.runId,

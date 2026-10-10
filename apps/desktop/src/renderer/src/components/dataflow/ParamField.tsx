@@ -20,7 +20,10 @@ export function ParamField({ block, spec }: { block: WorkflowBlock; spec: ParamS
   const [error, setError] = useState<string | null>(null);
   const settings = useSettings((s) => s.settings);
 
-  const val = block.params[spec.key];
+  const val =
+    block.kind === "add_to_car" && spec.key === "method"
+      ? (block.params.method ?? "deterministic") // Legacy saved blocks keep their original behavior.
+      : block.params[spec.key];
 
   const handleChange = (newValue: unknown) => {
     const err = dataflowStore

@@ -47,18 +47,21 @@ one, the default AI provider is the offline `mock`.
 
 ## Mastra AI Judge
 
-The **AI Judge** block proposes evidence-linked actions for a part or problem, using four roles:
+The existing **Add to Car** block turns connected datasets into evidence-linked proposals, using four roles:
 scope resolver, web researcher, solution proposer and an independent confidence judge. Importance
 is computed deterministically; solution confidence is displayed separately on the Car tab.
 
 1. In **Settings → AI & research**, save an OpenAI key (OS-protected storage), or configure
    `OPENAI_API_KEY` in the main-process development environment. Stored keys are never displayed.
-2. Add Raw blocks for feedback, studies and optional sales context. Connect them to the AI Judge's
+2. Add Raw blocks for feedback, studies and optional sales context. Connect them to Add to Car's
    inputs; order the source labels from most important to least important.
-3. Set **Part or problem**, for example `seats`. The default model is `openai/gpt-6-luna`.
-   Use `mock/judge` for an explicit offline demonstration: no model calls, and confidence stays zero.
-4. Connect **AI Judge → HIL → Add to Car**, then press **Start**. Review the saved proposals in
-   the HIL report and explicitly continue. Publishing does not approve a requirement.
+3. In Add to Car, use **Requirement generation → AI agents (OpenAI)**. Set **Part or problem**,
+   for example `seats`, or leave it blank for all customer-facing topics. The default model is
+   `openai/gpt-6-luna`. **Offline agent demo** makes no model calls and leaves confidence at zero.
+4. Press **Start**. The existing executor runs the agents inside Add to Car and publishes proposals
+   to the existing Car store. No separate Judge node is required. Existing HIL blocks still pause
+   for review where connected. Publishing does not approve a requirement. Older saved flows keep
+   their rules-only behavior; choose AI agents in the inspector to enable judging.
 5. On **Car**, select a part and expand **Why, uncertainty & evidence** to see source excerpts,
    assumptions, conflicts and separate importance/confidence scores.
 

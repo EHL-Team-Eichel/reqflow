@@ -712,6 +712,158 @@ export async function runSmoke(
     }
   }
 
+  // Existing app UI, no separate Judge node: datasets → Add to Car → Start → Car evidence.
+  await go("/dataflow");
+  const previousConfirm = await js<boolean>("typeof window.confirm === 'function'");
+  await js("window.__smokeConfirm = window.confirm; window.confirm = () => true; void 0");
+  const nodeIds = await js<string[]>(
+    "[...document.querySelectorAll('[data-block-id]')].map((n) => n.dataset.blockId)",
+  );
+  for (const id of nodeIds) {
+    await click(`[data-block-id="${id}"]`);
+    await delay(80);
+    check(
+      await click('[data-testid="inspector-delete"]'),
+      "direct Add to Car: could not clear synthetic editor",
+    );
+    await delay(80);
+  }
+  if (previousConfirm)
+    await js("window.confirm = window.__smokeConfirm; delete window.__smokeConfirm");
+  check((await count(".react-flow__node")) === 0, "direct Add to Car: editor did not clear");
+  const directDbPath = join(outDir, "data", "direct-car-synthetic.sqlite");
+  const directDb = new DatabaseSync(directDbPath);
+  directDb.exec(
+    'CREATE TABLE IF NOT EXISTS feedback (market TEXT, comment TEXT); DELETE FROM feedback; CREATE TABLE IF NOT EXISTS study (Section TEXT, Label TEXT, "BMW 1 Series F70 (EU)" REAL); DELETE FROM study;',
+  );
+  for (let i = 0; i < 8; i++)
+    directDb
+      .prepare("INSERT INTO feedback VALUES (?, ?)")
+      .run("DE", `The seats squeak over bumps during every trip, synthetic case ${i}.`);
+  for (const [dimension, score] of [
+    ["Overall seating comfort", 4],
+    ["Trunk space", 6],
+    ["Infotainment", 9],
+  ])
+    directDb
+      .prepare("INSERT INTO study VALUES (?, 'Mean', ?)")
+      .run(dimension as string, score as number);
+  directDb.close();
+  const field = async (label: string) => {
+    const id = await js<string>(
+      `[...document.querySelectorAll('[data-testid="inspector"] label')].find((el) => el.textContent.trim() === ${JSON.stringify(label)})?.htmlFor ?? ""`,
+    );
+    check(!!id, `direct Add to Car: missing field ${label}`);
+    return `[id="${id}"]`;
+  };
+  const rawIds: string[] = [];
+  for (const [dataset, table] of [
+    ["customer_feedback", "feedback"],
+    ["customer_study", "study"],
+  ]) {
+    await click('[data-testid="palette-item-raw"]');
+    await delay(150);
+    const id = await js<string>(
+      "document.querySelector('.react-flow__node.selected [data-block-id]')?.dataset.blockId ?? [...document.querySelectorAll('[data-testid=\"block-raw\"]')].at(-1)?.dataset.blockId",
+    );
+    rawIds.push(id);
+    await setSelect(await field("Dataset"), dataset!);
+    await setSelect(await field("Source"), "database");
+    await delay(100);
+    await type('input[placeholder="/path/to/data.sqlite"]', [directDbPath]);
+    await type('textarea[placeholder="SELECT * FROM customer_feedback"]', [
+      `SELECT * FROM ${table}`,
+    ]);
+  }
+  await click('[data-testid="palette-item-add_to_car"]');
+  await delay(150);
+  check(
+    await js<boolean>(
+      `document.querySelector(${JSON.stringify(await field("Requirement generation"))})?.value === "agents"`,
+    ),
+    "direct Add to Car: new block should use agents",
+  );
+  await setSelect(await field("Requirement generation"), "offline");
+  await js(
+    `document.querySelector(${JSON.stringify(await field("Requirement generation"))})?.scrollIntoView({ block: "center" }); void 0`,
+  );
+  await delay(150);
+  await shot("add-to-car-agent-settings");
+  await click('[aria-label="Close details"]');
+  await js(
+    "[...document.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Fit view')?.click()",
+  );
+  await delay(500);
+  for (let i = 0; i < rawIds.length; i++)
+    await drag(
+      `[data-block-id="${rawIds[i]}"] .react-flow__handle.source`,
+      `[data-testid="block-add_to_car"] .react-flow__handle.target[data-handleid="in-${i}"]`,
+    );
+  check((await count(".react-flow__edge")) === 2, "direct Add to Car: dataset connections missing");
+  check(
+    (await count('[data-testid="block-ai_judge"]')) === 0,
+    "direct Add to Car: must not need a Judge node",
+  );
+  const existingIds = await js<string[]>(
+    'window.reqflowBridge.invoke("reqflow:requirements.list").then((r) => r.value.map((x) => x.id))',
+  );
+  check(await click('[data-testid="flow-run"]'), "direct Add to Car: Start button missing");
+  const directDeadline = Date.now() + 15000;
+  while (
+    !(await text('[data-testid="flow-run-status"]')).includes("Completed") &&
+    Date.now() < directDeadline
+  )
+    await delay(100);
+  check(
+    (await text('[data-testid="flow-run-status"]')).includes("Completed"),
+    `direct Add to Car: UI Start failed: ${await text('[data-testid="flow-run-status"]')}`,
+  );
+  await shot("add-to-car-ui-completed");
+  const directProposals = await js<{ id: string; status: string }[]>(
+    `window.reqflowBridge.invoke("reqflow:requirements.list").then((r) => r.value.filter((x) => !${JSON.stringify(existingIds)}.includes(x.id)))`,
+  );
+  check(
+    directProposals.length > 0 && directProposals.every((r) => r.status === "proposed"),
+    "direct Add to Car: Start did not publish proposals",
+  );
+  await go("/car");
+  await click('[data-testid="car-source-app"]');
+  await delay(300);
+  await click('[aria-label="Back to all parts"]');
+  const parts = await js<string[]>(
+    '[...document.querySelectorAll("button[data-testid^=car-part-]")].map((el) => el.dataset.testid)',
+  );
+  let directFound = false;
+  for (const part of parts) {
+    await click(`[data-testid="${part}"]`);
+    await delay(80);
+    directFound = await js<boolean>(
+      `[...document.querySelectorAll('[data-testid="car-requirement"]')].some((el) => ${JSON.stringify(directProposals.map((r) => r.id))}.some((id) => el.textContent.includes(id)))`,
+    );
+    if (directFound) break;
+    await click('[aria-label="Back to all parts"]');
+  }
+  check(directFound, "direct Add to Car: proposals missing from Car UI");
+  if (directFound) {
+    await js(
+      `(() => { const card = [...document.querySelectorAll('[data-testid="car-requirement"]')].find((el) => ${JSON.stringify(directProposals.map((r) => r.id))}.some((id) => el.textContent.includes(id))); card?.scrollIntoView({ block: 'start' }); card?.querySelector('summary')?.click(); })()`,
+    );
+    await delay(300);
+    check(
+      (await count('[data-testid="car-importance-confidence"]')) > 0,
+      "direct Add to Car: scores missing",
+    );
+    check(
+      (await count('[data-testid="car-evidence"] blockquote')) > 0,
+      "direct Add to Car: source excerpts missing",
+    );
+    await js(
+      "document.querySelector('[data-testid=\"car-evidence\"][open] blockquote')?.scrollIntoView({ block: 'center' }); void 0",
+    );
+    await delay(150);
+    await shot("add-to-car-ui-evidence");
+  }
+
   // 4. Settings: every section, then dark mode across pages.
   await go("/settings");
   for (const id of SETTINGS_SECTIONS) {

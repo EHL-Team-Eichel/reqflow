@@ -436,6 +436,11 @@ export const aiJudgeBlock = defineBlock({
       }),
     );
     const ids = actions.map((_, i) => `A${i + 1}`);
+    if (chosen.length && !actions.length) {
+      throw new Error(
+        "The solution agents returned no proposals for the evidenced problems. Check the agent configuration and retry.",
+      );
+    }
     const ranked = actions.length
       ? rankActions(
           actions.map((x, i) => ({
