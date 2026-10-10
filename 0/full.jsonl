@@ -1,0 +1,500 @@
+{
+  "info": {
+    "id": "ses_ed96a75eeffeytIQCCfRZvEr3k",
+    "slug": "silent-sailor",
+    "projectID": "38cb6a3256b621abd332b77306ea43baf7232bbe",
+    "directory": "/Users/jonas/Documents/reqflow",
+    "path": "",
+    "title": "Entire OpenCode synthetic smoke test",
+    "version": "1.18.35",
+    "cost": 0,
+    "tokens": {
+      "input": 0,
+      "output": 0,
+      "reasoning": 0,
+      "cache": {
+        "read": 0,
+        "write": 0
+      }
+    },
+    "time": {
+      "created": 1791648696849,
+      "updated": 1791648696849
+    }
+  },
+  "messages": [
+    {
+      "info": {
+        "time": {
+          "created": 1791648696875
+        },
+        "role": "user",
+        "agent": "build",
+        "model": {
+          "providerID": "google",
+          "modelID": "gemini-3.8-flash"
+        },
+        "id": "msg_126958a2b001WhWl7o0a9WYCcN",
+        "sessionID": "ses_ed96a75eeffeytIQCCfRZvEr3k"
+      },
+      "parts": [
+        {
+          "type": "text",
+          "text": "The following tool was executed by the user",
+          "synthetic": true,
+          "id": "prt_126958b9d001Om6itMSkud4WJH",
+          "sessionID": "ses_ed96a75eeffeytIQCCfRZvEr3k",
+          "messageID": "msg_126958a2b001WhWl7o0a9WYCcN"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_126958a2b001WhWl7o0a9WYCcN",
+        "mode": "build",
+        "agent": "build",
+        "cost": 0,
+        "path": {
+          "cwd": "/Users/jonas/Documents/reqflow",
+          "root": "/Users/jonas/Documents/reqflow"
+        },
+        "time": {
+          "created": 1791648697246,
+          "completed": 1791648697662
+        },
+        "role": "assistant",
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "read": 0,
+            "write": 0
+          }
+        },
+        "modelID": "gemini-3.8-flash",
+        "providerID": "google",
+        "id": "msg_126958b9e001DZ7wEIm5pY0UXD",
+        "sessionID": "ses_ed96a75eeffeytIQCCfRZvEr3k"
+      },
+      "parts": [
+        {
+          "type": "tool",
+          "tool": "bash",
+          "callID": "01M4K9B2WZT53MFYEF5DAC54EB",
+          "state": {
+            "status": "completed",
+            "time": {
+              "start": 1791648697247,
+              "end": 1791648697662
+            },
+            "input": {
+              "command": "printf 'entire-opencode-smoke\\n'"
+            },
+            "title": "",
+            "metadata": {
+              "output": "entire-opencode-smoke\n"
+            },
+            "output": "entire-opencode-smoke\n"
+          },
+          "id": "prt_126958b9f0012lCVB47Er0Pa1w",
+          "sessionID": "ses_ed96a75eeffeytIQCCfRZvEr3k",
+          "messageID": "msg_126958b9e001DZ7wEIm5pY0UXD"
+        }
+      ]
+    },
+    {
+      "info": {
+        "time": {
+          "created": 1791649298973
+        },
+        "role": "user",
+        "agent": "build",
+        "model": {
+          "providerID": "google",
+          "modelID": "gemini-3.8-flash"
+        },
+        "id": "msg_1269eba1d001hYzw0QAU8Y2iXx",
+        "sessionID": "ses_ed96a75eeffeytIQCCfRZvEr3k"
+      },
+      "parts": [
+        {
+          "type": "text",
+          "text": "The following tool was executed by the user",
+          "synthetic": true,
+          "id": "prt_1269ebae3001ZN7Vu4cK3Dy7VZ",
+          "sessionID": "ses_ed96a75eeffeytIQCCfRZvEr3k",
+          "messageID": "msg_1269eba1d001hYzw0QAU8Y2iXx"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_1269eba1d001hYzw0QAU8Y2iXx",
+        "mode": "build",
+        "agent": "build",
+        "cost": 0,
+        "path": {
+          "cwd": "/Users/jonas/Documents/reqflow",
+          "root": "/Users/jonas/Documents/reqflow"
+        },
+        "time": {
+          "created": 1791649299172,
+          "completed": 1791649299502
+        },
+        "role": "assistant",
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "read": 0,
+            "write": 0
+          }
+        },
+        "modelID": "gemini-3.8-flash",
+        "providerID": "google",
+        "id": "msg_1269ebae4001OmmRtf4foA8Wx2",
+        "sessionID": "ses_ed96a75eeffeytIQCCfRZvEr3k"
+      },
+      "parts": [
+        {
+          "type": "tool",
+          "tool": "bash",
+          "callID": "01M4K9XEQ5XPR6A9B4KW4T98BF",
+          "state": {
+            "status": "completed",
+            "time": {
+              "start": 1791649299173,
+              "end": 1791649299502
+            },
+            "input": {
+              "command": "git add -- .opencode/plugins/entire.ts .prettierignore docs/STATUS.md\ngit commit -m \"ws0: enable Entire for OpenCode\""
+            },
+            "title": "",
+            "metadata": {
+              "output": "fatal: pathspec 'docs/STATUS.mdngit' did not match any files\n"
+            },
+            "output": "fatal: pathspec 'docs/STATUS.mdngit' did not match any files\n"
+          },
+          "id": "prt_1269ebae5001b1nYamHEaManpk",
+          "sessionID": "ses_ed96a75eeffeytIQCCfRZvEr3k",
+          "messageID": "msg_1269ebae4001OmmRtf4foA8Wx2"
+        }
+      ]
+    },
+    {
+      "info": {
+        "time": {
+          "created": 1791649308811
+        },
+        "role": "user",
+        "agent": "build",
+        "model": {
+          "providerID": "google",
+          "modelID": "gemini-3.8-flash"
+        },
+        "id": "msg_1269ee08b001lm5EmehQqw5mhk",
+        "sessionID": "ses_ed96a75eeffeytIQCCfRZvEr3k"
+      },
+      "parts": [
+        {
+          "type": "text",
+          "text": "The following tool was executed by the user",
+          "synthetic": true,
+          "id": "prt_1269ee0ec001zHnrWUTSyvPng7",
+          "sessionID": "ses_ed96a75eeffeytIQCCfRZvEr3k",
+          "messageID": "msg_1269ee08b001lm5EmehQqw5mhk"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_1269ee08b001lm5EmehQqw5mhk",
+        "mode": "build",
+        "agent": "build",
+        "cost": 0,
+        "path": {
+          "cwd": "/Users/jonas/Documents/reqflow",
+          "root": "/Users/jonas/Documents/reqflow"
+        },
+        "time": {
+          "created": 1791649308909,
+          "completed": 1791649309099
+        },
+        "role": "assistant",
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "read": 0,
+            "write": 0
+          }
+        },
+        "modelID": "gemini-3.8-flash",
+        "providerID": "google",
+        "id": "msg_1269ee0ed001TKJN3bTK7RVhnN",
+        "sessionID": "ses_ed96a75eeffeytIQCCfRZvEr3k"
+      },
+      "parts": [
+        {
+          "type": "tool",
+          "tool": "bash",
+          "callID": "01M4K9XR7EQVZHY65CXW7BAPJD",
+          "state": {
+            "status": "completed",
+            "time": {
+              "start": 1791649308910,
+              "end": 1791649309099
+            },
+            "input": {
+              "command": "git add -- .opencode/plugins/entire.ts .prettierignore docs/STATUS.md"
+            },
+            "title": "",
+            "metadata": {
+              "output": ""
+            },
+            "output": ""
+          },
+          "id": "prt_1269ee0ee001n7BWVOjpacA1mA",
+          "sessionID": "ses_ed96a75eeffeytIQCCfRZvEr3k",
+          "messageID": "msg_1269ee0ed001TKJN3bTK7RVhnN"
+        }
+      ]
+    },
+    {
+      "info": {
+        "time": {
+          "created": 1791649311199
+        },
+        "role": "user",
+        "agent": "build",
+        "model": {
+          "providerID": "google",
+          "modelID": "gemini-3.8-flash"
+        },
+        "id": "msg_1269ee9df0010ZigrkWTIHxGul",
+        "sessionID": "ses_ed96a75eeffeytIQCCfRZvEr3k"
+      },
+      "parts": [
+        {
+          "type": "text",
+          "text": "The following tool was executed by the user",
+          "synthetic": true,
+          "id": "prt_1269eea4d001wBzzC6ap96o5zO",
+          "sessionID": "ses_ed96a75eeffeytIQCCfRZvEr3k",
+          "messageID": "msg_1269ee9df0010ZigrkWTIHxGul"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_1269ee9df0010ZigrkWTIHxGul",
+        "mode": "build",
+        "agent": "build",
+        "cost": 0,
+        "path": {
+          "cwd": "/Users/jonas/Documents/reqflow",
+          "root": "/Users/jonas/Documents/reqflow"
+        },
+        "time": {
+          "created": 1791649311310,
+          "completed": 1791649314762
+        },
+        "role": "assistant",
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "read": 0,
+            "write": 0
+          }
+        },
+        "modelID": "gemini-3.8-flash",
+        "providerID": "google",
+        "id": "msg_1269eea4e0011HUUP3YhFu8Rky",
+        "sessionID": "ses_ed96a75eeffeytIQCCfRZvEr3k"
+      },
+      "parts": [
+        {
+          "type": "tool",
+          "tool": "bash",
+          "callID": "01M4K9XTJE6NPDV3AD24CSRX6X",
+          "state": {
+            "status": "completed",
+            "time": {
+              "start": 1791649311310,
+              "end": 1791649314762
+            },
+            "input": {
+              "command": "git commit -m \"ws0: enable Entire for OpenCode\""
+            },
+            "title": "",
+            "metadata": {
+              "output": "[ws0-entire-opencode ef10448] ws0: enable Entire for OpenCode\n 3 files changed, 295 insertions(+)\n create mode 100644 .opencode/plugins/entire.ts\n create mode 100644 docs/STATUS.md\n"
+            },
+            "output": "[ws0-entire-opencode ef10448] ws0: enable Entire for OpenCode\n 3 files changed, 295 insertions(+)\n create mode 100644 .opencode/plugins/entire.ts\n create mode 100644 docs/STATUS.md\n"
+          },
+          "id": "prt_1269eea4e002tprGIxhkAmMDY5",
+          "sessionID": "ses_ed96a75eeffeytIQCCfRZvEr3k",
+          "messageID": "msg_1269eea4e0011HUUP3YhFu8Rky"
+        }
+      ]
+    },
+    {
+      "info": {
+        "time": {
+          "created": 1791649380742
+        },
+        "role": "user",
+        "agent": "build",
+        "model": {
+          "providerID": "google",
+          "modelID": "gemini-3.8-flash"
+        },
+        "id": "msg_1269ff986001G3Dl1oRwwPlvy3",
+        "sessionID": "ses_ed96a75eeffeytIQCCfRZvEr3k"
+      },
+      "parts": [
+        {
+          "type": "text",
+          "text": "The following tool was executed by the user",
+          "synthetic": true,
+          "id": "prt_1269ff9e2001kNWRQBhZ0nmMk3",
+          "sessionID": "ses_ed96a75eeffeytIQCCfRZvEr3k",
+          "messageID": "msg_1269ff986001G3Dl1oRwwPlvy3"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_1269ff986001G3Dl1oRwwPlvy3",
+        "mode": "build",
+        "agent": "build",
+        "cost": 0,
+        "path": {
+          "cwd": "/Users/jonas/Documents/reqflow",
+          "root": "/Users/jonas/Documents/reqflow"
+        },
+        "time": {
+          "created": 1791649380835,
+          "completed": 1791649381021
+        },
+        "role": "assistant",
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "read": 0,
+            "write": 0
+          }
+        },
+        "modelID": "gemini-3.8-flash",
+        "providerID": "google",
+        "id": "msg_1269ff9e3001S86AiBLOsnY20r",
+        "sessionID": "ses_ed96a75eeffeytIQCCfRZvEr3k"
+      },
+      "parts": [
+        {
+          "type": "tool",
+          "tool": "bash",
+          "callID": "01M4K9ZYF4XXGPKHJ2Q70TRS7P",
+          "state": {
+            "status": "completed",
+            "time": {
+              "start": 1791649380836,
+              "end": 1791649381021
+            },
+            "input": {
+              "command": "git add -- docs/STATUS.md"
+            },
+            "title": "",
+            "metadata": {
+              "output": ""
+            },
+            "output": ""
+          },
+          "id": "prt_1269ff9e4001BtO1sofwkXpMzl",
+          "sessionID": "ses_ed96a75eeffeytIQCCfRZvEr3k",
+          "messageID": "msg_1269ff9e3001S86AiBLOsnY20r"
+        }
+      ]
+    },
+    {
+      "info": {
+        "time": {
+          "created": 1791649383127
+        },
+        "role": "user",
+        "agent": "build",
+        "model": {
+          "providerID": "google",
+          "modelID": "gemini-3.8-flash"
+        },
+        "id": "msg_126a002d7001T5Wvt9YgDdloWh",
+        "sessionID": "ses_ed96a75eeffeytIQCCfRZvEr3k"
+      },
+      "parts": [
+        {
+          "type": "text",
+          "text": "The following tool was executed by the user",
+          "synthetic": true,
+          "id": "prt_126a00337001AF4oj5euCRaz2O",
+          "sessionID": "ses_ed96a75eeffeytIQCCfRZvEr3k",
+          "messageID": "msg_126a002d7001T5Wvt9YgDdloWh"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_126a002d7001T5Wvt9YgDdloWh",
+        "mode": "build",
+        "agent": "build",
+        "cost": 0,
+        "path": {
+          "cwd": "/Users/jonas/Documents/reqflow",
+          "root": "/Users/jonas/Documents/reqflow"
+        },
+        "time": {
+          "created": 1791649383224
+        },
+        "role": "assistant",
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "read": 0,
+            "write": 0
+          }
+        },
+        "modelID": "gemini-3.8-flash",
+        "providerID": "google",
+        "id": "msg_126a0033800131E6YYBmDNjT2K",
+        "sessionID": "ses_ed96a75eeffeytIQCCfRZvEr3k"
+      },
+      "parts": [
+        {
+          "type": "tool",
+          "tool": "bash",
+          "callID": "01M4KA00SSAMMH3ASVHDTDEQBK",
+          "state": {
+            "status": "running",
+            "time": {
+              "start": 1791649383225
+            },
+            "input": {
+              "command": "git commit -m \"ws0: document verified Entire setup\""
+            }
+          },
+          "id": "prt_126a00339001tQ5F71SqnzGSJV",
+          "sessionID": "ses_ed96a75eeffeytIQCCfRZvEr3k",
+          "messageID": "msg_126a0033800131E6YYBmDNjT2K"
+        }
+      ]
+    }
+  ]
+}
