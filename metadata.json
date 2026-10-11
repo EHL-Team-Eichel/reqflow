@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4MKZMABA4BXXQCZ1NB80V7X",
   "strategy": "manual-commit",
   "branch": "ws2-editor-completion",
-  "checkpoints_count": 9,
+  "checkpoints_count": 11,
   "files_touched": [
     "docs/STATUS.md"
   ],
@@ -56,13 +56,20 @@
       "compact_transcript": "/6/transcript.jsonl",
       "content_hash": "/6/content_hash.txt",
       "prompt": ""
+    },
+    {
+      "metadata": "/7/metadata.json",
+      "transcript": "/7/full.jsonl",
+      "compact_transcript": "/7/transcript.jsonl",
+      "content_hash": "/7/content_hash.txt",
+      "prompt": "/7/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 2,
+    "input_tokens": 270517,
     "cache_creation_tokens": 1626,
-    "cache_read_tokens": 595286,
-    "output_tokens": 473,
-    "api_call_count": 1
+    "cache_read_tokens": 774614,
+    "output_tokens": 4233,
+    "api_call_count": 8
   }
 }

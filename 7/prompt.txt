@@ -1,0 +1,1 @@
+check which ws still need to be done and explaine to me in simple words what each of them does if they are fully implemented
