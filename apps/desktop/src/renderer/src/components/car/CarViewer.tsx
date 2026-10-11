@@ -10,7 +10,7 @@ import { buildCar, type CarPiece } from "./model/buildCar";
 import { buildVehicleModel } from "./models/builder";
 import { getVehicleModelById, getSourceMeshInfoById, loadSourceMeshById } from "./models/registry";
 import type { SourceMeshProfile } from "./converter/profile";
-import { buildSourceMesh } from "./converter/buildSourceMesh";
+import { buildSourceVehicle } from "./converter/buildSourceVehicle";
 import type { PowertrainType } from "./models/types";
 import { G60 } from "./model/body";
 import { ExteriorFade, type CarView } from "./model/exteriorFade";
@@ -141,13 +141,13 @@ export function CarViewer(props: Props) {
 
     const activeModel = props.modelId ? getVehicleModelById(props.modelId) : undefined;
     const car = sourceMesh
-      ? buildSourceMesh(sourceMesh)
+      ? buildSourceVehicle(sourceMesh, props.powertrain)
       : activeModel
         ? buildVehicleModel(activeModel, props.powertrain)
         : buildCar(props.powertrain);
     scene.add(car.root);
     setAnchors(car.anchors);
-    const exteriorTargets = exteriorBadgeTargets(car.pieces, car.anchors);
+    const exteriorTargets = exteriorBadgeTargets(car.pieces, car.exteriorAnchors ?? car.anchors);
     const exteriorPartsForModel = new Set(exteriorTargets.keys());
     setExteriorParts(exteriorPartsForModel);
     const exteriorSurfaces = car.pieces

@@ -1,6 +1,6 @@
 # Source-preserving local car models
 
-These files retain their original vehicle meshes with coordinate normalization, uniform scaling and Reqflow sketch materials. Models replace existing catalog IDs; the basic M5 is excluded.
+These files retain their original vehicle meshes with coordinate normalization and uniform scaling. The viewer combines the unchanged exterior with Reqflow sketch materials and the standard schematic interior, adjusted to each model’s proportions and body class. Models replace existing catalog IDs; the basic M5 is excluded.
 
 Source geometry and textures belong to their credited authors. Each modified model keeps its original license. Attribution and license links are also shown on the Car page.
 

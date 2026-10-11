@@ -43,5 +43,16 @@
     "steering_wheel",
     "trunk_lid",
     "wheels"
+  ],
+  "exteriorPartIds": [
+    "body",
+    "front_doors",
+    "hood",
+    "mirrors",
+    "rear_diffuser",
+    "rear_spoiler",
+    "side_windows",
+    "trunk_lid",
+    "wheels"
   ]
 }

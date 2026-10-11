@@ -41,5 +41,6 @@
     "steering_wheel",
     "taillights",
     "wheels"
-  ]
+  ],
+  "exteriorPartIds": ["body", "exhaust_system", "mirrors", "side_windows", "taillights", "wheels"]
 }

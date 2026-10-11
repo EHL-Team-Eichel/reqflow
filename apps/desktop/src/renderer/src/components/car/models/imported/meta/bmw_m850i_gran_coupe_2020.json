@@ -40,5 +40,6 @@
     "side_windows",
     "taillights",
     "wheels"
-  ]
+  ],
+  "exteriorPartIds": ["body", "front_doors", "mirrors", "side_windows", "taillights", "wheels"]
 }

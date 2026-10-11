@@ -44,5 +44,18 @@
     "taillights",
     "trunk_lid",
     "wheels"
+  ],
+  "exteriorPartIds": [
+    "body",
+    "front_bumper",
+    "front_doors",
+    "headlights",
+    "kidney_grille",
+    "rear_bumper",
+    "rear_window",
+    "side_windows",
+    "taillights",
+    "trunk_lid",
+    "wheels"
   ]
 }

@@ -1,6 +1,7 @@
+import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { VEHICLE_MODELS, getSourceMeshInfoById, loadSourceMeshById } from "../models/registry";
-import { buildSourceMesh } from "../converter/buildSourceMesh";
+import { buildSourceVehicle } from "../converter/buildSourceVehicle";
 import { buildVehicleModel } from "../models/builder";
 import { availablePartIds, powertrainSubclasses, POWERTRAINS } from "./powertrains";
 import { initialMarkerMenu, toggleMarkerMenu, menuPartIds } from "../markerMenu";
@@ -12,7 +13,7 @@ describe("existing catalog switching integration", () => {
     async (model) => {
       const source = await loadSourceMeshById(model.id);
       const car = source
-        ? buildSourceMesh(source)
+        ? buildSourceVehicle(source, model.defaultPowertrain)
         : buildVehicleModel(model, model.defaultPowertrain);
       const modelled = new Set(
         car.pieces.map((p) => p.partId).filter((id): id is string => id !== null),
@@ -53,6 +54,45 @@ describe("existing catalog switching integration", () => {
       }
       for (const line of car.sketchLines) line.dispose();
     }
+  });
+
+  it("switches imported schematic powertrains and preserves the source exterior", async () => {
+    const source = (await loadSourceMeshById("bmw_330i_xdrive_2025"))!;
+    expect(source).toBeDefined();
+    const shells: string[][] = [];
+    for (const option of POWERTRAINS) {
+      const car = buildSourceVehicle(source, option.value);
+      const available = availablePartIds(option.value, source.model);
+      const modelled = new Set(
+        car.pieces.map((piece) => piece.partId).filter((id): id is string => id !== null),
+      );
+      expect([...available].sort()).toEqual([...modelled].sort());
+      expect(available.has("dashboard")).toBe(true);
+      expect(available.has("front_seats")).toBe(true);
+      expect(available.has("fuel_cell")).toBe(option.value === "h2");
+      expect(available.has("combustion_engine")).toBe(
+        option.value === "gasoline" || option.value === "hybrid",
+      );
+      shells.push(
+        car.pieces
+          .filter((piece) => piece.layer === "exterior")
+          .map((piece) => {
+            const array = piece.mesh.geometry.getAttribute("position").array;
+            return createHash("sha256")
+              .update(new Uint8Array(array.buffer, array.byteOffset, array.byteLength))
+              .digest("hex");
+          }),
+      );
+      const menus = powertrainSubclasses(option.value, source.model).flatMap(
+        (group) => group.partIds,
+      );
+      expect([...menus].sort()).toEqual([...available].sort());
+      for (const piece of car.pieces) {
+        piece.mesh.geometry.dispose();
+        (piece.mesh.material as THREE.Material).dispose();
+      }
+    }
+    for (const shell of shells.slice(1)) expect(shell).toEqual(shells[0]);
   });
 
   it("activates optional equipment markers and closes them with their parent", () => {

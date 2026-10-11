@@ -41,5 +41,15 @@
     "side_windows",
     "trunk_lid",
     "wheels"
+  ],
+  "exteriorPartIds": [
+    "body",
+    "front_doors",
+    "headlights",
+    "hood",
+    "rear_bumper",
+    "side_windows",
+    "trunk_lid",
+    "wheels"
   ]
 }

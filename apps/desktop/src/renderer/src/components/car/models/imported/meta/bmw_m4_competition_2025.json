@@ -40,5 +40,14 @@
     "rear_spoiler",
     "side_windows",
     "wheels"
+  ],
+  "exteriorPartIds": [
+    "body",
+    "front_doors",
+    "hood",
+    "kidney_grille",
+    "rear_spoiler",
+    "side_windows",
+    "wheels"
   ]
 }
