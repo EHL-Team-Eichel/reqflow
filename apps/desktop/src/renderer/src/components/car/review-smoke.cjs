@@ -243,8 +243,8 @@ async function run(win) {
   detail = await invoke("requirements.get", ids[0]);
   check(
     detail.requirement.title === "Synthetic rear seat comfort refined by PM" &&
-      detail.requirement.status === "approved",
-    "Content edit persists without changing human decision",
+      detail.requirement.status === "in_review",
+    "Content edit persists and sends the approved requirement back to review",
   );
   check(
     JSON.stringify({ ids: detail.requirement.findingIds, targets: detail.requirement.targets }) ===
