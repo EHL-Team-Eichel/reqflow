@@ -16,13 +16,21 @@ import {
   type CollectionStatus,
   type ResearchRecord,
   type Source,
+  type LlmClient,
 } from "@reqflow/core";
+import { ASSESSMENT_FIELD, assessOriginal, type SourceAssessment } from "./assessment";
 import { RESEARCH_AGENTS, buildQueries } from "./agents";
 import { createMastraQueryPlanner } from "./mastra";
 import { createProviderHttp, errorReport, redactSecrets, withAbort } from "./http";
 import { normalizeItem, mergeResearchDatasets } from "./raw";
 import { ProviderError, type ProviderAdapter, type ProviderContext } from "./provider";
 import { assertJsonByteBudget, jsonByteSize, RESEARCH_DATASET_MAX_BYTES } from "./data-budget";
+import {
+  discoverCompetitors,
+  buildAutonomousQueries,
+  refineAgentQueries,
+  type RejectionContext,
+} from "./autonomous";
 import { createFirecrawlAdapter } from "./providers/firecrawl";
 import { createTavilyAdapter } from "./providers/tavily";
 import { createYouTubeAdapter } from "./providers/youtube";
@@ -217,16 +225,40 @@ export interface ResearchCollectorOptions {
   documents?: ProviderContext["documents"];
   adapters?: Map<ResearchProviderId, ProviderAdapter>;
   fetchImpl?: typeof fetch;
+  /** Production injects the selected Quality client. Omitted only for retrieval-only/offline compatibility. */
+  reviewLlm?: () => LlmClient;
   save(dataset: ResearchDataset): Promise<void>;
+}
+
+async function parallelMap<T, R>(
+  items: readonly T[],
+  concurrency: number,
+  fn: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let nextIndex = 0;
+  const workers = Array.from(
+    { length: Math.max(1, Math.min(concurrency, items.length)) },
+    async () => {
+      while (nextIndex < items.length) {
+        const index = nextIndex++;
+        results[index] = await fn(items[index]!, index);
+      }
+    },
+  );
+  await Promise.all(workers);
+  return results;
 }
 
 export function createResearchCollector(options: ResearchCollectorOptions): ResearchCollector {
   return {
     async collect(input, context) {
       const request = ResearchRequest.parse(input);
+      const hasCustomDeadline =
+        typeof request.limits.timeoutMs === "number" && request.limits.timeoutMs !== 120000;
       const signal = AbortSignal.any([
         context.signal,
-        AbortSignal.timeout(request.limits.timeoutMs),
+        ...(hasCustomDeadline ? [AbortSignal.timeout(request.limits.timeoutMs)] : []),
       ]);
       const budget = { used: 0 };
       const httpOptions = { limits: request.limits, signal, fetchImpl: options.fetchImpl, budget };
@@ -238,7 +270,10 @@ export function createResearchCollector(options: ResearchCollectorOptions): Rese
       const safe = (message: string) => redactSecrets(message, secrets);
       const parts: ResearchDataset[] = [];
       const uniqueRecords = new Set<string>();
+      const usableRecords = new Set<string>();
       let plannerRequests = 0;
+      let reviewRequests = 0;
+      const assessments = new Map<string, SourceAssessment>();
       let planner: ReturnType<typeof createMastraQueryPlanner> | undefined;
       // This optional context field belongs to ResearchCollector, never to strict ResearchRequest.
       const planQueries =
@@ -269,7 +304,39 @@ export function createResearchCollector(options: ResearchCollectorOptions): Rese
           error instanceof Error ? error.message : "Invalid research domain policy.",
         );
       }
+
       const agents = [...new Set(request.agents)];
+
+      // Autonomous discovery of competitor models when competitor_models agent is active and not explicitly provided
+      if (
+        scope.competitors.length === 0 &&
+        agents.includes("competitor_models") &&
+        options.reviewLlm
+      ) {
+        try {
+          const reserveDiscovery = () => {
+            if (budget.used >= request.limits.maxRequests) {
+              throw new Error("Shared request budget exhausted during competitor discovery.");
+            }
+            budget.used += 1;
+            reviewRequests += 1;
+          };
+          const discovered = await discoverCompetitors(
+            scope,
+            options.reviewLlm(),
+            signal,
+            reserveDiscovery,
+          );
+          if (discovered.length > 0) {
+            scope = { ...scope, competitors: discovered };
+            context.log(
+              `Autonomously discovered segment competitors: ${discovered.map((c) => `${c.brand} ${c.model}`).join(", ")}.`,
+            );
+          }
+        } catch {
+          // Keep deterministic segmentation
+        }
+      }
 
       for (const [index, agentId] of agents.entries()) {
         const definition = RESEARCH_AGENTS.find((entry) => entry.id === agentId)!;
@@ -280,7 +347,7 @@ export function createResearchCollector(options: ResearchCollectorOptions): Rese
         let limitationBytes = 2;
         let limitationsOmitted = false;
         let serializationLimitReached = false;
-        const startRequests = http.requests + plannerRequests;
+        const startRequests = http.requests + plannerRequests + reviewRequests;
         const eligible: {
           provider: ResearchProviderId;
           adapter: ProviderAdapter;
@@ -325,7 +392,7 @@ export function createResearchCollector(options: ResearchCollectorOptions): Rese
                 status,
                 recordIds: [...new Set(candidateRecords.map((record) => record.id))],
                 limitations: resultLimitations(),
-                requests: http.requests + plannerRequests - startRequests,
+                requests: http.requests + plannerRequests + reviewRequests - startRequests,
               },
             ],
             retrievedAt: new Date().toISOString(),
@@ -394,7 +461,10 @@ export function createResearchCollector(options: ResearchCollectorOptions): Rese
               );
               continue;
             }
-            if (uniqueRecords.size >= request.limits.maxResults) {
+            const qualityTargetReached = options.reviewLlm
+              ? usableRecords.size >= request.limits.maxResults
+              : uniqueRecords.size >= request.limits.maxResults;
+            if (qualityTargetReached) {
               note("partial", "Shared result limit reached.");
               continue;
             }
@@ -410,7 +480,7 @@ export function createResearchCollector(options: ResearchCollectorOptions): Rese
         const queryWork = eligible.some(({ provider }) => usesQueries(provider));
         if (queryWork) {
           try {
-            queries = buildQueries(agentId, scope);
+            queries = buildAutonomousQueries(agentId, scope, scope.competitors);
           } catch {
             queryError = true;
             note(
@@ -448,112 +518,300 @@ export function createResearchCollector(options: ResearchCollectorOptions): Rese
           }
         }
 
-        for (const { provider, adapter, scope: restricted, config } of eligible) {
-          if (queryError && usesQueries(provider)) continue;
-          if (signal.aborted) {
-            note("cancelled", "Research cancelled or time limit reached.");
-            break;
-          }
-          const remaining = request.limits.maxResults - uniqueRecords.size;
-          if (remaining <= 0) {
-            note("partial", "Shared result limit reached.");
-            break;
-          }
-          if (provider !== "local_documents" && budget.used >= request.limits.maxRequests) {
-            note("partial", "Shared request budget exhausted.");
-            continue;
-          }
-          try {
-            const outcome = await adapter.collect(
-              { agentId, scope: restricted, queries },
-              {
-                http,
-                credentials: options.credentials,
-                config,
-                limits: {
-                  ...request.limits,
-                  maxResults: remaining,
-                  maxRequests: Math.max(1, request.limits.maxRequests - plannerRequests),
-                },
-                signal,
-                log: (message) => context.log(safe(message)),
-                now: () => new Date().toISOString(),
-                documents: options.documents,
-              },
-            );
-            states.push(outcome.status);
-            for (const limitation of outcome.limitations) addLimitation(limitation);
-            // Inspect all returned records: duplicates do not consume unique result slots.
-            for (const value of outcome.items) {
-              try {
-                const item = CollectedItem.parse(value);
-                if (item.provider !== provider || !allowedSource(item, restricted)) {
-                  note(
-                    "partial",
-                    `${provider}: returned source excluded by the provider or public-source domain policy.`,
-                  );
-                  continue;
-                }
-                // normalizeItem hashes JSON. Validate inert data and bound that individual
-                // serialization before normalization; its duplicated fields are checked below.
-                assertJsonByteBudget(
-                  item,
-                  RESEARCH_DATASET_MAX_BYTES - RESULT_METADATA_RESERVE_BYTES,
-                );
-                const { source, record } = normalizeItem(
-                  item,
-                  agentId,
-                  context.runId,
-                  new Date().toISOString(),
-                );
-                if (
-                  !uniqueRecords.has(record.id) &&
-                  uniqueRecords.size >= request.limits.maxResults
-                ) {
-                  note(
-                    "partial",
-                    "Shared result limit reached; excess unique records were not retained.",
-                  );
-                  continue;
-                }
-                // Merge exactly as persistence does, including known sources, duplicated raw
-                // metadata/table fields, revision notes and collecting-agent provenance. This
-                // builds only arrays/objects, never the aggregate dataset's JSON string.
-                const candidate = mergeResearchDatasets(
-                  ...parts,
-                  part([...sources, source], [...records, record]),
-                );
-                assertJsonByteBudget(
-                  candidate,
-                  RESEARCH_DATASET_MAX_BYTES - RESULT_METADATA_RESERVE_BYTES,
-                );
-                uniqueRecords.add(record.id);
-                sources.push(source);
-                records.push(record);
-              } catch (error) {
-                if (error instanceof ProviderError && error.code === "limit_reached") {
-                  states.push("partial");
-                  serializationLimitReached = true;
-                  continue;
-                }
-                note(
-                  "error",
-                  `${provider}: malformed original record was skipped; previously collected originals were retained.`,
-                );
-              }
+        const targetUsableForAgent = Math.max(
+          1,
+          Math.ceil(request.limits.maxResults / agents.length),
+        );
+        const agentUsableRecordIds = new Set<string>();
+        const maxRounds =
+          options.reviewLlm && eligible.some(({ provider }) => usesQueries(provider)) ? 3 : 1;
+        const rejections: RejectionContext[] = [];
+        const seenQueries = new Set<string>();
+
+        for (let round = 1; round <= maxRounds; round++) {
+          let newRecordsInRound = 0;
+          for (const q of queries) seenQueries.add(q);
+          for (const { provider, adapter, scope: restricted, config } of eligible) {
+            if (queryError && usesQueries(provider)) continue;
+            if (signal.aborted) {
+              note("cancelled", "Research cancelled or time limit reached.");
+              break;
             }
-          } catch (error) {
-            const failure = errorReport(error);
-            note(
-              signal.aborted || failure.code === "cancelled"
-                ? "cancelled"
-                : failure.code === "invalid_credentials"
-                  ? "missing_credentials"
-                  : failure.code === "permission_required" || failure.code === "unsupported"
-                    ? "blocked"
-                    : "error",
-              `${provider}: ${failure.message}`,
+            const qualityTargetReached = options.reviewLlm
+              ? usableRecords.size >= request.limits.maxResults
+              : uniqueRecords.size >= request.limits.maxResults;
+            if (qualityTargetReached) {
+              note("partial", "Shared result limit reached.");
+              break;
+            }
+            const remaining = options.reviewLlm
+              ? request.limits.maxResults - usableRecords.size
+              : request.limits.maxResults - uniqueRecords.size;
+            if (remaining <= 0) {
+              note("partial", "Shared result limit reached.");
+              break;
+            }
+            if (provider !== "local_documents" && budget.used >= request.limits.maxRequests) {
+              note("partial", "Shared request budget exhausted.");
+              continue;
+            }
+            try {
+              const outcome = await adapter.collect(
+                { agentId, scope: restricted, queries },
+                {
+                  http,
+                  credentials: options.credentials,
+                  config,
+                  limits: {
+                    ...request.limits,
+                    maxResults: remaining,
+                    maxRequests: Math.max(1, request.limits.maxRequests - plannerRequests),
+                  },
+                  signal,
+                  log: (message) => context.log(safe(message)),
+                  now: () => new Date().toISOString(),
+                  documents: options.documents,
+                },
+              );
+              states.push(outcome.status);
+              for (const limitation of outcome.limitations) addLimitation(limitation);
+
+              const parsedItems: CollectedItem[] = [];
+              for (const value of outcome.items) {
+                try {
+                  const item = CollectedItem.parse(value);
+                  if (item.provider !== provider || !allowedSource(item, restricted)) {
+                    note(
+                      "partial",
+                      `${provider}: returned source excluded by the provider or public-source domain policy.`,
+                    );
+                    continue;
+                  }
+                  assertJsonByteBudget(
+                    item,
+                    RESEARCH_DATASET_MAX_BYTES - RESULT_METADATA_RESERVE_BYTES,
+                  );
+                  parsedItems.push(item);
+                } catch (error) {
+                  if (error instanceof ProviderError && error.code === "limit_reached") {
+                    states.push("partial");
+                    serializationLimitReached = true;
+                    continue;
+                  }
+                  note(
+                    "error",
+                    `${provider}: malformed original record was skipped; previously collected originals were retained.`,
+                  );
+                }
+              }
+
+              const itemConcurrency = Math.min(
+                request.limits.concurrency || 3,
+                parsedItems.length || 1,
+              );
+              const processedItems = await parallelMap(
+                parsedItems,
+                itemConcurrency,
+                async (item) => {
+                  const { source, record } = normalizeItem(
+                    item,
+                    agentId,
+                    context.runId,
+                    new Date().toISOString(),
+                  );
+                  let isUsable = true;
+                  let statusNote: { status: CollectionStatus; message: string } | undefined;
+
+                  if (options.reviewLlm) {
+                    const key = `${agentId}:${record.id}:${record.contentHash}`;
+                    let assessment = assessments.get(key);
+                    if (!assessment) {
+                      try {
+                        assessment = await withAbort(
+                          assessOriginal(
+                            item,
+                            record,
+                            agentId,
+                            scope,
+                            options.reviewLlm(),
+                            signal,
+                            () => {
+                              if (budget.used >= request.limits.maxRequests)
+                                throw new Error(
+                                  "Shared request budget exhausted during source assessment.",
+                                );
+                              budget.used += 1;
+                              reviewRequests += 1;
+                            },
+                          ),
+                          signal,
+                        );
+                      } catch (error) {
+                        assessment = {
+                          version: 1,
+                          agentId,
+                          contentHash: record.contentHash,
+                          scope,
+                          runId: context.runId,
+                          verdict: "unreviewed",
+                          reasons: [
+                            "Content assessment did not complete; this original is archived but excluded from usable output.",
+                          ],
+                          uncertainties: [],
+                          excerpts: [],
+                          tableRows: [],
+                          model: "",
+                          summaries: [],
+                        };
+                        statusNote = {
+                          status: signal.aborted ? "cancelled" : "partial",
+                          message: safe(errorReport(error).message),
+                        };
+                        addLimitation(
+                          "Source assessment incomplete; affected originals are archived but excluded from usable output.",
+                        );
+                      }
+                      assessments.set(key, assessment);
+                    }
+                    record.fields = { ...record.fields, [ASSESSMENT_FIELD]: [assessment] };
+                    if (assessment.verdict === "relevant") {
+                      isUsable = true;
+                    } else {
+                      isUsable = false;
+                      rejections.push({
+                        url: item.sourceUrl,
+                        reason: assessment.reasons.join("; ") || `verdict ${assessment.verdict}`,
+                      });
+                      if (assessment.verdict === "uncertain") {
+                        statusNote = {
+                          status: "partial",
+                          message:
+                            "Source relevance is uncertain; this original is archived but excluded from usable output.",
+                        };
+                      }
+                    }
+                    context.log(
+                      `${definition.label}: source [${record.id}] content assessment ${assessment.verdict}.`,
+                    );
+                  }
+                  return { source, record, isUsable, statusNote };
+                },
+              );
+
+              for (const { source, record, isUsable, statusNote } of processedItems) {
+                try {
+                  if (statusNote) note(statusNote.status, statusNote.message);
+
+                  if (
+                    !uniqueRecords.has(record.id) &&
+                    (options.reviewLlm
+                      ? usableRecords.size >= request.limits.maxResults && !isUsable
+                      : uniqueRecords.size >= request.limits.maxResults)
+                  ) {
+                    note(
+                      "partial",
+                      "Shared result limit reached; excess unique records were not retained.",
+                    );
+                    continue;
+                  }
+
+                  const candidate = mergeResearchDatasets(
+                    ...parts,
+                    part([...sources, source], [...records, record]),
+                  );
+                  assertJsonByteBudget(
+                    candidate,
+                    RESEARCH_DATASET_MAX_BYTES - RESULT_METADATA_RESERVE_BYTES,
+                  );
+                  uniqueRecords.add(record.id);
+                  newRecordsInRound++;
+                  sources.push(source);
+                  records.push(record);
+                  if (isUsable) {
+                    usableRecords.add(record.id);
+                    agentUsableRecordIds.add(record.id);
+                  }
+                } catch (error) {
+                  if (error instanceof ProviderError && error.code === "limit_reached") {
+                    states.push("partial");
+                    serializationLimitReached = true;
+                    continue;
+                  }
+                  note(
+                    "error",
+                    `${provider}: malformed original record was skipped; previously collected originals were retained.`,
+                  );
+                }
+              }
+            } catch (error) {
+              const failure = errorReport(error);
+              note(
+                signal.aborted || failure.code === "cancelled"
+                  ? "cancelled"
+                  : failure.code === "invalid_credentials"
+                    ? "missing_credentials"
+                    : failure.code === "permission_required" || failure.code === "unsupported"
+                      ? "blocked"
+                      : "error",
+                `${provider}: ${failure.message}`,
+              );
+            }
+          }
+
+          const qualityGoalReached =
+            agentUsableRecordIds.size >= targetUsableForAgent ||
+            usableRecords.size >= request.limits.maxResults;
+          const remainingAgents = agents.length - index - 1;
+          const reservedForRemaining =
+            remainingAgents * Math.min(25, Math.floor(request.limits.maxRequests / agents.length));
+          const canRefine = budget.used + reservedForRemaining < request.limits.maxRequests;
+          if (
+            qualityGoalReached ||
+            round >= maxRounds ||
+            newRecordsInRound === 0 ||
+            !canRefine ||
+            budget.used >= request.limits.maxRequests ||
+            signal.aborted ||
+            rejections.length === 0
+          ) {
+            if (qualityGoalReached) {
+              context.log(
+                `${definition.label}: reached quality goal with ${agentUsableRecordIds.size} relevant sources.`,
+              );
+            }
+            break;
+          }
+
+          try {
+            context.log(
+              `${definition.label}: round ${round} yielded ${agentUsableRecordIds.size}/${targetUsableForAgent} relevant sources (${rejections.length} rejected). Refining search queries...`,
             );
+            const reserveRefinement = () => {
+              if (budget.used >= request.limits.maxRequests) {
+                throw new Error("Shared request budget exhausted during query refinement.");
+              }
+              budget.used += 1;
+              plannerRequests += 1;
+            };
+            const refinement = await refineAgentQueries({
+              agentId,
+              scope,
+              previousQueries: [...seenQueries],
+              rejections,
+              acceptedCount: agentUsableRecordIds.size,
+              targetCount: targetUsableForAgent,
+              discoveredCompetitors: scope.competitors,
+              llm: options.reviewLlm ? options.reviewLlm() : undefined,
+              signal,
+              reserveRequest: reserveRefinement,
+            });
+            context.log(
+              `${definition.label}: refined queries: ${refinement.queries.join("; ")} (${refinement.refinementReason})`,
+            );
+            queries = refinement.queries;
+            rejections.length = 0;
+          } catch {
+            break;
           }
         }
         const status: AgentCollectionResult["status"] =

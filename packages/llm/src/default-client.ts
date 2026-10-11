@@ -8,6 +8,7 @@ import {
 import { z } from "zod";
 import { anthropicSchema } from "./anthropic-schema";
 import { googleSchema } from "./google-schema";
+import { googleErrorDetails } from "./google-error";
 import { mockObject } from "./mock";
 import { openaiSchema } from "./openai-schema";
 import type { JsonSchema } from "./json-schema";
@@ -193,13 +194,15 @@ export function createLlmClient(
     body: unknown,
     signal?: AbortSignal,
   ) {
+    let firstError: Error | undefined;
     for (let attempt = 0; ; attempt++) {
       try {
         return await attemptPost(url, headers, body, signal);
       } catch (error) {
         signal?.throwIfAborted();
+        firstError ??= error instanceof Error ? error : new Error(String(error));
         if (!(error instanceof RetryableCallError) || attempt >= AI_RETRIES) {
-          throw error instanceof RetryableCallError ? new Error(error.message) : error;
+          throw firstError;
         }
         await pause(retryDelay(attempt, error.retryAfter), signal);
       }
@@ -226,9 +229,11 @@ export function createLlmClient(
         throw new RetryableCallError(`${label} transport failed`);
       }
       signal?.throwIfAborted();
-      // Error bodies and transport exceptions can contain credentials or request text. Never echo them.
+      // Google exposes useful typed quota/retry details; its prose is never safe to echo.
       if (!response.ok) {
-        const message = `${label} request failed (HTTP ${response.status})`;
+        const details = provider === "google" ? await googleErrorDetails(response, signal) : "";
+        signal?.throwIfAborted();
+        const message = `${label} request failed (HTTP ${response.status})${details}`;
         if (isRetryableStatus(response.status))
           throw new RetryableCallError(message, response.headers?.get?.("retry-after") ?? null);
         throw new Error(message);

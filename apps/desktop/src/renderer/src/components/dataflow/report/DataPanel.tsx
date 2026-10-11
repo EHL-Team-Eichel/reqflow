@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useStore } from "zustand";
 import {
   type LineageStep,
   type WorkflowGraph,
@@ -27,6 +28,8 @@ import { cx } from "@/lib/cx";
 import { SplitterPanel } from "./SplitterPanel";
 import { reportForStep, reportRevision } from "./splitter-view";
 import { FilterPanel, FilterInputPanel } from "./FilterPanel";
+import { runStore } from "../run-session";
+import { previewSource } from "../source-preview";
 
 interface Props {
   root: WorkflowGraph;
@@ -121,13 +124,14 @@ function DataPanelBody({
 
   const draftScope = useStore(workflowStore, (s) => s.scope);
   const scope = run?.scope ?? draftScope;
+  const sourceRun = useStore(runStore, (s) => s.run);
   const inputs = useMemo(
     () => (run ? null : reportPreviewInputs(root, step)),
     [root, step, run?.id],
   );
   const revision = reportRevision(run);
   const request = useMemo(
-    () => ({ inputs, run, step }),
+    () => ({ inputs, run, step, sourceRun }),
     [
       inputs,
       run?.id,
@@ -136,6 +140,7 @@ function DataPanelBody({
       run?.blockRuns.find((br) => br.blockId === step.block.id)?.status,
       step.block.id,
       step.path.join("/"),
+      sourceRun,
     ],
   );
   const [result, setResult] = useState<{
@@ -153,7 +158,9 @@ function DataPanelBody({
           data,
           logs: [],
         }))
-      : previewReportInputs(request.inputs!, scope, api.blocks.preview);
+      : previewReportInputs(request.inputs!, scope, api.blocks.preview, (block) =>
+          previewSource(api, block, scope, request.sourceRun),
+        );
     void read.then(
       ({ data, logs }) => {
         if (!cancelled) setResult({ request, scope, state: { status: "ready", data, logs } });
@@ -292,9 +299,13 @@ function DataPanelBody({
       <div data-testid="data-real" className="bg-brand-soft px-4 py-2 text-xs text-brand">
         {run
           ? "Saved data from this run. Reviewing or continuing the flow does not approve its requirements."
-          : step.block.kind === "hil"
-            ? "Preview of connected source inputs, read just now. This flow has not run; no review or approval has been recorded."
-            : `Read from the block's ${step.block.params.source === "database" ? "database" : "file"} just now: its own output, not a run.`}
+          : inputs?.some(
+                ({ block }) => block.kind === "research" || block.kind === "research_opencode",
+              )
+            ? `Source preview with saved Research output from run ${sourceRun?.id}.${step.block.kind === "hil" ? " This HIL step has not run; no review or approval has been recorded." : ""}`
+            : step.block.kind === "hil"
+              ? "Preview of connected source inputs, read just now. This flow has not run; no review or approval has been recorded."
+              : `Read from the block's ${step.block.params.source === "database" ? "database" : "file"} just now: its own output, not a run.`}
       </div>
 
       <div className="border-b border-line px-4 pt-2">

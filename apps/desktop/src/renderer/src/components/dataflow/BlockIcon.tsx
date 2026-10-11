@@ -51,6 +51,16 @@ export function BlockIcon({
           <path d="M11 3.5a15.3 15.3 0 010 15a15.3 15.3 0 010-15z" />
         </svg>
       );
+    case "research_opencode":
+      return (
+        <svg {...svgProps}>
+          <circle cx="11" cy="11" r="8" />
+          <path d="M21 21l-4.35-4.35" />
+          <path d="m8 10-2 2 2 2" />
+          <path d="m14 10 2 2-2 2" />
+          <line x1="12" y1="9" x2="10" y2="15" />
+        </svg>
+      );
     case "ai_filter":
       return (
         <svg {...svgProps}>

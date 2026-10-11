@@ -8,10 +8,12 @@ import { aiSplitterImplementations } from "./ai-splitter";
 import { hilImplementations } from "./hil";
 import { rawImplementations } from "./raw";
 import { researchImplementations } from "./research";
+import { researchOpencodeImplementations } from "./research-opencode";
 
 export const allBlockImplementations: readonly BlockImplementation[] = [
   ...rawImplementations,
   ...researchImplementations,
+  ...researchOpencodeImplementations,
   ...aiFilterImplementations,
   ...aiSplitterImplementations,
   ...hilImplementations,
@@ -32,3 +34,6 @@ export * from "./research/http";
 export * from "./research/agents";
 export * from "./research/documents/local";
 export * from "./research/data-budget";
+export * from "./research/tabular";
+export * from "./research/summarizer";
+export * from "./research-opencode";

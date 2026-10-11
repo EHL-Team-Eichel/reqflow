@@ -204,6 +204,7 @@ class WebCollection {
         headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
         body,
         signal: this.ctx.signal,
+        retryPost: true,
       }),
     );
   }

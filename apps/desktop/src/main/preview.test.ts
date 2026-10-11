@@ -43,13 +43,26 @@ describe("blocks.preview", () => {
           scope,
         }),
       ).rejects.toMatchObject({
-        code: "not_implemented",
+        code: "invalid_input",
         message: expect.stringMatching(/run the flow/i),
       });
       expect(run).not.toHaveBeenCalled();
     } finally {
       run.mockRestore();
     }
+  });
+
+  it("does not invoke OpenCode CLI execution during preview", async () => {
+    await expect(
+      previewBlock(registry, files, {
+        kind: "research_opencode",
+        params: defaultBlockParams("research_opencode"),
+        scope,
+      }),
+    ).rejects.toMatchObject({
+      code: "invalid_input",
+      message: expect.stringMatching(/run the flow/i),
+    });
   });
 
   it("runs the Raw block on an imported file", async () => {
@@ -158,7 +171,7 @@ describe("blocks.preview", () => {
           scope,
         }),
       ),
-    ).toBe("not_implemented");
+    ).toBe("invalid_input");
     expect(
       await code(previewBlock(registry, files, { kind: "raw", params: { nope: 1 }, scope })),
     ).toBe("ZodError");

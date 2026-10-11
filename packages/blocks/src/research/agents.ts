@@ -1,6 +1,6 @@
 import { ResearchAgentId, ResearchScope, type ResearchAgentDefinition } from "@reqflow/core";
 
-/** Retrieval capabilities, not analytical roles. Provider approval is checked by the caller. */
+/** Each agent retrieves and assesses originals for this assignment; provider approval is checked by the caller. */
 export const RESEARCH_AGENTS: ResearchAgentDefinition[] = [
   {
     id: "reddit",
@@ -55,7 +55,7 @@ export const RESEARCH_AGENTS: ResearchAgentDefinition[] = [
     id: "competitor_models",
     label: "Competitor models",
     description:
-      "Locate original product descriptions and equipment tables for configured competing models.",
+      "Locate original road tests, customer experience evaluations, equipment comparisons and benchmark specifications for competing models.",
     providers: ["firecrawl"],
   },
   {
@@ -103,7 +103,7 @@ const topics: Record<ResearchAgentId, string> = {
   x: "posts discussions owner experiences",
   owner_forums: "owner forum discussions vehicle experiences",
   editorial_reviews: "road tests reviews equipment usability",
-  competitor_models: "comparison product descriptions equipment specifications",
+  competitor_models: "comparison road tests equipment usability specifications",
   market_studies: "customer studies market research published forecasts",
   regional_context: "regional statistics transport mobility population",
   technology: "vehicle technology research publications published forecasts",

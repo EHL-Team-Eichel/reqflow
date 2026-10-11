@@ -14,7 +14,11 @@ import {
   type ResearchProviderStatus,
   type WorkflowRun,
   type ReqflowHandlers,
+  type LlmClient,
+  LiveLlmProvider,
+  LLM_SECRET_NAMES,
 } from "@reqflow/core";
+import { createLlmClient } from "@reqflow/llm";
 import {
   RESEARCH_AGENTS,
   PROVIDER_SECRETS,
@@ -41,6 +45,8 @@ import type { SecretsStore } from "../secrets";
 export interface ResearchOptions {
   xlsxWorkerPath?: string;
   fetchImpl?: typeof globalThis.fetch;
+  /** Synthetic/offline integration seam; production always uses the selected Quality provider. */
+  sourceReviewLlm?: LlmClient;
 }
 export interface ResearchServiceDeps extends ResearchOptions {
   files: LocalFileStore;
@@ -183,6 +189,18 @@ export function createResearchService(deps: ResearchServiceDeps) {
               credentials: keys,
               documents: cachedDocuments,
               fetchImpl: deps.fetchImpl,
+              reviewLlm: () => {
+                if (deps.sourceReviewLlm) return deps.sourceReviewLlm;
+                const provider = LiveLlmProvider.safeParse(snapshot.llm.provider);
+                if (!provider.success)
+                  throw new Error(
+                    "Source content assessment requires a configured live Quality model; mock does not assess originals.",
+                  );
+                return createLlmClient(snapshot.llm, {
+                  apiKey: keys[LLM_SECRET_NAMES[provider.data]],
+                  fetch: deps.fetchImpl,
+                });
+              },
               async save(dataset) {
                 const parts = deps.datasets.blocks(runId);
                 // Migrated aggregate-only originals must survive the first new block save.

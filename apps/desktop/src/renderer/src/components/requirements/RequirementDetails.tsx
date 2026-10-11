@@ -141,7 +141,7 @@ export function RequirementDetails({ detail }: { detail: RequirementDetail }) {
         </div>
       </Section>
 
-      <Section title="Car-part classification">
+      <Section title="Car-part classification" open>
         <p className="font-medium">
           {label(a.partId)} · {a.confidencePercent}% part confidence
         </p>
