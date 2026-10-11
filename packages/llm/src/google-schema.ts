@@ -16,10 +16,14 @@ const SUPPORTED = new Set([
   "minimum",
   "maximum",
   "minItems",
-  "maxItems",
 ]);
 
-/** Gemini's responseJsonSchema subset. Unsupported scalar constraints stay enforced locally. */
+/**
+ * Gemini's responseJsonSchema subset. Unsupported constraints stay enforced locally (the caller's
+ * Zod schema validates every answer) and are named in the description. `maxItems` is one of them:
+ * gemini-3.8-flash answers "Request contains an invalid argument" (HTTP 400) to array caps such as
+ * the PDF extractor's 100 items or the AI Splitter's catalogs, while `minItems` is accepted.
+ */
 export function googleSchema(original: JsonSchema): JsonSchema {
   function adapt(schema: JsonSchema): JsonSchema {
     if (!isObject(schema)) throw new Error("Unsupported Google schema");

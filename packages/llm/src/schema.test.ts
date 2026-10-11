@@ -169,7 +169,7 @@ describe("provider-specific schema adapters", () => {
     });
   });
 
-  it("Google retains supported bounds and adapts const/unions without optional null rewriting", () => {
+  it("Google retains supported bounds, keeps array caps local, and adapts const/unions without optional null rewriting", () => {
     const original = z.strictObject({
       value: z
         .string()
@@ -191,7 +191,7 @@ describe("provider-specific schema adapters", () => {
       properties: {
         value: { type: "string", description: expect.stringContaining("minLength: 3") },
         count: { minimum: 1, maximum: 3 },
-        rows: { minItems: 2, maxItems: 4 },
+        rows: { minItems: 2, description: expect.stringContaining("maxItems: 4") },
         choice: {
           anyOf: [
             { properties: { kind: { enum: ["a"] } } },
@@ -201,6 +201,8 @@ describe("provider-specific schema adapters", () => {
       },
     });
     expect((adapted.properties as Record<string, JsonSchema>).value!.minLength).toBeUndefined();
+    // Gemini rejects array caps with HTTP 400; they are checked locally instead.
+    expect((adapted.properties as Record<string, JsonSchema>).rows!.maxItems).toBeUndefined();
   });
 
   it("Google preserves supported schema-valued additionalProperties for records", () => {
