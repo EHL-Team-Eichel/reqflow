@@ -13,6 +13,11 @@ import {
   createBlockRegistry,
 } from "@reqflow/blocks";
 import {
+  CHALLENGE_SYSTEM,
+  ChallengeAnswer,
+  challengeAnswerProblem,
+  challengePayload,
+  formatChallengeAnswer,
   aiProposalProblem,
   AuditAction,
   AuditEntityType,
@@ -912,6 +917,15 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
         const settings = loadSettings(dataDir);
 
         if (decision.decision === "challenge") {
+          const updatedReq = {
+            ...current,
+            status: "challenged" as const,
+            uncertainties: Array.from(
+              new Set([...current.uncertainties, `PM Challenge noted: ${decision.rationale}`]),
+            ),
+            version: current.version + 1,
+            updatedAt: new Date().toISOString(),
+          };
           const challengeEvent: AuditEventInput = {
             actor: {
               type: "human",
@@ -924,55 +938,62 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
             entityId: reqId,
             runId: current.runId,
             rationale: decision.rationale,
-            // This records the human request, not a fictitious persisted intermediate status.
-            changes: [],
+            changes: [
+              ...(current.status === "challenged"
+                ? []
+                : [{ path: "status", before: current.status, after: "challenged" }]),
+              {
+                path: "uncertainties",
+                before: current.uncertainties,
+                after: updatedReq.uncertainties,
+              },
+            ],
           };
 
-          const prompt = `Evaluate PM challenge on requirement ${current.id}: "${decision.rationale}".`;
-          let answer = "Challenge could not be answered. No findings or targets were re-verified.";
-          let answerModel = settings.llm.model;
+          // The AI re-reads the requirement and its linked evidence. Its answer is advice for the
+          // PM in the audit trail; it changes no content and no status.
+          let answerEvent: AuditEventInput;
           try {
-            const resp = z
-              .object({ text: z.string(), model: z.string().min(1) })
-              .parse(await (await configuredLlm(settings)).generateText({ prompt }));
-            answer = resp.text;
-            answerModel = resp.model;
-          } catch {
-            // fallback
-          }
-
-          const updatedReq = {
-            ...current,
-            status: "in_review" as const,
-            uncertainties: Array.from(
-              new Set([...current.uncertainties, `PM Challenge noted: ${decision.rationale}`]),
-            ),
-            version: current.version + 1,
-            updatedAt: new Date().toISOString(),
-          };
-
-          // The repository revalidates the originally read version atomically after
-          // the LLM await. Neither a newer human decision nor deletion can be undone.
-          // Both challenge events commit with the version, or none of them do.
-          return commitRequirement(updatedReq, current.version, [
-            challengeEvent,
-            {
-              actor: { type: "ai", component: "requirements.challenge", model: answerModel },
+            const result = await (
+              await configuredLlm(settings)
+            ).generateObject({
+              system: CHALLENGE_SYSTEM,
+              prompt: JSON.stringify(challengePayload(detail, decision.rationale)),
+              schema: ChallengeAnswer,
+            });
+            const answer = ChallengeAnswer.parse(result.object);
+            const problem = challengeAnswerProblem(answer, [
+              ...current.findingIds,
+              ...current.conflictingFindingIds,
+            ]);
+            if (problem) throw new Error(problem);
+            answerEvent = {
+              actor: { type: "ai", component: "requirements.challenge", model: result.model },
               action: "requirement.challenge_answered",
               entityType: "requirement",
               entityId: reqId,
               runId: current.runId,
-              rationale: answer,
-              changes: [
-                { path: "status", before: current.status, after: "in_review" },
-                {
-                  path: "uncertainties",
-                  before: current.uncertainties,
-                  after: updatedReq.uncertainties,
-                },
-              ],
-            },
-          ]);
+              rationale: formatChallengeAnswer(answer),
+              changes: [],
+            };
+          } catch (error) {
+            // The PM's challenge still counts; the failure is recorded as such, never as an answer.
+            const reason = error instanceof Error ? error.message : String(error);
+            answerEvent = {
+              actor: { type: "system", component: "requirements.challenge" },
+              action: "requirement.challenge_failed",
+              entityType: "requirement",
+              entityId: reqId,
+              runId: current.runId,
+              rationale: `The AI gave no usable answer: ${reason}. Challenge again to retry.`,
+              changes: [],
+            };
+          }
+
+          // The repository revalidates the originally read version atomically after
+          // the LLM await. Neither a newer human decision nor deletion can be undone.
+          // Both challenge events commit with the version, or none of them do.
+          return commitRequirement(updatedReq, current.version, [challengeEvent, answerEvent]);
         }
 
         const { reviewer } = settings.review;

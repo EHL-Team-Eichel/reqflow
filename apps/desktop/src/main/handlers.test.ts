@@ -354,7 +354,7 @@ describe("handlers (All IPC methods against SQLite and stores)", () => {
       decision: "challenge",
       rationale: "Verify cold weather charging telemetry",
     });
-    expect(challenged.status).toBe("in_review");
+    expect(challenged.status).toBe("challenged");
     expect(challenged.uncertainties.some((u) => u.includes("PM Challenge"))).toBe(true);
 
     // Approve

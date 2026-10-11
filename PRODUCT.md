@@ -101,6 +101,12 @@ measurable target, and the main process refuses anything else. A decided require
 reopened before anyone decides again, an edit after approval sends it back to review, and with the
 four-eyes rule on (Settings → Collaboration) a second, different reviewer completes an approval.
 A HIL block asking for several approvals waits until that many different reviewers continued it.
+A **challenge** marks the requirement `challenged` and sends the AI the requirement (targets, score,
+assumptions) with its supporting and conflicting findings and their verbatim excerpts. The AI answers
+with a verdict, the findings that back each side (only linked ones; anything else is refused),
+missing evidence and suggestions. The answer goes into the audit trail as advice and changes
+nothing; the requirement stays `challenged` until the PM decides. If the AI gives no usable answer,
+that failure is recorded with its reason and the PM can challenge again.
 
 ## AI Filter preservation and review
 

@@ -29,19 +29,30 @@ let called: ReturnType<typeof vi.fn<() => void>>;
 
 beforeEach(async () => {
   dir = await mkdtemp(join(tmpdir(), "reqflow-synthetic-integrity-"));
-  const response = new Promise<{ text: string; model: string }>((resolve) => {
-    answer = (text) => resolve({ text, model: "synthetic" });
+  const response = new Promise<{ object: unknown; model: string }>((resolve) => {
+    answer = (summary) =>
+      resolve({
+        object: {
+          verdict: "partly_supported",
+          summary,
+          backsRequirement: [],
+          backsChallenge: [],
+          missingEvidence: [],
+          suggestedChanges: [],
+        },
+        model: "synthetic",
+      });
   });
   called = vi.fn();
-  const llm: LlmClient = {
+  const llm = {
     generateText: async () => {
+      throw new Error("Challenges ask for a structured answer");
+    },
+    generateObject: async () => {
       called();
       return response;
     },
-    generateObject: async () => {
-      throw new Error("No synthetic objects requested");
-    },
-  };
+  } as unknown as LlmClient;
   handlers = createHandlers({
     dataDir: dir,
     dbPath: join(dir, "test.db"),

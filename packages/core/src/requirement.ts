@@ -16,7 +16,7 @@ export const EvidenceLevel = z.enum(["A", "B", "C", "D"]);
 export type EvidenceLevel = z.infer<typeof EvidenceLevel>;
 
 /**
- * Lifecycle. AI may only ever set `proposed` (and `in_review` after answering a challenge).
+ * Lifecycle. AI may only ever set `proposed`; its answer to a challenge changes no status.
  * `approved`, `rejected`, `deferred`, `challenged` are set by a human via RequirementDecision.
  */
 export const DecisionStatus = z.enum([

@@ -7,6 +7,7 @@ import { loadRequirementDetail, type DetailState } from "./detail-loader";
 import { MStripe } from "@/components/ui/MStripe";
 import { RequirementOriginReport } from "./RequirementOriginReport";
 import { RequirementReview } from "./RequirementReview";
+import { challengeOutcome } from "./requirement-review";
 import { AuditTimeline } from "../audit/AuditTimeline";
 
 /** Native modal traps focus, handles Escape, and restores focus to the compact requirement card. */
@@ -177,6 +178,13 @@ export function RequirementDialog({
                     setNotice(
                       `Version ${saved.version} saved with your rationale. Workflow execution is unchanged.`,
                     );
+                    // Only a challenge sets "challenged": say whether the AI answered or failed.
+                    if (saved.status === "challenged") {
+                      const outcome = await api.audit
+                        .list({ entityId: saved.id, entityType: "requirement", limit: 20 })
+                        .then(challengeOutcome, () => "Open History for the AI's answer.");
+                      setNotice(`Version ${saved.version} saved with your challenge. ${outcome}`);
+                    }
                     try {
                       await onSaved?.();
                     } catch {

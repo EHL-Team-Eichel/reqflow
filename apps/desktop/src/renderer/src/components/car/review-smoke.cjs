@@ -279,9 +279,13 @@ async function run(win) {
   );
   detail = await invoke("requirements.get", ids[0]);
   check(
-    detail.requirement.status === "in_review",
-    "Offline challenge returns to review, never approves",
+    detail.requirement.status === "challenged",
+    "Offline challenge marks the requirement challenged, never approves",
   );
+  await wait(
+    "document.querySelector('[data-testid=car-requirement-dialog]')?.textContent.includes('answer is in History')",
+  );
+  check(true, "Challenge notice points the PM to the AI's answer in History");
   // A second writer changes the requirement after the review form's snapshot was loaded.
   await invoke("requirements.decide", ids[0], {
     decision: "defer",

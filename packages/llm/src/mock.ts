@@ -1,4 +1,5 @@
 import {
+  CHALLENGE_CONTRACT,
   CAR_PART_GROUPS,
   CATEGORY_LABELS,
   FILTER_CUSTOMER_CRITERION,
@@ -632,6 +633,26 @@ function filterObject(raw: unknown, promptLength: number): unknown {
   };
 }
 
+const ChallengeRequest = z.object({
+  findings: z.array(z.object({ id: z.string(), relation: z.enum(["supporting", "conflicting"]) })),
+});
+
+/** Offline challenge answer: sorts the linked findings by relation and says no model judged it. */
+function challengeObject(raw: unknown): unknown {
+  const { findings } = ChallengeRequest.parse(raw);
+  const ids = (relation: string) =>
+    findings.filter((f) => f.relation === relation).map((f) => f.id);
+  return {
+    verdict: "partly_supported",
+    summary:
+      "Offline mock answer: no AI model assessed this challenge. The linked findings are listed by how they relate to the requirement; read their excerpts before deciding.",
+    backsRequirement: ids("supporting").slice(0, 20),
+    backsChallenge: ids("conflicting").slice(0, 20),
+    missingEvidence: ["An assessment by a configured AI model."],
+    suggestedChanges: [],
+  };
+}
+
 /** Deliberately narrow offline protocol, not a generic schema synthesis engine. */
 export function mockObject(prompt: string): unknown {
   let raw: unknown;
@@ -662,6 +683,8 @@ export function mockObject(prompt: string): unknown {
   ) {
     return rawObject(raw, prompt.length);
   }
+  if (raw && typeof raw === "object" && "contract" in raw && raw.contract === CHALLENGE_CONTRACT)
+    return challengeObject(raw);
   if (
     raw &&
     typeof raw === "object" &&

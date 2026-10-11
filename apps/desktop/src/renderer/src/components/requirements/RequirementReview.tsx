@@ -139,8 +139,9 @@ function ReviewForm({ requirement, onSaved }: RequirementReviewProps) {
         resumes automatically.
       </p>
       <p className="text-xs text-muted">
-        Challenge requests a response from the configured AI and returns the requirement to In
-        review. Read the response in History; it is not a human approval or verified new evidence.
+        Challenge marks the requirement Challenged and asks the configured AI to re-check it against
+        its linked evidence. Read the answer in History; it is advice, not a human approval or new
+        evidence, and the requirement stays Challenged until you decide.
       </p>
       <form onSubmit={submit} aria-busy={busy}>
         <fieldset disabled={busy} className="space-y-3">
