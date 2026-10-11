@@ -10,6 +10,18 @@ export function summarizeParams(
     market: scope.market,
   };
 
+  if (block.kind === "analytics") {
+    const inputs = Array.isArray(block.params.inputs) ? block.params.inputs.length : 1;
+    const phrases = String(block.params.phrases ?? "")
+      .split("\n")
+      .filter((p) => p.trim()).length;
+    return [
+      `${inputs} input${inputs === 1 ? "" : "s"}`,
+      "rules, no AI",
+      ...(phrases ? [`${phrases} tracked phrase${phrases === 1 ? "" : "s"}`] : []),
+    ];
+  }
+
   return specParams
     .filter((p): p is Extract<ParamSpec, { type: "select" }> => p.type === "select")
     .slice(0, 2)

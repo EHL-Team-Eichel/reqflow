@@ -293,4 +293,25 @@ describe("dataflow store", () => {
     expect(store.getState().loadTemplate(FEEDBACK_TEMPLATES[0]!)).toBe(true);
     expect(store.getState().reasoning).toBeNull();
   });
+
+  it("opens an Analytics block full screen and adds named inputs up to the limit", () => {
+    const store = createDataflowStore();
+    const analytics = store.getState().addBlock("analytics", at);
+    const raw = store.getState().addBlock("raw", at);
+    store.getState().openAnalytics(raw);
+    expect(store.getState().analytics).toBeNull();
+    expect(store.getState().notice?.message).toMatch(/has no analytics/);
+    store.getState().openAnalytics(analytics);
+    expect(store.getState().analytics).toEqual({ blockId: analytics, path: [] });
+    store.getState().closeAnalytics();
+    expect(store.getState().analytics).toBeNull();
+
+    expect(store.getState().addAnalyticsInput(analytics)).toBeNull();
+    const block = () => selectWorkplace(store.getState()).blocks.find((b) => b.id === analytics)!;
+    expect(block().params.inputs).toEqual(["Input 1", "Input 2"]);
+    for (let i = 0; i < 6; i++) expect(store.getState().addAnalyticsInput(analytics)).toBeNull();
+    expect(block().params.inputs).toHaveLength(8);
+    expect(store.getState().addAnalyticsInput(analytics)).toMatch(/at most 8/);
+    expect(store.getState().addAnalyticsInput(raw)).toMatch(/not an Analytics block/);
+  });
 });
