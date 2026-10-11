@@ -1,0 +1,15 @@
+{
+  "tool_use_id": "toolu_01MjKfS1tfAjTzt6dX2L9xVE",
+  "agent_id": "a87b67bc0c99634ff",
+  "subagent_type": "general-purpose",
+  "task_description": "Integrity, audit, export, rescore slice",
+  "token_usage": {
+    "input_tokens": 172,
+    "cache_creation_tokens": 280255,
+    "cache_read_tokens": 16146290,
+    "output_tokens": 1833,
+    "api_call_count": 86
+  },
+  "started_at": "2026-10-11T07:21:52.199189+02:00",
+  "completed_at": "2026-10-11T07:47:52.060065+02:00"
+}
