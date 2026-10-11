@@ -1,0 +1,7 @@
+In `apps/desktop/src/main/research/runtime.test.ts` and `apps/desktop/src/main/research/integration.test.ts`:
+Update test expectations where the Research block execution results are verified:
+1. In `runtime.test.ts`, `expectedLocalTextRows` was hardcoded to expect the old unsummarized tabular output:
+   `Brand: null, 'Sales Description': null, Country: null, 'Derivate (e-code)': null, 'Engine Type': null, 'Feedback Type': null, 'Customer Feedback': syntheticText, 'Vfc...': null`.
+   Now that Research block runs `summarizeResearchDataset(dataset, { ... })`, update `expectedLocalTextRows(dataset, scope)` (or replace its usage) to use `summarizeResearchDataset(dataset, { scope })` or expect the summarized BMW feedback row fields (`Brand: "[BMW]"`, `Derivate: "F70"`, `Sales Description: "[BMW 1 Series]"`, etc.).
+2. In `integration.test.ts`, examine why tests might be failing and update expectations to align with the summarized output.
+3. Run `npm test apps/desktop/src/main/research/` and verify that all tests pass.
