@@ -1,3 +1,4 @@
+import { AI_RETRIES } from "@reqflow/core";
 import { Agent } from "@mastra/core/agent";
 import { DEFAULT_SETTINGS } from "@reqflow/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -63,13 +64,13 @@ describe("createMastraLlmClient", () => {
           modelId: tier === "fast" ? "fast-model" : "quality-model",
           apiKey: "synthetic-test-key",
         },
-        maxRetries: 0,
+        maxRetries: AI_RETRIES,
         errorProcessorDefaults: false,
       });
       expect(generate).toHaveBeenCalledExactlyOnceWith("Synthetic input", {
         abortSignal: controller.signal,
         maxSteps: 1,
-        modelSettings: { temperature: 0.4, maxOutputTokens: 8192, maxRetries: 0 },
+        modelSettings: { temperature: 0.4, maxOutputTokens: 8192, maxRetries: AI_RETRIES },
         structuredOutput: {
           schema,
           errorStrategy: "strict",

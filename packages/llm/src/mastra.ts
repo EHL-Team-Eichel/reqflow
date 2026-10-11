@@ -1,6 +1,6 @@
 import { Agent } from "@mastra/core/agent";
 import { noopLogger, type IMastraLogger } from "@mastra/core/logger";
-import type { LlmClient, LlmTextRequest, Settings } from "@reqflow/core";
+import { AI_RETRIES, type LlmClient, type LlmTextRequest, type Settings } from "@reqflow/core";
 import { z } from "zod";
 import { cancellable, Request } from "./client-request";
 import type { LlmClientOptions } from "./default-client";
@@ -11,14 +11,14 @@ export interface MastraAgentConfig {
   name: string;
   instructions: string;
   model: { providerId: "anthropic"; modelId: string; apiKey: string };
-  maxRetries: 0;
+  maxRetries: number;
   errorProcessorDefaults: false;
 }
 
 export interface MastraGenerateOptions {
   abortSignal?: AbortSignal;
   maxSteps: 1;
-  modelSettings: { temperature: number; maxOutputTokens: number; maxRetries: 0 };
+  modelSettings: { temperature: number; maxOutputTokens: number; maxRetries: number };
   structuredOutput?: {
     schema: z.ZodType<unknown>;
     errorStrategy: "strict";
@@ -44,6 +44,8 @@ export type MastraAgentFactory = (config: MastraAgentConfig) => MastraAgent;
 export interface MastraLlmClientOptions extends LlmClientOptions {
   /** Replaces only Agent construction/generation; production uses the standalone Mastra Agent. */
   createAgent?: MastraAgentFactory;
+  /** Retries of a failed model call (network, rate limit, server error). Default: AI_RETRIES. */
+  retries?: number;
 }
 
 const createAgent: MastraAgentFactory = (config) => {
@@ -108,14 +110,18 @@ export function createMastraProvider(
             modelId: checked.tier === "fast" ? config.fastModel : config.model,
             apiKey: apiKey!,
           },
-          maxRetries: 0,
+          maxRetries: options.retries ?? AI_RETRIES,
           // Mastra stability processors otherwise retry independently of model maxRetries.
           errorProcessorDefaults: false,
         });
         return agent.generate(checked.prompt, {
           abortSignal: request.signal,
           maxSteps: 1,
-          modelSettings: { temperature: config.temperature, maxOutputTokens: 8192, maxRetries: 0 },
+          modelSettings: {
+            temperature: config.temperature,
+            maxOutputTokens: 8192,
+            maxRetries: options.retries ?? AI_RETRIES,
+          },
           ...(schema
             ? { structuredOutput: { schema, errorStrategy: "strict" as const, logger: noopLogger } }
             : {}),

@@ -1,3 +1,38 @@
+import { AI_RETRIES } from "@reqflow/core";
+
+/** HTTP statuses worth another attempt: timeouts, conflicts, rate limits, overload, server errors. */
+export function isRetryableStatus(status: number): boolean {
+  return [408, 409, 425, 429, 529].includes(status) || (status >= 500 && status <= 599);
+}
+
+/** Longest pause between two attempts, unless the provider asks for longer (up to a minute). */
+export const MAX_RETRY_DELAY_MS = 30_000;
+
+/** Pause before the next attempt: 1 s, 2 s, 4 s … (±25 %), at most 30 s, or the provider's Retry-After. */
+export function retryDelay(
+  attempt: number,
+  retryAfter: string | null = null,
+  random: () => number = Math.random,
+): number {
+  return getBackoff(attempt, random, retryAfter);
+}
+
+/** Waits, but stops at once when the run is cancelled. */
+export function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    if (signal?.aborted) return reject(signal.reason);
+    const timer = setTimeout(() => {
+      signal?.removeEventListener("abort", listener);
+      resolve();
+    }, ms);
+    const listener = () => {
+      clearTimeout(timer);
+      reject(signal?.reason);
+    };
+    signal?.addEventListener("abort", listener, { once: true });
+  });
+}
+
 export class LlmHttpError extends Error {
   constructor(
     public status: number,
@@ -64,23 +99,8 @@ export async function postJson(
     random?: () => number;
   },
 ): Promise<{ status: number; json: unknown; headers: Headers }> {
-  const retries = init.retries ?? 3;
-  const sleepFn =
-    init.sleep ??
-    (async (ms: number, sig?: AbortSignal) => {
-      return new Promise<void>((resolve, reject) => {
-        if (sig?.aborted) return reject(sig.reason);
-        const timer = setTimeout(() => {
-          sig?.removeEventListener("abort", listener);
-          resolve();
-        }, ms);
-        const listener = () => {
-          clearTimeout(timer);
-          reject(sig?.reason);
-        };
-        sig?.addEventListener("abort", listener, { once: true });
-      });
-    });
+  const retries = init.retries ?? AI_RETRIES;
+  const sleepFn = init.sleep ?? sleep;
   const randomFn = init.random ?? Math.random;
 
   for (let attempt = 0; attempt <= retries; attempt++) {
@@ -145,6 +165,11 @@ export async function postJson(
       try {
         json = await res.json();
       } catch {
+        // A garbled answer is a failed call like any other: ask again.
+        if (attempt < retries) {
+          await sleepFn(getBackoff(attempt, randomFn, null), init.signal);
+          continue;
+        }
         throw new LlmHttpError(
           res.status,
           "invalid_json",
@@ -176,7 +201,7 @@ export async function postJson(
     }
 
     const status = res.status;
-    const isRetryable = [408, 409, 429, 500, 502, 503, 504, 529].includes(status);
+    const isRetryable = isRetryableStatus(status);
 
     if (!isRetryable || attempt === retries) {
       let message = `${init.provider} request failed (HTTP ${status}`;
@@ -206,7 +231,7 @@ function getBackoff(attempt: number, randomFn: () => number, retryAfter: string 
       return Math.min(Math.max(0, delay), 60000);
     }
   }
-  const base = 1000 * Math.pow(2, attempt);
+  const base = Math.min(MAX_RETRY_DELAY_MS, 1000 * Math.pow(2, attempt));
   const jitter = base * 0.25 * (randomFn() * 2 - 1);
-  return base + jitter;
+  return Math.min(MAX_RETRY_DELAY_MS, base + jitter);
 }

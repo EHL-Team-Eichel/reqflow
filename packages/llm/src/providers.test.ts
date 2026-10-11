@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { AI_RETRIES } from "@reqflow/core";
 import { z } from "zod";
 import { anthropicClient } from "./anthropic";
 import { Limiter, LlmHttpError, postJson } from "./http";
@@ -1058,13 +1059,14 @@ describe("default LLM providers", () => {
       expect(fetch).not.toHaveBeenCalled();
     });
 
-    it("sanitizes HTTP errors and never reads their body or retries", async () => {
+    it("retries a rate limit 10 times, never reads the error body, then fails cleanly", async () => {
       const json = vi.fn().mockRejectedValue(new Error(privateText));
       const fetch = vi
         .fn<typeof globalThis.fetch>()
         .mockResolvedValue({ ok: false, status: 429, json } as unknown as Response);
+      const sleep = vi.fn(async () => {});
       await expect(
-        createLlmClient(settings(provider), { apiKey: key, fetch }).generateText({
+        createLlmClient(settings(provider), { apiKey: key, fetch, sleep }).generateText({
           prompt: privateText,
         }),
       ).rejects.toThrow(
@@ -1073,7 +1075,38 @@ describe("default LLM providers", () => {
         ),
       );
       expect(json).not.toHaveBeenCalled();
+      expect(fetch).toHaveBeenCalledTimes(1 + AI_RETRIES);
+      expect(sleep).toHaveBeenCalledTimes(AI_RETRIES);
+    });
+
+    it("fails a wrong key at once, without retrying", async () => {
+      const fetch = vi
+        .fn<typeof globalThis.fetch>()
+        .mockResolvedValue({ ok: false, status: 401 } as unknown as Response);
+      await expect(
+        createLlmClient(settings(provider), {
+          apiKey: key,
+          fetch,
+          sleep: async () => {},
+        }).generateText({ prompt: "test" }),
+      ).rejects.toThrow(/HTTP 401/);
       expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it("succeeds when a retry gets through", async () => {
+      const ok = transport(payload(provider, "text"));
+      const fetch = vi
+        .fn<typeof globalThis.fetch>()
+        .mockResolvedValueOnce({ ok: false, status: 503 } as unknown as Response)
+        .mockRejectedValueOnce(new Error("socket hang up"))
+        .mockImplementation(ok);
+      const res = await createLlmClient(settings(provider), {
+        apiKey: key,
+        fetch,
+        sleep: async () => {},
+      }).generateText({ prompt: "test" });
+      expect(res.text).toBe("text");
+      expect(fetch).toHaveBeenCalledTimes(3);
     });
 
     it("sanitizes arbitrary transport and body errors", async () => {
@@ -1084,7 +1117,11 @@ describe("default LLM providers", () => {
           json: () => Promise.reject(new Error(`${key} ${privateText}`)),
         } as unknown as Response),
       ]) {
-        const error = await createLlmClient(settings(provider), { apiKey: key, fetch })
+        const error = await createLlmClient(settings(provider), {
+          apiKey: key,
+          fetch,
+          sleep: async () => {},
+        })
           .generateText({ prompt: privateText })
           .catch((error: unknown) => error);
         expect(error).toBeInstanceOf(Error);

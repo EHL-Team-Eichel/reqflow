@@ -1,4 +1,5 @@
 import {
+  AI_RETRIES,
   Settings,
   type LlmClient,
   type LlmTextRequest,
@@ -11,12 +12,25 @@ import { mockObject } from "./mock";
 import { openaiSchema } from "./openai-schema";
 import type { JsonSchema } from "./json-schema";
 import { createMastraProvider, type MastraLlmClientOptions } from "./mastra";
+import { isRetryableStatus, retryDelay, sleep } from "./http";
 
 export interface LlmClientOptions {
   /** Supplied by the main process secret store, never read from the environment. */
   apiKey?: string;
   /** Injectable transport for recorded, offline HTTP tests. */
   fetch?: typeof globalThis.fetch;
+  /** Injectable pause between retries, so tests don't wait for real back-off. */
+  sleep?: (ms: number, signal?: AbortSignal) => Promise<void>;
+}
+
+/** A failed call that can heal (network, timeout, rate limit, server error): worth another try. */
+class RetryableCallError extends Error {
+  constructor(
+    message: string,
+    readonly retryAfter: string | null = null,
+  ) {
+    super(message);
+  }
 }
 
 const Request = z.object({
@@ -133,7 +147,10 @@ export function thinkingOutputCap(maxTokens?: number): number {
   return Math.min(MAX_OUTPUT_TOKENS, answer + THINKING_HEADROOM);
 }
 
-/** Minimal REST clients. No retries, secret discovery, SDK, or live calls at construction. */
+/**
+ * Minimal REST clients. No secret discovery, SDK, or live calls at construction. A failed call is
+ * retried up to AI_RETRIES times when it can heal (network, timeout, rate limit, server error).
+ */
 export function createLlmClient(
   settings: AppSettings["llm"],
   options: LlmClientOptions = {},
@@ -169,7 +186,27 @@ export function createLlmClient(
   if (!apiKey) throw new Error(`${label} API key is required; supply it from the secret store.`);
   const fetch = options.fetch ?? globalThis.fetch;
 
+  const pause = options.sleep ?? sleep;
   async function post(
+    url: string,
+    headers: Record<string, string>,
+    body: unknown,
+    signal?: AbortSignal,
+  ) {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await attemptPost(url, headers, body, signal);
+      } catch (error) {
+        signal?.throwIfAborted();
+        if (!(error instanceof RetryableCallError) || attempt >= AI_RETRIES) {
+          throw error instanceof RetryableCallError ? new Error(error.message) : error;
+        }
+        await pause(retryDelay(attempt, error.retryAfter), signal);
+      }
+    }
+  }
+
+  async function attemptPost(
     url: string,
     headers: Record<string, string>,
     body: unknown,
@@ -186,16 +223,21 @@ export function createLlmClient(
         });
       } catch {
         signal?.throwIfAborted();
-        throw new Error(`${label} transport failed`);
+        throw new RetryableCallError(`${label} transport failed`);
       }
       signal?.throwIfAborted();
       // Error bodies and transport exceptions can contain credentials or request text. Never echo them.
-      if (!response.ok) throw new Error(`${label} request failed (HTTP ${response.status})`);
+      if (!response.ok) {
+        const message = `${label} request failed (HTTP ${response.status})`;
+        if (isRetryableStatus(response.status))
+          throw new RetryableCallError(message, response.headers?.get?.("retry-after") ?? null);
+        throw new Error(message);
+      }
       try {
         return (await response.json()) as unknown;
       } catch {
         signal?.throwIfAborted();
-        throw new Error(`${label} response is not valid JSON`);
+        throw new RetryableCallError(`${label} response is not valid JSON`);
       }
     }, signal);
   }

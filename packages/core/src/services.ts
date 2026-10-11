@@ -51,6 +51,13 @@ export interface LlmUsage {
   outputTokens: number;
 }
 
+/**
+ * How often a failed AI API call is retried before its error reaches the user (so up to 11
+ * attempts). Only failures that can heal are retried: network errors, timeouts, rate limits and
+ * server errors. A wrong key, a bad request or an unknown model fails at once.
+ */
+export const AI_RETRIES = 10;
+
 export interface LlmClient {
   /**
    * Structured output. MUST validate against `schema` and throw on invalid output — never return

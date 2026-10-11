@@ -779,6 +779,12 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 **Log**
 
+- 2026-10-11: **AI calls retry 10 times** (`AI_RETRIES` in `core/services.ts`) before an error
+  reaches the user: setup clients (`llm/http.ts`), the default-AI REST client, the Mastra client
+  and the Research query planner. Only failures that can heal are retried — network errors,
+  timeouts, unreadable answers, HTTP 408/409/425/429/5xx/529 — with back-off 1 s, 2 s, 4 s … capped
+  at 30 s (or the provider's Retry-After, up to 60 s); a wrong key (401/403), bad request (400) or
+  unknown model (404) still fails at once. Worst case about 3 minutes before an error.
 - 2026-10-11: **End-to-end test with a real Gemini key** (`gemini-3.8-flash` / `gemini-3.5-flash-lite`)
   on `data/samples` through the running app (IPC + editor UI over the DevTools port; only the
   native open/save dialogs were answered with sample paths). Everything except Research passed:
