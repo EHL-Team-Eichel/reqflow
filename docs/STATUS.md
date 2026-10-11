@@ -1004,6 +1004,13 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
   Car both use it; the critic now judges only brand fit and ease. Input rank still sets Add to
   Car's priority (PRODUCT.md); the score and its top drivers are in the rationale.
   Verify: `npx vitest run packages/blocks/src/prioritization packages/blocks/src/ai-splitter packages/blocks/src/add-to-car`.
+  Verified on the branch: `npm run typecheck`, full vitest (2,901 passed, 1 expected fail, 6
+  skipped), `npm run format:check`, native macOS smoke PASS (90 screenshots, incl. the new review,
+  two-reviewer gate and template checks). Two earlier smoke runs failed only on 3D car-canvas checks
+  with Chromium GPU shared-image errors while the disk was nearly full; the next run passed. Real
+  BMW files checked by counts only: study EU sheet 37 figures / 5 comparison findings (rating
+  scale, so relative), US sheet no F70; 2,128 feedback records all inside EU; sales sheets keep
+  their EU rows.
 
 ## WS9 — Analytics & timeline
 
