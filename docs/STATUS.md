@@ -182,7 +182,8 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 ## WS2 — Data Flow editor UI
 
-**Status:** review · **Owner:** OpenCode (HIL sampled PDF report) · **Branch:** `feature/hil-sample-pdf-report`
+**Status:** in progress (remaining editor features) · **Owner:** OpenCode · **Branch:** `ws2-editor-completion`
+**Assigned scope:** human requested latest main and completion of the still-unworked WS2 editor gaps. Start/templates/HIL/Filter/Analytics behavior stays intact. No other workstream tasks claimed.
 **Depends on:** WS1 for save/load and runs. Tasks 1–3 can start now.
 
 **Tasks**
@@ -209,10 +210,11 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 - [x] Explicit Start button for the full workflow, including inner workplaces; prevent duplicate runs
       and preserve HIL pauses (PR #10, verified on merged main).
 - [x] Continue single-reviewer HIL gates after explicit review of saved run inputs; reset confirmation per run/gate and preserve Start controls (PR #12).
-- [ ] Merge sampled HIL PDF export and decision-brief report (implemented and verified on `feature/hil-sample-pdf-report`; not yet merged).
+- [x] Merge sampled HIL PDF export and decision-brief report (already included in current main; stale checkbox reconciled).
 
 **Log**
 
+- 2026-10-11: Human assigned remaining WS2 after checking latest main (`e9705c9`), open PRs and implementation handoffs. Shared clean checkout fast-forwarded; work isolated in `EHL-ws2-editor`. Scope: root-snapshot undo/redo, nested-safe copy/paste/duplicate, save/load/autosave and workflow identity, problems/marking, per-block run status/counts/logs and persisted per-port outputs, current-workplace layout and minimap polish. Use existing core/API contracts only; renderer has no Node/files/network. Preserve human HIL gates and frozen run snapshots. Verification is offline/synthetic; Gemini key is unavailable and no live requests are authorized. Other WS2 slices already merged are not rebuilt, and no unrelated follow-on work is authorized.
 - 2026-10-11: Sampled PDF export implemented in isolated `EHL-hil-report` worktree. HIL → choose step → Format-check PDF: defaults first 3 per dataset, editable checkboxes, maximum 15 total, first 50 candidates shown; native PDF save via validated `exports.hilReport`. Preserves original selected record text/fields and finding excerpts; includes scope/provenance, counts/omissions, routed/nested lineage, priority/score/targets, evidence gaps/conflicts and optional report-only PM action notes. No requirement decisions, resume or reviewer signatures added. Human authorized core IPC/main/shared-icon integration. Research mapping and future persisted-review proposals: `docs/hil-report-design.md`. Verified `npm run typecheck && npm test` (280 passed, 25 skipped), desktop smoke (native sample + rich management PDFs, 35 screenshots), changed-file Prettier and `git diff --check`; inspected PDFs and light/dark/minimum viewport screenshots. No dependencies or real BMW data used. Changes remain uncommitted/unpushed for review; other WS2 tasks remain open.
 - 2026-10-11: Claimed the HIL sampled-PDF report slice in an isolated worktree from main. Human authorized the narrow core IPC/main-process changes needed for native PDF export. Preserve existing review/resume semantics, export only explicitly selected data points, and distinguish format validation from complete evidence review. Use synthetic data only for verification; leave concurrent Add-to-Car work untouched.
 - 2026-10-10: Blocks/Templates switch and full-workflow setups merged in PR #15. Integrated current Car refinements unchanged and reverified: `npm run check` (277 passed, 10 skipped), `npm run smoke` (29 screenshots), and native synthetic template loading/replacement plus both connected workflows, explicit PM review, Car publication, and light/dark/minimum-window screenshots. Requested slice complete; WS2 released. Use Templates → Use template, configure inputs, then Start; BMW's full setup remains an explicitly labelled blueprint until its Research/AI Filter prerequisites land.
