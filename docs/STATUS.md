@@ -760,6 +760,14 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 **Log**
 
+- 2026-10-11: AI Splitter car-part depth (`ws7-splitter-depth`). Split by car parts now offers a
+  depth: areas (Exterior, Interior, Technology & chassis) or the 13 part groups of the Car tab (Seats,
+  Cockpit & controls, …), each plus Other; the outputs follow the depth automatically instead of the
+  branch list (which used to name them "Part group 1…" while the AI invented different groups).
+  Groups live in `core/car-parts.ts`, shared with the Car tab's part menu; older flows migrate to
+  areas. Smoke: the Car reset step now waits for the requirements to load instead of 600 ms (it
+  raced). Verified: `npm run check` (2,316 tests), `npm run smoke` (71 screenshots, incl.
+  `splitter-car-part-groups`).
 - 2026-10-11: Add to Car verified on merged main (`8cb210d`): `npm run check` (2,314 tests), smoke
   (70 screenshots; editor run → HIL → thought process, Car → Why?), offline `eval:f70` on BMW's F70
   files (2,128 findings, 100 % verbatim excerpts, 10 requirements). Fix: the agents' default AI is
