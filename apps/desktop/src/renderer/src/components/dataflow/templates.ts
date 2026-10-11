@@ -104,7 +104,8 @@ function analyticsSetup(): WorkflowTemplate {
       label,
       position: { x: 0, y: i * 200 },
     });
-    raw.params = { ...raw.params, dataset: "customer_feedback" };
+    // Comparing by country needs every market, not only the one selected in Settings.
+    raw.params = { ...raw.params, dataset: "customer_feedback", marketFilter: "all" };
     return raw;
   });
   const analytics = createBlock("analytics", {
