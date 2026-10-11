@@ -152,21 +152,36 @@ export async function routePriority(
     ctx.log(
       `Provisional scoring batch ${index + 1}/${groups.length}: ${batch.length} primary items.`,
     );
-    const { object, model } = await generate(ctx, {
-      system: SCORING_SYSTEM,
-      prompt: JSON.stringify(payload(batch)),
-      schema: Scores,
-      tier: params.model,
-    });
-    const scores = validateIds(
-      object.scores,
-      batch.map((item) => item.id),
-    );
+    // A single invalid answer (unknown ID, non-verbatim evidence) is asked once more, then fails.
+    const scoreBatch = async () => {
+      const { object, model } = await generate(ctx, {
+        system: SCORING_SYSTEM,
+        prompt: JSON.stringify(payload(batch)),
+        schema: Scores,
+        tier: params.model,
+      });
+      const scores = validateIds(
+        object.scores,
+        batch.map((item) => item.id),
+      );
+      for (const entry of batch)
+        for (const factor of ScoreFactor.options)
+          validateNote(scores.get(entry.id)!.factors[factor].note, entry, factor);
+      return { scores, model };
+    };
+    let answer;
+    try {
+      answer = await scoreBatch();
+    } catch (error) {
+      ctx.signal.throwIfAborted();
+      ctx.log(
+        `Provisional scoring batch ${index + 1}: the answer failed validation (${error instanceof Error ? error.message : String(error)}); asking once more.`,
+      );
+      answer = await scoreBatch();
+    }
+    const { scores, model } = answer;
     for (const entry of batch) {
       const score = scores.get(entry.id)!;
-      for (const factor of ScoreFactor.options) {
-        validateNote(score.factors[factor].note, entry, factor);
-      }
       const values = Object.fromEntries(
         ScoreFactor.options.map((factor) => [factor, score.factors[factor].value]),
       ) as Record<ScoreFactor, number>;
