@@ -1,0 +1,36 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_m140i_2018.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_m140i_2018",
+    "name": "2018 BMW M140i",
+    "sketchfabUid": "24f09cc46773424fb2a3922427f1c37d",
+    "year": 2018,
+    "series": "1 Series",
+    "chassisCode": "F20",
+    "bodyType": "hatchback",
+    "defaultPowertrain": "gasoline",
+    "supportedPowertrains": ["gasoline"],
+    "dimensions": {
+      "length": 4.34,
+      "width": 1.9740738895195982,
+      "height": 1.4456671509113503,
+      "wheelbase": 2.6039999999999996,
+      "frontAxleX": 1.3019999999999998,
+      "rearAxleX": -1.3019999999999998,
+      "track": 1.6582220671964625,
+      "tyreRadius": 0.3325034447096106,
+      "tyreWidth": 0.2566296056375478,
+      "groundClearance": 0.14
+    },
+    "specialParts": [],
+    "description": "Procedural concept derived from 2018 BMW M140i. Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/2018-bmw-m140i-24f09cc46773424fb2a3922427f1c37d",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by/4.0/"
+  },
+  "partIds": ["body", "headlights", "mirrors", "side_windows", "taillights", "wheels", "windshield"]
+}

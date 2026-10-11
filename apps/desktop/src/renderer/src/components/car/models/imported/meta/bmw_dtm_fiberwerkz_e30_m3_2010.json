@@ -1,0 +1,51 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_dtm_fiberwerkz_e30_m3_2010.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_dtm_fiberwerkz_e30_m3_2010",
+    "name": "2010 DTM FiberWerkz BMW M3 E30 WIDEBODY KIT",
+    "sketchfabUid": "272aa2f2a82e4e85bfb9de34877a336f",
+    "year": 2010,
+    "series": "M3",
+    "chassisCode": "E30",
+    "bodyType": "race",
+    "defaultPowertrain": "gasoline",
+    "supportedPowertrains": ["gasoline"],
+    "dimensions": {
+      "length": 4.36,
+      "width": 1.8989535576066336,
+      "height": 1.5538065806331962,
+      "wheelbase": 2.616,
+      "frontAxleX": 1.308,
+      "rearAxleX": -1.308,
+      "track": 1.5951209883895723,
+      "tyreRadius": 0.3573755135456351,
+      "tyreWidth": 0.2468639624888624,
+      "groundClearance": 0.14
+    },
+    "specialParts": ["front_splitter"],
+    "description": "Procedural concept derived from 2010 DTM FiberWerkz BMW M3 E30 WIDEBODY KIT. Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/2010-dtm-fiberwerkz-bmw-m3-e30-widebody-kit-272aa2f2a82e4e85bfb9de34877a336f",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+  },
+  "partIds": [
+    "body",
+    "exhaust_system",
+    "front_bumper",
+    "front_doors",
+    "front_splitter",
+    "headlights",
+    "hood",
+    "kidney_grille",
+    "mirrors",
+    "rear_bumper",
+    "side_windows",
+    "steering_wheel",
+    "taillights",
+    "wheels"
+  ]
+}

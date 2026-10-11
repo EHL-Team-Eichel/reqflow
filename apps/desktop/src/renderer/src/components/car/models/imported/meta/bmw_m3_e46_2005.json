@@ -1,0 +1,36 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_m3_e46_2005.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_m3_e46_2005",
+    "name": "2005 BMW M3 (E46)",
+    "sketchfabUid": "50549fe15a294acd8a8340988a943eae",
+    "year": 2005,
+    "series": "M3",
+    "chassisCode": "E46",
+    "bodyType": "coupe",
+    "defaultPowertrain": "gasoline",
+    "supportedPowertrains": ["gasoline"],
+    "dimensions": {
+      "length": 4.49,
+      "width": 1.9128026250263455,
+      "height": 1.4120375252580808,
+      "wheelbase": 2.694,
+      "frontAxleX": 1.347,
+      "rearAxleX": -1.347,
+      "track": 1.6067542050221302,
+      "tyreRadius": 0.3247686308093586,
+      "tyreWidth": 0.24866434125342493,
+      "groundClearance": 0.14
+    },
+    "specialParts": [],
+    "description": "Procedural concept derived from 2005 BMW M3 (E46). Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/2005-bmw-m3-e46-50549fe15a294acd8a8340988a943eae",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+  },
+  "partIds": ["body", "side_windows"]
+}

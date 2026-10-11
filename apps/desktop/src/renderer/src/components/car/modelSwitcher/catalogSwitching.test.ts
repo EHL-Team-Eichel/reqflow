@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { VEHICLE_MODELS } from "../models/registry";
+import { VEHICLE_MODELS, getSourceMeshInfoById, loadSourceMeshById } from "../models/registry";
+import { buildSourceMesh } from "../converter/buildSourceMesh";
 import { buildVehicleModel } from "../models/builder";
 import { availablePartIds, powertrainSubclasses, POWERTRAINS } from "./powertrains";
 import { initialMarkerMenu, toggleMarkerMenu, menuPartIds } from "../markerMenu";
@@ -8,8 +9,11 @@ import * as THREE from "three";
 describe("existing catalog switching integration", () => {
   it.each(VEHICLE_MODELS)(
     "matches $id to its parts/menu without duplicate powertrains",
-    (model) => {
-      const car = buildVehicleModel(model, model.defaultPowertrain);
+    async (model) => {
+      const source = await loadSourceMeshById(model.id);
+      const car = source
+        ? buildSourceMesh(source)
+        : buildVehicleModel(model, model.defaultPowertrain);
       const modelled = new Set(
         car.pieces.map((p) => p.partId).filter((id): id is string => id !== null),
       );
@@ -29,7 +33,9 @@ describe("existing catalog switching integration", () => {
   );
 
   it("supports exploratory powertrains while preserving catalog equipment and baseline body", () => {
-    const model = VEHICLE_MODELS.find((m) => m.specialParts.includes("gt_wing"))!;
+    const model = VEHICLE_MODELS.find(
+      (m) => m.specialParts.includes("gt_wing") && !getSourceMeshInfoById(m.id),
+    )!;
     for (const option of POWERTRAINS) {
       const car = buildVehicleModel(model, option.value);
       const modelled = new Set(
@@ -50,7 +56,9 @@ describe("existing catalog switching integration", () => {
   });
 
   it("activates optional equipment markers and closes them with their parent", () => {
-    const model = VEHICLE_MODELS.find((m) => m.specialParts.includes("gt_wing"))!;
+    const model = VEHICLE_MODELS.find(
+      (m) => m.specialParts.includes("gt_wing") && !getSourceMeshInfoById(m.id),
+    )!;
     const menus = powertrainSubclasses("electric", model);
     const state = toggleMarkerMenu(initialMarkerMenu(), "model_exterior");
     expect(state.active).toBe("model_exterior");

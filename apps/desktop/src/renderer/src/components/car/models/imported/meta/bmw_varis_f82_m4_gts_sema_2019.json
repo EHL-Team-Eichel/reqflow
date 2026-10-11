@@ -1,0 +1,36 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_varis_f82_m4_gts_sema_2019.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_varis_f82_m4_gts_sema_2019",
+    "name": "2019 Varis F82 BMW M4 GTS - SEMA Build",
+    "sketchfabUid": "449b10bb93f142aeb2dd2de568347fec",
+    "year": 2019,
+    "series": "M4",
+    "chassisCode": "F82",
+    "bodyType": "coupe",
+    "defaultPowertrain": "gasoline",
+    "supportedPowertrains": ["gasoline"],
+    "dimensions": {
+      "length": 4.71,
+      "width": 2.025267500902337,
+      "height": 1.3908150146040898,
+      "wheelbase": 2.826,
+      "frontAxleX": 1.413,
+      "rearAxleX": -1.413,
+      "track": 1.7012247007579628,
+      "tyreRadius": 0.3198874533589407,
+      "tyreWidth": 0.2632847751173038,
+      "groundClearance": 0.14
+    },
+    "specialParts": [],
+    "description": "Procedural concept derived from 2019 Varis F82 BMW M4 GTS - SEMA Build. Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/2019-varis-f82-bmw-m4-gts-sema-build-449b10bb93f142aeb2dd2de568347fec",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+  },
+  "partIds": ["body", "front_seats", "kidney_grille", "side_windows", "taillights", "wheels"]
+}

@@ -1,0 +1,51 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_m235i_gran_coupe_2019.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_m235i_gran_coupe_2019",
+    "name": "2019 BMW M235i xDrive Gran Coupé",
+    "sketchfabUid": "1efbe2ff21414af89fb14c70655cc88b",
+    "year": 2019,
+    "series": "2 Series",
+    "chassisCode": "F44",
+    "bodyType": "gran_coupe",
+    "defaultPowertrain": "gasoline",
+    "supportedPowertrains": ["gasoline"],
+    "dimensions": {
+      "length": 4.53,
+      "width": 2.087032693886272,
+      "height": 1.4194381839325663,
+      "wheelbase": 2.718,
+      "frontAxleX": 1.359,
+      "rearAxleX": -1.359,
+      "track": 1.7531074628644685,
+      "tyreRadius": 0.3264707823044903,
+      "tyreWidth": 0.2713142502052154,
+      "groundClearance": 0.14
+    },
+    "specialParts": ["rear_spoiler", "rear_diffuser"],
+    "description": "Procedural concept derived from 2019 BMW M235i xDrive Gran Coupé. Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/2019-bmw-m235i-xdrive-gran-coupe-1efbe2ff21414af89fb14c70655cc88b",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+  },
+  "partIds": [
+    "body",
+    "exhaust_system",
+    "front_bumper",
+    "front_doors",
+    "hood",
+    "mirrors",
+    "rear_bumper",
+    "rear_diffuser",
+    "rear_doors",
+    "rear_spoiler",
+    "roof",
+    "side_windows",
+    "trunk_lid",
+    "wheels"
+  ]
+}

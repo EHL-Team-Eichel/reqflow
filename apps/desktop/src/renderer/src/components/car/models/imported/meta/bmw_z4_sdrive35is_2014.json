@@ -1,0 +1,51 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_z4_sdrive35is_2014.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_z4_sdrive35is_2014",
+    "name": "2014 BMW Z4 sDrive35is",
+    "sketchfabUid": "6a1fd02fa5fa46488a131777c569354e",
+    "year": 2014,
+    "series": "Z4",
+    "chassisCode": "E89",
+    "bodyType": "roadster",
+    "defaultPowertrain": "gasoline",
+    "supportedPowertrains": ["gasoline"],
+    "dimensions": {
+      "length": 4.24,
+      "width": 1.9161297769026604,
+      "height": 1.3292337257726632,
+      "wheelbase": 2.502416667008939,
+      "frontAxleX": 1.2714700048606444,
+      "rearAxleX": -1.2309466621482945,
+      "track": 1.4639473840713206,
+      "tyreRadius": 0.3291440623814413,
+      "tyreWidth": 0.2836672606641748,
+      "groundClearance": 0.14
+    },
+    "specialParts": ["rear_diffuser"],
+    "description": "Procedural concept derived from 2014 BMW Z4 sDrive35is. Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/2014-bmw-z4-sdrive35is-6a1fd02fa5fa46488a131777c569354e",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+  },
+  "partIds": [
+    "body",
+    "dashboard",
+    "exhaust_system",
+    "front_bumper",
+    "front_doors",
+    "headlights",
+    "hood",
+    "kidney_grille",
+    "mirrors",
+    "rear_diffuser",
+    "roof",
+    "side_windows",
+    "trunk_lid",
+    "wheels"
+  ]
+}

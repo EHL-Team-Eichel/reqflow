@@ -1,0 +1,51 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_dtm_fiberwerkz_e46_m3_2018.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_dtm_fiberwerkz_e46_m3_2018",
+    "name": "2018 DTM FiberWerkz BMW M3 E46 WIDEBODY KIT",
+    "sketchfabUid": "3adae3169e134956b061de8605eeb8ae",
+    "year": 2018,
+    "series": "M3",
+    "chassisCode": "E46",
+    "bodyType": "coupe",
+    "defaultPowertrain": "gasoline",
+    "supportedPowertrains": ["gasoline"],
+    "dimensions": {
+      "length": 4.54,
+      "width": 1.9243936635925445,
+      "height": 1.3565222551202716,
+      "wheelbase": 2.7537872708605526,
+      "frontAxleX": 1.491505902184805,
+      "rearAxleX": -1.262281368675748,
+      "track": 1.613867266869092,
+      "tyreRadius": 0.32970322494600807,
+      "tyreWidth": 0.25590508276006735,
+      "groundClearance": 0.14
+    },
+    "specialParts": ["rear_spoiler", "rear_diffuser"],
+    "description": "Procedural concept derived from 2018 DTM FiberWerkz BMW M3 E46 WIDEBODY KIT. Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/2018-dtm-fiberwerkz-bmw-m3-e46-widebody-kit-3adae3169e134956b061de8605eeb8ae",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+  },
+  "partIds": [
+    "body",
+    "exhaust_system",
+    "front_bumper",
+    "front_doors",
+    "headlights",
+    "hood",
+    "kidney_grille",
+    "mirrors",
+    "rear_bumper",
+    "rear_diffuser",
+    "side_windows",
+    "steering_wheel",
+    "taillights",
+    "wheels"
+  ]
+}

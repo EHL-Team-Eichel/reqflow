@@ -1,0 +1,44 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_m1_1979.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_m1_1979",
+    "name": "1979 BMW M1",
+    "sketchfabUid": "381d36aaa42e4a3a88502971f385334f",
+    "year": 1979,
+    "series": "M1",
+    "chassisCode": "E26",
+    "bodyType": "coupe",
+    "defaultPowertrain": "gasoline",
+    "supportedPowertrains": ["gasoline"],
+    "dimensions": {
+      "length": 4.36,
+      "width": 2.018640008239952,
+      "height": 1.2379498207388782,
+      "wheelbase": 2.57050321032243,
+      "frontAxleX": 1.178247818624768,
+      "rearAxleX": -1.392255391697662,
+      "track": 1.5534218606664258,
+      "tyreRadius": 0.3253951752194704,
+      "tyreWidth": 0.2595855114989988,
+      "groundClearance": 0.14
+    },
+    "specialParts": [],
+    "description": "Procedural concept derived from 1979 BMW M1. Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/1979-bmw-m1-381d36aaa42e4a3a88502971f385334f",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+  },
+  "partIds": [
+    "body",
+    "front_seats",
+    "headlights",
+    "kidney_grille",
+    "side_windows",
+    "taillights",
+    "wheels"
+  ]
+}

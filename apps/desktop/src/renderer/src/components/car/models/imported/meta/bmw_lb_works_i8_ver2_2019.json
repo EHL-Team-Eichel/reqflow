@@ -1,0 +1,36 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_lb_works_i8_ver2_2019.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_lb_works_i8_ver2_2019",
+    "name": "2019 LB★WORKS BMW i8 ver.2",
+    "sketchfabUid": "bfa0be2e7d6d4afcb1a84d0542efaae6",
+    "year": 2019,
+    "series": "i8",
+    "chassisCode": "I12",
+    "bodyType": "coupe",
+    "defaultPowertrain": "hybrid",
+    "supportedPowertrains": ["hybrid"],
+    "dimensions": {
+      "length": 4.72,
+      "width": 2.177707283604701,
+      "height": 1.2437140900765589,
+      "wheelbase": 2.832,
+      "frontAxleX": 1.416,
+      "rearAxleX": -1.416,
+      "track": 1.8292741182279486,
+      "tyreRadius": 0.28605424071760854,
+      "tyreWidth": 0.2831019468686111,
+      "groundClearance": 0.14
+    },
+    "specialParts": [],
+    "description": "Procedural concept derived from 2019 LB★WORKS BMW i8 ver.2. Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/2019-lbworks-bmw-i8-ver2-bfa0be2e7d6d4afcb1a84d0542efaae6",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+  },
+  "partIds": ["body", "front_seats", "kidney_grille", "side_windows", "taillights", "wheels"]
+}

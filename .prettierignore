@@ -13,3 +13,6 @@ package-lock.json
 **/* 2.ts
 **/* 2.tsx
 **/* 2.md
+
+# Generated packed source meshes; converters validate these compact JSON profiles.
+apps/desktop/src/renderer/src/components/car/models/imported/*.json

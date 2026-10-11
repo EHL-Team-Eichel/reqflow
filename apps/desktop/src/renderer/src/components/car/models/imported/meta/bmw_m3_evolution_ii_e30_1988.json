@@ -1,0 +1,51 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_m3_evolution_ii_e30_1988.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_m3_evolution_ii_e30_1988",
+    "name": "1988 BMW M3 Evolution II (E30)",
+    "sketchfabUid": "9099df483850404a8cf94529b3df148b",
+    "year": 1988,
+    "series": "M3",
+    "chassisCode": "E30",
+    "bodyType": "coupe",
+    "defaultPowertrain": "gasoline",
+    "supportedPowertrains": ["gasoline"],
+    "dimensions": {
+      "length": 4.35,
+      "width": 1.7780518073203022,
+      "height": 1.552686031764449,
+      "wheelbase": 2.61,
+      "frontAxleX": 1.305,
+      "rearAxleX": -1.305,
+      "track": 1.4935635181490539,
+      "tyreRadius": 0.35711778730582333,
+      "tyreWidth": 0.2311467349516393,
+      "groundClearance": 0.14
+    },
+    "specialParts": ["rear_spoiler"],
+    "description": "Procedural concept derived from 1988 BMW M3 Evolution II (E30). Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/1988-bmw-m3-evolution-ii-e30-9099df483850404a8cf94529b3df148b",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+  },
+  "partIds": [
+    "body",
+    "exhaust_system",
+    "front_bumper",
+    "front_doors",
+    "headlights",
+    "hood",
+    "kidney_grille",
+    "mirrors",
+    "rear_bumper",
+    "rear_spoiler",
+    "side_windows",
+    "steering_wheel",
+    "taillights",
+    "wheels"
+  ]
+}

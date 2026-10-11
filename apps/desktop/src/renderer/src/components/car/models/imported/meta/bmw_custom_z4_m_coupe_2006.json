@@ -1,0 +1,36 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_custom_z4_m_coupe_2006.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_custom_z4_m_coupe_2006",
+    "name": "2006 Custom BMW Z4 M Coupe",
+    "sketchfabUid": "3a47cbb6eb0c486dbf406e05d6bf1311",
+    "year": 2006,
+    "series": "Z4",
+    "chassisCode": "E86",
+    "bodyType": "coupe",
+    "defaultPowertrain": "gasoline",
+    "supportedPowertrains": ["gasoline"],
+    "dimensions": {
+      "length": 4.11,
+      "width": 1.8924016805906159,
+      "height": 1.2612084790277907,
+      "wheelbase": 2.466,
+      "frontAxleX": 1.233,
+      "rearAxleX": -1.233,
+      "track": 1.5896174116961173,
+      "tyreRadius": 0.2900779501763919,
+      "tyreWidth": 0.24601221847678006,
+      "groundClearance": 0.14
+    },
+    "specialParts": [],
+    "description": "Procedural concept derived from 2006 Custom BMW Z4 M Coupe. Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/2006-custom-bmw-z4-m-coupe-3a47cbb6eb0c486dbf406e05d6bf1311",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+  },
+  "partIds": ["body", "kidney_grille", "side_windows", "taillights", "wheels"]
+}

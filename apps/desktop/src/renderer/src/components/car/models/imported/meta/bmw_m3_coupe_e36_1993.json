@@ -1,0 +1,44 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_m3_coupe_e36_1993.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_m3_coupe_e36_1993",
+    "name": "1993 BMW M3 Coupe (E36)",
+    "sketchfabUid": "76401039fa80419ab036bea09acb898d",
+    "year": 1993,
+    "series": "M3",
+    "chassisCode": "E36",
+    "bodyType": "coupe",
+    "defaultPowertrain": "gasoline",
+    "supportedPowertrains": ["gasoline"],
+    "dimensions": {
+      "length": 4.43,
+      "width": 1.9192781043619314,
+      "height": 1.3561567046191745,
+      "wheelbase": 2.658,
+      "frontAxleX": 1.329,
+      "rearAxleX": -1.329,
+      "track": 1.6121936076640222,
+      "tyreRadius": 0.31191604206241014,
+      "tyreWidth": 0.24950615356705108,
+      "groundClearance": 0.14
+    },
+    "specialParts": [],
+    "description": "Procedural concept derived from 1993 BMW M3 Coupe (E36). Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/1993-bmw-m3-coupe-e36-76401039fa80419ab036bea09acb898d",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+  },
+  "partIds": [
+    "body",
+    "headlights",
+    "kidney_grille",
+    "mirrors",
+    "side_windows",
+    "taillights",
+    "wheels"
+  ]
+}

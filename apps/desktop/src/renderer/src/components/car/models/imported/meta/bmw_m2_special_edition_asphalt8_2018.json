@@ -1,0 +1,45 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_m2_special_edition_asphalt8_2018.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_m2_special_edition_asphalt8_2018",
+    "name": "2018 BMW M2 Special Edition - Asphalt 8",
+    "sketchfabUid": "6b5569079f284a2bb9d844315a553697",
+    "year": 2018,
+    "series": "M2",
+    "chassisCode": "F87",
+    "bodyType": "coupe",
+    "defaultPowertrain": "gasoline",
+    "supportedPowertrains": ["gasoline"],
+    "dimensions": {
+      "length": 4.47,
+      "width": 2.1268221270716072,
+      "height": 1.435085214085062,
+      "wheelbase": 2.682,
+      "frontAxleX": 1.341,
+      "rearAxleX": -1.341,
+      "track": 1.78653058674015,
+      "tyreRadius": 0.3300695992395643,
+      "tyreWidth": 0.2764868765193089,
+      "groundClearance": 0.14
+    },
+    "specialParts": [],
+    "description": "Procedural concept derived from 2018 BMW M2 Special Edition - Asphalt 8. Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/2018-bmw-m2-special-edition-asphalt-8-6b5569079f284a2bb9d844315a553697",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+  },
+  "partIds": [
+    "body",
+    "front_doors",
+    "headlights",
+    "hood",
+    "rear_bumper",
+    "side_windows",
+    "trunk_lid",
+    "wheels"
+  ]
+}

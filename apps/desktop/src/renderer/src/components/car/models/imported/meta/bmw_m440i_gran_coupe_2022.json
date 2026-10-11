@@ -1,0 +1,48 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_m440i_gran_coupe_2022.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_m440i_gran_coupe_2022",
+    "name": "2022 BMW M440i xDrive Gran Coupé",
+    "sketchfabUid": "a41efb9c01e64d9d81a7896d2bbbb167",
+    "year": 2022,
+    "series": "4 Series",
+    "chassisCode": "G26",
+    "bodyType": "coupe",
+    "defaultPowertrain": "gasoline",
+    "supportedPowertrains": ["gasoline"],
+    "dimensions": {
+      "length": 4.78,
+      "width": 2.0777674536716124,
+      "height": 1.4290202139043187,
+      "wheelbase": 2.868,
+      "frontAxleX": 1.434,
+      "rearAxleX": -1.434,
+      "track": 1.7453246610841544,
+      "tyreRadius": 0.32867464919799333,
+      "tyreWidth": 0.27010976897730965,
+      "groundClearance": 0.14
+    },
+    "specialParts": [],
+    "description": "Procedural concept derived from 2022 BMW M440i xDrive Gran Coupé. Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/2022-bmw-m440i-xdrive-gran-coupe-a41efb9c01e64d9d81a7896d2bbbb167",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+  },
+  "partIds": [
+    "body",
+    "front_bumper",
+    "front_doors",
+    "headlights",
+    "kidney_grille",
+    "rear_bumper",
+    "rear_window",
+    "side_windows",
+    "taillights",
+    "trunk_lid",
+    "wheels"
+  ]
+}

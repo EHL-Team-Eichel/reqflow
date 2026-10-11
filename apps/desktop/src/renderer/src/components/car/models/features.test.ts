@@ -1,5 +1,11 @@
-import { describe, expect, it } from "vitest";
-import { VEHICLE_MODELS, getVehicleModelById, DEFAULT_MODEL_ID } from "./registry";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import * as registry from "./registry";
+import {
+  VEHICLE_MODELS,
+  BUILT_IN_VEHICLE_MODELS,
+  getVehicleModelById,
+  DEFAULT_MODEL_ID,
+} from "./registry";
 import {
   isTwoDoor,
   isTwoSeater,
@@ -13,7 +19,10 @@ import {
 import { buildVehicleModel } from "./builder";
 import { availablePartIds } from "../modelSwitcher/powertrains";
 
-describe("Vehicle Features & Class Recognition", () => {
+const getProceduralModel = (id: string) => BUILT_IN_VEHICLE_MODELS.find((model) => model.id === id);
+afterEach(() => vi.restoreAllMocks());
+
+describe("Procedural vehicle features and class recognition", () => {
   it("defaults to the 2025 BMW M5 Sedan as the standard benchmark model", () => {
     expect(DEFAULT_MODEL_ID).toBe("bmw_m5_sedan_g90_2025");
     expect(VEHICLE_MODELS[0]!.id).toBe("bmw_m5_sedan_g90_2025");
@@ -42,7 +51,7 @@ describe("Vehicle Features & Class Recognition", () => {
   });
 
   it("removes rear doors from 2-door coupes while retaining frameless front doors", () => {
-    const m2 = getVehicleModelById("bmw_m2_cs_2026")!;
+    const m2 = getProceduralModel("bmw_m2_cs_2026")!;
     expect(m2).toBeDefined();
     expect(isTwoDoor(m2)).toBe(true);
     expect(isTwoSeater(m2)).toBe(false);
@@ -51,6 +60,8 @@ describe("Vehicle Features & Class Recognition", () => {
     expect(excluded.has("rear_doors")).toBe(true);
     expect(excluded.has("rear_seats")).toBe(false);
 
+    // This test covers procedural menus; imported menus follow the actual source pieces.
+    vi.spyOn(registry, "getSourceMeshInfoById").mockReturnValue(undefined);
     const available = availablePartIds("gasoline", m2);
     expect(available.has("rear_doors")).toBe(false);
     expect(available.has("front_doors")).toBe(true);
@@ -65,7 +76,7 @@ describe("Vehicle Features & Class Recognition", () => {
   });
 
   it("removes rear seats and rear console air vents from 2-seaters", () => {
-    const z4 = getVehicleModelById("bmw_z4_m40i_g29_2019")!;
+    const z4 = getProceduralModel("bmw_z4_m40i_g29_2019")!;
     expect(z4).toBeDefined();
     expect(isTwoDoor(z4)).toBe(true);
     expect(isTwoSeater(z4)).toBe(true);
@@ -89,7 +100,8 @@ describe("Vehicle Features & Class Recognition", () => {
   });
 
   it("strips passenger seat and luxury comfort items from dedicated GT3/GT4/DTM/GTR race cars", () => {
-    const gt3 = getVehicleModelById("bmw_m4_gt3_evo_2025")!;
+    // Exercise the legacy procedural builder; source-mesh menus/geometry have their own integration test.
+    const gt3 = BUILT_IN_VEHICLE_MODELS.find((model) => model.id === "bmw_m4_gt3_evo_2025")!;
     expect(gt3).toBeDefined();
     expect(isSingleSeaterRaceCar(gt3)).toBe(true);
 
@@ -121,7 +133,7 @@ describe("Vehicle Features & Class Recognition", () => {
   });
 
   it("adds SUV equipment (roof rails and skid plates) and raises ride height", () => {
-    const x5 = getVehicleModelById("bmw_x5_xdrive40i_2024")!;
+    const x5 = getProceduralModel("bmw_x5_xdrive40i_2024")!;
     expect(x5).toBeDefined();
     expect(isSuv(x5)).toBe(true);
     expect(isTwoDoor(x5)).toBe(false);
@@ -138,7 +150,7 @@ describe("Vehicle Features & Class Recognition", () => {
   });
 
   it("adds estate wagon features (extended roofline and roof rails) to Touring models", () => {
-    const touring = getVehicleModelById("bmw_m3_touring_g81_2023")!;
+    const touring = getProceduralModel("bmw_m3_touring_g81_2023")!;
     expect(touring).toBeDefined();
     expect(isTouring(touring)).toBe(true);
 
@@ -150,7 +162,7 @@ describe("Vehicle Features & Class Recognition", () => {
   });
 
   it("adds soft-top canopy and rollover protection to convertibles", () => {
-    const m4Cabrio = getVehicleModelById("bmw_m4_convertible_f83_2018")!;
+    const m4Cabrio = getProceduralModel("bmw_m4_convertible_f83_2018")!;
     expect(m4Cabrio).toBeDefined();
     expect(isConvertible(m4Cabrio)).toBe(true);
 
@@ -161,13 +173,13 @@ describe("Vehicle Features & Class Recognition", () => {
   });
 
   it("proportionally scales 3D model dimensions and anchors", () => {
-    const z4 = getVehicleModelById("bmw_z4_sdrive35is_2014")!;
+    const z4 = getProceduralModel("bmw_z4_sdrive35is_2014")!;
     const carZ4 = buildVehicleModel(z4, "gasoline");
     // Z4 is compact (4.24m length vs 5.06m baseline)
     expect(carZ4.root.scale.x).toBeLessThan(0.9);
     expect(carZ4.root.scale.y).toBeLessThan(0.9);
 
-    const x7 = getVehicleModelById("bmw_x7_xdrive40i_2019")!;
+    const x7 = getProceduralModel("bmw_x7_xdrive40i_2019")!;
     const carX7 = buildVehicleModel(x7, "gasoline");
     // X7 is tall (1.805m height vs 1.515m baseline)
     expect(carX7.root.scale.y).toBeGreaterThan(1.15);

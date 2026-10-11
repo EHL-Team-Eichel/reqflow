@@ -1,0 +1,51 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_pandem_e30_v15_2017.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_pandem_e30_v15_2017",
+    "name": "2017 Pandem BMW E30 V1.5 bodykit",
+    "sketchfabUid": "776628e54c494c42b730282d58d09114",
+    "year": 2017,
+    "series": "3 Series",
+    "chassisCode": "E30",
+    "bodyType": "coupe",
+    "defaultPowertrain": "gasoline",
+    "supportedPowertrains": ["gasoline"],
+    "dimensions": {
+      "length": 4.35,
+      "width": 1.7934425249637063,
+      "height": 1.5050626109719698,
+      "wheelbase": 2.61,
+      "frontAxleX": 1.305,
+      "rearAxleX": -1.305,
+      "track": 1.5064917209695132,
+      "tyreRadius": 0.3461644005235531,
+      "tyreWidth": 0.23314752824528182,
+      "groundClearance": 0.14
+    },
+    "specialParts": ["rear_spoiler"],
+    "description": "Procedural concept derived from 2017 Pandem BMW E30 V1.5 bodykit. Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/2017-pandem-bmw-e30-v15-bodykit-776628e54c494c42b730282d58d09114",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by/4.0/"
+  },
+  "partIds": [
+    "body",
+    "exhaust_system",
+    "front_bumper",
+    "front_doors",
+    "headlights",
+    "hood",
+    "kidney_grille",
+    "mirrors",
+    "rear_bumper",
+    "rear_spoiler",
+    "side_windows",
+    "steering_wheel",
+    "taillights",
+    "wheels"
+  ]
+}

@@ -2,6 +2,7 @@ import { CAR_PARTS, EXTENDED_CAR_PARTS } from "../parts";
 import { PART_SUBCLASSES, type PartSubclass } from "../partMenu";
 import type { PowertrainType, VehicleModel } from "../models/types";
 import { modelExcludedPartIds } from "../models/features";
+import { getSourceMeshInfoById } from "../models/registry";
 
 /** Schematic layouts, independent of the configured requirement scope/vehicle derivative. */
 export const POWERTRAINS = [
@@ -54,6 +55,8 @@ export function availablePartIds(
   powertrain: PowertrainType,
   model?: VehicleModel,
 ): ReadonlySet<string> {
+  const source = model ? getSourceMeshInfoById(model.id) : undefined;
+  if (source) return new Set(source.partIds);
   const excluded = modelExcludedPartIds(model);
   return new Set([
     ...CAR_PARTS.filter((p) => !VARIABLE_PARTS.includes(p.id) && !excluded.has(p.id)).map(
@@ -85,13 +88,14 @@ export function powertrainSubclasses(
   model?: VehicleModel,
 ): readonly PartSubclass[] {
   const available = availablePartIds(powertrain, model);
+  const source = model ? getSourceMeshInfoById(model.id) : undefined;
   const subclasses = PART_SUBCLASSES.map((subclass) => ({
     ...subclass,
     partIds:
       subclass.id === "power_chassis"
         ? [
             ...subclass.partIds.filter((id) => !VARIABLE_PARTS.includes(id)),
-            ...POWERTRAIN_PARTS[powertrain],
+            ...(source ? VARIABLE_PARTS : POWERTRAIN_PARTS[powertrain]),
           ].filter((id) => available.has(id))
         : subclass.partIds.filter((id) => available.has(id)),
   }));

@@ -5,6 +5,7 @@ import {
   POWERTRAINS,
 } from "@/components/car/modelSwitcher/powertrains";
 import { useVehicleStore, getActiveVehicle } from "@/components/car/models/vehicleStore";
+import { getSourceMeshInfoById } from "@/components/car/models/registry";
 import { useState, useMemo } from "react";
 import { CarViewer, type CameraPreset, type CarView } from "@/components/car/CarViewer";
 import { PartPanel } from "@/components/car/PartPanel";
@@ -43,6 +44,8 @@ export function CarPage() {
   const scope = useSettings((s) => s.settings.defaultScope);
   const { selectedModelId, powertrain, setPowertrain } = useVehicleStore();
   const active = useMemo(() => getActiveVehicle(), [selectedModelId, powertrain]);
+  const sourceMesh = getSourceMeshInfoById(selectedModelId);
+  const displayPowertrain = sourceMesh?.model.defaultPowertrain ?? powertrain;
   const availableParts = availablePartIds(powertrain, active.model);
   const subclasses = powertrainSubclasses(powertrain, active.model);
   const [view, setView] = useState<CarView>("exterior");
@@ -88,7 +91,7 @@ export function CarPage() {
             {scope.derivative ? ` ${scope.derivative}` : ""}
             <span className="text-sm font-normal text-muted">
               {scope.market} · {scope.horizonYears}-year horizon ·{" "}
-              {POWERTRAINS.find((option) => option.value === powertrain)?.label}
+              {POWERTRAINS.find((option) => option.value === displayPowertrain)?.label}
             </span>
           </span>
         }
@@ -117,7 +120,11 @@ export function CarPage() {
         testId="car-page"
       >
         <div className="relative h-full">
-          <PowertrainSwitcher value={powertrain} onChange={setPowertrain} />
+          <PowertrainSwitcher
+            value={displayPowertrain}
+            onChange={setPowertrain}
+            disabled={!!sourceMesh}
+          />
           <CarViewer
             modelId={selectedModelId}
             powertrain={powertrain}
@@ -131,8 +138,32 @@ export function CarPage() {
           />
           <p className="pointer-events-none absolute bottom-3 left-4 text-xs text-muted">
             Sketch: {active.model.name} ·{" "}
-            {POWERTRAINS.find((option) => option.value === powertrain)?.description} · schematic
-            sketch · drag to turn, scroll to zoom, click any part
+            {sourceMesh
+              ? "Original vehicle geometry"
+              : `${POWERTRAINS.find((option) => option.value === powertrain)?.description} · schematic sketch`}{" "}
+            · drag to turn, scroll to zoom, click any part
+            {sourceMesh && (
+              <span className="pointer-events-auto block">
+                Source:{" "}
+                <a
+                  className="underline"
+                  href={sourceMesh.source.url}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {sourceMesh.source.author}
+                </a>
+                {" · "}
+                <a
+                  className="underline"
+                  href={sourceMesh.source.license}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  License
+                </a>
+              </span>
+            )}
           </p>
         </div>
       </Panel>

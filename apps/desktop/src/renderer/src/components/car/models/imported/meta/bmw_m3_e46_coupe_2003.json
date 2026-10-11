@@ -1,0 +1,52 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_m3_e46_coupe_2003.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_m3_e46_coupe_2003",
+    "name": "2003 BMW M3 E46 Coupé",
+    "sketchfabUid": "7b43e776153f4dc199f564469cedbaa0",
+    "year": 2003,
+    "series": "M3",
+    "chassisCode": "E46",
+    "bodyType": "coupe",
+    "defaultPowertrain": "gasoline",
+    "supportedPowertrains": ["gasoline"],
+    "dimensions": {
+      "length": 4.49,
+      "width": 1.8977607679516983,
+      "height": 1.3984519931104098,
+      "wheelbase": 2.694,
+      "frontAxleX": 1.347,
+      "rearAxleX": -1.347,
+      "track": 1.5941190450794265,
+      "tyreRadius": 0.3216439584153943,
+      "tyreWidth": 0.2467088998337208,
+      "groundClearance": 0.14
+    },
+    "specialParts": ["rear_spoiler", "rear_diffuser"],
+    "description": "Procedural concept derived from 2003 BMW M3 E46 Coupé. Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/2003-bmw-m3-e46-coupe-7b43e776153f4dc199f564469cedbaa0",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+  },
+  "partIds": [
+    "body",
+    "exhaust_system",
+    "front_bumper",
+    "front_doors",
+    "headlights",
+    "hood",
+    "kidney_grille",
+    "mirrors",
+    "rear_bumper",
+    "rear_diffuser",
+    "rear_spoiler",
+    "side_windows",
+    "steering_wheel",
+    "taillights",
+    "wheels"
+  ]
+}

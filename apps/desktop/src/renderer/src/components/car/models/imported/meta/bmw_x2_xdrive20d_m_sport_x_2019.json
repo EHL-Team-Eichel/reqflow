@@ -1,0 +1,45 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_x2_xdrive20d_m_sport_x_2019.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_x2_xdrive20d_m_sport_x_2019",
+    "name": "2019 BMW X2 xDrive20d M Sport X",
+    "sketchfabUid": "cea85cf2fa9d4af682c2446cced5ccae",
+    "year": 2019,
+    "series": "X2",
+    "chassisCode": "F39",
+    "bodyType": "suv",
+    "defaultPowertrain": "gasoline",
+    "supportedPowertrains": ["gasoline"],
+    "dimensions": {
+      "length": 4.36,
+      "width": 2.1024419356850808,
+      "height": 1.5317323590922798,
+      "wheelbase": 2.616,
+      "frontAxleX": 1.308,
+      "rearAxleX": -1.308,
+      "track": 1.7660512259754677,
+      "tyreRadius": 0.3522984425912244,
+      "tyreWidth": 0.2733174516390605,
+      "groundClearance": 0.14
+    },
+    "specialParts": [],
+    "description": "Procedural concept derived from 2019 BMW X2 xDrive20d M Sport X. Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/2019-bmw-x2-xdrive20d-m-sport-x-cea85cf2fa9d4af682c2446cced5ccae",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+  },
+  "partIds": [
+    "body",
+    "front_doors",
+    "front_seats",
+    "mirrors",
+    "side_windows",
+    "steering_wheel",
+    "taillights",
+    "wheels"
+  ]
+}

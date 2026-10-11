@@ -1,0 +1,36 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_m4_gt3_evo_2025.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_m4_gt3_evo_2025",
+    "name": "2025 BMW M4 GT3 EVO G82",
+    "sketchfabUid": "113f83dd87064697a5ec2511d280b9d5",
+    "year": 2025,
+    "series": "M4",
+    "chassisCode": "G82",
+    "bodyType": "race",
+    "defaultPowertrain": "gasoline",
+    "supportedPowertrains": ["gasoline"],
+    "dimensions": {
+      "length": 5.02,
+      "width": 2.0595857425937303,
+      "height": 1.3857859614001904,
+      "wheelbase": 3.0119999999999996,
+      "frontAxleX": 1.5059999999999998,
+      "rearAxleX": -1.5059999999999998,
+      "track": 1.7300520237787333,
+      "tyreRadius": 0.3187307711220438,
+      "tyreWidth": 0.2677461465371849,
+      "groundClearance": 0.14
+    },
+    "specialParts": [],
+    "description": "Procedural concept derived from 2025 BMW M4 GT3 EVO G82. Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/2025-bmw-m4-gt3-evo-g82-113f83dd87064697a5ec2511d280b9d5",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+  },
+  "partIds": ["body", "front_doors", "hood", "side_windows", "steering_wheel", "wheels"]
+}

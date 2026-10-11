@@ -1,0 +1,50 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_m3_e92_2010.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_m3_e92_2010",
+    "name": "2010 BMW M3 (E92)",
+    "sketchfabUid": "14f97cec80fe4ecd9bd48f3b47bceaad",
+    "year": 2010,
+    "series": "M3",
+    "chassisCode": "E92",
+    "bodyType": "coupe",
+    "defaultPowertrain": "gasoline",
+    "supportedPowertrains": ["gasoline"],
+    "dimensions": {
+      "length": 4.61,
+      "width": 1.9935418737296546,
+      "height": 1.4022456641696468,
+      "wheelbase": 2.766,
+      "frontAxleX": 1.383,
+      "rearAxleX": -1.383,
+      "track": 1.6745751739329098,
+      "tyreRadius": 0.3225165027590188,
+      "tyreWidth": 0.2591604435848551,
+      "groundClearance": 0.14
+    },
+    "specialParts": ["rear_spoiler"],
+    "description": "Procedural concept derived from 2010 BMW M3 (E92). Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/2010-bmw-m3-e92-14f97cec80fe4ecd9bd48f3b47bceaad",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+  },
+  "partIds": [
+    "body",
+    "exhaust_system",
+    "front_doors",
+    "headlights",
+    "hood",
+    "kidney_grille",
+    "mirrors",
+    "rear_bumper",
+    "rear_spoiler",
+    "side_windows",
+    "steering_wheel",
+    "taillights",
+    "wheels"
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_m3_f80_2015.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_m3_f80_2015",
+    "name": "2015 BMW M3 (F80)",
+    "sketchfabUid": "547ab5f3b534473fbef71404bae708c5",
+    "year": 2015,
+    "series": "M3",
+    "chassisCode": "F80",
+    "bodyType": "sedan",
+    "defaultPowertrain": "gasoline",
+    "supportedPowertrains": ["gasoline"],
+    "dimensions": {
+      "length": 4.67,
+      "width": 2.0269704362263052,
+      "height": 1.4350350758216863,
+      "wheelbase": 2.7841297481031955,
+      "frontAxleX": 1.5143357681827427,
+      "rearAxleX": -1.269793979920453,
+      "track": 1.5484239460533304,
+      "tyreRadius": 0.34873871684815044,
+      "tyreWidth": 0.2822350485302177,
+      "groundClearance": 0.14
+    },
+    "specialParts": [],
+    "description": "Procedural concept derived from 2015 BMW M3 (F80). Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/2015-bmw-m3-f80-547ab5f3b534473fbef71404bae708c5",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+  },
+  "partIds": ["body", "front_bumper", "hood", "rear_bumper", "side_windows", "trunk_lid", "wheels"]
+}

@@ -1,0 +1,45 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_adro_g87_m2_2023.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_adro_g87_m2_2023",
+    "name": "2023 BMW M2 G87 ADRO Carbon Fiber Aero Body Kit",
+    "sketchfabUid": "8cfd37cb5dd14596b88037f88293a96d",
+    "year": 2023,
+    "series": "M2",
+    "chassisCode": "G87",
+    "bodyType": "coupe",
+    "defaultPowertrain": "gasoline",
+    "supportedPowertrains": ["gasoline"],
+    "dimensions": {
+      "length": 4.59,
+      "width": 2.0367017678102237,
+      "height": 1.3946403915242216,
+      "wheelbase": 2.754,
+      "frontAxleX": 1.377,
+      "rearAxleX": -1.377,
+      "track": 1.7108294849605878,
+      "tyreRadius": 0.320767290050571,
+      "tyreWidth": 0.2647712298153291,
+      "groundClearance": 0.14
+    },
+    "specialParts": [],
+    "description": "Procedural concept derived from 2023 BMW M2 G87 ADRO Carbon Fiber Aero Body Kit. Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/2023-bmw-m2-g87-adro-carbon-fiber-aero-body-kit-8cfd37cb5dd14596b88037f88293a96d",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by/4.0/"
+  },
+  "partIds": [
+    "body",
+    "front_seats",
+    "hood",
+    "kidney_grille",
+    "rear_spoiler",
+    "side_windows",
+    "taillights",
+    "wheels"
+  ]
+}

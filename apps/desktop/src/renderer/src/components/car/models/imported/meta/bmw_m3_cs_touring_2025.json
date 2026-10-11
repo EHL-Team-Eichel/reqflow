@@ -1,0 +1,44 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_m3_cs_touring_2025.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_m3_cs_touring_2025",
+    "name": "2025 BMW M3 CS Touring",
+    "sketchfabUid": "ebda8c29a8ef4ec789391e918d52ef55",
+    "year": 2025,
+    "series": "M3",
+    "chassisCode": "G81",
+    "bodyType": "touring",
+    "defaultPowertrain": "gasoline",
+    "supportedPowertrains": ["gasoline"],
+    "dimensions": {
+      "length": 4.8,
+      "width": 2.0794831037936627,
+      "height": 1.4554460623326053,
+      "wheelbase": 2.88,
+      "frontAxleX": 1.44,
+      "rearAxleX": -1.44,
+      "track": 1.7467658071866767,
+      "tyreRadius": 0.33475259433649923,
+      "tyreWidth": 0.2703328034931762,
+      "groundClearance": 0.14
+    },
+    "specialParts": [],
+    "description": "Procedural concept derived from 2025 BMW M3 CS Touring. Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/2025-bmw-m3-cs-touring-ebda8c29a8ef4ec789391e918d52ef55",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+  },
+  "partIds": [
+    "body",
+    "front_seats",
+    "headlights",
+    "kidney_grille",
+    "side_windows",
+    "taillights",
+    "wheels"
+  ]
+}

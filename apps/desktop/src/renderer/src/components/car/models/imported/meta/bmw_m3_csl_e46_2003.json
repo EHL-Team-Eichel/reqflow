@@ -1,0 +1,51 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_m3_csl_e46_2003.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_m3_csl_e46_2003",
+    "name": "2003 BMW M3 CSL (E46)",
+    "sketchfabUid": "9a44382562e243a78badb5c080714508",
+    "year": 2003,
+    "series": "M3",
+    "chassisCode": "E46",
+    "bodyType": "coupe",
+    "defaultPowertrain": "gasoline",
+    "supportedPowertrains": ["gasoline"],
+    "dimensions": {
+      "length": 4.49,
+      "width": 1.8977607679516983,
+      "height": 1.370804816064568,
+      "wheelbase": 2.7290359282359615,
+      "frontAxleX": 1.4661254368621628,
+      "rearAxleX": -1.262910491373799,
+      "track": 1.494776285400038,
+      "tyreRadius": 0.326739816126662,
+      "tyreWidth": 0.25360497975291335,
+      "groundClearance": 0.14
+    },
+    "specialParts": ["rear_diffuser"],
+    "description": "Procedural concept derived from 2003 BMW M3 CSL (E46). Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/2003-bmw-m3-csl-e46-9a44382562e243a78badb5c080714508",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+  },
+  "partIds": [
+    "body",
+    "exhaust_system",
+    "front_bumper",
+    "front_doors",
+    "headlights",
+    "hood",
+    "kidney_grille",
+    "mirrors",
+    "rear_bumper",
+    "rear_diffuser",
+    "side_windows",
+    "steering_wheel",
+    "taillights",
+    "wheels"
+  ]
+}
