@@ -7,6 +7,7 @@ import { label } from "./classify";
 import { partTag } from "./partTags";
 import { markerPresentation } from "./markerMenu";
 import { trackIdleOrbit } from "./idleOrbit";
+import { bindSmoothZoom, SmoothZoom } from "./smoothZoom";
 import { buildCar, type CarPiece } from "./model/buildCar";
 import { buildVehicleModel } from "./models/builder";
 import { getVehicleModelById } from "./models/registry";
@@ -105,6 +106,7 @@ export function CarViewer(props: Props) {
     controls.maxPolarAngle = Math.PI * 0.495;
     controls.autoRotateSpeed = 0.8;
     controls.update();
+    const smoothZoom = new SmoothZoom(camera, controls);
     const idleOrbit = trackIdleOrbit(window);
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
@@ -265,7 +267,13 @@ export function CarViewer(props: Props) {
       needsPick = true;
       restyle();
     };
-    const onMotionPreference = () => setView(propsRef.current.view);
+    const onMotionPreference = () => {
+      setView(propsRef.current.view);
+      if (reducedMotion.matches && smoothZoom.update(0, true)) {
+        dirty = true;
+        needsPick = true;
+      }
+    };
     reducedMotion.addEventListener("change", onMotionPreference);
 
     const onTheme = new MutationObserver(() => {
@@ -287,6 +295,7 @@ export function CarViewer(props: Props) {
     } | null = null;
     let activePreset: CameraPreset | null = propsRef.current.preset;
     const moveTo = (preset: CameraPreset) => {
+      smoothZoom.reset();
       const p = PRESETS[preset];
       activePreset = preset;
       flight = {
@@ -298,6 +307,7 @@ export function CarViewer(props: Props) {
       };
     };
     const onOrbitStart = () => {
+      smoothZoom.reset();
       flight = null;
       activePreset = null;
     };
@@ -341,6 +351,12 @@ export function CarViewer(props: Props) {
       propsRef.current.onSelect(pick());
     };
     const el = renderer.domElement;
+    const unbindZoom = bindSmoothZoom(el, smoothZoom, controls, () => {
+      flight = null;
+      activePreset = null;
+      // A wheel event can arrive between frames while idle orbit is still enabled.
+      controls.autoRotate = false;
+    });
     el.addEventListener("pointermove", onMove);
     el.addEventListener("pointerleave", onLeave);
     el.addEventListener("pointerdown", onDown);
@@ -391,8 +407,15 @@ export function CarViewer(props: Props) {
         if (t >= 1) flight = null;
         dirty = true;
       }
-      controls.autoRotate = !flight && !reducedMotion.matches && idleOrbit.shouldRotate();
+      if (smoothZoom.update(delta, reducedMotion.matches)) {
+        dirty = true;
+        needsPick = true;
+      }
+      controls.autoRotate =
+        !flight && !smoothZoom.active && !reducedMotion.matches && idleOrbit.shouldRotate();
       host.dataset.autoRotating = String(controls.autoRotate);
+      host.dataset.zoomAnimating = String(smoothZoom.active);
+      host.dataset.cameraDistance = camera.position.distanceTo(controls.target).toFixed(5);
       if (controls.autoRotate) activePreset = null;
       if (controls.update(delta)) {
         dirty = true;
@@ -447,6 +470,7 @@ export function CarViewer(props: Props) {
 
     return () => {
       cancelAnimationFrame(frame);
+      unbindZoom();
       idleOrbit.dispose();
       ro.disconnect();
       onTheme.disconnect();

@@ -260,6 +260,7 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 **Status:** in progress (four-choice model switcher) · **Owner:** Codex (model switcher subtask) · **Branch:** `ws3-compact-requirements`
 **Animation slice:** review (implemented and verified) · **Owner:** OpenCode · **Branch:** `ws3-car-view-animation` (isolated worktree)
 **Windscreen slice:** review (implemented and verified) · **Owner:** OpenCode · **Branch:** `ws3-car-view-animation`
+**Zoom slice:** review (implemented and verified) · **Owner:** OpenCode · **Branch:** `ws3-smooth-car-zoom` (isolated worktree)
 **Depends on:** nothing to start: build on `@reqflow/core/fixtures` (5 requirements, findings, sources,
 audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 serves them.
 
@@ -283,8 +284,27 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - [ ] Requirement detail / drill-down from a card on the car (the list tasks above).
 - [ ] PM override of the auto-classified part (needs a contract field + audit event, WS0).
 - [ ] Subtle blue fill on the clicked car part, with light/dark selection regressions.
+- [x] Smooth wheel/trackpad zoom with frame-rate-independent easing, bounded distance and interruption regressions.
 
 **Log**
+
+- 2026-10-11: Claimed the requested smooth-zoom slice from latest main in an isolated worktree.
+  Replace immediate wheel/trackpad dolly steps with eased distance changes; preserve camera presets,
+  dragging, idle orbit, picking and reduced motion. WS3 renderer/tests and this handoff only;
+  verify before committing and pushing the focused branch.
+
+- 2026-10-11: Smooth zoom complete: bounded wheel/line/page and trackpad-pinch normalization,
+  exponential log-distance easing, immediate direction reversal, distance limits without overscroll
+  backlog, cancellation on drag/preset and live reduced-motion snapping. Native touch/middle-drag,
+  idle orbit, interior flight, hover picking and marker rendering remain with existing controls.
+  Added 29 colocated regressions. `npm run typecheck && npm test`: 2,336 passed, 5 skipped;
+  `npm run smoke`: PASS, 70 screenshots. Isolated synthetic Electron probe: 17 checks pass for
+  real wheel input, multi-frame easing/no double zoom, pinch/reversal, interruption, limits,
+  reduced motion and remount cleanup; five light/dark/interior screenshots reviewed under
+  `apps/desktop/out/smoke/zoom-probe/`. Changed-file Prettier and `git diff --check` pass.
+  No contracts, main-process, geometry, dependencies or real BMW data changed. Generated local
+  OpenCode adapter/backup excluded from the focused commit. WS1/WS0 follow-up: promote native
+  wheel/pinch, interruption and reduced-motion checks into shared `main/smoke.ts`.
 
 - 2026-10-10: Widened the front glass into a tapered M5-inspired outline, roughly 1.7 m across the base and 1.3 m at the roof, with bowed corners and slender, continuous A-pillars. Shifted the side-window front edge slightly forwards and constrained front-glazing edge relaxation to preserve station/ring order, preventing narrow-panel folds without changing the rear-edge smoothing. Kept all car parts, body proportions, interior and reversible flight. Added 7 regressions for width/taper, front coverage, rounded lower corners, pillar separation, symmetry, connected glazing and non-folded triangles. Verified `npm run typecheck && npm test` (266 passed, 25 skipped), `npm run smoke` (PASS, 29 screenshots), changed-file Prettier and `git diff --check`; reviewed front-quarter/top, light/dark and interior screenshots. The isolated native animation probe also passed outward/return, interrupted reversal, badge tracking, cabin selection and live reduced motion (8 screenshots). Source changes are limited to `model/body.ts`, its colocated tests and this WS3 handoff; ready for integration alongside the concurrent model refinements.
 
