@@ -1,0 +1,110 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4M9VJPD8SK49ZKGNSAV8Z0M",
+  "session_id": "ses_ed7811970ffezGeWSls4NNsrmU",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-11T01:40:11.038723Z",
+  "branch": "ws5-pdf-ingestion",
+  "checkpoints_count": 1,
+  "save_step_count": 1,
+  "files_touched": [
+    "PRODUCT.md",
+    "apps/desktop/electron-builder.yml",
+    "apps/desktop/electron.vite.config.ts",
+    "apps/desktop/src/main/handlers.test.ts",
+    "apps/desktop/src/main/handlers.ts",
+    "apps/desktop/src/main/preview.test.ts",
+    "apps/desktop/src/main/preview.ts",
+    "apps/desktop/src/main/smoke.ts",
+    "data/samples/README.md",
+    "docs/ARCHITECTURE.md",
+    "package-lock.json",
+    "packages/blocks/package.json",
+    "packages/blocks/src/raw/raw.test.ts",
+    "packages/blocks/src/raw/raw.ts",
+    "packages/blocks/src/raw/read.ts",
+    "packages/blocks/src/raw/records.ts",
+    "packages/core/src/blocks.ts"
+  ],
+  "agent": "OpenCode",
+  "model": "gpt-6.1-sol",
+  "turn_id": "d13e99a84a93",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 101131,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 2097062,
+    "output_tokens": 17131,
+    "api_call_count": 30
+  },
+  "session_metrics": {
+    "turn_count": 1
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-11T01:40:10.986479Z",
+    "agent_lines": 0,
+    "agent_removed": 0,
+    "human_added": 19,
+    "human_modified": 39,
+    "human_removed": 0,
+    "total_committed": 19,
+    "total_lines_changed": 61,
+    "agent_percentage": 0,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 2205,
+      "user_lines_removed": 39,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "PRODUCT.md": 9,
+        "apps/desktop/electron-builder.yml": 2,
+        "apps/desktop/electron.vite.config.ts": 87,
+        "apps/desktop/src/main/handlers.test.ts": 145,
+        "apps/desktop/src/main/handlers.ts": 16,
+        "apps/desktop/src/main/preview.test.ts": 81,
+        "apps/desktop/src/main/preview.ts": 56,
+        "apps/desktop/src/main/smoke.ts": 101,
+        "data/samples/README.md": 8,
+        "data/samples/raw-pdf-fixture.ts": 30,
+        "docs/ARCHITECTURE.md": 11,
+        "package-lock.json": 407,
+        "packages/blocks/package.json": 9,
+        "packages/blocks/src/raw/pdf.test.ts": 522,
+        "packages/blocks/src/raw/pdf.ts": 402,
+        "packages/blocks/src/raw/raw.test.ts": 29,
+        "packages/blocks/src/raw/raw.ts": 66,
+        "packages/blocks/src/raw/read.ts": 1,
+        "packages/blocks/src/raw/records.ts": 1,
+        "packages/blocks/src/raw/structure.ts": 218,
+        "packages/core/src/blocks.ts": 4
+      },
+      "user_removed_per_file": {
+        "PRODUCT.md": 9,
+        "apps/desktop/electron-builder.yml": 1,
+        "apps/desktop/electron.vite.config.ts": 3,
+        "apps/desktop/src/main/handlers.ts": 1,
+        "apps/desktop/src/main/preview.test.ts": 1,
+        "apps/desktop/src/main/preview.ts": 5,
+        "data/samples/README.md": 2,
+        "docs/ARCHITECTURE.md": 2,
+        "packages/blocks/package.json": 4,
+        "packages/blocks/src/raw/raw.test.ts": 4,
+        "packages/blocks/src/raw/raw.ts": 1,
+        "packages/blocks/src/raw/read.ts": 1,
+        "packages/blocks/src/raw/records.ts": 1,
+        "packages/core/src/blocks.ts": 4
+      }
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 2258,
+      "agent_lines_removed": 39
+    }
+  ]
+}
