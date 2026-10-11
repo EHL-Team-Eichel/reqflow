@@ -371,7 +371,7 @@ describe("Filter Engine & Report Validation (@reqflow/engine)", () => {
     const filterBlockRun = run.blockRuns.find((b) => b.blockId === "filter");
     expect(filterBlockRun!.status).toBe("failed");
     expect(filterBlockRun!.error).toContain(
-      "Filter report decisions do not match primary layer input items count",
+      "Filter report decisions do not match the items to classify",
     );
   });
 

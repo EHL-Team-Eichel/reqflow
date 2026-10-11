@@ -7,6 +7,7 @@ import {
   FilterReport,
   FilterReview,
   FilterReviewState,
+  filterGraph,
   type AuditEventInput,
   walkBlocks,
   BlockRun,
@@ -182,7 +183,9 @@ export class FilterOverrideRepository {
 
       const decisionMap = new Map(validatedReport.decisions.map((d) => [d.itemId, d]));
       const inputIds = new Set(
-        validatedReport.originalInput[validatedReport.primaryLayer].map((item) => item.id),
+        filterGraph(validatedReport.originalInput)
+          .units()
+          .map((unit) => unit.id),
       );
       if (
         decisionMap.size !== validatedReport.decisions.length ||

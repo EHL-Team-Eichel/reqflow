@@ -104,8 +104,11 @@ A HIL block asking for several approvals waits until that many different reviewe
 
 ## AI Filter preservation and review
 
-The built-in filter classifies the most advanced populated layer (requirements, themes, findings,
-then records) and retains available supporting and conflicting evidence. Objects, IDs, fields,
+The built-in filter classifies every item of the most advanced populated layer (requirements,
+themes, findings, then records), plus every lower-layer item nothing above it refers to, so feedback
+comments without findings are classified next to findings from other inputs instead of being left
+out unseen. Each decision records its layer. It retains available supporting and conflicting
+evidence. Objects, IDs, fields,
 provenance and order are unchanged. Dependencies that would otherwise be excluded are explicitly
 labelled retained supporting context; unrelated upstream items are not silently reintroduced.
 Source-only inputs pass through as unclassified context. An authored inner workplace overrides the

@@ -97,10 +97,13 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
   G68, proposals audited only after the car accepted them. New `demo-flow.test.ts` runs the BMW
   template offline (web research left out) and a restart with a paused run; `smoke-review.ts`
   covers review, audit, exports, saved flows, rescoring, a two-reviewer gate and the template
-  natively. **Found:** the AI Filter classifies only the most advanced layer, so in the BMW
-  template the 35 synthetic feedback comments are dropped silently once equipment/study findings
-  exist, and the PM gates never pause (`it.fails` in `demo-flow.test.ts`). Needs a decision (filter
-  vs template). Renderer follow-ups: `run-store.ts` still blocks gates with approvals > 1; the
+  natively. **Fixed (human chose the filter fix):** the AI Filter classified only the most
+  advanced layer, so in the BMW template the 35 synthetic feedback comments were dropped silently
+  once equipment/study findings existed. Now `filterGraph(input).units()` (core) classifies every
+  primary item plus lower-layer items nothing above refers to; decisions carry `layer`; the engine
+  check, restore validation and report view use the same rule. Offline, the mock splitter still
+  routes everything to the lowest band (no demand scores without a real model), so the template's
+  PM gates only fill with a real AI setup. Renderer follow-ups: `run-store.ts` still blocks gates with approvals > 1; the
   Car review UI should show the new errors, four-eyes state and `FactorScore.by`.
 - 2026-10-11: Human requested merging completed Analytics into main through PR #19 and launching locally. Integrated main through `85d3d36`, preserving PDF ingestion, splitter car-part depth, AI Filter decisions, provenance reports and the grey-line Car transition. Resolved product-table conflicts by keeping all block descriptions; kept main's equivalent Reset-ready wait in smoke and both Analytics-open and AI Filter-report buttons on block nodes. Latest combined code passes `npm run typecheck`, `npm run format:check` and `npm test -- --maxWorkers=2 --testTimeout=30000` (2,698 passed, 6 skipped). Native macOS smoke passed before the final main refreshes (82 screenshots); refreshed-code smoke remains incomplete: one run hung in later Settings checks and a fresh isolated run exited before writing its final report (78 screenshots), so neither is claimed as passing. Inspected Analytics overview, timeline, topics, source comparison, flow, quality and preserved grey-line Car interior. Synthetic-only checks; no BMW values, live providers or credentials used. The separate `reqflow/` checkout's uncommitted Car work is untouched. Launch uses merged main in this clean checkout; human authorized replacing the existing app instance. Windows/Linux remain unverified.
 - 2026-10-11: Synthetic 100-row F70 feedback fixture delivered as XLSX/CSV in `data/samples/f70-feedback-test.*`, with reproducible generator and `docs/f70-feedback-test.md`. Exact original sheet/header structure only; no BMW cell values used. Ten synthetic regression cases verify 97 ingested records, all six splitter modes, HIL pause/resume, seven proposed offline categories and actual classifier placements. `npm run typecheck` passes; synthetic-only suite passes (2,329 tests, 21 skipped) with two workers/15s timeout after parallel contention timed out two unrelated tests. Real BMW tests excluded; no live AI calls or UI changes. Concurrent PDF-ingestion work preserved. Guide distinguishes actual mock limitations from ten desired live-AI needs.

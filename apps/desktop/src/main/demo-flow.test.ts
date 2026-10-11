@@ -126,22 +126,20 @@ describe("the BMW demo flow, offline", () => {
     expect(approvals.length).toBeGreaterThanOrEqual(pauses); // every pause needed a human approval
   }, 120_000);
 
-  // KNOWN GAP: the AI Filter classifies only the most advanced layer it receives. Equipment and
-  // study findings make that "findings", so the 35 feedback comments (records without findings)
-  // are dropped without a log line, nothing reaches the must/should gates and the PM never
-  // reviews. Remove `.fails` once the filter or the template keeps the feedback.
-  it.fails(
-    "passes the customer feedback on to the PM gates",
-    async () => {
-      const { handlers, run, pauses } = await runTemplate();
-      const feedback = (await handlers.runs.blockOutput(run.id, "feedback")).out!;
-      const filtered = (await handlers.runs.blockOutput(run.id, "scope")).out!;
-      const kept = filtered.records.filter((r) => r.sourceId === feedback.sources[0]!.id);
-      expect(kept.length).toBeGreaterThan(0);
-      expect(pauses).toBeGreaterThan(0);
-    },
-    120_000,
-  );
+  // Equipment and study findings used to make the filter classify findings only, so the feedback
+  // comments (records without findings) vanished before the splitter. Offline, the mock gives no
+  // demand scores, so the splitter puts everything in the lowest band and the PM gates stay empty;
+  // with a real model the must/should items reach them.
+  it("passes all customer feedback through the filter to the splitter's routing", async () => {
+    const { handlers, run } = await runTemplate();
+    const feedback = (await handlers.runs.blockOutput(run.id, "feedback")).out!;
+    const fromFeedback = (records: { sourceId: string }[]) =>
+      records.filter((r) => r.sourceId === feedback.sources[0]!.id).length;
+    const filtered = (await handlers.runs.blockOutput(run.id, "scope")).out!;
+    expect(fromFeedback(filtered.records)).toBe(feedback.records.length);
+    const routed = Object.values(await handlers.runs.blockOutput(run.id, "rank"));
+    expect(fromFeedback(routed.flatMap((port) => port.records))).toBe(feedback.records.length);
+  }, 120_000);
 
   it("keeps a saved flow and a paused run across a restart, and finishes it afterwards", async () => {
     const first = setup();

@@ -10,6 +10,8 @@ import {
   PipelineData,
   SplitterReport,
   FilterReport,
+  decisionLayer,
+  filterGraph,
   validateGraph,
   walkBlocks,
   WorkflowRun,
@@ -428,26 +430,21 @@ export async function executeWorkflow(
               throw new EngineError(
                 "Filter report must classify the most advanced populated layer.",
               );
-            const primaryList = (
-              report.primaryLayer === "sources" ? [] : report.originalInput[report.primaryLayer]
-            ) as Array<{
-              id: string;
-            }>;
-            const primaryInputIds = primaryList.map((item) => item.id);
+            // One decision per item the filter must classify: the primary layer plus lower-layer
+            // items nothing above them refers to, each recorded with its own layer.
+            const units = filterGraph(mergedInput).units();
+            const unitLayer = new Map(units.map((u) => [u.id, u.layer]));
             const decisionIds = report.decisions.map((d) => d.itemId);
             if (new Set(decisionIds).size !== decisionIds.length) {
               throw new EngineError("Filter report decisions contain duplicate item IDs");
             }
-            if (decisionIds.length !== primaryInputIds.length) {
-              throw new EngineError(
-                "Filter report decisions do not match primary layer input items count",
-              );
+            if (decisionIds.length !== units.length) {
+              throw new EngineError("Filter report decisions do not match the items to classify");
             }
-            const primaryIdSet = new Set(primaryInputIds);
-            for (const id of decisionIds) {
-              if (!primaryIdSet.has(id)) {
+            for (const decision of report.decisions) {
+              if (unitLayer.get(decision.itemId) !== decisionLayer(report, decision)) {
                 throw new EngineError(
-                  `Filter report decision item "${id}" is not in primary layer input`,
+                  `Filter report decision item "${decision.itemId}" is not an item to classify`,
                 );
               }
             }
@@ -479,44 +476,20 @@ export async function executeWorkflow(
             }
             if (report.primaryLayer === "sources" && !isDeepStrictEqual(outputData, mergedInput))
               throw new EngineError("Source-only filter context must pass through unchanged.");
-            const outputPrimaryList = (
-              report.primaryLayer === "sources" ? [] : outputData[report.primaryLayer]
-            ) as Array<{
-              id: string;
-            }>;
-            const outputPrimaryIds = new Set(outputPrimaryList.map((item) => item.id));
-            if (outputPrimaryList.length !== outputPrimaryIds.size) {
-              throw new EngineError("Forwarded outputs contain duplicate item IDs");
-            }
-            const forwardedDecisionIds = new Set(
+            // Every forwarded decision's item is in the output, and no item to classify is in the
+            // output without a forwarded decision. Unmodified originals were checked above.
+            const forwarded = new Set(
               report.decisions.filter((d) => d.forwarded).map((d) => d.itemId),
             );
-            if (outputPrimaryIds.size !== forwardedDecisionIds.size) {
-              throw new EngineError("Forwarded outputs count does not match forwarded decisions");
-            }
-            for (const id of forwardedDecisionIds) {
-              if (!outputPrimaryIds.has(id)) {
+            const inOutput = new Set(DATA_KEYS.flatMap((key) => outputData[key].map((i) => i.id)));
+            for (const { id } of units) {
+              const present = inOutput.has(id);
+              if (forwarded.has(id) && !present)
                 throw new EngineError(`Forwarded decision for item "${id}" is missing from output`);
-              }
-            }
-            for (const id of outputPrimaryIds) {
-              if (!forwardedDecisionIds.has(id)) {
+              if (!forwarded.has(id) && present)
                 throw new EngineError(
                   `Output contains item "${id}" which was not marked forwarded in decisions`,
                 );
-              }
-            }
-            for (const item of outputPrimaryList) {
-              if (
-                !isDeepStrictEqual(
-                  item,
-                  primaryList.find((original) => original.id === item.id),
-                )
-              ) {
-                throw new EngineError(
-                  "Filter output must preserve original primary items unmodified",
-                );
-              }
             }
             state.filterReport = report;
           }
