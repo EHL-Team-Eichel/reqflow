@@ -1,11 +1,14 @@
 import {
   BLOCK_SPECS,
+  DATA_KEYS,
   DEFAULT_SETTINGS,
   PALETTE_BLOCK_KINDS,
   parseBlockParams,
   ProductScope,
+  type DataKey,
   type FileStore,
   type LlmClient,
+  type PipelineData,
   type Settings,
 } from "@reqflow/core";
 import type { BlockPreview } from "@reqflow/core/ipc";
@@ -54,6 +57,55 @@ function safePreviewLlm(client: LlmClient): LlmClient {
         throw new AiPreviewError(error);
       }
     },
+  };
+}
+
+export const PREVIEW_LIMIT = 1000;
+
+/**
+ * Caps each data list in block outputs at limit (default PREVIEW_LIMIT = 1000) per output port.
+ * Returns capped outputs, notes for each truncated list, and a truncated map matching BlockPreview.truncated.
+ * Lists under the limit are untouched and truncated is omitted when nothing was cut.
+ */
+export function capPreview(
+  outputs: Record<string, PipelineData>,
+  limit = PREVIEW_LIMIT,
+): {
+  outputs: Record<string, PipelineData>;
+  truncated?: Record<string, Partial<Record<DataKey, { shown: number; total: number }>>>;
+  notes: string[];
+} {
+  const cappedOutputs: Record<string, PipelineData> = {};
+  const truncated: Record<string, Partial<Record<DataKey, { shown: number; total: number }>>> = {};
+  const notes: string[] = [];
+  let hasTruncated = false;
+
+  for (const [port, data] of Object.entries(outputs)) {
+    const portTruncated: Partial<Record<DataKey, { shown: number; total: number }>> = {};
+    const cappedData: PipelineData = { ...data };
+
+    for (const key of DATA_KEYS) {
+      const list = data[key];
+      if (list && list.length > limit) {
+        (cappedData as Record<DataKey, unknown[]>)[key] = list.slice(0, limit);
+        portTruncated[key] = { shown: limit, total: list.length };
+        hasTruncated = true;
+        notes.push(
+          `Preview shows the first ${limit.toLocaleString("en-US")} of ${list.length.toLocaleString("en-US")} ${key}; a run uses all of them.`,
+        );
+      }
+    }
+
+    cappedOutputs[port] = cappedData;
+    if (Object.keys(portTruncated).length > 0) {
+      truncated[port] = portTruncated;
+    }
+  }
+
+  return {
+    outputs: cappedOutputs,
+    ...(hasTruncated ? { truncated } : {}),
+    notes,
   };
 }
 
@@ -134,5 +186,13 @@ export async function previewBlock(
     throw new ReqflowError("block_failed", message, { logs });
   }
   if (result.status !== "ok") throw new ReqflowError("block_failed", result.message, { logs });
-  return { outputs: result.outputs, logs };
+
+  const capped = capPreview(result.outputs, PREVIEW_LIMIT);
+  logs.push(...capped.notes);
+
+  return {
+    outputs: capped.outputs,
+    logs,
+    ...(capped.truncated ? { truncated: capped.truncated } : {}),
+  };
 }
