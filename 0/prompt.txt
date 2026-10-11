@@ -381,3 +381,7 @@ no need to inspect the changes from the merged branch
 ---
 
 so from what you checked previously all of the error should be resolved and this is now a solid hackathon project
+
+---
+
+do 1,2(only gemini fix), 5
