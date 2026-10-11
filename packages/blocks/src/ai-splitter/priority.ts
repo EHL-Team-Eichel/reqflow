@@ -1,13 +1,21 @@
 import {
+  describeDrivers,
   Priority,
-  ScoreFactor,
+  rescoreBreakdown,
   Settings,
-  priorityForScore,
-  weightedTotal,
+  type Finding,
   type PipelineData,
   type Requirement,
+  type SourceRecord,
 } from "@reqflow/core";
 import type { BlockContext } from "@reqflow/engine";
+import {
+  PRIORITIZATION_METHOD,
+  scoreItem,
+  type JudgedFactor,
+  type Judgement,
+  type ScoringEvidence,
+} from "../prioritization";
 import type { PromptItem } from "./evidence";
 import {
   SCORING_SYSTEM,
@@ -22,7 +30,7 @@ import {
  * Evidence claims need an available ID and verbatim quotation; unmeasured judgement is an
  * assumption. Returns why a note can't count as evidence, or null when it can.
  */
-function noteProblem(note: string, entry: PromptItem, factor: ScoreFactor): string | null {
+function noteProblem(note: string, entry: PromptItem, factor: JudgedFactor): string | null {
   if (/^(Assumption:|MOCK assumption:)/i.test(note)) return null;
   const match = /^Evidence:\s*(src_\S+|rec_\S+)\s*\|\s*("(?:[^"\\]|\\.)*")\s*\|\s*\S.+$/i.exec(
     note,
@@ -114,8 +122,9 @@ export async function routePriority(
   const scoring = Settings.shape.scoring.parse(ctx.settings.scoring);
   const result = new Map<string, number>();
   const pending: PromptItem[] = [];
+  const now = new Date().toISOString();
   ctx.log(
-    "WS8 deterministic scorer is unavailable. Reuse existing priority/factor values; missing factors use provisional LLM judgement only for routing, without persisting requirement changes.",
+    `Scoring items with ${PRIORITIZATION_METHOD}. Reuse existing priority/score values; unprioritized items use deterministic evidence factors + provisional brand_fit/ease LLM judgement for routing, without persisting changes.`,
   );
   for (const entry of items) {
     ctx.signal.throwIfAborted();
@@ -127,20 +136,12 @@ export async function routePriority(
         `${entry.id}: existing priority ${requirement.priority} preserved (including any human override); routed to out-${branch}.`,
       );
     } else if (requirement?.score) {
-      const values = Object.fromEntries(
-        ScoreFactor.options.map((factor) => [factor, requirement.score!.factors[factor].value]),
-      ) as Record<ScoreFactor, number>;
-      const total = weightedTotal(values, scoring.weights);
-      const priority = priorityForScore(total, scoring.thresholds);
-      const branch = branchFor(priority, entry.id, ctx.log);
+      const rescored = rescoreBreakdown(requirement.score, scoring, requirement.evidenceLevel, now);
+      const branch = branchFor(rescored.suggestedPriority, entry.id, ctx.log);
       result.set(entry.id, branch);
       ctx.log(
-        `${entry.id}: reused existing factor values with current Settings weights/thresholds; total ${total}/100, priority ${priority}, out-${branch}. Stored score unchanged.`,
+        `${entry.id}: total ${rescored.total}/100, ${rescored.suggestedPriority}, out-${branch}, driven by ${describeDrivers(rescored)}. Stored score unchanged.`,
       );
-      for (const factor of ScoreFactor.options)
-        ctx.log(
-          `${entry.id}: ${factor}=${values[factor]}/5, weight=${scoring.weights[factor]}; evidence notes retained upstream, not logged.`,
-        );
     } else pending.push(entry);
   }
   const payload = (batch: PromptItem[]) => ({
@@ -150,7 +151,7 @@ export async function routePriority(
     instruction: "",
     items: batch,
     scope: ctx.scope,
-    factors: ScoreFactor.options,
+    factors: ["brand_fit", "ease"] as const,
   });
   const groups = batches(pending, payload);
   let completed = result.size;
@@ -192,25 +193,57 @@ export async function routePriority(
       const score = scores.get(entry.id)!;
       // A note that can't be verified is never kept as evidence: its factor counts as an
       // assumption (routing scores are provisional judgement anyway), and the log says so.
-      // Requiring 6 verbatim quotes per item made one imperfect quote fail whole runs.
-      for (const factor of ScoreFactor.options) {
+      for (const factor of ["brand_fit", "ease"] as const) {
         const problem = noteProblem(score.factors[factor].note, entry, factor);
         if (problem) ctx.log(`${problem}; counted as an unverified assumption, not evidence.`);
       }
-      const values = Object.fromEntries(
-        ScoreFactor.options.map((factor) => [factor, score.factors[factor].value]),
-      ) as Record<ScoreFactor, number>;
-      const total = weightedTotal(values, scoring.weights);
-      const priority = priorityForScore(total, scoring.thresholds);
+      // A requirement's own links say which context findings support it and which argue against it.
+      const requirement = entry.layer === "requirements" ? (entry.item as Requirement) : undefined;
+      const linked = (ids: readonly string[]) =>
+        entry.context.findings.filter((f) => ids.includes(f.id));
+      const findings = requirement
+        ? linked(requirement.findingIds)
+        : [
+            ...entry.context.findings,
+            ...(entry.layer === "findings" ? [entry.item as Finding] : []),
+          ];
+      const conflicting = requirement ? linked(requirement.conflictingFindingIds) : undefined;
+      const records = [
+        ...entry.context.records,
+        ...(entry.layer === "records" ? [entry.item as SourceRecord] : []),
+      ];
+      const sources = entry.context.sources;
+      const evidence: ScoringEvidence = {
+        findings,
+        conflicting,
+        records,
+        sources,
+      };
+      const judged: Record<JudgedFactor, Judgement> = {
+        brand_fit: {
+          value: score.factors.brand_fit.value,
+          note: score.factors.brand_fit.note,
+          by: model,
+        },
+        ease: {
+          value: score.factors.ease.value,
+          note: score.factors.ease.note,
+          by: model,
+        },
+      };
+      const breakdown = scoreItem({
+        evidence,
+        judged,
+        evidenceLevel: requirement?.evidenceLevel,
+        scoring,
+        now,
+      });
+      const priority = breakdown.suggestedPriority;
       const branch = branchFor(priority, entry.id, ctx.log);
       result.set(entry.id, branch);
       ctx.log(
-        `${entry.id}: provisional LLM factors (${model}), total ${total}/100, priority ${priority}, out-${branch}; judgement is not measured data or a human decision. Requirement unchanged.`,
+        `${entry.id}: total ${breakdown.total}/100, ${priority}, out-${branch}, driven by ${describeDrivers(breakdown)}.`,
       );
-      for (const factor of ScoreFactor.options)
-        ctx.log(
-          `${entry.id}: ${factor}=${values[factor]}/5, weight=${scoring.weights[factor]}; validated provisional evidence/assumption note omitted from logs.`,
-        );
     }
     completed += batch.length;
     ctx.progress(completed / items.length, `Scored ${completed}/${items.length} primary items`);

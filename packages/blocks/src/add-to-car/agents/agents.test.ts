@@ -1,6 +1,6 @@
 import type { DecisionAnswer } from "@reqflow/core";
 import { describe, expect, it } from "vitest";
-import { dataset } from "../test-helpers";
+import { context, dataset } from "../test-helpers";
 import {
   combineConfidence,
   evidenceLevel,
@@ -9,7 +9,7 @@ import {
 } from "./confidence";
 import { contextProfile, salesDigest } from "./context";
 import { findVerbatim, openingExcerpt, prepareEvidence, sampleEvenly } from "./evidence";
-import { batchRecords } from "./pipeline";
+import { batchRecords, toFinding } from "./pipeline";
 
 describe("verbatim quotes", () => {
   const text = "The rear seats are  too cramped — my kids’ knees touch the seat.";
@@ -230,5 +230,104 @@ describe("priority, evidence level and confidence", () => {
     expect(c.signals.map((s) => s.key)).toEqual(["breadth", "agreement", "conflicts", "judge"]);
     expect(c.value).toBeGreaterThan(0);
     expect(c.value).toBeLessThan(1);
+  });
+});
+
+describe("toFinding (quote handling WS8)", () => {
+  const c = context({} as any);
+  const makeItem = (id: string, text: string) => ({
+    record: { id: `rec_${id}`, sourceId: "src_1", text, locator: "row 1" },
+    sourceKind: "customer_feedback" as const,
+    rank: 1,
+    hints: [] as [string, string][],
+    group: "g",
+  });
+
+  it("cites verbatim quote exactly as in record", () => {
+    const item = makeItem("r1", "The steering feels sporty and direct.");
+    const handles = new Map([["r1", item]]);
+    const signal = {
+      kind: "praise" as const,
+      statement: "Sporty steering.",
+      category: "driving_experience" as const,
+      inScope: true,
+      outOfScopeReason: "",
+      refs: ["r1"],
+      quotes: [{ ref: "r1", quote: "steering feels sporty and direct" }],
+      sentiment: 0.8,
+    };
+    const res = toFinding(c.ctx, signal, handles);
+    expect(res.finding).not.toBeNull();
+    expect(res.citedInFull).toBe(0);
+    expect(res.unverifiedDropped).toBe(0);
+    expect(res.finding!.evidence[0]!.excerpt).toBe("steering feels sporty and direct");
+    expect(res.finding!.confidence).toBe(0.8);
+  });
+
+  it("cites short record in full when quote is not verbatim", () => {
+    const text = "Cup holders are too small.";
+    const item = makeItem("r1", text);
+    const handles = new Map([["r1", item]]);
+    const signal = {
+      kind: "complaint" as const,
+      statement: "Small cup holders.",
+      category: "space_practicality" as const,
+      inScope: true,
+      outOfScopeReason: "",
+      refs: ["r1"],
+      quotes: [{ ref: "r1", quote: "invented words not in text" }],
+      sentiment: -0.6,
+    };
+    const res = toFinding(c.ctx, signal, handles);
+    expect(res.finding).not.toBeNull();
+    expect(res.citedInFull).toBe(1);
+    expect(res.unverifiedDropped).toBe(0);
+    expect(res.finding!.evidence[0]!.excerpt).toBe(text);
+    expect(res.finding!.confidence).toBe(0.6);
+  });
+
+  it("drops citation when quote is not verbatim and record text exceeds MAX_EXCERPT_CHARS", () => {
+    const longText = "Very long comment about hard seats. ".repeat(40); // > 1000 chars
+    const item = makeItem("r1", longText);
+    const handles = new Map([["r1", item]]);
+    const signal = {
+      kind: "complaint" as const,
+      statement: "Hard seats.",
+      category: "comfort" as const,
+      inScope: true,
+      outOfScopeReason: "",
+      refs: ["r1"],
+      quotes: [{ ref: "r1", quote: "invented words not in text" }],
+      sentiment: -0.6,
+    };
+    const res = toFinding(c.ctx, signal, handles);
+    expect(res.finding).toBeNull(); // No evidence left -> finding dropped
+    expect(res.citedInFull).toBe(0);
+    expect(res.unverifiedDropped).toBe(1);
+  });
+
+  it("cites unquoted refs in full if short, and drops them if too long", () => {
+    const shortText = "Great head-up display.";
+    const longText = "Very long text about display. ".repeat(40);
+    const handles = new Map([
+      ["r1", makeItem("r1", shortText)],
+      ["r2", makeItem("r2", longText)],
+    ]);
+    const signal = {
+      kind: "praise" as const,
+      statement: "Head up display feedback.",
+      category: "infotainment_digital" as const,
+      inScope: true,
+      outOfScopeReason: "",
+      refs: ["r1", "r2"],
+      quotes: [], // unquoted refs
+      sentiment: 0.5,
+    };
+    const res = toFinding(c.ctx, signal, handles);
+    expect(res.finding).not.toBeNull();
+    expect(res.citedInFull).toBe(1);
+    expect(res.unverifiedDropped).toBe(1);
+    expect(res.finding!.evidence).toHaveLength(1);
+    expect(res.finding!.evidence[0]!.excerpt).toBe(shortText);
   });
 });

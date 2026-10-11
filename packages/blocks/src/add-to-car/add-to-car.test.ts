@@ -145,24 +145,28 @@ describe("Add to Car (offline agents)", () => {
       vehicleCode: "G60",
       market: "US",
     });
+    // 5 Series in China maps to long-wheelbase G68
+    expect(scopeFor({ ...p, market: "CN" }, DEFAULT_SETTINGS.defaultScope)).toMatchObject({
+      vehicleLine: "5 Series",
+      vehicleCode: "G68",
+      market: "CN",
+    });
     expect(
       scopeFor({ ...p, vehicle: "global", market: "global" }, DEFAULT_SETTINGS.defaultScope),
     ).toEqual(DEFAULT_SETTINGS.defaultScope);
+    // Unrecognized vehicle line throws clear guidance error
+    expect(() => scopeFor({ ...p, vehicle: "Unknown Car" }, DEFAULT_SETTINGS.defaultScope)).toThrow(
+      'Add to Car: no requirement-id code for vehicle line "Unknown Car". Use "From Settings" and set the vehicle code there.',
+    );
   });
 });
 
 describe("Add to Car (scripted models)", () => {
   const factor = { value: 4, note: "Evidence: [s1] adults complain." };
-  const factors = Object.fromEntries(
-    [
-      "customer_impact",
-      "evidence_strength",
-      "competitive_gap",
-      "trend_momentum",
-      "brand_fit",
-      "ease",
-    ].map((f) => [f, factor]),
-  );
+  const factors = {
+    brand_fit: factor,
+    ease: factor,
+  };
   const draft = (title: string, used: string[]) => ({
     title,
     description: "Adults sit comfortably in the rear on trips of two hours.",
@@ -334,9 +338,12 @@ describe("Add to Car (scripted models)", () => {
     expect(signal("agreement").value).toBe(0.85);
     expect(conf.level).toBe("high");
     expect(calls.filter((x) => x.endsWith("revise@1"))).toHaveLength(1);
-    expect(requirements[0]!.score!.total).toBe(80);
+    expect(requirements[0]!.score!.method).toBe("ws8-weighted@1");
+    expect(requirements[0]!.score!.factors.customer_impact.by).toBe("deterministic");
+    expect(requirements[0]!.score!.factors.brand_fit.by).toBe("test-model");
+    expect(requirements[0]!.score!.total).toBe(36.4);
     expect(requirements[0]!.priorityRationale).toMatch(
-      /1\. Priority of 3, so it is a must-have.*80\/100 \(must\), which agrees/,
+      /1\. Priority of 3, so it is a must-have\. Score 36\.4\/100 \(could\), driven by.*: input ranking and scores disagree, so check it before approving\./,
     );
   });
 
@@ -426,5 +433,176 @@ describe("Add to Car (scripted models)", () => {
       addToCarBlock.run({ "in-0": mustHave }, params({ contexts: [] }), cancelled.ctx),
     ).rejects.toThrow("Run cancelled");
     expect(cancelled.added).toHaveLength(0);
+  });
+
+  it("holds back drafts with zero targets without failing the run", async () => {
+    const llm = scriptedLlm((contract, p) => {
+      if (contract.endsWith("analyst@1")) {
+        return {
+          signals: [
+            {
+              kind: "complaint",
+              statement: "Rear knee room is short.",
+              category: "space_practicality",
+              inScope: true,
+              outOfScopeReason: "",
+              refs: ["r1", "r2"],
+              quotes: [],
+              sentiment: -0.5,
+            },
+          ],
+          ignored: ["r3", "r4", "r5", "r6"],
+        };
+      }
+      if (contract.endsWith("synthesizer@1")) {
+        return {
+          themes: [
+            {
+              label: "Rear knee room",
+              need: "Adults fit in the rear.",
+              category: "space_practicality",
+              signals: ["s1"],
+              conflicting: [],
+            },
+          ],
+        };
+      }
+      if (contract.endsWith("architect@1")) {
+        const d = draft("Rear seats fit adults", ["s1"]);
+        // Return 0 targets (schema allows empty or invalid targets filtered out by cleanDraft)
+        return { ...d, targets: [] };
+      }
+      if (contract.endsWith("critic@1")) {
+        return { verdict: "accept", issues: [], fixes: [], rejectReason: "", factors };
+      }
+      throw new Error(contract);
+    });
+    const c = context(agents({ provider: "anthropic", llm }));
+    const res = await addToCarBlock.run({ "in-0": mustHave }, params({ contexts: [] }), c.ctx);
+    expect(res).toEqual({ status: "ok", outputs: {} });
+    expect(c.added[0]!.requirements).toHaveLength(0);
+    expect(
+      c.logs.some((l) => l.includes('"Rear knee room": held back, no measurable target.')),
+    ).toBe(true);
+    expect(c.traces[0]!.heldBack).toContainEqual(
+      expect.objectContaining({
+        theme: "Rear knee room",
+        reason: "No measurable target.",
+        signals: 1,
+      }),
+    );
+  });
+
+  it("adds weak-evidence uncertainty and rationale note when high score on weak evidence is flagged", async () => {
+    const highFactors = {
+      brand_fit: { value: 5, note: "Perfect brand fit." },
+      ease: { value: 5, note: "Very easy to build." },
+    };
+    const llm = scriptedLlm((contract, p) => {
+      if (contract.endsWith("analyst@1")) {
+        return {
+          signals: [
+            {
+              kind: "complaint",
+              statement: "Rear knee room is cramped.",
+              category: "space_practicality",
+              inScope: true,
+              outOfScopeReason: "",
+              refs: ["r1", "r2", "r3"],
+              quotes: [{ ref: "r1", quote: "The rear seats are too cramped" }],
+              sentiment: -0.8,
+            },
+          ],
+          ignored: ["r4", "r5", "r6"],
+        };
+      }
+      if (contract.endsWith("synthesizer@1")) {
+        return {
+          themes: [
+            {
+              label: "Rear knee room",
+              need: "Adults fit in the rear.",
+              category: "space_practicality",
+              signals: ["s1"],
+              conflicting: [],
+            },
+          ],
+        };
+      }
+      if (contract.endsWith("architect@1")) return draft("Rear knee room", ["s1"]);
+      if (contract.endsWith("critic@1")) {
+        return { verdict: "accept", issues: [], fixes: [], rejectReason: "", factors: highFactors };
+      }
+      throw new Error(contract);
+    });
+    const c = context(agents({ provider: "anthropic", llm }));
+    // Set weights giving high total so score >= should threshold (55) on level C evidence
+    c.ctx.settings = {
+      ...c.ctx.settings,
+      scoring: {
+        ...c.ctx.settings.scoring,
+        weights: {
+          customer_impact: 1,
+          evidence_strength: 0,
+          competitive_gap: 0,
+          trend_momentum: 0,
+          brand_fit: 5,
+          ease: 5,
+        },
+      },
+    };
+    await addToCarBlock.run({ "in-0": mustHave }, params({ contexts: [] }), c.ctx);
+    const [{ requirements }] = c.added as [(typeof c.added)[number]];
+    expect(requirements[0]!.score!.flags).toContain("high_score_weak_evidence");
+    expect(requirements[0]!.evidenceLevel).toBe("C");
+    expect(requirements[0]!.uncertainties).toContain(
+      "High score on weak evidence (level C): verify before approving.",
+    );
+    expect(requirements[0]!.priorityRationale).toContain(
+      "Its evidence is weak (level C), so check it before approving.",
+    );
+    expect(requirements[0]!.priorityRationale).toContain("driven by brand fit 5/5");
+  });
+
+  it("drops citations when quotes are non-verbatim and record exceeds max excerpt chars, dropping finding if no evidence left", async () => {
+    // Single long record (> 1000 chars, exceeding MAX_EXCERPT_CHARS)
+    const longText = "Very long customer comment that exceeds one thousand characters. ".repeat(20);
+    const longData = dataset("long_src", "customer_feedback", [{ text: longText, market: "DE" }]);
+    const llm = scriptedLlm((contract, p) => {
+      if (contract.endsWith("analyst@1")) {
+        return {
+          signals: [
+            {
+              kind: "complaint",
+              statement: "Long comment complaint.",
+              category: "comfort",
+              inScope: true,
+              outOfScopeReason: "",
+              refs: ["r1"],
+              quotes: [{ ref: "r1", quote: "completely fabricated quote that does not appear" }],
+              sentiment: -0.5,
+            },
+          ],
+          ignored: [],
+        };
+      }
+      if (contract.endsWith("synthesizer@1")) {
+        return { themes: [] };
+      }
+      throw new Error(contract);
+    });
+    const c = context(agents({ provider: "anthropic", llm }));
+    await addToCarBlock.run({ "in-0": longData }, params({ contexts: [] }), c.ctx);
+    const analystStep = c.traces[0]!.steps.find((s) => s.role === "analyst")!;
+    expect(
+      analystStep.notes.some((n) =>
+        n.includes("1 quotes weren't verbatim: 0 records cited in full, 1 citations dropped."),
+      ),
+    ).toBe(true);
+    expect(
+      analystStep.notes.some((n) =>
+        n.includes("1 signal(s) without a readable record were dropped."),
+      ),
+    ).toBe(true);
   });
 });
