@@ -15,6 +15,7 @@ export interface HttpOptions {
   headers?: Record<string, string>;
   body?: unknown;
   signal?: AbortSignal;
+  retryPost?: boolean;
 }
 export interface ProviderHttp {
   json<T = unknown>(url: string, options?: HttpOptions): Promise<T>;

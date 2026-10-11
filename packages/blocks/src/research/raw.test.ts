@@ -271,6 +271,32 @@ describe("research dataset merging", () => {
     expect(merged.records).toHaveLength(2);
   });
 
+  it("retains identical contentHash when identical page content is returned with differing ephemeral search queries", () => {
+    const first = dataset(
+      item({
+        sourceUrl: "https://sources.example.org/review",
+        text: "In-depth review of vehicle features and usability.",
+        metadata: { search: { query: "BMW 1 series review", position: 1 }, requestId: "req-1" },
+      }),
+      "editorial_reviews",
+      "run_1",
+    );
+    const second = dataset(
+      item({
+        sourceUrl: "https://sources.example.org/review",
+        text: "In-depth review of vehicle features and usability.",
+        metadata: { search: { query: "BMW F70 test report", position: 4 }, requestId: "req-2" },
+      }),
+      "competitor_models",
+      "run_2",
+    );
+
+    expect(first.records[0]!.contentHash).toBe(second.records[0]!.contentHash);
+    const merged = mergeResearchDatasets(first, second);
+    expect(merged.records[0]!.contentHash).toBe(first.records[0]!.contentHash);
+    expect(merged.records[0]!.limitations).toEqual([]);
+  });
+
   it("retains the new revision under the same ID while leaving earlier run datasets unchanged", () => {
     const first = dataset();
     const second = dataset(

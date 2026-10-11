@@ -7,6 +7,7 @@ import {
 import { z } from "zod";
 import { anthropicSchema } from "./anthropic-schema";
 import { googleSchema } from "./google-schema";
+import { googleErrorDetails } from "./google-error";
 import { mockObject } from "./mock";
 import { openaiSchema } from "./openai-schema";
 import type { JsonSchema } from "./json-schema";
@@ -173,8 +174,12 @@ export function createLlmClient(
         throw new Error(`${label} transport failed`);
       }
       signal?.throwIfAborted();
-      // Error bodies and transport exceptions can contain credentials or request text. Never echo them.
-      if (!response.ok) throw new Error(`${label} request failed (HTTP ${response.status})`);
+      // Google exposes useful typed quota/retry details; its prose is never safe to echo.
+      if (!response.ok) {
+        const details = provider === "google" ? await googleErrorDetails(response, signal) : "";
+        signal?.throwIfAborted();
+        throw new Error(`${label} request failed (HTTP ${response.status})${details}`);
+      }
       try {
         return (await response.json()) as unknown;
       } catch {

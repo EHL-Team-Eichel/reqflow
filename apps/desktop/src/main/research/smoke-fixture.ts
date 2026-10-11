@@ -2,10 +2,42 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import ExcelJS from "exceljs";
-import { ResearchDataset, type ResearchRecord } from "@reqflow/core";
+import { ResearchDataset, type ResearchRecord, type LlmClient } from "@reqflow/core";
 import { FEEDBACK_COLUMNS } from "@reqflow/blocks";
 
 export type SmokeAssertion = (condition: unknown, name: string) => asserts condition;
+
+/** Explicit synthetic seam, never a live model or a production fallback. */
+export const syntheticSourceReviewLlm: LlmClient = {
+  async generateObject(request) {
+    request.signal?.throwIfAborted();
+    const { content } = JSON.parse(request.prompt) as {
+      content: { text?: string; rows?: { index: number }[] };
+    };
+    const text = content.text ?? "";
+    const hasRows = (content.rows?.length ?? 0) > 0;
+    const isRelevant = Boolean(text || hasRows);
+    const summary = isRelevant
+      ? text
+        ? `Synthetic source summary: ${text}`.slice(0, 3000)
+        : `Synthetic table summary of ${content.rows!.length} rows`
+      : "";
+    return {
+      model: "synthetic:source-assessment",
+      object: request.schema.parse({
+        verdict: isRelevant ? "relevant" : "uncertain",
+        reason: "Synthetic plumbing fixture; no semantic quality claim.",
+        uncertainty: "Synthetic only.",
+        summary,
+        excerpts: text ? [{ start: 0, end: text.length, quote: text }] : [],
+        tableRows: content.rows?.map((row) => row.index) ?? [],
+      }),
+    };
+  },
+  async generateText() {
+    throw new Error("Synthetic source assessment does not generate prose.");
+  },
+};
 
 export const SYNTHETIC_FEEDBACK =
   "Synthetic feedback: <script>synthetic</script><script>window.__reqflowSmokeExecuted = true</script> Seat feels too firm.";
@@ -80,6 +112,22 @@ export function verifySmokeResearchDataset(
     "both collecting agents merged; no inferred record attribution",
   );
   const opinions = dataset.records.filter((record) => record.recordType === "feedback");
+  ensure(
+    dataset.records.every((record) => {
+      const assessments = record.fields?.researchAssessments;
+      return (
+        Array.isArray(assessments) &&
+        assessments.length === 2 &&
+        assessments.every(
+          (assessment) =>
+            assessment.contentHash === record.contentHash &&
+            assessment.verdict === "relevant" &&
+            assessment.model === "synthetic:source-assessment",
+        )
+      );
+    }),
+    "each collecting agent assessed every synthetic original against its archived content revision",
+  );
   ensure(opinions.length === 1, "repeated feedback rows remain one independent opinion");
   const opinion = opinions[0]!;
   ensure(
@@ -134,7 +182,9 @@ export async function verifySmokeResearchFiles(
   );
   const db = new DatabaseSync(join(dataDir, "reqflow.db"));
   let saved: ResearchDataset | null = null;
-  let output: { out?: { records?: unknown[] } } | null = null;
+  let output: {
+    out?: { records?: (ResearchRecord & { collectedRecordId: string })[] };
+  } | null = null;
   let actions: string[] = [];
   try {
     const savedRow = db
@@ -161,9 +211,63 @@ export async function verifySmokeResearchFiles(
     JSON.stringify(exported) === JSON.stringify(dataset),
     "exported JSON validates and matches renderer IPC dataset",
   );
+  const outputRecords = output?.out?.records ?? [];
+  const originalOpinion = dataset.records.find((record) => record.recordType === "feedback")!;
+  const originalTable = dataset.records.find((record) => record.recordType === "table")!;
   ensure(
-    !!output && JSON.stringify(output.out?.records) === JSON.stringify(dataset.records),
-    "SQLite-persisted block output retains every Research record and its fields provenance",
+    outputRecords.length === 2 &&
+      dataset.records.every((record) =>
+        outputRecords.some((row) => row.collectedRecordId === record.id),
+      ) &&
+      outputRecords.every((row) => {
+        const original = dataset.records.find((record) => record.id === row.collectedRecordId);
+        return (
+          original &&
+          row.sourceId === original.sourceId &&
+          row.originalRecordId === original.originalRecordId &&
+          row.recordType === "passage" &&
+          row.metadata.textOrigin === "ai_summary"
+        );
+      }),
+    "SQLite-persisted tabular output retains every original record's identity and provenance",
+  );
+  const outputOpinion = outputRecords.find(
+    (record) => record.collectedRecordId === originalOpinion.id,
+  )!;
+  const outputTable = outputRecords.find(
+    (record) => record.collectedRecordId === originalTable.id,
+  )!;
+  ensure(
+    outputOpinion &&
+      outputOpinion.text.startsWith("Synthetic source summary: ") &&
+      outputOpinion.text.includes(SYNTHETIC_FEEDBACK) &&
+      outputOpinion.fields?.ID === SYNTHETIC_FEEDBACK_ID &&
+      outputOpinion.fields?.["Customer Feedback"] === outputOpinion.text &&
+      outputOpinion.fields?.["Original Evidence"] === SYNTHETIC_FEEDBACK &&
+      outputOpinion.fields?.Country === null &&
+      JSON.stringify(outputOpinion.fields?.["Vfc level3 Name"]) === JSON.stringify(SYNTHETIC_VFC) &&
+      (outputOpinion as unknown as { summaryEvidence?: { excerpts?: { text: string }[] } })
+        .summaryEvidence?.excerpts?.[0]?.text === SYNTHETIC_FEEDBACK,
+    "SQLite output contains flat Raw-compatible feedback and native typed table columns",
+  );
+  ensure(
+    outputTable &&
+      outputTable.text.startsWith("Synthetic table summary of ") &&
+      outputTable.table?.rows[0]?.[0] === true &&
+      outputTable.table.rows[0]?.[1] === SYNTHETIC_MARKER &&
+      (
+        outputTable as unknown as {
+          summaryEvidence?: { tableEvidence?: { rows: unknown[][] } };
+        }
+      ).summaryEvidence?.tableEvidence?.rows[0]?.[0] === true &&
+      (
+        outputTable as unknown as {
+          summaryEvidence?: { tableEvidence?: { rows: unknown[][] } };
+        }
+      ).summaryEvidence?.tableEvidence?.rows[0]?.[1] === SYNTHETIC_MARKER &&
+      typeof outputTable.fields?.["Original Evidence"] === "string" &&
+      outputTable.fields["Original Evidence"].includes(SYNTHETIC_MARKER),
+    "SQLite output preserves native table rows in table and summaryEvidence with exact evidence",
   );
   ensure(
     actions.includes("run.started") &&
@@ -173,13 +277,18 @@ export async function verifySmokeResearchFiles(
   );
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.readFile(join(outDir, "research-export.xlsx"));
+  const tabular = workbook.getWorksheet("Research_Explorer");
   const feedback = workbook.getWorksheet("Feedback_Explorer");
   const records = workbook.getWorksheet("Research Records");
   const sources = workbook.getWorksheet("Sources");
   const runs = workbook.getWorksheet("Research Runs");
   ensure(
-    feedback && records && sources && runs,
-    "XLSX contains feedback, records, sources and runs",
+    workbook.getWorksheet("Source Assessments")?.rowCount === 5,
+    "four agent-specific synthetic source assessments are exported with reasons and provenance",
+  );
+  ensure(
+    tabular && feedback && records && sources && runs,
+    "XLSX contains tabular output, feedback, originals, sources and runs",
   );
   const rowText = (row: ExcelJS.Row, width: number) =>
     Array.from({ length: width }, (_, index) => row.getCell(index + 1).text);
@@ -224,13 +333,14 @@ export async function verifySmokeResearchFiles(
   );
   const csv = await new ExcelJS.Workbook().csv.readFile(join(outDir, "research-export.csv"));
   ensure(
-    csv.rowCount === feedback.rowCount &&
-      Array.from({ length: feedback.rowCount }, (_, index) => index + 1).every(
+    tabular.rowCount === 4 &&
+      csv.rowCount === tabular.rowCount &&
+      Array.from({ length: tabular.rowCount }, (_, index) => index + 1).every(
         (row) =>
-          JSON.stringify(rowText(csv.getRow(row), FEEDBACK_COLUMNS.length)) ===
-          JSON.stringify(rowText(feedback.getRow(row), FEEDBACK_COLUMNS.length)),
+          JSON.stringify(rowText(csv.getRow(row), tabular.columnCount)) ===
+          JSON.stringify(rowText(tabular.getRow(row), tabular.columnCount)),
       ),
-    "CSV matches every XLSX feedback cell, including IDs, verbatim text and VFC associations",
+    "CSV matches every tabular XLSX cell, including all record types and original associations",
   );
   return ["research-export.json", "research-export.xlsx", "research-export.csv"];
 }

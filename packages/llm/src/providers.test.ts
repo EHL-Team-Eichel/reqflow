@@ -1037,7 +1037,7 @@ describe("default LLM providers", () => {
       expect(fetch).not.toHaveBeenCalled();
     });
 
-    it("sanitizes HTTP errors and never reads their body or retries", async () => {
+    it("keeps status-only HTTP errors when safe details are unavailable and never retries", async () => {
       const json = vi.fn().mockRejectedValue(new Error(privateText));
       const fetch = vi
         .fn<typeof globalThis.fetch>()

@@ -49,6 +49,8 @@ describe("block specs", () => {
     expect(ports("raw")).toEqual({ inputs: [], outputs: [{ id: "out", label: "Data stream" }] });
     expect(ports("research").inputs).toHaveLength(0);
     expect(ports("research").outputs).toHaveLength(1);
+    expect(ports("research_opencode").inputs).toHaveLength(0);
+    expect(ports("research_opencode").outputs).toHaveLength(1);
     expect(ports("hil")).toMatchObject({ inputs: [{ id: "in" }], outputs: [{ id: "out" }] });
     expect(ports("ai_splitter").outputs.map((p) => p.id)).toEqual(["out-0", "out-1", "out-2"]);
     expect(ports("add_to_car").inputs).toEqual([
@@ -60,7 +62,13 @@ describe("block specs", () => {
     expect(ports("add_to_car").outputs).toHaveLength(0);
     expect(BLOCK_SPECS.custom.params).toHaveLength(0);
     const expandable = PALETTE_BLOCK_KINDS.filter((k) => BLOCK_SPECS[k].hasInnerWorkplace);
-    expect(expandable).toEqual(["custom", "research", "ai_filter", "ai_splitter"]);
+    expect(expandable).toEqual([
+      "custom",
+      "research",
+      "research_opencode",
+      "ai_filter",
+      "ai_splitter",
+    ]);
   });
 
   it("rejects unknown keys and wrong values instead of dropping them", () => {

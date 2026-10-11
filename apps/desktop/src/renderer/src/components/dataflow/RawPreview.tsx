@@ -2,7 +2,7 @@ import { countPipelineData, type WorkflowBlock } from "@reqflow/core";
 import { Button } from "@/components/ui/Button";
 import { useBlockPreview } from "./usePreview";
 
-/** Inspector section for blocks without inputs: read the data now and show what came out. */
+/** Inspector section for source blocks, including saved Research output. */
 export function RawPreview({ block }: { block: WorkflowBlock }) {
   const { state, load } = useBlockPreview(block);
   return (
@@ -23,7 +23,11 @@ export function RawPreview({ block }: { block: WorkflowBlock }) {
         </Button>
       </div>
       {state.status === "idle" && (
-        <p className="text-xs text-muted">Reads the file or query now, without running the flow.</p>
+        <p className="text-xs text-muted">
+          {block.kind === "research" || block.kind === "research_opencode"
+            ? "Reads saved Research results from the matching run, without making new requests."
+            : "Reads the file or query now, without running the flow."}
+        </p>
       )}
       {state.status === "error" && (
         <p role="alert" className="rounded-lg bg-danger-soft p-2.5 text-xs text-danger">

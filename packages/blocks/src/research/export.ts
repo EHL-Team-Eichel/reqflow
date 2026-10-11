@@ -3,20 +3,11 @@ import { assertJsonByteBudget, PERSISTED_JSON_MAX_BYTES } from "./data-budget";
 import JSZip from "jszip";
 import { z } from "zod";
 import { ResearchDataset, type ResearchRecord } from "@reqflow/core";
+import { BMW_FEEDBACK_HEADERS, researchTableRows, SourceAssociation } from "./tabular";
+import { ASSESSMENT_FIELD, assessedSelection, sourceAssessments } from "./assessment";
 
 export const FEEDBACK_COLUMNS = [
-  "ID",
-  "Source",
-  "Brand",
-  "Sales Description",
-  "Country",
-  "Derivate (e-code)",
-  "Engine Type",
-  "Feedback Type",
-  "Customer Feedback",
-  "Vfc level2 3 Name",
-  "Vfc level2 Name",
-  "Vfc level3 Name",
+  ...BMW_FEEDBACK_HEADERS,
   "Source URL",
   "Published At",
   "Published Precision",
@@ -33,18 +24,6 @@ export const FEEDBACK_COLUMNS = [
   "Source Sheet",
   "Source Row",
 ];
-
-const SourceAssociation = z
-  .object({
-    headers: z.array(z.string()),
-    values: z.array(z.unknown()),
-    sheet: z.string(),
-    row: z.number().int().positive(),
-  })
-  .refine(
-    (association) => association.headers.length === association.values.length,
-    "Source association headers and values must have equal length",
-  );
 
 function original(record: ResearchRecord, key: string): unknown {
   const supplied = record.metadata.originalFields;
@@ -72,6 +51,7 @@ interface ExportRow {
   values: unknown[];
   recordId?: string;
   sourceId?: string;
+  fields?: Record<string, unknown>;
 }
 
 function feedbackRows(dataset: ResearchDataset): ExportRow[] {
@@ -100,6 +80,11 @@ function feedbackRows(dataset: ResearchDataset): ExportRow[] {
         return {
           recordId: record.id,
           sourceId: record.sourceId,
+          fields: association
+            ? Object.fromEntries(
+                association.headers.map((header, column) => [header, association.values[column]]),
+              )
+            : (record.metadata.originalFields as Record<string, unknown> | undefined),
           values: [
             record.id,
             association
@@ -146,13 +131,85 @@ export function exportResearchJson(input: ResearchDataset): string {
 
 export function exportResearchCsv(input: ResearchDataset): string {
   const data = ResearchDataset.parse(input);
+  const table = tabularExport(data);
   const quote = (value: unknown) => `"${safeSpreadsheetText(value).replaceAll('"', '""')}"`;
   return (
     "\ufeff" +
-    [FEEDBACK_COLUMNS, ...feedbackRows(data).map((row) => row.values)]
+    [table.headers, ...table.rows.map((row) => row.values)]
       .map((row) => row.map(quote).join(","))
       .join("\r\n")
   );
+}
+
+function tabularExport(data: ResearchDataset): { headers: string[]; rows: ExportRow[] } {
+  const records = researchTableRows(data);
+  const suppliedFeedback = feedbackRows(data);
+  const headers = [...FEEDBACK_COLUMNS, "Record Type", "Original Research Record ID"];
+  if (data.records.some((record) => Object.hasOwn(record.fields ?? {}, ASSESSMENT_FIELD)))
+    headers.push("AI Source Assessment");
+  const reserved = new Set(headers.slice(BMW_FEEDBACK_HEADERS.length));
+  const suppliedHeaders = new Set(records.flatMap((record) => Object.keys(record.fields ?? {})));
+  const columnNames = new Map<string, string>();
+  for (const header of suppliedHeaders) {
+    let name = header;
+    while (reserved.has(name) || (name !== header && suppliedHeaders.has(name)))
+      name = `Source Column: ${name}`;
+    columnNames.set(header, name);
+  }
+  const originalColumns = new Map([...columnNames].map(([original, name]) => [name, original]));
+  for (const record of records)
+    for (const header of Object.keys(record.fields ?? {}))
+      if (!headers.includes(columnNames.get(header)!)) headers.push(columnNames.get(header)!);
+  return {
+    headers,
+    rows: records.flatMap((record) => {
+      if (record.recordType === "feedback")
+        return suppliedFeedback
+          .filter((row) => row.recordId === record.id)
+          .map((row) => ({
+            ...row,
+            values: headers.map((header) => {
+              const column = FEEDBACK_COLUMNS.indexOf(header);
+              if (column !== -1) return row.values[column];
+              if (header === "Record Type") return record.recordType;
+              if (header === "Original Research Record ID") return record.id;
+              if (header === "AI Source Assessment") return record.sourceAssessments;
+              const supplied = originalColumns.get(header);
+              return supplied === undefined ? undefined : row.fields?.[supplied];
+            }),
+          }));
+      const fields = record.fields ?? {};
+      const values: Record<string, unknown> = {
+        ...Object.fromEntries(
+          Object.entries(fields).map(([header, value]) => [columnNames.get(header)!, value]),
+        ),
+        ID: record.id,
+        "Source URL": record.originalUrl,
+        "Published At": record.publishedAt,
+        "Published Precision": record.datePrecision,
+        "Retrieved At": record.retrievedAt,
+        Language: record.language,
+        "Research Agent": record.collectingAgents.join(", "),
+        "Original Source ID": record.originalSourceId,
+        "Original Record ID": record.originalRecordId,
+        "Fundstelle / Kontextbezug": record.locator,
+        "Source ID": record.sourceId,
+        "Run IDs": record.runIds.join(", "),
+        Limitations: record.limitations.join("\n"),
+        "Original Feedback ID": fields.ID ?? record.metadata.feedbackId,
+        "Record Type": record.recordType,
+        "Original Research Record ID": record.collectedRecordId,
+        "AI Source Assessment": record.sourceAssessments,
+      };
+      return [
+        {
+          recordId: record.id,
+          sourceId: record.sourceId,
+          values: headers.map((header) => values[header]),
+        },
+      ];
+    }),
+  };
 }
 
 const CELL_LIMIT = 32767;
@@ -227,13 +284,15 @@ export async function exportResearchXlsx(input: ResearchDataset): Promise<Uint8A
       ? `See ${cells.get(id!) ?? "the owning sheet's ID column"}`
       : text;
   };
-  const add = (name: string, headers: string[], rows: ExportRow[]) => {
+  const add = (name: string, headers: string[], rows: ExportRow[], nativeCells = false) => {
     const sheet = workbook.addWorksheet(name);
     sheet.addRow(headers);
     for (const [index, row] of rows.entries()) {
       const rowNumber = index + 2;
       sheet.addRow(
         row.values.map((value, column) => {
+          if (nativeCells && (typeof value === "number" || typeof value === "boolean"))
+            return value;
           const text = serializedText(value);
           const guarded = safeSpreadsheetText(text);
           if (guarded.length <= CELL_LIMIT && !UNSAFE_XML.test(text)) return guarded;
@@ -260,7 +319,56 @@ export async function exportResearchXlsx(input: ResearchDataset): Promise<Uint8A
     }
     styleSheet(sheet, headers.length);
   };
-  add("Feedback_Explorer", FEEDBACK_COLUMNS, feedbackRows(data));
+  const tabular = tabularExport(data);
+  add("Research_Explorer", tabular.headers, tabular.rows, true);
+  const usableFeedback = new Set(
+    researchTableRows(data)
+      .filter((record) => record.recordType === "feedback")
+      .map((record) => record.collectedRecordId),
+  );
+  add(
+    "Feedback_Explorer",
+    FEEDBACK_COLUMNS,
+    feedbackRows(data).filter((row) => usableFeedback.has(row.recordId!)),
+  );
+  if (data.records.some((record) => Object.hasOwn(record.fields ?? {}, ASSESSMENT_FIELD)))
+    add(
+      "Source Assessments",
+      [
+        "Record ID",
+        "Source ID",
+        "Agent",
+        "AI Verdict",
+        "Reasons",
+        "Uncertainties",
+        "Model",
+        "Content Hash",
+        "Verbatim Excerpt Ranges",
+        "Native Row Indexes",
+        "Scope",
+        "Run ID",
+      ],
+      data.records.flatMap((record) =>
+        sourceAssessments(record).map((assessment) => ({
+          recordId: record.id,
+          sourceId: record.sourceId,
+          values: [
+            record.id,
+            record.sourceId,
+            assessment.agentId,
+            assessment.verdict,
+            assessment.reasons,
+            assessment.uncertainties,
+            assessment.model,
+            assessment.contentHash,
+            assessment.excerpts,
+            assessment.tableRows,
+            assessment.scope,
+            assessment.runId,
+          ],
+        })),
+      ),
+    );
   add(
     "Sources",
     [
@@ -354,6 +462,29 @@ export async function exportResearchXlsx(input: ResearchDataset): Promise<Uint8A
       ],
     })),
   );
+  // Native columns, not JSON-packed cells: these sheets can be selected directly in Raw.
+  let tableNumber = 0;
+  for (const record of data.records) {
+    if (record.recordType !== "table" || !record.table) continue;
+    const selection = assessedSelection(record);
+    if (selection.reviewed && !selection.tableRows.size) continue;
+    add(
+      `Table_${++tableNumber}`,
+      record.table.headers,
+      record.table.rows.flatMap((values, index) =>
+        selection.reviewed && !selection.tableRows.has(index)
+          ? []
+          : [
+              {
+                recordId: record.id,
+                sourceId: record.sourceId,
+                values,
+              },
+            ],
+      ),
+      true,
+    );
+  }
   add(
     "Metrics Tables",
     [

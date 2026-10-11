@@ -529,6 +529,7 @@ describe("shared Research budgets and preservation", () => {
     for (const saved of h.saved) assertJsonByteBudget(saved, RESEARCH_DATASET_MAX_BYTES);
   });
 
+  // Thirteen near-limit serializations compete with the full suite's parallel workers.
   it("reserves room for late limitation notes across all 13 agents near the byte ceiling", async () => {
     const h = setup();
     const text = "synthetic supplied text ".padEnd(
@@ -556,7 +557,7 @@ describe("shared Research budgets and preservation", () => {
     expect(dataset.results).toHaveLength(13);
     expect(h.save).toHaveBeenCalledTimes(13);
     assertJsonByteBudget(dataset, RESEARCH_DATASET_MAX_BYTES);
-  });
+  }, 15_000);
 
   it("keeps an explicit byte-limit note even after a provider floods result metadata", async () => {
     const h = setup();

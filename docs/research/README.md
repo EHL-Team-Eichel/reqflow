@@ -2,8 +2,9 @@
 
 Implementation snapshot: **2026-10-11**, `ws6-ai-providers`. ReqFlow is a **native Electron desktop app**, not a hosted
 research service. Use a Research block to collect provider-returned originals and authorized local
-documents, inspect access/completeness limitations, and export the raw dataset. Collection does not
-create findings, sentiment, reliability scores, priorities, requirements, or human decisions.
+documents, inspect access/completeness limitations, evaluate source relevance via mandatory agent-level
+content assessment, and export the dataset. Collection does not create sentiment, numeric reliability
+scores, priorities, requirements, or human decisions.
 
 The adapters are real implementations, not canned research results. Offline tests inject synthetic
 responses; they do not establish live access or production readiness. See
@@ -163,6 +164,9 @@ credentials, approval, domains, remaining results/requests, and cancellation.
 
 Only bounded search scope/query context goes to the model. **Collected originals, document contents,
 tables, excerpts, source URLs, document IDs, and provider credentials never become planner input.**
+This zero-original constraint applies strictly to query planning. Source content assessment (described
+below) is a separate stage where bounded source text chunks and native table rows are sent to the
+configured Quality LLM for relevance evaluation.
 There are no tools, browser, memory, workspace, or analytical outputs. Native structured output
 returns at most three validated queries, with the deterministic neutral query retained. One step,
 768 maximum output tokens, and zero model/processor retries are configured; no extra structuring
@@ -227,6 +231,97 @@ Competitors and dataset filters are operator selections, not findings about thes
   blank in feedback views; unknown publication/language/author metadata stays unknown. Never infer
   customer nationality, ownership, or language from the retrieval scope.
 
+## Mandatory source content assessment
+
+Inside each production Research agent, mandatory source content assessment evaluates collected
+material before emitting downstream rows. While query planning generates queries without seeing
+originals, content assessment evaluates actual source text and native table cells against the
+agent's explicit assignment and the block's research scope.
+
+- **Explicit configured Quality model:** Production Research uses the application's configured
+  Quality LLM provider and model (`settings.llm`, tier `default`). In desktop production runtime
+  (`apps/desktop/src/main/research/runtime.ts`), a live configured Quality provider (`anthropic`,
+  `openai`, or `google`) with a configured API key is required for successful assessment. If the provider
+  is `mock` or credentials/review fail, the already collected original is archived as `unreviewed` with
+  an explicit limitation and is excluded from usable output. Review errors do not cause an immediate whole-run
+  throw; earlier and concurrently collected originals are preserved in the archive. There is no silent fallback
+  to mock responses or keyless pass-through in production. Low-level retrieval unit tests and offline
+  fixtures can omit `reviewLlm` to retain legacy retrieval-only behavior.
+- **Collecting agents assess their own role and scope:** Each agent evaluates items independently
+  for its own assignment (`definition.description`) and research scope (`ResearchScope`). When multiple
+  agents collect the same source item, each agent performs its own assessment keyed by
+  `${agentId}:${record.id}:${record.contentHash}`. The system prompt instructs the assessor to evaluate
+  substantive customer/product value within the vehicle, market, and time horizon context, while explicitly
+  directing it not to reject applicable technology, regional, or competitor evidence merely because it does
+  not name BMW. Navigation elements, advertisements, cookie notices, and title-only matches are rejected
+  as non-evidence.
+- **Sequential bounded chunks:** Source content is chunked into bounded sequential units before being
+  sent to the Quality LLM:
+  - Prose, feedback, and text records are divided into windows of at most 12,000 characters (`CHUNK_CHARS`).
+  - Table records are divided into batches of at most 30 rows or 12,000 serialized JSON characters. If a
+    single native table row exceeds 12,000 characters, it fails immediately with `"A native row exceeds the
+source assessment input limit."`
+  - Native table context includes the original description, units, footnotes and dimensions; this context
+    is capped at 12,000 serialized characters. Each complete assessment prompt is capped at 64 KiB.
+    Oversized context fails closed rather than silently dropping interpretation notes.
+  - Bulky archive metadata such as `rawHtml` and duplicated PDF pages is omitted. Retrieved source text
+    and native cells are supplied verbatim; source content may still contain markup or navigation.
+  - Source text, table cells, URLs, and scope strings are explicitly marked as untrusted DATA, never
+    instructions, with explicit system instructions to ignore embedded prompts.
+- **Single-call integrated chunk summary:** In the SAME Quality structured response (`Answer`), the model
+  returns a source-specific summary of up to 3,000 characters (`max3000chars`) for each relevant chunk,
+  covering only substantiated material. There is NO separate Fast LLM summarizer, secondary request, or
+  rule-based fallback. No context, attributes, VFC classes, or requirement decisions may be fabricated.
+  For non-relevant verdicts (`irrelevant`, `uncertain`), the returned summary is empty. Validated chunk
+  summaries are saved under `SourceAssessment.summaries: [{ text, excerpts: [{ start, end }], tableRows: [indexes] }]`,
+  with excerpt offsets adjusted to global character coordinates within `record.text`.
+- **Exact verified excerpts and native row selection:**
+  - For text sources assessed as relevant, the LLM must return exact zero-based start/end character offsets
+    and a matching verbatim quote. The runtime verifies that `text.slice(start, end) === quote`; any offset
+    mismatch, out-of-bounds index, or rewritten text throws an error.
+  - For table sources assessed as relevant, the LLM must return exact native row indexes from the supplied batch;
+    out-of-bounds row indexes throw an error.
+  - Text excerpts and table row selections are mutually exclusive. At most 32 excerpts and 30 table rows are
+    accepted per chunk. Non-relevant verdicts (`irrelevant`, `uncertain`) must return empty selections and empty summaries.
+  - Excerpt spans across chunks are merged and sorted by `assessedSelection`.
+- **Full independent feedback opinion preserved:** For customer feedback records (`recordType: "feedback"`),
+  relevant assessment preserves the complete verbatim opinion text (`part.start === 0 && part.end === record.text.length`),
+  not a fragmented excerpt. The full independent customer voice and source classifications remain intact.
+- **Verdicts and output filtering:** Assessment returns one of four discrete verdicts:
+  `relevant`, `irrelevant`, `uncertain`, or `unreviewed`.
+  - `relevant`: Usable evidence substantiated by verified verbatim excerpts or selected native rows and an integrated chunk summary.
+  - `irrelevant`: Unusable or off-topic material. Retained in raw archives but excluded from usable outputs.
+  - `uncertain`: Relevance cannot be substantiated by provided content. Recorded with a collection note:
+    `"Source relevance is uncertain; this original is archived but excluded from usable output."`
+  - `unreviewed`: Assigned if assessment is aborted, times out, exceeds request limits, encounters missing credentials, or fails.
+    Recorded with an explicit limitation: `"Source assessment incomplete; affected originals are archived but
+excluded from usable output."`
+  - **Archived vs. usable outputs:** Rejected (`irrelevant`), `uncertain`, and `unreviewed` records remain
+    archived in the raw `ResearchDataset`, JSON export, `Research Records` Excel sheet, and `Metrics Tables`
+    Excel sheet. However, they are strictly excluded from downstream usable outputs: final Node Preview,
+    `Research_Explorer`, and CSV.
+  - **Filtered final sources list:** The block's final output `sources` list includes ONLY `sourceIds`
+    referenced by accepted usable rows. Irrelevant, uncertain, and unreviewed sources are removed from the usable source list.
+- **Separate storage under `fields.researchAssessments`:** Assessment records (`SourceAssessment`: `version: 1`,
+  `agentId`, `contentHash`, `scope`, `runId`, `verdict`, `reasons`, `uncertainties`, `excerpts`, `tableRows`,
+  `summaries`, `model`) are stored in `record.fields.researchAssessments`, separate from raw original text, tables, and metadata.
+  Merging datasets deduplicates assessments by `${agentId}:${runId}:${JSON.stringify(scope)}` and discards
+  assessments whose `contentHash` no longer matches the latest collected revision.
+- **Source approvals are never human requirement statuses:** AI source assessment verdicts are automated
+  data-hygiene and relevance screening mechanisms. They are **never** human requirement statuses (`approved`,
+  `rejected`, `deferred`). In ReqFlow, AI never decides car requirements. Only a human product manager sets
+  requirement statuses.
+- **Shared request budget and timeout:** Assessment review calls consume from the block's shared `maxRequests`
+  allowance (`reviewRequests`) and shared `timeoutMs`. If `maxRequests` is exhausted during review, assessment
+  aborts and remaining items fail closed to `unreviewed`.
+- **Legacy datasets and saved previews:** Older archives or low-level test outputs without `researchAssessments`
+  report `reviewed: false` and retain legacy behavior (all records emit original flat rows without filtering).
+  Saved previews (`Preview data`) read persisted block outputs from the current run and do not retrospectively assess or trigger
+  paid LLM calls.
+- **No claims of tested LLM accuracy; no numeric trust scores:** Automated tests use synthetic fixtures and
+  spies; real LLM semantic accuracy, precision, or recall was not benchmarked or tested. ReqFlow does not generate
+  or store numeric trust scores, confidence percentages, or inferred customer attribution.
+
 ## Bounds, cancellation, and partial results
 
 Set limits before a potentially paid run. The inspector defaults to 10 results, 100 requests,
@@ -237,9 +332,27 @@ three GET retries. The block currently forwards the five inspector limits; other
 Shared defaults are two GET retries, cache age zero, no optional credit cap, and $1 per Apify actor run.
 
 - **One Research block invocation = one `ResearchRequest` budget.** All agents/adapters within it
-  share ordinary HTTP attempts (including retries/failures) and planner reservations. Multiple
-  Research blocks in the same workflow receive separate budgets; the merged run dataset is not
-  proof of a workflow-wide spending cap.
+  share ordinary HTTP attempts (including retries/failures), planner reservations, and mandatory
+  source assessment calls (`reviewRequests`). Source content assessment evaluates each chunk of
+  collected text or table rows against the configured Quality LLM, with each review call incrementing
+  the shared request count. Multiple Research blocks in the same workflow receive separate budgets;
+  the merged run dataset is not proof of a workflow-wide spending cap.
+- **Quality-driven target, fair budget reservation, and iterative refinement loop:** When content assessment is active, `maxResults`
+  serves as the quality target for **relevant, evidence-backed sources**. Agents do not terminate upon
+  retrieving off-topic or irrelevant search hits; instead, each agent evaluates rejection reasons and
+  autonomously refines search queries (up to 3 rounds) until the agent's target is reached or the shared request
+  budget is exhausted. To prevent early agents (e.g. `competitor_models`) from starving later agents (e.g. `editorial_reviews`),
+  multi-round refinement checks budget reservations for all subsequent agents before launching additional rounds.
+  All rejected and unreviewed sources remain fully archived for auditability.
+- **Autonomous competitor and vehicle context discovery:** If comparison vehicles are left empty in the
+  research scope, agents autonomously identify direct segment competitors (e.g. for a BMW 1 Series: Audi A3,
+  Mercedes-Benz A-Class, VW Golf) dynamically via the configured LLM, ensuring competitor and technology
+  queries target actual segment rivals rather than generic brand-only keywords. The `competitor_models` agent
+  evaluates road tests, cabin usability, boot capacity, infotainment, and benchmark specifications as valid
+  benchmark evidence for 3–5 year successor planning.
+- **Run duration and cancellation:** The default 120,000 ms parameter does not impose an arbitrary hard kill
+  switch; the run continues until the quality goal is achieved, the shared request budget is exhausted, or the
+  operator cancels the run. Entering an explicit custom `timeoutMs` enforces a strict deadline.
 - `maxResults` counts unique normalized raw-record IDs across that request, including passages,
   metadata, and tables, not just opinions. Duplicate records can add agent attribution without
   another result slot. Repeated VFC rows are associations with one opinion, not independent results.
@@ -251,10 +364,12 @@ Shared defaults are two GET retries, cache age zero, no optional credit cap, and
   It cannot launch actors or abort unknown IDs. Abort does not prove termination or refund charges.
 - HTTP bodies are capped at 16 MiB. Only allowlisted HTTPS provider endpoints are contacted;
   credentials, custom ports, redirects, and alternate endpoint hosts are rejected. GET alone retries
-  transport/429/5xx failures with bounded backoff; paid POSTs are not blindly replayed.
+  transport/429/5xx failures with bounded backoff by default; provider search/scrape adapters can pass
+  `retryPost: true` to honor `Retry-After` backoff on transient 429/5xx responses when retries are configured.
 - Normalized datasets are bounded to **16 MiB of compact serialized JSON**, including repeated
   provenance; oversized records are excluded with explicit partial limitations, preserving accepted
-  originals. Persistence/JSON export reject above **64 MiB before stringification or writes**.
+  originals. To prevent payload amplification, multi-MB `rawHtml` and `pages` payloads are stored solely
+  in `record.metadata` and omitted from `record.fields.original`. Persistence/JSON export reject above **64 MiB before stringification or writes**.
   The renderer's 20,000-character preview is display-only; it never truncates stored originals.
 - Optional Firecrawl/Tavily credit reservations are conservative, not invoice predictions. They
   reserve search/extract allowances and Firecrawl's maximum PDF pages before purchase, including
@@ -334,26 +449,73 @@ Its first twelve template columns are **ID**, **Source**, **Brand**, **Sales Des
 **Country**, **Derivate (e-code)**, **Engine Type**, **Feedback Type**, **Customer Feedback**,
 **Vfc level2 3 Name**, **Vfc level2 Name**, and **Vfc level3 Name**.
 
-Only `recordType: "feedback"` appears in this view/CSV. Studies, product descriptions, forecasts,
+Only `recordType: "feedback"` records deemed usable by source assessment appear in this view.
+Feedback_Explorer still contains actual original customer opinions (full verbatim text, never replaced
+with AI summaries). Irrelevant, uncertain, or unreviewed feedback records remain archived in
+`Research Records` but are excluded from `Feedback_Explorer`. Studies, product descriptions, forecasts,
 tables, passages, video descriptions, and transcripts do not become customer opinions. Local
 Feedback_Explorer rows with the **same original ID and same text** produce one opinion and multiple
-source-supplied VFC associations. Export expands those associated rows with the **same normalized
-ID**, original feedback ID, sheet, and row. Classification is source-only, not a new AI label;
-different texts under one original ID stay distinct with a conflict limitation.
+source-supplied VFC associations. Export expands those associated rows with the **same normalized ID**,
+original feedback ID, sheet, and row. Classification is source-only, not a new AI label; different
+texts under one original ID stay distinct with a conflict limitation.
 
-The supplied Windows reference workbook was unavailable on this macOS host and was **not opened**.
-The reported **4,076 association rows / 2,128 unique feedback IDs** are user-provided reference
-figures, **not verified ingestion counts** or real-data acceptance evidence. The twelve-column
-contract was exercised with synthetic workbooks; no private BMW path/data was inspected.
+The twelve-column contract is tested with synthetic workbooks. On 2026-10-11, the human requested
+the same table shape as Raw; only Downloads workbook structure (sheet/header names and row counts)
+was inspected. Original cell values were not printed, copied into fixtures, or used as test evidence.
+
+### Raw-compatible Research rows
+
+The node emits flat column fields like Raw. For newly assessed runs, deterministic `summarizeResearchRows`
+emits **ONE AI-summary passage row per accepted original record**. The `Customer Feedback` column
+holds the synthesized AI summary, and `metadata.textOrigin` is set to `"ai_summary"`. Verbatim citations
+and exact locators are preserved in the flat `Original Evidence` column and the structured `metadata.summaryEvidence`
+object, referencing exact character offsets and native table row indexes. Source-only attributed BMW
+columns (Brand, Sales Description, Country, Derivate, Engine Type, Feedback Type, VFC levels) retain
+original source values or remain `null` if unknown/missing; no vehicle attributes, classifications,
+or requirements are fabricated.
+
+Records evaluated as irrelevant, uncertain, or unreviewed are excluded from emitted rows, while
+remaining complete in the raw archive. The block's final output `sources` list contains ONLY `sourceIds`
+used in accepted usable rows; unreferenced sources are removed from usable outputs. When content
+assessment is present, derived rows include a compact `sourceAssessments` summary (`AI Source Assessment`
+in tabular export) with `{ agentId, verdict, model }` per collecting agent. `collectedRecordId`, run IDs
+and source provenance link each output row to the unchanged source archive.
+
+Legacy unassessed archives keep the prior flat original row export (`researchTableRows`), emitting
+verbatim paragraphs without retrospective LLM calls. Derived metadata is bounded to 8 KiB per row.
+`archivedMetadataKeys` names properties retained only on the collected record, so large original
+HTML/PDF payloads do not multiply across paragraphs. Original JSON and archive sheets retain every
+metadata value; text and native table cells are unchanged.
+
+### Preview saved Research data
+
+The Research Inspector's **Preview data** reads the source's persisted block output from the
+current run. It makes no collection, query-planning, or source-assessment requests. Saved previews
+do not retrospectively assess records or generate paid LLM calls. The block must have completed,
+and its parameters, inner workplace and scope must still match the run; otherwise the UI asks
+for a new run rather than presenting stale results. A downstream failure does not hide a
+successfully saved Research output.
+
+A Human Review inserted after a run can preview its directly connected Research source using
+that saved output, alongside ordinary Raw previews. This is source inspection, not an executed
+review gate. Actual paused HIL reviews continue to read the saved run graph and its exact inputs.
 
 ### Choose an export
 
-- **JSON:** authoritative raw strings/structures. Formula protection and overflow do not alter it.
-- **CSV:** feedback rows only, UTF-8 BOM, quoted/escaped fields, CRLF row separators, and retained
-  embedded newlines. There is no CSV cell-length truncation; use JSON/XLSX for non-feedback records.
-- **XLSX:** `Feedback_Explorer`, `Sources`, `Research Records`, `Metrics Tables`, `Research Runs`,
-  plus `Cell Overflow` when needed. Tables preserve numeric zero, nulls, status flags, dimensions,
-  units, and footnotes instead of interpreting them.
+- **JSON:** authoritative raw strings/structures, including `fields.researchAssessments` when
+  assessed. Formula protection and overflow do not alter it. All originals are retained regardless
+  of assessment verdict.
+- **CSV:** tabular rows emitted by `summarizeResearchRows`, twelve leading feedback columns plus native
+  columns, record type, provenance, `AI Text Origin`, flat `Original Evidence`, and the compact
+  `AI Source Assessment` column when assessments are present; UTF-8 BOM, quoted/escaped fields,
+  CRLF and retained embedded newlines. Reviewed records without relevant evidence are excluded.
+- **XLSX:** first sheet `Research_Explorer` contains those tabular rows with `AI Text Origin`, `Original Evidence`,
+  and `AI Source Assessment`; `Table_1`, `Table_2`, etc. contain directly Raw-readable native tables for
+  assessed relevant rows (typed numbers and boolean flags preserved); `Feedback_Explorer` contains usable
+  original feedback opinions only (full verbatim text); `Source Assessments` records all assessment
+  verdicts, reasons, uncertainties, models, excerpt ranges, native row indexes, scopes, and per-chunk `Summaries`
+  as an extra column; `Sources` lists used sources; `Research Records`, `Metrics Tables`, `Research Runs`,
+  and optional `Cell Overflow` preserve all originals and provenance regardless of assessment verdict.
 
 Every XLSX string cell, including serialized metadata and guards, stays within **32,767 UTF-16 code
 units**. Oversized/XML-incompatible values use explicit pointers to bounded ordered overflow

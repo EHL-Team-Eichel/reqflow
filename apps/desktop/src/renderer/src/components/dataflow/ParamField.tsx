@@ -30,6 +30,29 @@ export function ParamField({ block, spec }: { block: WorkflowBlock; spec: ParamS
   };
 
   let help = spec.help;
+  if (
+    (block.kind === "research" || block.kind === "research_opencode") &&
+    spec.key === "question"
+  ) {
+    help =
+      "Leave blank to use the selected agents' standard queries for the research scope. Advanced JSON questions, if supplied, still apply.";
+  }
+  if (
+    (block.kind === "research" || block.kind === "research_opencode") &&
+    spec.key === "timeoutMs"
+  ) {
+    help =
+      block.kind === "research_opencode"
+        ? "Timeout in milliseconds for the OpenCode agent process execution (default: 600000 ms / 10 min)."
+        : "Default (120000 ms): Autonomous research runs until the quality goal is reached or cancelled. A custom value sets a strict deadline.";
+  }
+  if (
+    (block.kind === "research" || block.kind === "research_opencode") &&
+    spec.key === "maxResults"
+  ) {
+    help =
+      "Quality target: Number of relevant, evidence-backed sources. Agents refine queries iteratively until reached or budget is exhausted.";
+  }
   if (spec.type === "select" && val === "global") {
     if (spec.key === "market") {
       help = `From Settings: ${settings.defaultScope.market}`;

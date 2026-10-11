@@ -39,10 +39,10 @@ export async function previewBlock(
       `${spec.label} takes inputs, so its data only exists inside a run`,
     );
   }
-  if (kind === "research") {
+  if (kind === "research" || kind === "research_opencode") {
     throw new ReqflowError(
-      "not_implemented",
-      "Research collection is unavailable in preview; run the flow to apply access gates, budgets and provenance persistence.",
+      "invalid_input",
+      `${spec.label} preview requires saved results. Run the flow first, then preview its saved output.`,
     );
   }
   if (!registry.has(kind)) {
