@@ -640,7 +640,7 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 ## WS4 — Settings, app shell & packaging
 
-**Status:** review (Model setting complete) · **Owner:** OpenCode · **Branch:** `ws4-car-models`
+**Status:** done (duplicate Model removal slice only) · **Owner:** OpenCode · **Branch:** `ws4-remove-duplicate-model`
 **Depends on:** WS1 for tasks 1–2.
 
 **Tasks**
@@ -655,8 +655,13 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - [ ] Demo polish: keyboard-shortcut overview, consistent empty states, About screen with team names.
 - [ ] Persist Settings → Model with Hydrogen / Hybrid / Electric / Fuel; keep the existing shell and vary the selectable powertrain.
       Implemented and verified on `ws4-car-models`; merge pending.
+- [x] Remove the duplicate Settings → Model page, retaining Model switcher and its saved powertrain controls.
 
 **Log**
+
+- 2026-10-11: Removed only the duplicate Model navigation/page and its unused component; Model switcher and stored settings are unchanged. Added two page regressions and, with human approval, adapted native smoke to the retained powertrain radios and checked the duplicate entry is absent. Root typecheck, full tests (2,762 passed, 6 skipped; two workers/30s timeout), changed-file formatting and macOS smoke (90 screenshots) pass; reviewed light Model switcher and dark Settings. The initial combined test command hit its 120s shell limit; the longer retry passed. Synthetic-only verification; unrelated original-checkout and generated Entire edits excluded. Other WS4 tasks remain open.
+
+- 2026-10-11: Claimed the duplicate Model removal in an isolated worktree from main. Keep Model switcher, settings storage and Car behavior unchanged. Human authorized updating the native smoke selectors to use Model switcher; publish only this narrow slice to main.
 
 - 2026-10-10: Model slice complete: four saved choices, backward-compatible electric default,
   distinct selectable powertrains on the unchanged shell/cabin/chassis, model-aware menus and
