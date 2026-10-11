@@ -374,7 +374,7 @@ describe("jev client", () => {
 });
 
 import { DEFAULT_SETTINGS, LLM_MODEL_DEFAULTS, type LiveLlmProvider } from "@reqflow/core";
-import { createLlmClient } from "./index";
+import { createLlmClient, thinkingOutputCap } from "./index";
 
 describe("default LLM providers", () => {
   const schema = z.strictObject({ value: z.string() });
@@ -455,7 +455,7 @@ describe("default LLM providers", () => {
           store: false,
           input: "test",
           instructions: "system",
-          max_output_tokens: 8192,
+          max_output_tokens: 24576,
           temperature: 0.2,
           text: {
             format: {
@@ -497,7 +497,7 @@ describe("default LLM providers", () => {
         model: "custom-model/free-text",
         store: false,
         input: "test",
-        max_output_tokens: 8192,
+        max_output_tokens: 24576,
         temperature: 0.2,
       });
     });
@@ -827,7 +827,7 @@ describe("default LLM providers", () => {
           systemInstruction: { parts: [{ text: "system" }] },
           generationConfig: {
             candidateCount: 1,
-            maxOutputTokens: 8192,
+            maxOutputTokens: 24576,
             temperature: 0.2,
             responseMimeType: "application/json",
             responseJsonSchema: {
@@ -853,10 +853,29 @@ describe("default LLM providers", () => {
         );
         expect(body(fetch)).toEqual({
           contents: [{ role: "user", parts: [{ text: "test" }] }],
-          generationConfig: { candidateCount: 1, maxOutputTokens: 8192, temperature: 0.2 },
+          generationConfig: { candidateCount: 1, maxOutputTokens: 24576, temperature: 0.2 },
         });
       },
     );
+
+    it("gives thinking room on top of the requested answer and names a cut-off answer", async () => {
+      const fetch = transport(payload("google", "text"));
+      await createLlmClient(settings("google", "gemini-x"), { apiKey: key, fetch }).generateText({
+        prompt: "test",
+        maxTokens: 16000,
+      });
+      expect(body(fetch).generationConfig.maxOutputTokens).toBe(16000 + 16384);
+      expect(thinkingOutputCap(60_000)).toBe(65_536);
+      const cut = transport({
+        modelVersion: "version",
+        candidates: [{ finishReason: "MAX_TOKENS", content: { parts: [{ text: "{" }] } }],
+      });
+      await expect(
+        createLlmClient(settings("google", "gemini-x"), { apiKey: key, fetch: cut }).generateText({
+          prompt: "test",
+        }),
+      ).rejects.toThrow(/cut off at the output limit \(MAX_TOKENS\)/);
+    });
 
     it("excludes thought parts and joins only plain answer parts", async () => {
       const value = {
@@ -949,7 +968,9 @@ describe("default LLM providers", () => {
           apiKey: key,
           fetch: transport({ ...payload("google"), ...extra }),
         }).generateText({ prompt: privateText }),
-      ).rejects.toThrow(/^Google response is invalid or incomplete$/);
+      ).rejects.toThrow(
+        /^Google (response is invalid or incomplete|answer was cut off at the output limit \(MAX_TOKENS\))$/,
+      );
     });
 
     it("retains optional/nullable values without OpenAI null stripping", async () => {

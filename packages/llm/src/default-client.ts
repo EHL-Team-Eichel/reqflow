@@ -117,6 +117,22 @@ async function cancellable<T>(work: () => Promise<T>, signal?: AbortSignal): Pro
   }
 }
 
+/** The answer the caller asked for (default 8,192 tokens). */
+const DEFAULT_ANSWER_TOKENS = 8192;
+/** Gemini 3.x and OpenAI reasoning models count their thinking against the output cap. */
+const THINKING_HEADROOM = 16_384;
+const MAX_OUTPUT_TOKENS = 65_536;
+
+/**
+ * Output cap for providers whose thinking shares the answer's budget. With a bare 8,192 a Gemini
+ * call that thought for 7,864 tokens had 313 left and was cut off (MAX_TOKENS), failing a whole
+ * AI Splitter run. The cap is a ceiling only; billing follows the tokens actually used.
+ */
+export function thinkingOutputCap(maxTokens?: number): number {
+  const answer = maxTokens && maxTokens > 0 ? Math.floor(maxTokens) : DEFAULT_ANSWER_TOKENS;
+  return Math.min(MAX_OUTPUT_TOKENS, answer + THINKING_HEADROOM);
+}
+
 /** Minimal REST clients. No retries, secret discovery, SDK, or live calls at construction. */
 export function createLlmClient(
   settings: AppSettings["llm"],
@@ -187,6 +203,7 @@ export function createLlmClient(
   async function message(request: LlmTextRequest, schema?: JsonSchema) {
     request.signal?.throwIfAborted();
     const checked = validate(Request, request, `${label} request is invalid`);
+    const outputCap = thinkingOutputCap(request.maxTokens);
     const model = (checked.tier === "fast" ? config.fastModel : config.model).trim();
     if (!model) throw new Error(`${label} model is invalid`);
     if (provider === "openai") {
@@ -194,7 +211,7 @@ export function createLlmClient(
         model,
         store: false,
         input: checked.prompt,
-        max_output_tokens: 8192,
+        max_output_tokens: outputCap,
         // Reasoning model families reject temperature. Unknown custom IDs remain usable as supplied.
         ...(/^(?:ft:)?(?:gpt-[56](?:[.:-]|$)|o[134](?:[.:-]|$))/i.test(model)
           ? {}
@@ -232,7 +249,7 @@ export function createLlmClient(
           : {}),
         generationConfig: {
           candidateCount: 1,
-          maxOutputTokens: 8192,
+          maxOutputTokens: outputCap,
           temperature: config.temperature,
           ...(schema ? { responseMimeType: "application/json", responseJsonSchema: schema } : {}),
         },
@@ -243,6 +260,10 @@ export function createLlmClient(
         body,
         request.signal,
       );
+      const finish = (raw as { candidates?: { finishReason?: unknown }[] })?.candidates?.[0]
+        ?.finishReason;
+      if (finish === "MAX_TOKENS")
+        throw new Error(`${label} answer was cut off at the output limit (MAX_TOKENS)`);
       const result = validate(GoogleResponse, raw, `${label} response is invalid or incomplete`);
       const text = result.candidates[0]!.content.parts.filter((part) => !part.thought)
         .map((part) => part.text)
