@@ -109,12 +109,10 @@ function assertAnthropicSchema(schema: Record<string, unknown>): void {
 }
 
 describe("Anthropic transport with actual AI Splitter schemas", () => {
-  const factors = Object.fromEntries(
-    ScoreFactor.options.map((factor) => [
-      factor,
-      { value: 2, note: "Assumption: recorded synthetic value" },
-    ]),
-  );
+  const factors = {
+    brand_fit: { value: 2, note: "Assumption: recorded synthetic value" },
+    ease: { value: 2, note: "Assumption: recorded synthetic value" },
+  };
   const cases: { name: string; schema: z.ZodType<unknown>; valid: unknown; invalid: unknown }[] = [
     {
       name: "Assignments",
@@ -176,8 +174,8 @@ describe("Anthropic transport with actual AI Splitter schemas", () => {
       if (name === "Scores") {
         const factorSchema = (sent.properties as Record<string, any>).scores.items.properties
           .factors;
-        expect(Object.keys(factorSchema.properties)).toEqual(ScoreFactor.options);
-        expect(factorSchema.required).toEqual(ScoreFactor.options);
+        expect(Object.keys(factorSchema.properties)).toEqual(["brand_fit", "ease"]);
+        expect(factorSchema.required).toEqual(["brand_fit", "ease"]);
         expect(factorSchema.additionalProperties).toBe(false);
         expect(factorSchema.propertyNames).toBeUndefined();
       }
@@ -490,20 +488,17 @@ describe("AI Splitter", () => {
   });
 
   it("scores missing factors provisionally in code without logging evidence/assumption contents", async () => {
-    const factors = Object.fromEntries(
-      ScoreFactor.options.map((f) => [
-        f,
-        { value: 1, note: "Assumption: unmeasured synthetic estimate" },
-      ]),
-    );
+    const factors = {
+      brand_fit: { value: 1, note: "Assumption: unmeasured synthetic estimate" },
+      ease: { value: 1, note: "Assumption: unmeasured synthetic estimate" },
+    };
     const c = context(fakeLlm({ scores: [{ id: "rec_0", factors }] }));
     const out = outputs(
       await aiSplitterBlock.run({ in: records(["unmeasured need"]) }, defaults, c.ctx),
     );
     expect(out["out-2"]!.records.map((r) => r.id)).toEqual(["rec_0"]);
     const logs = c.log.mock.calls.flat().join(" ");
-    expect(logs).toMatch(/WS8.*unavailable/i);
-    expect(logs).toMatch(/provisional.*20/i);
+    expect(logs).toMatch(/ws8-weighted@1/i);
     expect(logs).toMatch(/wont.*fallback/i);
     expect(logs).not.toContain("Assumption: unmeasured synthetic estimate");
     expect(c.audit.record).not.toHaveBeenCalled();
@@ -515,9 +510,19 @@ describe("AI Splitter", () => {
     [1.5, "out-2"],
     [1.49, "out-3"],
   ])("uses inclusive Settings thresholds at factor %s", async (value, branch) => {
-    const factors = Object.fromEntries(
-      ScoreFactor.options.map((f) => [f, { value, note: "Assumption: synthetic threshold test" }]),
-    );
+    const factors = {
+      brand_fit: { value, note: "Assumption: synthetic threshold test" },
+      ease: { value, note: "Assumption: synthetic threshold test" },
+    };
+    const c = context(fakeLlm({ scores: [{ id: "rec_0", factors }] }));
+    c.ctx.settings.scoring.weights = {
+      customer_impact: 0,
+      evidence_strength: 0,
+      competitive_gap: 0,
+      trend_momentum: 0,
+      brand_fit: 1,
+      ease: 1,
+    };
     const out = outputs(
       await aiSplitterBlock.run(
         { in: records(["threshold"]) },
@@ -525,7 +530,7 @@ describe("AI Splitter", () => {
           ...defaults,
           branches: ["Must", "Should", "Could", "Won’t have"],
         },
-        context(fakeLlm({ scores: [{ id: "rec_0", factors }] })).ctx,
+        c.ctx,
       ),
     );
     expect(out[branch as string]!.records.map((r) => r.id)).toEqual(["rec_0"]);
@@ -545,7 +550,7 @@ describe("AI Splitter", () => {
     );
     expect(Object.keys(out)).toEqual(["out-0", "out-1"]);
     expect(out["out-0"]!.records).toHaveLength(1);
-    expect(c.log.mock.calls.flat().join(" ")).toMatch(/could.*fallback.*Should have/);
+    expect(c.log.mock.calls.flat().join(" ")).toMatch(/fallback.*Should have/);
   });
 
   it.each([
@@ -553,13 +558,15 @@ describe("AI Splitter", () => {
     'Evidence: rec_0 | "invented quote" | unsupported judgement',
     "Measured sales rose by 200%",
   ])("never counts unsupported evidence or unlabeled notes as evidence: %s", async (note) => {
-    const factors = Object.fromEntries(ScoreFactor.options.map((f) => [f, { value: 2, note }]));
+    const factors = {
+      brand_fit: { value: 2, note },
+      ease: { value: 2, note },
+    };
     const c = context(fakeLlm({ scores: [{ id: "rec_0", factors }] }));
     const out = outputs(await aiSplitterBlock.run({ in: records(["synthetic"]) }, defaults, c.ctx));
-    // Routed on the provisional value, with every factor logged as an unverified assumption.
     expect(Object.values(out).flatMap((d) => d.records)).toHaveLength(1);
     const logs = c.log.mock.calls.flat().join(" ");
-    expect(logs.match(/counted as an unverified assumption, not evidence/g)).toHaveLength(6);
+    expect(logs.match(/counted as an unverified assumption, not evidence/g)).toHaveLength(2);
     expect(logs).not.toContain("invented quote");
   });
 
@@ -567,19 +574,23 @@ describe("AI Splitter", () => {
     const input = records(["The seats hurt."]);
     input.records[0]!.fields = { channel: "dealer survey" };
     const note = 'Evidence: rec_0 | "dealer survey" | one dealer comment, no volume';
-    const factors = Object.fromEntries(ScoreFactor.options.map((f) => [f, { value: 2, note }]));
+    const factors = {
+      brand_fit: { value: 2, note },
+      ease: { value: 2, note: "Assumption: standard" },
+    };
     const c = context(fakeLlm({ scores: [{ id: "rec_0", factors }] }));
     await aiSplitterBlock.run({ in: input }, defaults, c.ctx);
     expect(c.log.mock.calls.flat().join(" ")).not.toMatch(/unverified assumption/);
   });
 
   it("accepts only verifiable Evidence notes for provisional factors", async () => {
-    const factors = Object.fromEntries(
-      ScoreFactor.options.map((f) => [
-        f,
-        { value: 2, note: 'Evidence: rec_0 | "synthetic" | provisional judgement, not measured' },
-      ]),
-    );
+    const factors = {
+      brand_fit: {
+        value: 2,
+        note: 'Evidence: rec_0 | "synthetic" | provisional judgement, not measured',
+      },
+      ease: { value: 2, note: "Assumption: standard" },
+    };
     const out = outputs(
       await aiSplitterBlock.run(
         { in: records(["synthetic record"]) },
@@ -591,20 +602,21 @@ describe("AI Splitter", () => {
   });
 
   it("rejects unknown, missing, duplicate, incomplete, and out-of-range provisional scores", async () => {
-    const factors = Object.fromEntries(
-      ScoreFactor.options.map((f) => [f, { value: 2, note: "Assumption: synthetic estimate" }]),
-    );
+    const factors = {
+      brand_fit: { value: 2, note: "Assumption: synthetic estimate" },
+      ease: { value: 2, note: "Assumption: synthetic estimate" },
+    };
     const good = { id: "rec_0", factors };
     const answers = [
       { scores: [{ ...good, id: "rec_unknown" }] },
       { scores: [] },
       { scores: [good, good] },
-      { scores: [{ ...good, factors: { customer_impact: factors.customer_impact } }] },
+      { scores: [{ ...good, factors: { brand_fit: factors.brand_fit } }] },
       {
         scores: [
           {
             ...good,
-            factors: { ...factors, customer_impact: { value: 6, note: "Assumption: invalid" } },
+            factors: { ...factors, ease: { value: 6, note: "Assumption: invalid" } },
           },
         ],
       },
@@ -613,6 +625,216 @@ describe("AI Splitter", () => {
       await expect(
         aiSplitterBlock.run({ in: records(["synthetic"]) }, defaults, context(fakeLlm(answer)).ctx),
       ).rejects.toThrow();
+  });
+
+  it("determines priority band by deterministic factors alone", async () => {
+    const req = {
+      ...fixturePipelineData.requirements[0]!,
+      id: "REQ-F70-EU-001",
+      findingIds: ["fnd_1", "fnd_2", "fnd_3", "fnd_4"],
+      conflictingFindingIds: [],
+    };
+    delete (req as any).priority;
+    delete (req as any).score;
+    const input: Data = {
+      ...emptyPipelineData(),
+      sources: [
+        { ...fixturePipelineData.sources[0]!, id: "src_1", reliability: "high" },
+        { ...fixturePipelineData.sources[0]!, id: "src_2", reliability: "high" },
+        {
+          ...fixturePipelineData.sources[0]!,
+          id: "src_3",
+          kind: "sales_volume",
+          reliability: "high",
+        },
+      ],
+      findings: [
+        {
+          id: "fnd_1",
+          kind: "complaint",
+          statement: "Major complaint",
+          category: "comfort",
+          evidence: [
+            { sourceId: "src_1", excerpt: "Excerpt 1" },
+            { sourceId: "src_2", excerpt: "Excerpt 2" },
+          ],
+          mentions: 30,
+          sentiment: -0.8,
+          markets: ["EU"],
+          confidence: 0.8,
+          inScope: true,
+        },
+        {
+          id: "fnd_2",
+          kind: "usage_pattern",
+          statement: "Usage pattern",
+          category: "comfort",
+          evidence: [{ sourceId: "src_3", excerpt: "Excerpt 3" }],
+          mentions: 5,
+          sentiment: 0,
+          markets: ["EU"],
+          confidence: 0.8,
+          inScope: true,
+        },
+        {
+          id: "fnd_3",
+          kind: "competitor_advantage",
+          statement: "Comp advantage",
+          category: "comfort",
+          evidence: [{ sourceId: "src_1", excerpt: "Excerpt 1" }],
+          mentions: 10,
+          sentiment: 0,
+          markets: ["EU"],
+          confidence: 0.8,
+          inScope: true,
+        },
+        {
+          id: "fnd_4",
+          kind: "market_trend",
+          statement: "Market trend",
+          category: "comfort",
+          evidence: [
+            { sourceId: "src_1", excerpt: "Excerpt 1" },
+            { sourceId: "src_2", excerpt: "Excerpt 2" },
+          ],
+          mentions: 10,
+          sentiment: 0,
+          markets: ["EU"],
+          confidence: 0.8,
+          inScope: true,
+        },
+      ],
+      requirements: [req],
+    };
+    const factors = {
+      brand_fit: { value: 0, note: "Assumption: zero" },
+      ease: { value: 0, note: "Assumption: zero" },
+    };
+    const c = context(
+      fakeLlm({
+        scores: [{ id: "REQ-F70-EU-001", factors }],
+      }),
+    );
+    const out = outputs(
+      await aiSplitterBlock.run(
+        { in: input },
+        { ...defaults, branches: ["Must have", "Should have", "Could have"] },
+        c.ctx,
+      ),
+    );
+    expect(out["out-0"]!.requirements.map((r) => r.id)).toContain("REQ-F70-EU-001");
+  });
+
+  it("counts only a requirement's own supporting findings, not its conflicting ones", async () => {
+    const finding = (id: string, mentions: number) => ({
+      id,
+      kind: "complaint" as const,
+      statement: `Synthetic ${id}`,
+      category: "comfort" as const,
+      evidence: [{ sourceId: "src_1", excerpt: `Excerpt ${id}` }],
+      mentions,
+      markets: ["EU"],
+      confidence: 0.8,
+      inScope: true,
+    });
+    const req = {
+      ...fixturePipelineData.requirements[0]!,
+      id: "REQ-F70-EU-002",
+      findingIds: ["fnd_support"],
+      conflictingFindingIds: ["fnd_against"],
+    };
+    delete (req as any).priority;
+    delete (req as any).score;
+    const input: Data = {
+      ...emptyPipelineData(),
+      sources: [{ ...fixturePipelineData.sources[0]!, id: "src_1" }],
+      findings: [finding("fnd_support", 1), finding("fnd_against", 30)],
+      requirements: [req],
+    };
+    const factors = {
+      brand_fit: { value: 0, note: "Assumption: zero" },
+      ease: { value: 0, note: "Assumption: zero" },
+    };
+    const c = context(fakeLlm({ scores: [{ id: "REQ-F70-EU-002", factors }] }));
+    c.ctx.settings.scoring.thresholds = { must: 70, should: 50, could: 10 };
+    c.ctx.settings.scoring.weights = {
+      customer_impact: 10,
+      evidence_strength: 0,
+      competitive_gap: 0,
+      trend_momentum: 0,
+      brand_fit: 0,
+      ease: 0,
+    };
+    const out = outputs(
+      await aiSplitterBlock.run(
+        { in: input },
+        { ...defaults, branches: ["Must have", "Should have", "Could have"] },
+        c.ctx,
+      ),
+    );
+    // One supporting mention: impact 1/5 → 20/100 → could. Counting the 30 against would say must.
+    expect(out["out-2"]!.requirements.map((r) => r.id)).toEqual(["REQ-F70-EU-002"]);
+  });
+
+  it("weights change the branch", async () => {
+    const input = records(["test record"]);
+    const factors = {
+      brand_fit: { value: 0, note: "Assumption: zero" },
+      ease: { value: 0, note: "Assumption: zero" },
+    };
+    const c1 = context(fakeLlm({ scores: [{ id: "rec_0", factors }] }));
+    c1.ctx.settings.scoring.thresholds = { must: 70, should: 20, could: 10 };
+    c1.ctx.settings.scoring.weights = {
+      customer_impact: 10,
+      evidence_strength: 0,
+      competitive_gap: 0,
+      trend_momentum: 0,
+      brand_fit: 0,
+      ease: 0,
+    };
+    const out1 = outputs(
+      await aiSplitterBlock.run(
+        { in: input },
+        { ...defaults, branches: ["Must have", "Should have", "Could have"] },
+        c1.ctx,
+      ),
+    );
+    expect(out1["out-1"]!.records.map((r) => r.id)).toEqual(["rec_0"]);
+
+    const c2 = context(fakeLlm({ scores: [{ id: "rec_0", factors }] }));
+    c2.ctx.settings.scoring.thresholds = { must: 70, should: 50, could: 10 };
+    c2.ctx.settings.scoring.weights = {
+      customer_impact: 0,
+      evidence_strength: 0,
+      competitive_gap: 0,
+      trend_momentum: 0,
+      brand_fit: 10,
+      ease: 0,
+    };
+    const out2 = outputs(
+      await aiSplitterBlock.run(
+        { in: input },
+        { ...defaults, branches: ["Must have", "Should have", "Could have"] },
+        c2.ctx,
+      ),
+    );
+    expect(out2["out-2"]!.records.map((r) => r.id)).toEqual(["rec_0"]);
+  });
+
+  it("asks the LLM only for brand_fit and ease", async () => {
+    const factors = {
+      brand_fit: { value: 3, note: "Assumption: good" },
+      ease: { value: 3, note: "Assumption: easy" },
+    };
+    const llm = fakeLlm({ scores: [{ id: "rec_0", factors }] });
+    const c = context(llm);
+    await aiSplitterBlock.run({ in: records(["test"]) }, defaults, c.ctx);
+    expect(llm.generateObject).toHaveBeenCalled();
+    const call = (llm.generateObject as any).mock.calls[0]![0];
+    const payload = JSON.parse(call.prompt);
+    expect(payload.factors).toEqual(["brand_fit", "ease"]);
+    const schemaShape = (call.schema as any).shape.scores.element.shape.factors.shape;
+    expect(Object.keys(schemaShape)).toEqual(["brand_fit", "ease"]);
   });
 
   it("supports deterministic mock category, sentiment, and custom contracts offline", async () => {

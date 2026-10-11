@@ -90,7 +90,7 @@ Your step: CRITIC. Review one draft requirement as a demanding product-managemen
 3. Quality: specific, actionable, solution-open, with measurable targets and acceptance checks?
 4. Honesty: are conflicting signals, assumptions and uncertainties reflected?
 verdict: accept (no material issues), revise (fixable: list the issues and, in fixes, how to fix each), reject (out of scope, or not supported by the evidence at all; say why in rejectReason). Do not reject a requirement only because its evidence is thin; say so in the factors instead.
-Score six factors from 0 to 5, where higher always means more worth doing: customer_impact (how strongly and how many customers are affected), evidence_strength (number, independence and reliability of the evidence), competitive_gap (competitors offer it or do it better), trend_momentum (relevance when the successor launches), brand_fit (premium, driving pleasure, innovation), ease (the inverse of rough effort and cost). Each note is one line that starts with "Evidence:" and cites signals like [s3], or with "Assumption:" when no evidence covers it. Do not compute a total or a priority.`;
+Score two factors from 0 to 5, where higher always means more worth doing: brand_fit (premium, driving pleasure, innovation), ease (the inverse of rough effort and cost). Each note is one line that starts with "Evidence:" and cites signals like [s3], or with "Assumption:" when no evidence covers it. Do not compute a total or a priority.`;
 }
 
 export function contextSystem(s: PromptSetup): string {

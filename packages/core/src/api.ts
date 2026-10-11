@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { DecisionStatus, Requirement } from "./requirement";
+import { DecisionStatus, MetricTarget, Requirement } from "./requirement";
 import { Priority } from "./scoring";
 import { ProductScope } from "./scope";
 import { PipelineData, DATA_KEYS } from "./pipeline";
@@ -17,12 +17,37 @@ export const DECISION_TO_STATUS: Record<DecisionKind, DecisionStatus> = {
   reopen: "in_review",
 };
 
+/**
+ * Which human decisions each status allows. A decided requirement (approved, rejected) must be
+ * reopened before anyone decides again; "challenged" waits for the AI's answer or a decision.
+ */
+export const ALLOWED_DECISIONS: Record<DecisionStatus, readonly DecisionKind[]> = {
+  proposed: ["approve", "reject", "defer", "challenge"],
+  in_review: ["approve", "reject", "defer", "challenge"],
+  challenged: ["approve", "reject", "defer", "reopen"],
+  deferred: ["approve", "reject", "challenge", "reopen"],
+  approved: ["reopen"],
+  rejected: ["reopen"],
+};
+
+/** Why a decision isn't allowed on a requirement in this status, or null when it is. */
+export function decisionProblem(status: DecisionStatus, decision: DecisionKind): string | null {
+  if (ALLOWED_DECISIONS[status].includes(decision)) return null;
+  const allowed = ALLOWED_DECISIONS[status].join(", ");
+  return `A ${status.replace("_", " ")} requirement can't be given "${decision}"; allowed: ${allowed}.`;
+}
+
 /** `requirements.decide(id, …)` — every human decision needs a rationale. */
-export const RequirementDecision = z.object({
-  decision: DecisionKind,
-  rationale: z.string().trim().min(3),
-  priority: Priority.optional(), // optional PM override when approving
-});
+export const RequirementDecision = z
+  .object({
+    decision: DecisionKind,
+    rationale: z.string().trim().min(3),
+    priority: Priority.optional(), // optional PM override, only when approving
+  })
+  .refine((d) => d.priority === undefined || d.decision === "approve", {
+    message: "A priority override is only possible when approving",
+    path: ["priority"],
+  });
 export type RequirementDecision = z.infer<typeof RequirementDecision>;
 
 /** `requirements.edit(id, …)` — PM edits content; bumps version, audited field by field. */
@@ -39,7 +64,11 @@ export const RequirementEdit = Requirement.pick({
   conflictingFindingIds: true,
 })
   .partial()
-  .extend({ rationale: z.string().trim().min(3) })
+  .extend({
+    // Every requirement keeps at least one measurable target (briefing).
+    targets: z.array(MetricTarget).min(1, "Keep at least one measurable target").optional(),
+    rationale: z.string().trim().min(3),
+  })
   .refine((edit) => Object.keys(edit).some((k) => k !== "rationale"), {
     message: "An edit must change at least one field",
   });

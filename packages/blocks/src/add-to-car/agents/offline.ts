@@ -153,9 +153,7 @@ function architect(p: Payload): DraftAnswer {
   };
 }
 
-function critic(p: Payload): ReviewAnswer {
-  const mentions = rows(p.signals).reduce((n, s) => n + (Number(s.mentions) || 0), 0);
-  const impact = Math.min(5, Math.round((1 + Math.log2(1 + mentions)) * 10) / 10);
+function critic(_p: Payload): ReviewAnswer {
   const note = "Assumption: offline demo, set by a rule; not measured.";
   return {
     verdict: "accept",
@@ -163,10 +161,6 @@ function critic(p: Payload): ReviewAnswer {
     fixes: [],
     rejectReason: "",
     factors: {
-      customer_impact: { value: impact, note: `Assumption: offline demo, ${mentions} mention(s).` },
-      evidence_strength: { value: Math.min(5, impact), note },
-      competitive_gap: { value: 2.5, note },
-      trend_momentum: { value: 2.5, note },
       brand_fit: { value: 2.5, note },
       ease: { value: 2.5, note },
     },

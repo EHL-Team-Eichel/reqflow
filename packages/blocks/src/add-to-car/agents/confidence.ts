@@ -1,22 +1,17 @@
 import {
   confidenceLevel,
-  priorityForScore,
-  ScoreFactor,
-  weightedTotal,
   type ConfidenceSignal,
   type DecisionAnswer,
   type DecisionQuestion,
   type EvidenceLevel,
   type Priority,
   type RequirementConfidence,
-  type ScoreBreakdown,
-  type Settings,
   type SourceKind,
 } from "@reqflow/core";
-import type { ReviewAnswer } from "./schemas";
+import { PRIORITIZATION_METHOD } from "../../prioritization";
 
 export const CONFIDENCE_METHOD = "agent-confidence@1";
-export const SCORE_METHOD = "agent-critic@1";
+export const SCORE_METHOD = PRIORITIZATION_METHOD;
 
 const BANDS: Priority[] = ["must", "should", "could"];
 
@@ -178,37 +173,6 @@ export function combineConfidence(o: {
     ),
   );
   return { value, level: confidenceLevel(value), signals, method: CONFIDENCE_METHOD };
-}
-
-/** The critic's six factors → the documented weighted score (Settings weights and thresholds). */
-export function scoreFromReview(
-  factors: ReviewAnswer["factors"],
-  scoring: Settings["scoring"],
-  now: string,
-): ScoreBreakdown {
-  const values = Object.fromEntries(
-    ScoreFactor.options.map((f) => [f, clamp(factors[f].value, 0, 5)]),
-  ) as Record<ScoreFactor, number>;
-  const weights = Object.fromEntries(
-    ScoreFactor.options.map((f) => [f, scoring.weights[f] ?? 0]),
-  ) as Record<ScoreFactor, number>;
-  const total = weightedTotal(values, weights);
-  return {
-    factors: Object.fromEntries(
-      ScoreFactor.options.map((f) => [
-        f,
-        {
-          value: values[f],
-          weight: weights[f],
-          note: oneLine(factors[f].note) || "Assumption: no note given.",
-        },
-      ]),
-    ) as ScoreBreakdown["factors"],
-    total,
-    suggestedPriority: priorityForScore(total, scoring.thresholds),
-    method: SCORE_METHOD,
-    scoredAt: now,
-  };
 }
 
 export function oneLine(s: string, max = 300): string {

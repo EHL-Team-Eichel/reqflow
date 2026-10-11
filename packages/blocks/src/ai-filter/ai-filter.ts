@@ -1,9 +1,11 @@
 import { createHash } from "node:crypto";
 import {
   DATA_KEYS,
+  FILTER_LAYERS,
   FilterOverride,
   FilterReport,
   defaultBlockParams,
+  type FilterLayer,
   type PipelineData,
 } from "@reqflow/core";
 import { defineBlock } from "@reqflow/engine";
@@ -137,13 +139,16 @@ export const aiFilterBlock = defineBlock({
         sources: input.sources.map(({ retrievedAt: _retrievedAt, ...source }) => source),
       }),
     };
-    const items = index.primary === "sources" ? [] : input[index.primary];
     if (index.primary === "sources" && input.sources.length)
       warnings.add(
         "Sources-only input passed through as unclassified context; no item decisions were invented.",
       );
-    const entries = items.map((item) => {
-      const context = index.select(index.closure(index.primary, item.id));
+    const originals = new Map<string, PipelineData[FilterLayer][number]>(
+      FILTER_LAYERS.flatMap((layer) => input[layer].map((item) => [item.id, item] as const)),
+    );
+    const entries = index.units.map(({ layer, id }) => {
+      const item = originals.get(id)!;
+      const context = index.select(index.closure(layer, item.id));
       const assessed = configuration.fields.length
         ? Object.fromEntries(
             configuration.fields.map((field) => [field, fieldValue(item, field) ?? null]),
@@ -151,7 +156,7 @@ export const aiFilterBlock = defineBlock({
         : item;
       return {
         id: item.id,
-        layer: index.primary,
+        layer,
         item,
         context,
         assessed,
@@ -241,6 +246,7 @@ export const aiFilterBlock = defineBlock({
             : decision.decision;
         decisions.push({
           itemId: entry.id,
+          layer: entry.layer,
           itemHash: filterHash(entry.item),
           modelDecision: decision.decision,
           outcome,
@@ -294,18 +300,29 @@ export const aiFilterBlock = defineBlock({
         (decision.outcome === "review" && configuration.keepUnsure)
       ) {
         decision.forwarded = true;
-        const closure = index.closure(index.primary, decision.itemId);
+        const closure = index.closure(decision.layer!, decision.itemId);
         for (const key of DATA_KEYS) for (const id of closure[key]) membership[key].add(id);
       }
     }
     for (const decision of decisions) {
-      if (!decision.forwarded && membership[index.primary].has(decision.itemId)) {
+      if (!decision.forwarded && membership[decision.layer!].has(decision.itemId)) {
         decision.forwarded = true;
         decision.retainedAsContext = true;
         warnings.add(
           "Unselected primary items retained as referenced evidence context, not as selected items.",
         );
       }
+    }
+    // Sources no item refers to are context, not decisions: they pass on unclassified.
+    const referenced = new Set(
+      index.units.flatMap(({ layer, id }) => [...index.closure(layer, id).sources]),
+    );
+    const loose = input.sources.filter((source) => !referenced.has(source.id));
+    if (index.units.length && loose.length) {
+      for (const source of loose) membership.sources.add(source.id);
+      warnings.add(
+        `${loose.length} source(s) without items passed through as unclassified context.`,
+      );
     }
     const output = index.primary === "sources" ? { ...input } : index.select(membership);
     const report: FilterReport = {
@@ -356,9 +373,17 @@ export const aiFilterBlock = defineBlock({
       check();
     }
     check();
-    ctx.log(
-      `AI Filter classified ${decisions.length} items; forwarded ${decisions.filter((d) => d.forwarded).length}.`,
+    const perLayer = [...new Set(decisions.map((d) => d.layer!))].map(
+      (layer) => `${decisions.filter((d) => d.layer === layer).length} ${layer}`,
     );
+    ctx.log(
+      `AI Filter classified ${decisions.length} items (${perLayer.join(", ") || "none"}); forwarded ${decisions.filter((d) => d.forwarded).length}.`,
+    );
+    const lower = decisions.filter((d) => d.layer !== index.primary);
+    if (lower.length)
+      ctx.log(
+        `${lower.length} ${[...new Set(lower.map((d) => d.layer))].join("/")} no ${index.primary} refers to were classified on their own, so they aren't left out unseen.`,
+      );
     ctx.progress(1);
     check();
     return { status: "ok", outputs: { out: output }, filterReport: report };

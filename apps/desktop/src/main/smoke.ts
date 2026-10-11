@@ -26,6 +26,7 @@ import { NO_AGENT_SERVICES } from "@reqflow/engine";
 import { rawBlock } from "../../../../packages/blocks/src/raw/raw";
 import { readPdf } from "../../../../packages/blocks/src/raw/pdf";
 import { scannedPdf, textPdf } from "../../../../data/samples/raw-pdf-fixture";
+import { runReviewSmoke, type SmokeCall } from "./smoke-review";
 import {
   SYNTHETIC_FEEDBACK,
   verifySmokeResearchDataset,
@@ -1640,6 +1641,25 @@ export async function runSmoke(
   await shot("settings-agents");
   check(await click('[data-testid^="settings-delete-setup-"]'), "settings: no delete setup button");
   await delay(200);
+
+  // Requirement review over IPC (edit, decide, challenge, four-eyes, audit, exports, saved flows,
+  // rescoring, a two-reviewer gate) and the BMW template end to end on the samples.
+  const call: SmokeCall = (namespace, method, ...args) =>
+    js(
+      `window.reqflowBridge.invoke(${JSON.stringify(ipcChannel(namespace, method))}, ...${JSON.stringify(args)})`,
+    );
+  try {
+    await runReviewSmoke({
+      call,
+      check,
+      outDir,
+      samplesDir: deps.samplesDir,
+      files: deps.files,
+      delay,
+    });
+  } catch (err) {
+    check(false, `review: crashed: ${String(err)}`);
+  }
 
   // Go back to car for reset
   await go("/car");

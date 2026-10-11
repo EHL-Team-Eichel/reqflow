@@ -363,9 +363,7 @@ function StoredFilterPanel({ run, report }: { run: WorkflowRun; report: FilterRe
             {selected.decision.confidence.toFixed(2)} (not calibrated)
           </p>
           <p className="whitespace-pre-wrap break-words">{selected.decision.reason}</p>
-          <h5 className="font-medium">
-            Exact original {report.primaryLayer} item / structured fields
-          </h5>
+          <h5 className="font-medium">Exact original {selected.layer} item / structured fields</h5>
           <Json value={selected.original} />
           <h5 className="font-medium">Exact quotes & source locations</h5>
           {selected.decision.quotes.length ? (

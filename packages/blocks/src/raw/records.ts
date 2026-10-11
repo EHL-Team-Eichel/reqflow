@@ -1,6 +1,12 @@
 import { createHash } from "node:crypto";
-import type { ProductScope, Source, SourceKind, SourceRecord } from "@reqflow/core";
-import { COLUMN_SYNONYMS, findColumns } from "./columns";
+import {
+  inMarket,
+  type ProductScope,
+  type Source,
+  type SourceKind,
+  type SourceRecord,
+} from "@reqflow/core";
+import { COLUMN_SYNONYMS, findColumn, findColumns, type ColumnMapping } from "./columns";
 import { guessLanguage, normalizeLanguage } from "./language";
 import { cellText, listRows, type Cell, type Table, type TableRow } from "./table";
 
@@ -28,6 +34,7 @@ export interface IngestOptions {
   dataset: RawDataset;
   scope: ProductScope;
   retrievedAt: string; // ISO datetime
+  marketFilter?: "scope" | "all";
 }
 
 export interface Ingested {
@@ -36,6 +43,13 @@ export interface Ingested {
   /** The record each table row ended up in (`undefined` when the row was skipped). */
   recordOfRow: (SourceRecord | undefined)[];
   notes: string[];
+}
+
+export function parseMarketCode(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  return /^[A-Za-z]{2,3}$/.test(trimmed) ? trimmed.toUpperCase() : trimmed;
 }
 
 const textLength = (table: Table, col: number) => {
@@ -47,7 +61,8 @@ const textLength = (table: Table, col: number) => {
  * The comment column: of the columns named like one, the one with the longest texts, so that
  * "Feedback Type" next to "Customer Feedback" isn't mistaken for the comment. -1 if none.
  */
-export function textColumn(table: Table): number {
+export function textColumn(table: Table, mapping?: ColumnMapping): number {
+  if (mapping?.text !== undefined) return mapping.text;
   const candidates = findColumns(table.header, "text");
   if (candidates.length <= 1) return candidates[0] ?? -1;
   return candidates.reduce((best, c) =>
@@ -56,7 +71,8 @@ export function textColumn(table: Table): number {
 }
 
 /** The market column, preferring codes ("EU", "GB") over names ("Europe") when both are there. */
-export function marketColumn(table: Table): number {
+export function marketColumn(table: Table, mapping?: ColumnMapping): number {
+  if (mapping?.market !== undefined) return mapping.market;
   const candidates = findColumns(table.header, "market");
   const isCodes = (col: number) =>
     table.rows.every((r) => {
@@ -67,7 +83,7 @@ export function marketColumn(table: Table): number {
 }
 
 /** Numbers in record text: at most 4 decimals ("0.8123" instead of "0.81234567891234"). */
-const textOf = (c: Cell) =>
+export const textOf = (c: Cell) =>
   typeof c === "number" && !Number.isInteger(c) ? String(Number(c.toFixed(4))) : cellText(c);
 
 /** "rows 3–5" for a run of rows, otherwise "rows 3, 7, 9". */
@@ -98,14 +114,14 @@ function mergedValue(rows: TableRow[], col: number): unknown {
  * Exports that repeat a comment on several rows, once per classification, are merged back into
  * one record when the ID and the comment are the same; the columns that differ become lists.
  */
-export function tableToRecords(table: Table, o: IngestOptions): Ingested {
+export function tableToRecords(table: Table, o: IngestOptions, mapping?: ColumnMapping): Ingested {
   const notes: string[] = [];
   const sourceId = `src_${shortHash(o.key)}`;
   const isText = TEXT_DATASETS.has(o.dataset);
-  const textCol = isText ? textColumn(table) : -1;
-  const idCol = textCol !== -1 ? (findColumns(table.header, "id")[0] ?? -1) : -1;
-  const marketCol = marketColumn(table);
-  const languageCol = findColumns(table.header, "language")[0] ?? -1;
+  const textCol = isText ? textColumn(table, mapping) : -1;
+  const idCol = textCol !== -1 ? findColumn(table.header, "id", mapping) : -1;
+  const marketCol = marketColumn(table, mapping);
+  const languageCol = findColumn(table.header, "language", mapping);
 
   if (isText && textCol === -1) {
     notes.push(
@@ -121,11 +137,33 @@ export function tableToRecords(table: Table, o: IngestOptions): Ingested {
           .filter((part): part is string => part !== null)
           .join("; ");
 
+  const marketFilter = o.marketFilter ?? "scope";
+  const leftOutMap = new Map<string, number>();
+  let leftOutCount = 0;
+  let unknownMarketCount = 0;
+
   // Group the rows that become one record, in order of first appearance.
   const groups: { text: string; rows: TableRow[]; indexes: number[] }[] = [];
   const byKey = new Map<string, (typeof groups)[number]>();
   const noText: number[] = [];
+
   table.rows.forEach((row, i) => {
+    const rawMarket = marketCol !== -1 ? cellText(row.cells[marketCol] ?? null) : "";
+    const rowMarket = parseMarketCode(rawMarket);
+
+    if (marketFilter === "scope") {
+      const inScope = inMarket(rowMarket, o.scope.market);
+      if (inScope === false) {
+        const mKey = rowMarket ?? "unknown";
+        leftOutMap.set(mKey, (leftOutMap.get(mKey) ?? 0) + 1);
+        leftOutCount++;
+        return;
+      }
+      if (inScope === undefined) {
+        unknownMarketCount++;
+      }
+    }
+
     const text = textOfRow(row);
     if (!text.trim()) {
       noText.push(row.line);
@@ -143,6 +181,41 @@ export function tableToRecords(table: Table, o: IngestOptions): Ingested {
     groups.push(group);
     if (key) byKey.set(key, group);
   });
+
+  // Only the market filter can empty an otherwise readable table; say which markets were there.
+  if (leftOutCount > 0 && groups.length === 0) {
+    const foundMarkets = [
+      ...new Set(
+        table.rows
+          .map((r) =>
+            marketCol !== -1 ? parseMarketCode(cellText(r.cells[marketCol] ?? null)) : undefined,
+          )
+          .filter((m): m is string => Boolean(m)),
+      ),
+    ];
+    throw new Error(
+      `No records match market "${o.scope.market}". Markets found in data: ${foundMarkets.map((m) => `"${m}"`).join(", ")}.`,
+    );
+  }
+
+  if (marketFilter === "scope") {
+    if (leftOutCount > 0) {
+      const breakdown = [...leftOutMap.entries()]
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+        .map(([m, c]) => `${m} ${c.toLocaleString("en-US")}`)
+        .join(", ");
+      let msg = `Left out ${leftOutCount.toLocaleString("en-US")} of ${table.rows.length.toLocaleString("en-US")} rows from markets outside ${o.scope.market} (${breakdown}).`;
+      if (unknownMarketCount > 0) {
+        msg += ` ${unknownMarketCount.toLocaleString("en-US")} row${unknownMarketCount === 1 ? " has" : "s have"} no recognisable market and ${unknownMarketCount === 1 ? "was" : "were"} kept.`;
+      }
+      notes.push(msg);
+    } else if (unknownMarketCount > 0 && marketCol !== -1) {
+      notes.push(
+        `${unknownMarketCount.toLocaleString("en-US")} row${unknownMarketCount === 1 ? " has" : "s have"} no recognisable market and ${unknownMarketCount === 1 ? "was" : "were"} kept.`,
+      );
+    }
+  }
+
   if (noText.length)
     notes.push(`Skipped ${noText.length} ${listRows(noText)} without comment text.`);
 
@@ -152,7 +225,7 @@ export function tableToRecords(table: Table, o: IngestOptions): Ingested {
       merged.some((g) => Array.isArray(mergedValue(g.rows, j))),
     );
     notes.push(
-      `Merged ${table.rows.length - noText.length} rows into ${groups.length} records: rows with the same ${table.header[idCol]} and comment are one piece of feedback` +
+      `Merged ${table.rows.length - leftOutCount - noText.length} rows into ${groups.length} records: rows with the same ${table.header[idCol]} and comment are one piece of feedback` +
         (varying.length
           ? `; the columns that differ between them (${varying.join(", ")}) are kept as lists.`
           : "."),
@@ -175,7 +248,8 @@ export function tableToRecords(table: Table, o: IngestOptions): Ingested {
   const recordOfRow: (SourceRecord | undefined)[] = table.rows.map(() => undefined);
   const records = groups.map((g) => {
     const first = g.rows[0]!;
-    const market = marketCol !== -1 ? cellText(first.cells[marketCol] ?? null) : "";
+    const rawMarket = marketCol !== -1 ? cellText(first.cells[marketCol] ?? null) : "";
+    const market = parseMarketCode(rawMarket);
     const languageCell = languageCol !== -1 ? cellText(first.cells[languageCol] ?? null) : "";
     const language = languageCell
       ? normalizeLanguage(languageCell)
@@ -189,14 +263,20 @@ export function tableToRecords(table: Table, o: IngestOptions): Ingested {
       text: g.text,
       fields: Object.fromEntries(table.header.map((h, j) => [h, mergedValue(g.rows, j)])),
       locator: o.sheet ? `${o.sheet}, ${rowRange(lines)}` : rowRange(lines),
-      market: market || o.scope.market,
+      ...(market ? { market } : {}),
       ...(language ? { language } : {}),
     };
     for (const i of g.indexes) recordOfRow[i] = record;
     return record;
   });
 
-  const markets = new Set(records.map((r) => r.market));
+  const knownMarkets = records.map((r) => r.market).filter((m): m is string => Boolean(m));
+  const uniqueMarkets = new Set(knownMarkets);
+  const singleMarket =
+    uniqueMarkets.size === 1 && knownMarkets.length === records.length
+      ? [...uniqueMarkets][0]
+      : undefined;
+
   const source: Source = {
     id: sourceId,
     kind: DATASET_KIND[o.dataset],
@@ -206,7 +286,7 @@ export function tableToRecords(table: Table, o: IngestOptions): Ingested {
     publisher: "BMW",
     retrievedAt: o.retrievedAt,
     reliability: "high", // BMW's own data
-    ...(markets.size === 1 ? { market: [...markets][0]! } : {}),
+    ...(singleMarket ? { market: singleMarket } : {}),
     vehicleLine: o.scope.vehicleLine,
   };
   return { source, records, recordOfRow, notes };

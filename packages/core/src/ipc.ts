@@ -11,7 +11,7 @@ import type { Actor, AuditAction, AuditEntityType, AuditEvent } from "./audit";
 import type { PaletteBlockKind } from "./blocks";
 import type { RequirementCategory } from "./category";
 import type { Finding } from "./finding";
-import type { PipelineData } from "./pipeline";
+import type { DataKey, PipelineData } from "./pipeline";
 import type { DecisionStatus, EvidenceLevel, Requirement } from "./requirement";
 import type { ReasoningTrace } from "./reasoning";
 import type { Priority } from "./scoring";
@@ -62,6 +62,8 @@ export interface BlockPreviewRequest {
 export interface BlockPreview {
   outputs: Record<string, PipelineData>; // per output port id
   logs: string[]; // what the block reported: skipped rows, assumptions, counts
+  /** Lists cut to keep the preview small (a run uses everything), per output port and data key. */
+  truncated?: Record<string, Partial<Record<DataKey, { shown: number; total: number }>>>;
 }
 
 export interface RequirementFilter {

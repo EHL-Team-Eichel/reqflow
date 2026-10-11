@@ -11,7 +11,8 @@ might look like, including the awkward parts the Raw block has to handle:
 | `customer_feedback.csv`    | Customer feedback   | UTF-8 with BOM, `,`, quoted comments with commas, quotes and a line break; de/en/fr/it/es               | 35 records (one per comment, language and market per row); the row without a comment is skipped and reported                   |
 | `equipment_take_rates.csv` | Equipment data      | German Excel export: `;`, decimal commas, Windows-1252, German headers (`Ausstattung`, `Einbaurate %`) | 17 records; 8 usage findings (take rate ≥ 70 % → expected as standard, ≤ 15 % → rarely chosen); the row without a rate is reported |
 | `sales_volumes.csv`        | Sales volumes       | `,`, one row per derivative and year                                                                    | 12 records; 2 findings (volume change ≥ 10 % between first and last year); the i5 Touring launch (0 units in 2023) is noted        |
-| `customer_study.xlsx`      | Customer study      | Excel workbook with two sheets: `Results` (scores) and `Verbatims` (free text)                          | Sheet empty → first sheet (7 records); sheet `Verbatims` → 6 records with languages                                             |
+| `customer_study.xlsx`        | Customer study      | Excel workbook with two sheets: `Results` (scores) and `Verbatims` (free text)                          | Sheet empty → first sheet (7 records); sheet `Verbatims` → 6 records with languages                                             |
+| `customer_study_report.xlsx` | Customer study      | Report layout: title row, market group row, section titles; sheets `CN_EU_2025` (0–100) and `US_2025` (0–1) | 16 records on `CN_EU_2025` with deterministic comparison findings for F70 vs G60/G70 in EU; `US_2025` reports no F70 comparison |
 
 How columns are recognised (English and German names): `packages/blocks/src/raw/columns.ts`.
 

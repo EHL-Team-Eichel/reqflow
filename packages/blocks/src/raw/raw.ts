@@ -1,5 +1,6 @@
 import { emptyPipelineData, parseBlockParams, PipelineData, type FileRef } from "@reqflow/core";
 import { defineBlock } from "@reqflow/engine";
+import { parseColumnMapping } from "./columns";
 import { readDatabase } from "./database";
 import { usageFindings } from "./findings";
 import { isPdfCandidate, isPdfMagic, readPdf } from "./pdf";
@@ -18,6 +19,8 @@ interface RawParams {
   dbType: string;
   connection: string;
   query: string;
+  marketFilter: "scope" | "all";
+  columns: string;
 }
 
 /**
@@ -143,17 +146,33 @@ export const rawBlock = defineBlock({
 
     const table = toTable(rows);
     notes.push(...table.notes);
-    const ingested = tableToRecords(table, {
-      key,
-      title,
-      ...(uri ? { uri } : {}),
-      ...(sheet ? { sheet } : {}),
-      dataset: p.dataset,
-      scope: ctx.scope,
-      retrievedAt: new Date().toISOString(),
-    });
+
+    const { mapping, notes: mappingNotes } = parseColumnMapping(p.columns ?? "", table.header);
+    notes.push(...mappingNotes);
+
+    const ingested = tableToRecords(
+      table,
+      {
+        key,
+        title,
+        ...(uri ? { uri } : {}),
+        ...(sheet ? { sheet } : {}),
+        dataset: p.dataset,
+        scope: ctx.scope,
+        retrievedAt: new Date().toISOString(),
+        marketFilter: p.marketFilter ?? "scope",
+      },
+      mapping,
+    );
     notes.push(...ingested.notes);
-    const { findings, notes: findingNotes } = usageFindings(p.dataset, table, ingested, ctx.scope);
+    const { findings, notes: findingNotes } = usageFindings(
+      p.dataset,
+      table,
+      ingested,
+      ctx.scope,
+      mapping,
+      sheet,
+    );
     notes.push(...findingNotes);
 
     // Fail here, with the schema's message, rather than hand malformed data downstream.

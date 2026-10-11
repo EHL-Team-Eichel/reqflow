@@ -29,13 +29,16 @@ const sample = (name: string): StoredFile => ({
   bytes: new Uint8Array(readFileSync(join(SAMPLES, name))),
 });
 
-function context(files: StoredFile[] = []) {
+function context(
+  files: StoredFile[] = [],
+  scopePatch: Partial<typeof DEFAULT_SETTINGS.defaultScope> = {},
+) {
   const logs: string[] = [];
   const audit: AuditEventInput[] = [];
   const ctx = {
     runId: "run_test0001",
     blockId: "raw-1",
-    scope: DEFAULT_SETTINGS.defaultScope,
+    scope: { ...DEFAULT_SETTINGS.defaultScope, ...scopePatch },
     files: {
       get: async (id: string) => {
         const f = files.find((x) => x.id === id);
@@ -56,8 +59,12 @@ function context(files: StoredFile[] = []) {
 }
 
 const params = (patch: Record<string, unknown>) => ({ ...defaultBlockParams("raw"), ...patch });
-async function ingest(file: StoredFile, patch: Record<string, unknown>) {
-  const c = context([file]);
+async function ingest(
+  file: StoredFile,
+  patch: Record<string, unknown>,
+  scopePatch?: Partial<typeof DEFAULT_SETTINGS.defaultScope>,
+) {
+  const c = context([file], scopePatch);
   const result = await rawBlock.run(
     {},
     params({ file: { fileId: file.id, name: file.name }, ...patch }),
@@ -339,8 +346,8 @@ describe("Raw block on the shapes of BMW's exports (synthetic stand-ins)", () =>
         "Rest of World,RoW,10000,9000,8000",
       ].join("\n"),
     );
-    const { data, logs } = await ingest(file, { dataset: "sales_volume" });
-    expect(data.records.map((r) => r.market)).toEqual(["EU", "CN", "US", "RoW"]);
+    const { data, logs } = await ingest(file, { dataset: "sales_volume", marketFilter: "all" });
+    expect(data.records.map((r) => r.market)).toEqual(["EU", "CN", "US", "ROW"]);
     const planYear = Number(new Date().toISOString().slice(0, 4)) < 2030;
     expect(data.findings.map((f) => f.statement)).toEqual(
       planYear
@@ -369,6 +376,224 @@ describe("Raw block on the shapes of BMW's exports (synthetic stand-ins)", () =>
     };
     await expect(ingest(pdf, {})).rejects.toThrow(
       /PDF structuring is not supported with offline mock/,
+    );
+  });
+});
+
+describe("market handling and filtering", () => {
+  it("never stamps scope market onto records, findings or source; source.market set only when all share one known market", async () => {
+    const noMarketFile = csvFile(
+      "feedback_no_market.csv",
+      ["id,comment", "1,Seat heating warms up too slowly", "2,Good navigation map"].join("\n"),
+    );
+    const { data: noMarketData } = await ingest(noMarketFile, { dataset: "customer_feedback" });
+    expect(noMarketData.records.every((r) => r.market === undefined)).toBe(true);
+    expect(noMarketData.sources[0]!.market).toBeUndefined();
+
+    const mixedFile = csvFile(
+      "mixed.csv",
+      ["id,comment,market", "1,Seats,DE", "2,Display,FR"].join("\n"),
+    );
+    const { data: mixedData } = await ingest(mixedFile, { dataset: "customer_feedback" });
+    expect(mixedData.records[0]!.market).toBe("DE");
+    expect(mixedData.records[1]!.market).toBe("FR");
+    expect(mixedData.sources[0]!.market).toBeUndefined();
+
+    const singleFile = csvFile(
+      "single.csv",
+      ["id,comment,market", "1,Seats,DE", "2,Display,DE"].join("\n"),
+    );
+    const { data: singleData } = await ingest(singleFile, { dataset: "customer_feedback" });
+    expect(singleData.sources[0]!.market).toBe("DE");
+  });
+
+  it("marketFilter 'scope' leaves out records outside scope, keeps unknown markets and logs counts", async () => {
+    const file = csvFile(
+      "market_filter.csv",
+      [
+        "id,comment,country",
+        "1,Feedback from Germany,DE",
+        "2,Feedback from UK,GB",
+        "3,Feedback from US,US",
+        "4,Feedback from China,CN",
+        "5,Feedback from unknown market,XYZ",
+      ].join("\n"),
+    );
+    const { data, logs } = await ingest(file, {
+      dataset: "customer_feedback",
+      marketFilter: "scope",
+    });
+    expect(data.records.map((r) => r.fields?.["id"])).toEqual(["1", "2", "5"]);
+    expect(data.records[0]!.market).toBe("DE");
+    expect(data.records[1]!.market).toBe("GB");
+    expect(data.records[2]!.market).toBe("XYZ");
+    const log = logs.join("\n");
+    expect(log).toMatch(
+      /Left out 2 of 5 rows from markets outside EU \(CN 1, US 1\)\. 1 row has no recognisable market and was kept\./,
+    );
+  });
+
+  it("marketFilter 'all' keeps all records without filtering or extra logs", async () => {
+    const file = csvFile(
+      "market_all.csv",
+      [
+        "id,comment,country",
+        "1,German feedback,DE",
+        "2,US feedback,US",
+        "3,China feedback,CN",
+      ].join("\n"),
+    );
+    const { data, logs } = await ingest(file, {
+      dataset: "customer_feedback",
+      marketFilter: "all",
+    });
+    expect(data.records).toHaveLength(3);
+    const log = logs.join("\n");
+    expect(log).not.toMatch(/Left out/);
+  });
+
+  it("fails with a clear error naming the scope market and found markets when all records are filtered out", async () => {
+    const file = csvFile(
+      "non_eu.csv",
+      ["id,comment,market", "1,US comment 1,US", "2,US comment 2,US", "3,CN comment,CN"].join("\n"),
+    );
+    await expect(
+      ingest(file, { dataset: "customer_feedback", marketFilter: "scope" }),
+    ).rejects.toThrow('No records match market "EU". Markets found in data: "US", "CN".');
+  });
+});
+
+describe("market filter edge cases", () => {
+  it("a table without any comments is not reported as a market problem", async () => {
+    const file = csvFile("no_comments.csv", ["id,comment,country", "1,,DE", "2,,FR"].join("\n"));
+    const error = await ingest(file, { dataset: "customer_feedback", marketFilter: "scope" }).then(
+      () => null,
+      (e: Error) => e,
+    );
+    expect(error?.message ?? "").not.toMatch(/No records match market/);
+  });
+
+  it("sales rows from other markets are left out, not reported as unreadable", async () => {
+    const file = csvFile(
+      "sales_long.csv",
+      ["market,period,units", "DE,2024,100", "DE,2025,130", "US,2024,50", "US,2025,40"].join("\n"),
+    );
+    const { data, logs } = await ingest(file, { dataset: "sales_volume", marketFilter: "scope" });
+    const log = logs.join("\n");
+    expect(log).toMatch(/Left out 2 of 4 rows from markets outside EU \(US 2\)/);
+    expect(log).not.toMatch(/Units or period missing/);
+    expect(data.findings.every((f) => f.markets.every((m) => m === "DE"))).toBe(true);
+  });
+});
+
+describe("column mapping (columns param)", () => {
+  it("rejects unknown role", async () => {
+    const file = csvFile("test.csv", "a,b\n1,2\n");
+    await expect(ingest(file, { columns: "invalidRole=a" })).rejects.toThrow(
+      /Column mapping: unknown role "invalidRole"\. Roles: text, id, market, language, model, derivative, option, category, takeRate, units, period\./,
+    );
+  });
+
+  it("rejects malformed pairs", async () => {
+    const file = csvFile("test.csv", "a,b\n1,2\n");
+    await expect(ingest(file, { columns: "notAnAssignment" })).rejects.toThrow(
+      /Column mapping: malformed pair "notAnAssignment"\. Expected role=Header\./,
+    );
+    await expect(ingest(file, { columns: "text=" })).rejects.toThrow(
+      /Column mapping: malformed pair "text="\./,
+    );
+  });
+
+  it("rejects duplicate role mapping", async () => {
+    const file = csvFile("test.csv", "a,b\n1,2\n");
+    await expect(ingest(file, { columns: "text=a; text=b" })).rejects.toThrow(
+      /Column mapping: role "text" mapped twice\./,
+    );
+  });
+
+  it("rejects column not in sheet", async () => {
+    const file = csvFile("test.csv", "col1,col2\n1,2\n");
+    await expect(ingest(file, { columns: "market=Land" })).rejects.toThrow(
+      /Column mapping: no column "Land" in this sheet\. Columns: "col1", "col2"\./,
+    );
+  });
+
+  it("maps German export columns whose names are not standard synonyms", async () => {
+    const file = csvFile(
+      "german_export.csv",
+      [
+        "Fallnummer;Kundenmeinung;Gebiet",
+        "K-101;Die Sitze sind auf langen Fahrten sehr bequem;DE",
+        "K-102;Das Infotainment reagiert manchmal verzögert;FR",
+      ].join("\n"),
+    );
+    const { data, logs } = await ingest(file, {
+      dataset: "customer_feedback",
+      columns: "text=Kundenmeinung; id=Fallnummer; market=Gebiet",
+    });
+    expect(data.records).toHaveLength(2);
+    expect(data.records[0]!.text).toBe("Die Sitze sind auf langen Fahrten sehr bequem");
+    expect(data.records[0]!.fields?.["Fallnummer"]).toBe("K-101");
+    expect(data.records[0]!.market).toBe("DE");
+    const log = logs.join("\n");
+    expect(log).toContain('Column mapping: text = "Kundenmeinung".');
+    expect(log).toContain('Column mapping: id = "Fallnummer".');
+    expect(log).toContain('Column mapping: market = "Gebiet".');
+  });
+});
+
+describe("customer study comparison findings", () => {
+  it("emits comparison findings for >= 10 pt gaps on CN_EU_2025 sheet with verbatim excerpts", async () => {
+    const file = sample("customer_study_report.xlsx");
+    const { data, logs } = await ingest(file, {
+      dataset: "customer_study",
+      sheet: "CN_EU_2025",
+    });
+    expect(data.findings.length).toBeGreaterThan(0);
+    const log = logs.join("\n");
+    expect(log).toMatch(
+      /Customer study "CN_EU_2025": compared F70 with G60, G70 in EU on \d+ figures; \d+ differ by ≥ 10 points\./,
+    );
+
+    for (const f of data.findings) {
+      expect(f.kind).toBe("usage_pattern");
+      expect(f.markets).toEqual(["EU"]);
+      expect(f.inScope).toBe(true);
+      expect(f.confidence).toBe(1);
+      expect(f.statement).toMatch(
+        /Customer study: F70 is \d+ points (above|below) (G60|G70|G60 and G70) on ".*" in EU \(\d+ vs \d+\)\./,
+      );
+      expect(f.statement.length).toBeLessThanOrEqual(300);
+      expect(f.evidence).toHaveLength(1);
+      const ev = f.evidence[0]!;
+      const rec = data.records.find((r) => r.id === ev.recordId);
+      expect(rec).toBeDefined();
+      expect(rec!.text).toContain(ev.excerpt);
+    }
+  });
+
+  it("logs no comparison when target vehicle F70 is not present (US_2025 sheet)", async () => {
+    const file = sample("customer_study_report.xlsx");
+    const { data, logs } = await ingest(file, {
+      dataset: "customer_study",
+      sheet: "US_2025",
+    });
+    expect(data.findings).toHaveLength(0);
+    expect(logs.join("\n")).toContain(
+      'Customer study "US_2025": no F70 column for EU, so no comparison.',
+    );
+  });
+
+  it("logs no comparison when target vehicle is not present for the scope market (CN scope on CN_EU_2025)", async () => {
+    const file = sample("customer_study_report.xlsx");
+    const { data, logs } = await ingest(
+      file,
+      { dataset: "customer_study", sheet: "CN_EU_2025" },
+      { market: "CN", vehicleCode: "F70" },
+    );
+    expect(data.findings).toHaveLength(0);
+    expect(logs.join("\n")).toContain(
+      'Customer study "CN_EU_2025": no F70 column for CN, so no comparison.',
     );
   });
 });
