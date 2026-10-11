@@ -11,6 +11,8 @@ import type {
   Requirement,
   Settings,
   SplitterReport,
+  FilterReport,
+  FilterOverride,
   WebSearch,
   ResearchCollector,
 } from "@reqflow/core";
@@ -48,6 +50,7 @@ export interface BlockContext {
   signal: AbortSignal; // run cancelled → stop promptly
   resumed: boolean; // true when a HIL block is re-entered after the reviewer finished
   research?: ResearchCollector; // Raw-only research service wired in Electron main.
+  filterOverrides?: () => Promise<FilterOverride[]>;
 }
 
 /** What arrived, per input port id. Several edges into one port are merged with `mergePipelineData`. */
@@ -55,7 +58,12 @@ export type BlockInputs = Record<string, PipelineData>;
 
 export type BlockResult =
   /** Exactly one entry per output port id (`blockPorts(block).outputs`). Sinks return `{}`. */
-  | { status: "ok"; outputs: Record<string, PipelineData>; splitterReport?: SplitterReport }
+  | {
+      status: "ok";
+      outputs: Record<string, PipelineData>;
+      splitterReport?: SplitterReport;
+      filterReport?: FilterReport;
+    }
   /** Only HIL pauses. The engine marks the run `waiting_for_review` and re-runs the block on resume. */
   | { status: "paused"; message: string };
 

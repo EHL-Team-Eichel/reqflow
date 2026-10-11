@@ -1,12 +1,15 @@
+import { isDeepStrictEqual } from "node:util";
 import {
   blockPorts,
   countPipelineData,
+  DATA_KEYS,
   emptyPipelineData,
   isBoundaryBlockKind,
   mergePipelineData,
   parseBlockParams,
   PipelineData,
   SplitterReport,
+  FilterReport,
   validateGraph,
   walkBlocks,
   WorkflowRun,
@@ -315,6 +318,7 @@ export async function executeWorkflow(
       let active = true;
       try {
         const inputs = inputsFor(graph, block);
+        const filterInput = block.kind === "ai_filter" ? structuredClone(inputs.in) : undefined;
         let result: BlockResult;
         if (block.kind === "block_input") {
           result = {
@@ -348,6 +352,7 @@ export async function executeWorkflow(
           const ctx: BlockContext = {
             ...base,
             resumed,
+            filterOverrides: base.filterOverrides ?? (async () => []),
             log(text) {
               if (!active || cancelled || base.signal.aborted) return;
               log(state, text);
@@ -364,13 +369,15 @@ export async function executeWorkflow(
               publish();
             },
           };
-          result = await cancellable(
-            () =>
-              options.registry
-                .get(block.kind as Exclude<WorkflowBlock["kind"], "block_input" | "block_output">)
-                .run(inputs, parseBlockParams(block.kind, block.params), ctx),
-            base.signal,
-          );
+          result = await cancellable(async () => {
+            if (block.kind === "ai_filter") {
+              const overrides = structuredClone(await ctx.filterOverrides!());
+              ctx.filterOverrides = async () => structuredClone(overrides);
+            }
+            return options.registry
+              .get(block.kind as Exclude<WorkflowBlock["kind"], "block_input" | "block_output">)
+              .run(inputs, parseBlockParams(block.kind, block.params), ctx);
+          }, base.signal);
         }
         if (signal?.aborted) {
           cancelled = true;
@@ -398,6 +405,120 @@ export async function executeWorkflow(
             )
               throw new EngineError("Analytical report does not match the executing block/run.");
             state.splitterReport = report;
+          }
+          if (result.filterReport !== undefined) {
+            const report = FilterReport.parse(structuredClone(result.filterReport));
+            if (block.kind !== "ai_filter") {
+              throw new EngineError("Filter report is only valid for ai_filter blocks");
+            }
+            if (report.runId !== run.id || report.blockId !== block.id) {
+              throw new EngineError("Analytical report does not match the executing block/run.");
+            }
+            const mergedInput = filterInput ?? emptyPipelineData();
+            if (!isDeepStrictEqual(report.originalInput, mergedInput)) {
+              throw new EngineError(
+                "Filter report originalInput must equal unmodified merged block input",
+              );
+            }
+            const expectedLayer =
+              (["requirements", "themes", "findings", "records"] as const).find(
+                (layer) => mergedInput[layer].length,
+              ) ?? "sources";
+            if (report.primaryLayer !== expectedLayer)
+              throw new EngineError(
+                "Filter report must classify the most advanced populated layer.",
+              );
+            const primaryList = (
+              report.primaryLayer === "sources" ? [] : report.originalInput[report.primaryLayer]
+            ) as Array<{
+              id: string;
+            }>;
+            const primaryInputIds = primaryList.map((item) => item.id);
+            const decisionIds = report.decisions.map((d) => d.itemId);
+            if (new Set(decisionIds).size !== decisionIds.length) {
+              throw new EngineError("Filter report decisions contain duplicate item IDs");
+            }
+            if (decisionIds.length !== primaryInputIds.length) {
+              throw new EngineError(
+                "Filter report decisions do not match primary layer input items count",
+              );
+            }
+            const primaryIdSet = new Set(primaryInputIds);
+            for (const id of decisionIds) {
+              if (!primaryIdSet.has(id)) {
+                throw new EngineError(
+                  `Filter report decision item "${id}" is not in primary layer input`,
+                );
+              }
+            }
+            for (const decision of report.decisions) {
+              const selected =
+                decision.outcome === "keep" ||
+                (decision.outcome === "review" && report.configuration.keepUnsure);
+              if (decision.forwarded !== (selected || decision.retainedAsContext)) {
+                throw new EngineError(
+                  "Filter report forwarding flags do not match selection/context decisions",
+                );
+              }
+            }
+            const outputData = result.outputs.out ?? emptyPipelineData();
+            for (const layer of DATA_KEYS) {
+              const originals = new Map(mergedInput[layer].map((item) => [item.id, item]));
+              const ids = new Set(outputData[layer].map((item) => item.id));
+              if (
+                ids.size !== outputData[layer].length ||
+                !isDeepStrictEqual(
+                  outputData[layer],
+                  mergedInput[layer].filter((item) => ids.has(item.id)),
+                ) ||
+                outputData[layer].some((item) => !originals.has(item.id))
+              )
+                throw new EngineError(
+                  "Filter output must preserve original items and order unmodified.",
+                );
+            }
+            if (report.primaryLayer === "sources" && !isDeepStrictEqual(outputData, mergedInput))
+              throw new EngineError("Source-only filter context must pass through unchanged.");
+            const outputPrimaryList = (
+              report.primaryLayer === "sources" ? [] : outputData[report.primaryLayer]
+            ) as Array<{
+              id: string;
+            }>;
+            const outputPrimaryIds = new Set(outputPrimaryList.map((item) => item.id));
+            if (outputPrimaryList.length !== outputPrimaryIds.size) {
+              throw new EngineError("Forwarded outputs contain duplicate item IDs");
+            }
+            const forwardedDecisionIds = new Set(
+              report.decisions.filter((d) => d.forwarded).map((d) => d.itemId),
+            );
+            if (outputPrimaryIds.size !== forwardedDecisionIds.size) {
+              throw new EngineError("Forwarded outputs count does not match forwarded decisions");
+            }
+            for (const id of forwardedDecisionIds) {
+              if (!outputPrimaryIds.has(id)) {
+                throw new EngineError(`Forwarded decision for item "${id}" is missing from output`);
+              }
+            }
+            for (const id of outputPrimaryIds) {
+              if (!forwardedDecisionIds.has(id)) {
+                throw new EngineError(
+                  `Output contains item "${id}" which was not marked forwarded in decisions`,
+                );
+              }
+            }
+            for (const item of outputPrimaryList) {
+              if (
+                !isDeepStrictEqual(
+                  item,
+                  primaryList.find((original) => original.id === item.id),
+                )
+              ) {
+                throw new EngineError(
+                  "Filter output must preserve original primary items unmodified",
+                );
+              }
+            }
+            state.filterReport = report;
           }
           state.status = "succeeded";
           state.progress = 1;

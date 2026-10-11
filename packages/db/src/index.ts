@@ -12,3 +12,4 @@ export * from "./formatters";
 export * from "./demo-data";
 export * from "./seed";
 export * from "./research";
+export * from "./filter";

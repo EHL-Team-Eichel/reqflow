@@ -1,4 +1,5 @@
 import type { BlockImplementation } from "@reqflow/engine";
+import { aiFilterBlock } from "./ai-filter";
 
-// Owner: WS7 — the AI Filter block: keep the items that match a plain-language criterion.
-export const aiFilterImplementations: BlockImplementation<"ai_filter">[] = [];
+export { aiFilterBlock } from "./ai-filter";
+export const aiFilterImplementations: BlockImplementation<"ai_filter">[] = [aiFilterBlock];

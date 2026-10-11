@@ -114,7 +114,37 @@ export function initSchema(db: DatabaseSync): void {
       trace_id TEXT NOT NULL,
       PRIMARY KEY (requirement_id, trace_id)
     );
+
   `);
+
+  const version = Number(db.prepare("PRAGMA user_version").get()?.user_version ?? 0);
+  if (version < 1) {
+    db.exec("SAVEPOINT filter_migration");
+    try {
+      db.exec(`
+    CREATE TABLE IF NOT EXISTS filter_overrides (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      workflow_id TEXT NOT NULL,
+      block_id TEXT NOT NULL,
+      item_id TEXT NOT NULL,
+      item_hash TEXT NOT NULL,
+      configuration_hash TEXT NOT NULL,
+      version INTEGER NOT NULL,
+      actor TEXT NOT NULL,
+      at TEXT NOT NULL,
+      rationale TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_filter_overrides_lookup ON filter_overrides (workflow_id, block_id);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_filter_overrides_version ON filter_overrides (workflow_id, block_id, version);
+    PRAGMA user_version = 1;
+      `);
+      db.exec("RELEASE filter_migration");
+    } catch (error) {
+      db.exec("ROLLBACK TO filter_migration; RELEASE filter_migration");
+      throw error;
+    }
+  }
 
   try {
     db.exec("ALTER TABLE audit_events ADD COLUMN block_id TEXT;");
