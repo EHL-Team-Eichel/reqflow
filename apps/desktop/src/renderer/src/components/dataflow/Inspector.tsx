@@ -10,7 +10,7 @@ import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
 import { NumberInput, Select, ValidatedTextInput } from "@/components/ui/controls";
 import { Field } from "@/components/ui/Field";
-import { XIcon } from "@/components/ui/icons";
+import { ReportIcon, XIcon } from "@/components/ui/icons";
 import { settingsStore } from "@/lib/settings";
 import { BlockIcon } from "./BlockIcon";
 import { confirmDelete } from "./confirm-delete";
@@ -18,6 +18,7 @@ import { GROUP_STYLE } from "./groups";
 import { ParamField } from "./ParamField";
 import { RawPreview } from "./RawPreview";
 import { ResearchConfiguration } from "./ResearchConfiguration";
+import { AiFilterConfiguration } from "./AiFilterConfiguration";
 import { canPreview } from "./usePreview";
 import { dataflowStore, selectInspectedBlock, useDataflow } from "./store";
 import { SPLITTER_MODE_HELP, splitterBranches } from "./report/splitter-view";
@@ -154,6 +155,15 @@ function BlockInspector({ block, kind }: { block: WorkflowBlock; kind: PaletteBl
             </p>
           </div>
         )}
+        {block.kind === "ai_filter" && (
+          <Button
+            data-testid="inspector-open-filter-report"
+            onClick={() => dataflowStore.getState().openReport(block.id)}
+          >
+            <ReportIcon className="size-4" />
+            Open filtering & review report
+          </Button>
+        )}
         {block.kind === "hil" && (
           <Button
             data-testid="inspector-open-report"
@@ -166,6 +176,7 @@ function BlockInspector({ block, kind }: { block: WorkflowBlock; kind: PaletteBl
           <h3 className="text-xs font-semibold tracking-wide text-muted uppercase">Parameters</h3>
           {researchQuestion && <ParamField block={block} spec={researchQuestion} />}
           {kind === "research" && <ResearchConfiguration block={block} />}
+          {kind === "ai_filter" && <AiFilterConfiguration block={block} />}
           {spec.params.length === 0 ? (
             <p className="text-sm text-muted">
               No parameters. Build this block's logic in its workplace.
@@ -176,7 +187,9 @@ function BlockInspector({ block, kind }: { block: WorkflowBlock; kind: PaletteBl
               {params
                 .filter(
                   (p) =>
-                    p !== researchQuestion && (block.kind !== "ai_splitter" || p.key !== "splitBy"),
+                    kind !== "ai_filter" &&
+                    p !== researchQuestion &&
+                    (block.kind !== "ai_splitter" || p.key !== "splitBy"),
                 )
                 .map((p) => (
                   <ParamField

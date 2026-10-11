@@ -25,6 +25,7 @@ import {
 import { cx } from "@/lib/cx";
 import { SplitterPanel } from "./SplitterPanel";
 import { reportForStep, reportRevision } from "./splitter-view";
+import { FilterPanel, FilterInputPanel } from "./FilterPanel";
 
 interface Props {
   root: WorkflowGraph;
@@ -41,14 +42,17 @@ type Tab = (typeof TABS)[number];
 
 export function DataPanel(props: Props) {
   const isSplitter = props.step.block.kind === "ai_splitter";
-  const [view, setView] = useState<"scores" | "data">(isSplitter ? "scores" : "data");
+  const isFilter = props.step.block.kind === "ai_filter";
+  const hasAnalysis = isSplitter || isFilter;
+  const prefix = isFilter ? "filter" : "splitter";
+  const [view, setView] = useState<"scores" | "data">(hasAnalysis ? "scores" : "data");
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {isSplitter && (
+      {hasAnalysis && (
         <div
           className="flex shrink-0 gap-4 border-b border-l border-line bg-panel px-4 pt-3"
           role="tablist"
-          aria-label="Splitter inspection"
+          aria-label={isFilter ? "Filter inspection" : "Splitter inspection"}
         >
           {(["scores", "data"] as const).map((tab) => (
             <button
@@ -56,9 +60,9 @@ export function DataPanel(props: Props) {
               type="button"
               role="tab"
               aria-selected={view === tab}
-              aria-controls={`splitter-${tab}-panel`}
-              id={`splitter-${tab}-tab`}
-              data-testid={`splitter-tab-${tab}`}
+              aria-controls={`${prefix}-${tab}-panel`}
+              id={`${prefix}-${tab}-tab`}
+              data-testid={`${prefix}-tab-${tab}`}
               onClick={() => setView(tab)}
               className={cx(
                 "border-b-2 pb-3 text-sm font-medium",
@@ -67,18 +71,34 @@ export function DataPanel(props: Props) {
                   : "border-transparent text-muted hover:text-ink",
               )}
             >
-              {tab === "scores" ? "Scores / routing" : "Source / raw data"}
+              {tab === "scores"
+                ? isFilter
+                  ? "Filtering / review"
+                  : "Scores / routing"
+                : isFilter
+                  ? "Saved original input"
+                  : "Source / raw data"}
             </button>
           ))}
         </div>
       )}
       <div
         className="min-h-0 flex-1"
-        role={isSplitter ? "tabpanel" : undefined}
-        id={isSplitter ? `splitter-${view}-panel` : undefined}
-        aria-labelledby={isSplitter ? `splitter-${view}-tab` : undefined}
+        role={hasAnalysis ? "tabpanel" : undefined}
+        id={hasAnalysis ? `${prefix}-${view}-panel` : undefined}
+        aria-labelledby={hasAnalysis ? `${prefix}-${view}-tab` : undefined}
       >
-        <DataPanelBody {...props} analysisView={isSplitter && view === "scores"} />
+        {isFilter ? (
+          <div className="h-full overflow-auto border-l border-line bg-panel">
+            {view === "scores" ? (
+              <FilterPanel run={props.run ?? null} blockId={props.step.block.id} />
+            ) : (
+              <FilterInputPanel run={props.run ?? null} blockId={props.step.block.id} />
+            )}
+          </div>
+        ) : (
+          <DataPanelBody {...props} analysisView={isSplitter && view === "scores"} />
+        )}
       </div>
     </div>
   );

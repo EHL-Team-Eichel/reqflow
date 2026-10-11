@@ -122,7 +122,7 @@ function ReportDialog({
       aria-labelledby="hil-report-title"
       data-testid="hil-report"
       data-report-kind={block.kind}
-      className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-6"
+      className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-2 sm:p-6"
       onClick={handleBackdropClick}
     >
       <div
@@ -134,8 +134,8 @@ function ReportDialog({
 
         {/* Header */}
         <div className="flex flex-col border-b border-line p-4">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex gap-4">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="flex min-w-0 flex-1 gap-4">
               <div
                 className={cx(
                   "flex size-12 shrink-0 items-center justify-center rounded-xl",
@@ -144,9 +144,14 @@ function ReportDialog({
               >
                 <BlockIcon kind={block.kind} className="size-6" />
               </div>
-              <div>
+              <div className="min-w-0 break-words">
                 <h2 id="hil-report-title" className="text-xl font-semibold text-ink">
-                  {isHil ? "Review report" : "Scores & routing report"} · {block.label}
+                  {isHil
+                    ? "Review report"
+                    : block.kind === "ai_filter"
+                      ? "Filtering & review report"
+                      : "Scores & routing report"}{" "}
+                  · {block.label}
                 </h2>
                 <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted">
                   {isHil ? (
@@ -160,7 +165,12 @@ function ReportDialog({
                       <span>Reviewer may edit: {mayEdit ? "yes" : "no"}</span>
                     </>
                   ) : (
-                    <span>Classifications and routing only · no requirement decisions</span>
+                    <span>
+                      {block.kind === "ai_filter"
+                        ? "Saved filter decisions and next-run restores only"
+                        : "Classifications and routing only"}{" "}
+                      · no requirement decisions
+                    </span>
                   )}
                   <span className="w-1 h-1 rounded-full bg-line" />
                   <span>{run ? "Saved run snapshot" : "No saved run"}</span>
@@ -235,8 +245,8 @@ function ReportDialog({
         </div>
 
         {/* Body */}
-        <div className="grid min-h-0 flex-1 grid-cols-[minmax(260px,28%)_minmax(0,1fr)]">
-          <div className="flex flex-col h-full bg-panel-2">
+        <div className="grid min-h-0 flex-1 grid-cols-1 md:grid-cols-[minmax(260px,28%)_minmax(0,1fr)]">
+          <div className="hidden flex-col h-full bg-panel-2 md:flex">
             <div className="p-4 pb-2">
               <h3 className="font-semibold text-ink">How the data was collected</h3>
               <p className="text-sm text-muted mt-1">
