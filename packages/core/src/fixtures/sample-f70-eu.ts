@@ -798,6 +798,8 @@ const rawParams = (dataset: string) => ({
   dbType: "postgres",
   connection: "",
   query: "",
+  marketFilter: "scope",
+  columns: "",
 });
 const RANKS = ["Must have", "Should have", "Could have"];
 

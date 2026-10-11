@@ -306,6 +306,25 @@ export const BLOCK_SPECS: { readonly [K in PaletteBlockKind]: BlockSpec & { kind
         help: "One read-only SELECT statement.",
         visibleWhen: { key: "source", equals: "database" },
       },
+      {
+        key: "marketFilter",
+        label: "Markets",
+        type: "select",
+        default: "scope",
+        options: [
+          { value: "scope", label: "Only the selected market" },
+          { value: "all", label: "All markets" },
+        ],
+        help: "Rows from other markets are left out and counted in the log. Rows without a recognisable market are kept and marked as market unknown.",
+      },
+      {
+        key: "columns",
+        label: "Column mapping",
+        type: "text",
+        default: "",
+        placeholder: "text=Kundenkommentar; market=Land",
+        help: "Only needed when a column isn't recognised. role=Header pairs separated by semicolons. Roles: text, id, market, language, model, derivative, option, category, takeRate, units, period.",
+      },
     ],
     ports: () => ({ inputs: [], outputs: [STREAM] }),
   },
@@ -755,10 +774,14 @@ export function defaultBlockParams(kind: PaletteBlockKind): BlockParams {
 /**
  * Params saved by older builds, brought up to date so they validate. Add to Car's
  * named rankings ("Must have", …) became numbered priority inputs on the same ports (`in-0`, …),
- * and context inputs were added. The AI Splitter gained `partDepth`. Anything else is returned unchanged, so validation still reports it.
+ * and context inputs were added. The AI Splitter gained `partDepth`, Raw `marketFilter` and `columns`.
+ * Anything else is returned unchanged, so validation still reports it.
  */
 export function migrateBlockParams(kind: BlockKind, params: BlockParams): BlockParams {
   if (kind === "ai_filter") return { ...defaultBlockParams("ai_filter"), ...params };
+  // Raw gained a market filter and a column mapping; older flows keep every market, as before.
+  if (kind === "raw" && !("marketFilter" in params && "columns" in params))
+    return { marketFilter: "all", columns: "", ...params };
   // The AI Splitter gained a car-part depth; older flows split by AI-chosen groups get areas.
   if (kind === "ai_splitter" && !("partDepth" in params)) return { ...params, partDepth: "areas" };
   if (kind !== "add_to_car" || !("rankings" in params)) return params;
