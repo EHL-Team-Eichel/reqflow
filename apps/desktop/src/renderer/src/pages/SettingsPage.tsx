@@ -3,12 +3,14 @@ import { Panel } from "@/components/ui/Panel";
 import { SettingsNav, type NavItem } from "@/components/settings/SettingsNav";
 import { PersistenceBanner } from "@/components/settings/PersistenceBanner";
 import { AppSection } from "@/components/settings/sections/AppSection";
+import { ModelSection } from "@/components/settings/sections/ModelSection";
 import { ParametersSection } from "@/components/settings/sections/ParametersSection";
+import { ModelSwitcherSection } from "@/components/settings/sections/ModelSwitcherSection";
 import { AiSection } from "@/components/settings/sections/AiSection";
 import { ResearchApisSection } from "@/components/settings/sections/ResearchApisSection";
 import { CollaborationSection } from "@/components/settings/sections/CollaborationSection";
 import { AboutSection } from "@/components/settings/sections/AboutSection";
-import { AppIcon, SparklesIcon, UsersIcon, InfoIcon } from "@/components/settings/icons";
+import { AppIcon, SparklesIcon, UsersIcon, InfoIcon, CarIcon } from "@/components/settings/icons";
 import { SlidersIcon } from "@/components/ui/icons";
 
 const NAV_ITEMS: readonly NavItem[] = [
@@ -19,10 +21,22 @@ const NAV_ITEMS: readonly NavItem[] = [
     icon: <AppIcon className="size-5" />,
   },
   {
+    id: "model",
+    label: "Model",
+    hint: "Car powertrain",
+    icon: <CarIcon className="size-5" />,
+  },
+  {
     id: "parameters",
     label: "Global parameters",
     hint: "Vehicle, scoring",
     icon: <SlidersIcon className="size-5" />,
+  },
+  {
+    id: "model-switcher",
+    label: "Model switcher",
+    hint: "Vehicle model, powertrain",
+    icon: <CarIcon className="size-5" />,
   },
   {
     id: "ai",
@@ -60,6 +74,12 @@ export function SettingsPage() {
       break;
     case "parameters":
       content = <ParametersSection />;
+      break;
+    case "model-switcher":
+      content = <ModelSwitcherSection />;
+      break;
+    case "model":
+      content = <ModelSection />;
       break;
     case "ai":
       content = <AiSection />;

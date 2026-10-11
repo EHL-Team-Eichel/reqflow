@@ -42,7 +42,9 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 - **Car:** 3D car with every requirement from Add to Car placed on a part (WS3); **Reset** removes
   all requirements (audited, ids never reused). Agent-generated requirements expose confidence and
   the recorded thought process. Exterior/interior transitions are reversible. No demo data: the car
-  is empty until a flow runs. Later Car model-switcher/compact-card branches are not integrated.
+  is empty until a flow runs. Compact cards open full evidence/requirement details; the 105-entry
+  schematic catalog and four powertrain choices are integrated. Catalog visualization choices do
+  not change requirement scope or decisions; powertrain selection persists through Settings.
 - **Settings:** App, Global parameters, AI & research, Collaboration, About. Changes are validated and
   apply live (theme, grid, minimap) and persist. Default AI supports Anthropic/OpenAI/Google/mock;
   agent roles can use separate API setups. Research APIs expose configuration, approval and tests.
@@ -66,7 +68,7 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 ## WS0 — Lead / integrator
 
-**Status:** review (requested integration verified locally) · **Owner:** OpenCode (continuing Claude integration) · **Branch:** `integrate/2026-10-11`
+**Status:** review (ready branches verified; Analytics WIP excluded by human) · **Owner:** OpenCode (remaining-branch integration) · **Branch:** `integrate/ready-2026-10-11`
 
 **Tasks**
 
@@ -75,9 +77,15 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 - [ ] Integration: run `BMW_DEFAULT_TEMPLATE` end to end with the `mock` LLM, then with Claude and the real data.
 - [ ] Demo script and rehearsal (PRODUCT.md → Demo scenario); keep PRODUCT.md and this file current.
 - [x] Complete the interrupted 2026-10-11 branch integration, preserving merge history and the human-authorized Car cutoff; verify with synthetic tests and native smoke.
+- [x] Apply corrected exclusions and integrate every remaining newer remote branch, keeping only `integrate-mastra-judge`, `quick-ai-results`, `ws1-blocks` and `ws1-engine` unmerged.
 
 **Log**
 
+- 2026-10-11: Publishable snapshot including the latest Car class/feature adaptation passes `npm run check` (2,307 tests, 5 skipped) and native macOS smoke (70 screenshots). Inspected final M5 baseline, catalog selection/restoration, compact details and light/dark views. All ready remote branches are included; only the four old experiment branches and human-excluded Analytics WIP stay out. No live providers, credentials or BMW files used in verification; Windows/Linux remain unverified.
+- 2026-10-11: Final remote refresh found Car follow-up `db64757` (class-aware features and M5 baseline) and newly published `analytics-and-timeline`. Car follow-up is included. Analytics is not buildable: five engine modules are missing and its chart tabs are placeholders. Human explicitly chose to publish ready branches and leave Analytics to its author. Ready integration is isolated at `integrate/ready-2026-10-11`; the attempted Analytics merge remains on `integrate/2026-10-11`, not on main. Final exclusions are the four old engine/judging experiments plus Analytics WIP.
+- 2026-10-11: Final corrected integration verification: `npm run check` passed (2,298 tests, 5 skipped); `npm run smoke` passed on macOS with 70 screenshots. Inspected catalog selection/restoration, four powertrain views, compact details and light/dark screenshots. Ready to promote to main; no excluded experiment history included.
+- 2026-10-11: Corrected integration includes `ws3-compact-requirements`, `ws4-car-models`, `codex/car-model-refinements`, `ws3-compact-requirements-entire` and `ws3-exterior-session-log`, with their full merge histories. Only the four old engine/judging experiment branches listed in the task remain unmerged. Retained audited Reset, agent confidence/Why, Research and HIL PDFs, reversible flight, collapsed menu-driven markers and 105-model catalog. Settings `hydrogen`/`fuel` values map to catalog `h2`/`gasoline`, sharing one persisted choice across both Settings screens and Car. Tests and native smoke cover reload, four powertrains, scope/decision preservation, compact evidence details and catalog switching. Synthetic-only checks; no real data/credentials/provider calls. Windows/Linux remain unverified.
+- 2026-10-11: Human clarified exclusions: only `integrate-mastra-judge` and older Alexander experiments stay out. The earlier Car-animation cutoff was a misunderstanding and is superseded. Integrating all remaining newer branches: compact requirements/105-model catalog, Car refinements, saved car-model settings and their handoff branches. Preserve current agents, Research, HIL exports and human-only decisions; verify offline in the isolated worktree.
 - 2026-10-11: Integrated Add to Car agents, Mastra splitter, Research/AI providers (including its Research ancestor), sampled HIL PDF, and `ws3-car-view-animation`. Existing WS1/WS2/older splitter branch tips are already ancestors. Excluded later Alex branches: `codex/car-model-refinements`, `ws3-compact-requirements`, `ws3-compact-requirements-entire`, `ws3-exterior-session-log`, `ws4-car-models`. Superseded parallel engine/judging experiments remain excluded: `ws1-blocks`, `ws1-engine`, `quick-ai-results`, `integrate-mastra-judge`. Resolved shared executor, secrets, provider, report and IPC conflicts without dropping human routing correction or agent setups. Native smoke now clears the actual preceding scenario canvas and queues its synthetic document. `npm run check` and `npm run smoke` passed; 51 screenshots and sample PDFs inspected. No live provider calls, real credentials or BMW files used. Local merge history only; not pushed. Windows/Linux and real-provider evaluation remain unverified.
 - 2026-10-11: Continuing the unfinished integration worktree. Preserve merged Add to Car agents and Mastra splitter, finish Research/AI providers, then merge HIL PDF and Car changes through `ws3-car-view-animation` only. Later Alex Car branches are explicitly excluded; obsolete engine/judging experiments are not reintroduced over their replacements. Synthetic-only verification, no credentials or BMW data inspected.
 - 2026-10-10 night: **Removed all demo data from the app** and added **Reset** on the Car page
@@ -249,7 +257,7 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 ## WS3 — Car tab: requirements review & audit UI
 
-**Status:** in progress (car model refinement complete; requirements review pending) · **Owner:** Codex (BMW styling and geometry fixes) · **Branch:** `codex/car-model-refinements`
+**Status:** in progress (four-choice model switcher) · **Owner:** Codex (model switcher subtask) · **Branch:** `ws3-compact-requirements`
 **Animation slice:** review (implemented and verified) · **Owner:** OpenCode · **Branch:** `ws3-car-view-animation` (isolated worktree)
 **Windscreen slice:** review (implemented and verified) · **Owner:** OpenCode · **Branch:** `ws3-car-view-animation`
 **Depends on:** nothing to start: build on `@reqflow/core/fixtures` (5 requirements, findings, sources,
@@ -274,6 +282,7 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - [x] Auto classifier: assign every requirement to a car part (explainable: matched terms, confidence).
 - [ ] Requirement detail / drill-down from a card on the car (the list tasks above).
 - [ ] PM override of the auto-classified part (needs a contract field + audit event, WS0).
+- [ ] Subtle blue fill on the clicked car part, with light/dark selection regressions.
 
 **Log**
 
@@ -284,6 +293,279 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - 2026-10-10: Implemented an 850 ms reversible exterior flight: all exterior meshes (including wheels and wheel-well masks) separate outward, fade away to expose the assembled cabin, and retrace their exact paths back. Rapid toggles reverse without jumps; badges follow/fade with their pieces, departed pieces cannot intercept canvas picks, and reduced motion snaps to the endpoint (including live preference changes). No car geometry, core contracts or main-process files changed. Added 12 colocated regressions. Verified `npm run typecheck && npm test` (259 passed, 25 real-data tests skipped), `npm run smoke` (29 screenshots), changed-file Prettier and `git diff --check`. An isolated synthetic native UI probe also passed outward/return, mid-flight reversal, badge behavior, cabin selection, dark theme and live reduced motion (8 additional screenshots); inspected assembled, departing, returning and interior screenshots in `apps/desktop/out/smoke/`. Requested slice complete; branch ready for integration with concurrent shape work. WS1/WS0 follow-up: add transition-progress, rapid-reversal and reduced-motion checks to shared `main/smoke.ts`.
 
 - 2026-10-10: Claimed the requested reversible exterior/interior animation in an isolated worktree to preserve concurrent car-shape work. Exterior pieces fly away to reveal the assembled cabin and return along the same paths; preserve all catalog parts, picking, theme styling and camera controls. Scope: WS3 car renderer, colocated tests and this section. User requested commit and push after verification.
+- 2026-10-11: Refined BMW 3D models and classification architecture across all 105 Sketchfab vehicles.
+  Configured 2025 BMW M5 Sedan (`bmw_m5_sedan_g90_2025`) as the standard running benchmark model (index 0).
+  Implemented functional class recognition and procedural feature removal/addition:
+  - 2-Door Coupés (69 models): removed non-existent rear doors (`rear_doors`), added seamless rear quarter
+    flank styling, lower sill extensions, M double-bubble carbon roof ridge and Hofmeister kink quarter windows.
+  - 2-Seaters (Z4, M1, CSL/GTS track specials): removed non-existent rear seats (`rear_seats`, individual seats,
+    `rear_air_vents`), added rear cabin bulkhead and luggage parcel shelf.
+  - Dedicated Single-Seater Race Cars (GT3, GT4, DTM, GTR): stripped lightweight motorsport cockpit removing
+    passenger seat, cup holders, armrest, glovebox and wireless charger; added racing switchboard console,
+    cockpit fire suppression, full FIA roll cage, GT wing, front splitter with struts, dive plane canards,
+    hood extractor louvers, widebody blister flares and multi-strake race diffuser.
+  - SUVs / SAVs (15 models): elevated ground clearance (+0.07m), rugged dark lower wheel arch cladding and rocker armor,
+    underbody skid plates, longitudinal roof rails and SAV upright tailgate roof spoiler.
+  - Tourings / Wagons (5 models): extended continuous estate roofline canopy, upright D-pillar estate cargo glazing,
+    roof rails, luggage cargo floor and tailgate roof spoiler.
+  - Convertibles (5 models): acoustic folding soft-top canopy (`convertible_roof`), dual rollover safety hoops and rear deck tonneau cover.
+  - Proportional dimensional scaling based on length, width, height, track and ground clearance relative to G60 baseline,
+    with badge anchors transformed into world space.
+  - Integrated with `availablePartIds` and `powertrainSubclasses` ensuring catalog and interactive 3D geometry consistency;
+    51 test files and 578 tests passing across all workspaces.
+
+- 2026-10-11: Model-switcher requested slice complete. Isolated commit `b64563e` passes
+  root typecheck and `npm test -- --maxWorkers=4` (488 passed, 25 skipped); the unconstrained
+  parallel run hit CPU-contention timeouts. Production build and the synthetic Electron
+  switching probe pass; six final screenshots reviewed/copied to `out/smoke/powertrain-final-*`.
+  `npm run smoke` generates 32 screenshots and retains exactly the 12 previously documented
+  collapsed-menu/explanation assertions. Shared concurrent catalog, pedals, windows and orbit
+  work is preserved; the final verification excludes unstaged changes from those sessions.
+
+- 2026-10-11: Four-choice switcher implemented and reconciled with the existing catalog:
+  Electric (two motors/full traction battery), Hybrid (engine/rear motor/smaller battery/fuel/
+  exhaust/charge flap), H2 (fuel cell/storage/rear motor/buffer battery), Gasoline (engine/fuel/
+  exhaust). Shared body/windows and the current requirement scope stay intact. Requirements
+  for absent parts retain assignments, counts, selected review and full details. Reusable
+  layout/menu modules, persistent validated sketch state and model-equipment navigation added.
+  Synthetic Electron probe passes repeated switching, single-canvas cleanup, retained full
+  detail, light/dark and no requirement/scope writes; six screenshots visually reviewed.
+  Final component labels distinguish combustion engines from electric motors. Root smoke
+  retains the same 12 documented stale marker/menu assertions (32 screenshots). Final checks
+  run in an isolated checkout because other sessions are updating this branch concurrently.
+
+- 2026-10-11: Implemented BMW models 101-105 (2022 M4 GT3 G82, 2022 M4 CSL G82, 2021 M4 Coupé Competition Spec II, 2021 M4 G82 M Performance, 2022 M5 CS F90). Completed all 105 BMW 3D models from the Sketchfab collection with parametric geometry generation, model-specific aero and powertrain variants.
+
+- 2026-10-11: Implemented BMW models 91-100 (2020 M8 Coupé, 2020 M8 Competition Coupé, 2020 M8 Pride Convertible, 2014 M235i Coupe F22, 2019 M2 Competition F87, 2023 M2 M-Performance G87, 2023 M2 G87 Coupé, 2021 325LI G28, 2015 3.0 CSL Hommage Concept, 2023 M3 Touring G81). Added central stacked M Performance exhaust, 3.0 CSL Hommage giant batmobile aero and G81 production M Touring package.
+
+- 2026-10-11: Implemented BMW models 81-90 (2009 128i Coupe E82, 2021 M5 Competition F90 LCI, 2022 G82 M4 ADRO Carbon Widebody, 2021 M4 Competition G82, 2021 M4 G82 Zacoe Carbon Kit, 2015 X6 F16, 2015 X5 F15, 2016 X6 M F86, 2016 X5 M F85, 2019 Z4 M40i G29). Added ADRO aerodynamic redesign, ZACOE multi-tier splitters, F85/F86 M V8 power plants and Z4 roadster soft-top.
+
+- 2026-10-11: Implemented BMW models 71-80 (1990 E30 M3 Sport Evolution, 2003 M3 E46 Coupé, 2005 M6 Coupé E63 V10, 2013 M6 Coupe F13, 2018 M5 F90, 2025 M5 G99 Touring, 2025 M5 Sedan G90, 2014 5-Series Gran Turismo F07, 2006 Z4 M Coupe E86, 2005 M3 E46 GTR NFS Most Wanted). Added NFS hero livery aero, V10 carbon roof styling, G99 M Hybrid super-estate and Sport Evo homologation splitters.
+
+- 2026-10-11: Implemented BMW models 61-70 (2018 M4 F82 GT4, 2015 M4 Coupe F82, 2020 M850i Gran Coupe G16, 2016 M4 GTS F82, 2019 Varis M4 GTS SEMA Build, 2020 M8 Competition Convertible F91, 2017 AC Schnitzer i8 ACS8, 2019 LB-Works i8 Ver.2, 2015 i8 Coupe, 2021 218i Gran Coupé F44). Added water-injection M4 GTS roll bar, GT4 race cockpit and AC Schnitzer carbon hybrid aero.
+
+- 2026-10-11: Implemented BMW models 51-60 (2013 Vorsteiner E92 GTRS3 Widebody, 2018 M2 Special Edition Asphalt 8, 2008 M3 Coupe E92, 2010 M3 E92, 2006 Custom Z4 M Coupe E86, 2018 M6 GT3 F13, 2018 M4 Convertible F83, 2013 E92 M3 LB-Works Ver.2, 2017 Pandem E92 M3 GT Wing, 2018 M4 Coupe F82 LCI). Added M6 GT3 endurance cockpit aero, F83 convertible hardtop kinematics and E92 widebody aero.
+
+- 2026-10-11: Implemented BMW models 41-50 (2021 430i xDrive Coupé G22, 2022 M440i xDrive Gran Coupé G26, 2019 X5 xDrive30d G05, 2005 M3 E46, 2010 X6 M E71, 2016 Duke Dynamics E92 M3 Widebody, 2018 DTM FiberWerkz E46 M3 Widebody, 2003 M3 CSL E46, 2015 Pandem E46 M3 Duckbill, 2014 M2 Motoring E46 M3). Added E46 CSL carbon induction ducktail, DTM widebody kits and M Gran Coupé aero.
+
+- 2026-10-11: Implemented BMW models 31-40 (2014 LB★WORKS BMW 4 Series Body Kit F82, 2020 X1 xDrive 18d, 2019 X7 xDrive40i, 2020 X6 xDrive40i, 2019 X2 xDrive20d M Sport X, 2019 X4 xDrive20d, 2022 X3 xDrive 30i, 2018 X3 G01 Model M, 2018 3D Design i8 I12, 2015 Energy Motor Sport EVO i8 Widebody). Added LB-Works riveted overfenders, SAV roof rail packages, and hybrid futuristic aero kits.
+
+- 2026-10-11: OpenCode claimed hover-safe idle orbit: pointer hover/movement must not stop
+  rotation or reset its 30-second restart timer; clicks and camera interaction still pause it.
+  Preserve concurrent car-model work, verify the focused slice, then commit/push.
+
+- 2026-10-11: Hover-safe orbit complete: hover no longer pauses spinning or extends the
+  idle timer; click, orbit drag and zoom still pause it. Root typecheck and all 503 tests
+  pass (25 skipped), including 13 orbit regressions. Synthetic native Electron probe passes
+  moving hover, click, real 30-second restart under continuous hover, drag and zoom. Reviewed
+  light/dark smoke and `car-hover-orbit.png`; shared smoke retains its 12 documented stale
+  menu assertions. Commit only this slice and preserve concurrent model/catalog work.
+
+- 2026-10-11: Implemented BMW models 21-30 (2015 F80 M3, 2025 G82 M4 Competition, 2024 X3 M40i, 1999 E46 328i Sport, 2017 Pandem E30 V1.5, 2010 DTM FiberWerkz E30 M3, 1988 E30 M3 Evolution II, 2019 330i M Sport, 2014 Duke Dynamics MD4 M4, 2015 Varis Full Widebody F82 M4). Added DTM box flares, time-attack front diffusers and swan-neck GT wings.
+
+- 2026-10-11: Implemented BMW models 11-20 (2014 Z4 sDrive35is, 1979 M1, 2019 M235i Gran Coupe, 2013 335i GT, 2025 M3 CS Touring, 2024 X5 xDrive40i, 1973 3.0 CSL Batmobile, 2020 M340i xDrive, 1993 M3 Coupe E36, 2011 E92 M3 GTS). Added roadster, classic homologation, touring and SUV aero packages.
+
+- 2026-10-11: Implemented Model Switcher and Models 1-10 (2025 330i xDrive, M4 GT3 EVO G82, ZACOE M2 Widebody, SEMA M2 Widebody, Vorsteiner M2 Project, Vorsteiner M2 VRS, ADRO M2, M140i, M2 CS, 750Li xDrive). Dynamic powertrain switching (Gasoline, Hybrid, Electric, H2), model-specific aero parts (GT wing, front splitter, canards, widebody flares, rear diffuser, roll cage, hood vents, exhaust, fuel system, H2 storage), and Settings model switcher navigation.
+
+- 2026-10-11: Added separate accelerator and brake pedals in the driver's footwell,
+  with support arms and grip ribs, plus paired friction pads around all four brake discs.
+  All three parts are selectable and classified in English/German; their labels anchor
+  to the pedal faces and a front-wheel pad. Base sketch has 71 selectable parts.
+  Typecheck, production build, eight pedal/pad regressions and the synthetic Electron
+  selection/render probe pass (side/front, light/dark; five screenshots reviewed).
+  Initial full suite passed 446 tests; latest concurrent catalog changes yielded 493 passes
+  and two unrelated engine-classification/catalog-count failures. Shared smoke produced
+  32 screenshots and retains its existing 12 menu-marker assertion failures.
+
+- 2026-10-11: Claimed pedal/brake-pad addition: model the driver accelerator and brake
+  pedal, fit paired friction pads around each disc, expose each in the existing parts menus,
+  preserve concurrent model-switcher work, verify and push the focused slice.
+
+- 2026-10-11: Claimed powertrain switching: Electric, Hybrid, H2 and Gasoline; reuse the
+  transferred part/type scaffolding, preserve BMW body/windows and requirement review,
+  verify renderer/model tests plus a synthetic Electron switching probe, then commit/push.
+
+- 2026-10-11: Rear window support moved 4.8 cm back (`REAR_WINDOW_SUPPORT_X` -1.17 → -1.218),
+  still over the rear half of the rear door handle, so the fixed quarter pane is 15% smaller
+  (rendered side-view area 0.1059 → 0.0902 m²). One body station now snaps to the support's
+  rear edge; panel edges follow stations, so without it the pane could only shrink in ~11%
+  steps. New area regression; typecheck and 564 tests pass (25 skipped). Reviewed side smoke
+  screenshot; smoke keeps its 12 documented menu assertions.
+
+- 2026-10-11: Rear-door window support is now upright like the B-pillar and stands
+  directly over the rear door handle (`REAR_WINDOW_SUPPORT_X` in `body.ts`), as on the
+  BMW M5, replacing the slanted quarter-glass frame. Applies to every catalog model (shared
+  G60 body). Regressions cover the upright bar and handle alignment; reviewed side and
+  three-quarter smoke screenshots. Typecheck passes; the one failing catalog-switching test and
+  the 12 smoke menu assertions also fail at `79d858c` without this change.
+
+- 2026-10-11: Side windows now have front, rear-door and fixed quarter panes separated
+  by the existing B-pillar and a new slanted quarter-glass frame on both sides. Frames are
+  part of the body surface, with existing selectable ids retained. Added three regressions;
+  typecheck and 424 tests pass (25 skipped). Reviewed side smoke screenshot: quarter pane
+  clearly separated. Smoke still retains the same 12 unrelated menu assertions.
+
+- 2026-10-11: OpenCode claimed side-window split: add the missing rear-door/quarter-glass
+  divider on both sides, retaining the existing B-pillars, rear frame and selectable part ids.
+
+- 2026-10-11: Rear-window support restored after rendering the 21:27 build (`f71a8f9`)
+  for comparison. Rear glazing now tapers inside mirrored C-pillars and stops before a
+  painted lower frame, rather than extending onto the taller STL-guided rear deck. Current
+  silhouette, trunk details, 68 components and requirement review stay intact. Added four
+  regressions: typecheck and 421 tests pass (25 skipped). Reviewed rear smoke screenshot;
+  smoke retains the same 12 previously documented menu assertions (32 screenshots generated).
+
+- 2026-10-11: OpenCode claimed rear-window support restoration: compare the pre-STL build
+  from over an hour earlier and restore the rear frame/C-pillars without reverting current
+  silhouette, trunk details, selectable parts or requirement review. Verify model regressions
+  and rear-view screenshots; preserve pre-existing handoff edits.
+
+- 2026-10-10: BMW door character lines complete: a stronger shoulder crease runs below
+  the handles through both doors into the rear haunch; a lower scallop rises into the rear
+  arch. Individual sketch strokes have a clear ink hierarchy and soften in interior view.
+  The 68 selectable components and trunk details remain intact. Typecheck and 417 tests
+  pass (25 skipped), including door coverage and contour-rise regression. Reviewed smoke
+  side, three-quarter and dark screenshots. Full smoke generated 32 screenshots but still
+  fails the 12 existing collapsed-menu/requirement-explanation assertions recorded above;
+  WS1/WS0 should update those main-process smoke checks for the current menu behavior.
+
+- 2026-10-10: Compact requirement review complete on `ws3-compact-requirements`: bounded cards
+  show the short requirement, up to two targets, priority/status and percentage part-placement
+  confidence, with weak-evidence/conflict warnings retained. Clicking opens validated IPC details:
+  description, acceptance criteria, score rationale/factors, findings, verbatim excerpts, original
+  records, source metadata/links, assumptions, uncertainties and version snapshots. The percentage
+  is weighted keyword-match share, explicitly not evidence certainty or a calibrated probability.
+  Typecheck and 416 tests pass (25 skipped); isolated synthetic Electron probe passed 19-card
+  scrolling, exact-id details, focus trap/restore, Escape, error/retry and light/dark rendering.
+  Reviewed six screenshots under `apps/desktop/out/smoke/compact-*.png`. Shared smoke still has
+  12 stale collapsed-menu assertions; WS1/WS0 should open relevant classes before point checks
+  and move classifier-explanation checks inside the clicked requirement dialog. Main/core and
+  pre-existing documentation reordering remain untouched. Requested slice complete.
+
+- 2026-10-10: OpenCode claimed compact requirement summaries and click-through details on
+  `ws3-compact-requirements`: short title, key targets, priority/status and percentage part-placement
+  confidence; load full requirements and linked evidence via existing IPC. Preserve car/model work
+  and pre-existing handoff reordering. Verify the focused renderer slice before committing.
+
+- 2026-10-10: Expanded the car from 34 to 68 selectable parts while retaining the original
+  assemblies. Added distinct front/rear motors, gearbox, battery, inverter, cooling, shafts,
+  differential, brake discs/calipers and suspension components, plus individual seats,
+  headrests, belts, displays, vents, console controls, speakers and cabin trim. Each new part
+  has its own mesh, badge anchor, compact tag and EN/DE classification vocabulary; menu
+  subclasses cover every part exactly once. Verified typecheck, 378 tests (25 skipped),
+  UI smoke (PASS, 32 screenshots), and an isolated native Electron probe selecting all 34
+  new parts with zero requirements. Reviewed motor/driver-seat selection and detailed trunk.
+
+- 2026-10-10: OpenCode claimed collapsed-on-load, menu-driven markers: opening a class
+  activates its parts, subclasses narrow focus, >8 markers become blue dots and <=8 keep
+  text/counts. Preserve concurrent component/model, visibility and shared smoke work.
+
+- 2026-10-10: Menu-driven markers complete: all sections/subclasses start closed without
+  markers; opening a class shows all descendant parts even with zero requirements, opening
+  a subclass narrows focus, and closing the focused class restores its parent or clears markers.
+
+  > 8 eligible part markers use small blue dots; <=8 use compact text/count labels. Interior and
+  > Technology activation reveal the interior view. Selection/back preserves menu state.
+  > Typecheck and all 386 tests pass (25 skipped); native Electron probe verified collapsed load,
+  > class/subclass activation, blue-dot/label modes, close/reset, dot selection and back retention.
+  > Reviewed collapsed, Exterior dots, Doors labels and Interior screenshots. Shared smoke builds
+  > and generates 32 screenshots but its automatic-on-load point assertions now need WS1/WS0 to
+  > open the relevant class first (12 assertion failures); left that owned script unchanged.
+
+- 2026-10-10: Idle car orbit complete: slow, frame-rate-independent rotation on opening and
+  after 30 seconds without app-wide input. Held drags block it; camera presets remain usable,
+  resizing does not reset the orbit, reduced motion disables it, and listeners clean up on unmount.
+  Isolated verification: typecheck, 340 tests passed (25 skipped), smoke PASS (32 screenshots),
+  light/dark visuals and native opening/input/real-30-second/reduced-motion probe passed.
+  Integrated verification: typecheck and 398 tests pass (25 skipped); smoke captures 32 screens
+  but retains the 12 documented collapsed-menu point assertion failures from the concurrent slice.
+  Commit only this slice; concurrent component/menu/model edits remain untouched.
+
+- 2026-10-10: OpenCode claimed idle car orbit: rotate on opening and after 30 seconds of
+  app-wide inactivity; stop on input, preserve camera presets and respect reduced motion.
+  Verify this focused slice in isolation; preserve concurrent car/menu edits.
+
+- 2026-10-10: Exterior-visibility slice complete: internal meshes/points are hidden and unpickable
+  in Exterior, outside points appear only on unobstructed surfaces and follow visible sides when
+  orbiting, and Interior restores all parts. Added 14 regressions. Human approved the narrow
+  shared Car smoke update (also removes obsolete sample-toggle checks). Verified this slice
+  against committed code in an isolated worktree: typecheck, 328 passing tests (25 skipped),
+  smoke PASS with 32 screenshots, light/dark visual checks and changed-file Prettier. Shared
+  checkout has concurrent component/menu edits with unrelated test failures; those stay intact.
+
+- 2026-10-10: OpenCode claimed the focused exterior-visibility slice: hide internal meshes and
+  requirement points in Exterior, occlude outside badges behind the body, preserve Interior,
+  and verify before committing/pushing only this slice. Existing model/styling edits stay intact.
+
+- 2026-10-10: Completed trunk-detail refinement: boot lid now wraps around a recessed plate
+  surround, with a curved lower seam, opening handle, rear roundel and fitted low deck lip.
+  Added twin rear LED strokes, four parking sensors, reflectors and diffuser ribs; all details
+  retain existing part IDs, and seats/interior stay intact. Added a regression for detail
+  membership and lip clearance. Typecheck and all 328 tests pass (25 skipped); formatting and
+  diff checks pass. Reviewed rear/top native screenshots. Smoke renders all 29 screenshots
+  but retains the seven obsolete sample-toggle failures already recorded above (WS1 follow-up).
+
+- 2026-10-10: Claimed trunk-detail refinement: clearer boot-lid panel, a subtle deck lip,
+  rear plate recess/handle/roundel, lamp signatures and bumper details. Preserve existing
+  part IDs and cabin forms; verify and push this model-only follow-up.
+
+- 2026-10-10: OpenCode claimed the expandable parts-menu slice on the current branch:
+  Exterior / Interior / Technology sections with broader subclasses (Doors, Seats, etc.)
+  and all existing detailed parts visible by default. Preserve concurrent model edits.
+
+- 2026-10-10: Expandable menu complete: all 34 parts appear exactly once beneath general
+  subclasses, including Doors and Seats; sections/subclasses open by default and show rolled-up
+  requirement counts. Existing part IDs, classifier and selection stay unchanged. Typecheck and
+  290 tests pass (25 skipped); isolated native Electron probe passed group/Doors collapse-expand
+  and detailed door/seat selection with zero requirements. Reviewed light Exterior and dark
+  Interior submenu screenshots. Shared smoke produced 29 screenshots but still fails the seven
+  obsolete sample-toggle checks noted above; WS1 follow-up unchanged. Commit only this slice.
+
+- 2026-10-10: Completed STL-guided sketch refinement. Traced the supplied sedan's roof,
+  bonnet, shoulders and rear deck into smooth procedural curves; fitted all four tyres,
+  arches, liners and axle components to its normalized wheel stations. Projected strokes
+  follow the panels and stop at openings. Preserved all 34 part IDs/anchors, both front
+  seats (LHD driver and passenger), three rear places, dashboard and the other interior forms.
+  Verified typecheck, full suite (269 passed, 25 skipped), smoke (PASS, 29 screenshots),
+  front/side/rear/top/interior and dark visual checks, changed-file Prettier and diff checks.
+
+- 2026-10-10: Compact car-point tags complete: short labels (e.g. Grille, Display, Rear seats)
+  plus a small count replace number-only points and long hover names. Removed the long native
+  hover tooltip; full accessible names remain. Point clicks still select the detailed side-panel
+  review with descriptions, targets, evidence and classification. Added 37 tag regressions.
+  Typecheck and all 327 tests pass (25 skipped); Prettier passes; reviewed `car-3d.png` and
+  `car-clicked.png`. Smoke produces 29 screenshots but retains the seven obsolete sample-control
+  failures documented below; WS1-owned smoke script remains unchanged.
+
+- 2026-10-10: OpenCode claimed compact car-point tags: replace long hover names with short
+  labels, show a small tag and count on each point, and preserve click-through to the full review.
+  Existing visibility/model and part-menu changes remain outside this slice.
+
+- 2026-10-10: Removed the Car tab's top-right synthetic-sample source control; the panel now
+  uses flow requirements only and its empty state no longer offers the removed sample.
+  Added two regressions. Typecheck and all 285 tests pass (25 skipped); reviewed `car-3d.png`.
+  Smoke generated 29 screenshots but fails seven obsolete sample-control assertions.
+  **WS1 follow-up:** update `src/main/smoke.ts` to test flow requirements without the removed
+  `car-source-sample` / `car-source-app` controls. Left that WS1-owned script unchanged.
+
+- 2026-10-10: OpenCode claimed removal of the Car tab's top-right synthetic-sample toggle.
+  Keep flow requirements as the source, update the empty-state hint, and leave existing model
+  changes untouched. Add a focused regression and verify before committing/pushing this slice.
+
+- 2026-10-10: Click-highlight slice complete: selected parts use the theme's soft-blue fill;
+  deselection restores the sketch, with glass masks and interior ghosting preserved. Added 18
+  light/dark regressions. Verified the isolated staged snapshot: typecheck, 265 tests passed
+  (25 skipped), UI smoke passed (29 screenshots; selected door visually checked), formatting
+  and diff check passed. Shared checkout had a concurrent reference-stroke symmetry failure,
+  left untouched. Commit includes only this styling slice, its tests and these handoff entries.
+
+- 2026-10-10: OpenCode claimed the focused click-highlight slice: use the theme's soft-blue fill
+  for the selected part, preserve sketch lines and interior ghosting, and verify before commit/push.
+  Existing STL-guided refinement work and ownership are unchanged.
+
+- 2026-10-10: Claimed STL-guided refinement using the supplied Hot Wheels sedan: trace its
+  silhouette and body creases, fit all four tyres to the arches, preserve the 34-part catalog
+  and existing interior subforms, then verify and push the current branch.
 
 - 2026-10-10: Shortened the bonnet/nose by 0.33 m and rounded the front plan-view corners at
   the user’s request. The front axle, chassis components, wheel wells, projected front details,
@@ -333,7 +615,7 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 ## WS4 — Settings, app shell & packaging
 
-**Status:** open · **Owner:** — · **Branch:** —
+**Status:** review (Model setting complete) · **Owner:** OpenCode · **Branch:** `ws4-car-models`
 **Depends on:** WS1 for tasks 1–2.
 
 **Tasks**
@@ -346,8 +628,21 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - [ ] Optional: GitHub Actions matrix (macOS, Windows, Ubuntu) running `npm run check` and
       `npm run smoke` (`xvfb-run` on Linux).
 - [ ] Demo polish: keyboard-shortcut overview, consistent empty states, About screen with team names.
+- [ ] Persist Settings → Model with Hydrogen / Hybrid / Electric / Fuel; keep the existing shell and vary the selectable powertrain.
+      Implemented and verified on `ws4-car-models`; merge pending.
 
 **Log**
+
+- 2026-10-10: Model slice complete: four saved choices, backward-compatible electric default,
+  distinct selectable powertrains on the unchanged shell/cabin/chassis, model-aware menus and
+  preserved off-model requirements. Main-process settings audit is unchanged and tested; no scope,
+  workflow or decision mutation. Verified typecheck, 430 passing tests (25 real-data tests skipped),
+  and native smoke PASS with 45 screenshots; reviewed Model, all four powertrains, selected fuel
+  cell and dark rendering. Smoke now opens the collapsed class menus before testing points and
+  waits for the visible dark marker, resolving the previously documented WS3 smoke assertions.
+  Concurrent compact-review edits in the original checkout were left untouched.
+
+- 2026-10-10: Claimed the requested Model slice in an isolated worktree. Human authorized the narrow shared Settings contract, Car renderer and native smoke changes. Preserve concurrent requirements-review work; default to the existing electric sketch and label alternatives as conceptual layouts, not production BMW specifications.
 
 ## WS5 — Raw block (BMW data ingestion)
 

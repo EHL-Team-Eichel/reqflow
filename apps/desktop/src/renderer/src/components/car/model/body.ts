@@ -1,11 +1,13 @@
 import * as THREE from "three";
+import { BMW_REFERENCE } from "./reference";
 
 /**
  * The car body as one smooth parametric surface, cut into panels.
  *
- * Built procedurally (no downloaded model), inspired by the BMW 5 Series Sedan (G60).
+ * Built procedurally with contours traced from the supplied Hot Wheels BMW STL.
  * The nose and bonnet are shortened for the sketch: 4,730 mm overall, with the original
- * 1,900 mm width and 1,515 mm roof height. Surface shapes are drawn, not measured.
+ * 1,900 mm width and 1,515 mm roof height. The STL guides the silhouette and creases;
+ * panels and cabin components remain separate, selectable procedural forms.
  *
  * Axes: x forward (front bumper at +2.20, rear at −2.53), y up, z to the car's right; metres.
  * The surface is a tube: one cross-section ring per station along x. Each ring runs through ten
@@ -20,9 +22,9 @@ export const G60 = {
   rearX: -2.53,
   width: 1.9,
   height: 1.515,
-  wheelbase: 2.835,
-  frontAxleX: 1.42,
-  rearAxleX: -1.415,
+  wheelbase: BMW_REFERENCE.frontAxleX - BMW_REFERENCE.rearAxleX,
+  frontAxleX: BMW_REFERENCE.frontAxleX,
+  rearAxleX: BMW_REFERENCE.rearAxleX,
   track: 1.63,
   tyreRadius: 0.37,
   tyreWidth: 0.245,
@@ -67,29 +69,7 @@ const smoothstep = (a: number, b: number, x: number) => {
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 /** Side view: the top line (bumper → bonnet → windscreen → roof → rear window → boot → bumper). */
-export const topLine = profile([
-  [2.2, 0.8],
-  [2.185, 0.835],
-  [2.14, 0.87],
-  [1.96, 0.9],
-  [1.42, 0.949],
-  [1.05, 0.98],
-  [0.82, 0.995],
-  [0.55, 1.13],
-  [0.25, 1.31],
-  [0.0, 1.43],
-  [-0.3, 1.495],
-  [-0.7, 1.515],
-  [-1.1, 1.485],
-  [-1.45, 1.38],
-  [-1.75, 1.21],
-  [-1.97, 1.105],
-  [-2.2, 1.09],
-  [-2.36, 1.1],
-  [-2.46, 1.08],
-  [-2.515, 1.03],
-  [-2.53, 0.99],
-]);
+export const topLine = profile(BMW_REFERENCE.top);
 
 /** Window line (the lower edge of the side glass); rises slightly to the rear. */
 export const beltLine = profile([
@@ -114,15 +94,7 @@ export const bottomLine = profile([
   [-2.53, 0.38],
 ]);
 
-const baseHalfWidth = profile([
-  [-2.53, 0.915],
-  [-2.0, 0.935],
-  [-1.4, 0.95],
-  [0, 0.95],
-  [1.42, 0.945],
-  [1.88, 0.915],
-  [2.2, 0.88],
-]);
+const baseHalfWidth = profile(BMW_REFERENCE.halfWidth);
 
 const NOSE_START = 1.82;
 const TAIL_START = -2.2;
@@ -180,9 +152,9 @@ function section(x: number): Section {
   const half: Pt[] = [
     [0, yb],
     [0.78 * w, yb],
-    [0.965 * w, yb + 0.07],
-    [w, yb + 0.55 * (ybe - yb)],
-    [0.985 * w, ybe - 0.06],
+    [0.955 * w, yb + 0.07],
+    [0.99 * w, yb + 0.55 * (ybe - yb)],
+    [w, ybe - 0.06],
     [0.95 * w, ybe],
     [lerp(0.95 * w, wr, 0.62), ybe + 0.58 * h],
     [wr, yt - 0.045 * g - 0.012],
@@ -213,6 +185,13 @@ export interface BodyGrid {
   cut: Uint8Array;
 }
 
+// The rear door's moving glass ends at an upright support in front of the small fixed quarter
+// pane. Like the B-pillar it runs straight from the belt to the roof, and it stands over the rear
+// half of the rear door handle (centre x = -1.17 in buildCar), as on the BMW M5. It sits far
+// enough back that the quarter pane is 15% smaller than with the support centred on the handle.
+export const REAR_WINDOW_SUPPORT_X = -1.218;
+export const REAR_WINDOW_SUPPORT_HALF_WIDTH = 0.04;
+
 /** Station positions, denser at the ends where the nose and tail curve fast. */
 function stationXs(): number[] {
   const xs: number[] = [];
@@ -222,6 +201,14 @@ function stationXs(): number[] {
     const mix = 0.55 * s + 0.45 * u;
     xs.push(G60.rearX + G60.length * mix);
   }
+  // Panel edges follow stations, so the quarter pane would only shrink in whole-station steps
+  // (about 11% each). Put a station on the support's rear edge so the pane ends exactly there.
+  const edge = REAR_WINDOW_SUPPORT_X - REAR_WINDOW_SUPPORT_HALF_WIDTH;
+  let nearest = 0;
+  xs.forEach((x, i) => {
+    if (Math.abs(x - edge) < Math.abs(xs[nearest]! - edge)) nearest = i;
+  });
+  xs[nearest] = edge;
   return xs;
 }
 
@@ -480,12 +467,15 @@ const windowFront = (y: number) => 0.8 - (y - 1.0) * 1.82 - 0.085;
 const windowRear = (y: number) =>
   y < 1.12 ? lerp(-1.48, -1.66, smoothstep(1.05, 1.12, y)) : -1.66 + (y - 1.12) * 1.08;
 const inBPillar = (x: number) => x > -0.31 && x < -0.19;
+const inQuarterWindowFrame = (x: number) =>
+  Math.abs(x - REAR_WINDOW_SUPPORT_X) < REAR_WINDOW_SUPPORT_HALF_WIDTH;
 
 function inSideWindow(q: Quad): boolean {
   return (
     q.x < windowFront(q.y) &&
     q.x > windowRear(q.y) &&
     !inBPillar(q.x) &&
+    !inQuarterWindowFrame(q.x) &&
     q.seg <= 6 &&
     q.glass > 0.08
   );
@@ -521,7 +511,13 @@ export function bodyPanel(q: Quad): string | null {
 
   if (q.seg <= 4) {
     if (q.x > 1.91) return "front_bumper";
-    if (q.x < -2.03) return q.y < 0.93 ? "rear_bumper" : az < 0.8 ? "trunk_lid" : "body";
+    if (q.x < -2.03) {
+      // The boot lid wraps down the rear face around the plate. Its lower edge
+      // curves up at the corners, giving the lid a readable outline above the bumper.
+      const lidBottom = 0.69 + 0.13 * (az / 0.72) ** 4;
+      if (q.x < -2.25 && az < 0.72 && q.y > lidBottom) return "trunk_lid";
+      return q.y < 0.93 ? "rear_bumper" : az < 0.8 ? "trunk_lid" : "body";
+    }
     // Dark sill trim between the wheels makes the body read lower, like on the real car.
     if (q.seg === 1 && q.x < 1.12 && q.x > -0.96) return "body:dark";
     if (q.seg >= 2) {
@@ -546,9 +542,14 @@ export function bodyPanel(q: Quad): string | null {
   if (inWindscreen(q)) return "windshield:glass";
   if (inAPillar(q)) return "roof";
   if (sideGlass && inSideWindow(q)) return "side_windows:glass";
-  if (sideGlass && inBPillar(q.x)) return "roof:dark";
+  if (sideGlass && (inBPillar(q.x) || inQuarterWindowFrame(q.x))) return "roof:dark";
   if (q.seg >= 7 && az < 0.6) {
-    if (q.x < -1.28) return "rear_window:glass";
+    // The taller reference deck no longer closes the rear glass at the belt line.
+    // Inset it explicitly, retaining the old sketch's C-pillars and lower support.
+    if (q.x < -1.28) {
+      const glassHalfWidth = lerp(0.5, 0.6, smoothstep(-1.28, -1.82, q.x));
+      return q.x > -1.82 && az < glassHalfWidth ? "rear_window:glass" : "roof";
+    }
     if (az < 0.47 && q.x < -0.18 && q.x > -0.92) return "roof:glass";
   }
   return "roof";

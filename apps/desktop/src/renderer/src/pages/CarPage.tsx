@@ -1,8 +1,21 @@
-import { useState } from "react";
+import { PowertrainSwitcher } from "@/components/car/modelSwitcher/PowertrainSwitcher";
+import {
+  availablePartIds,
+  powertrainSubclasses,
+  POWERTRAINS,
+} from "@/components/car/modelSwitcher/powertrains";
+import { useVehicleStore, getActiveVehicle } from "@/components/car/models/vehicleStore";
+import { useState, useMemo } from "react";
 import { CarViewer, type CameraPreset, type CarView } from "@/components/car/CarViewer";
 import { PartPanel } from "@/components/car/PartPanel";
 import { useCarRequirements } from "@/components/car/useCarRequirements";
 import { ReasoningDialog } from "@/components/reasoning/ReasoningDialog";
+import {
+  initialMarkerMenu,
+  menuGroup,
+  menuPartIds,
+  toggleMarkerMenu,
+} from "@/components/car/markerMenu";
 import { Segmented } from "@/components/settings/Segmented";
 import { Button } from "@/components/ui/Button";
 import { MStripe } from "@/components/ui/MStripe";
@@ -28,14 +41,27 @@ const PRESETS: { value: CameraPreset; label: string }[] = [
  */
 export function CarPage() {
   const scope = useSettings((s) => s.settings.defaultScope);
+  const { selectedModelId, powertrain, setPowertrain } = useVehicleStore();
+  const active = useMemo(() => getActiveVehicle(), [selectedModelId, powertrain]);
+  const availableParts = availablePartIds(powertrain, active.model);
+  const subclasses = powertrainSubclasses(powertrain, active.model);
   const [view, setView] = useState<CarView>("exterior");
   const [selected, setSelected] = useState<string | null>(null);
+  const [markerMenu, setMarkerMenu] = useState(initialMarkerMenu);
   const [preset, setPreset] = useState<CameraPreset>("front");
   const [presetNonce, setPresetNonce] = useState(0);
   const data = useCarRequirements();
   const reset = useReset(data.reload);
 
   const [whyReqId, setWhyReqId] = useState<string | null>(null);
+  const markerParts = selected ? [selected] : menuPartIds(markerMenu.active, subclasses);
+
+  const onMenuToggle = (id: string) => {
+    const next = toggleMarkerMenu(markerMenu, id);
+    setMarkerMenu(next);
+    setSelected(null);
+    if (next.active) setView(menuGroup(next.active) === "exterior" ? "exterior" : "interior");
+  };
 
   const emptyHint =
     data.error ??
@@ -61,7 +87,8 @@ export function CarPage() {
             BMW {scope.vehicleLine}
             {scope.derivative ? ` ${scope.derivative}` : ""}
             <span className="text-sm font-normal text-muted">
-              {scope.market} · {scope.horizonYears}-year horizon
+              {scope.market} · {scope.horizonYears}-year horizon ·{" "}
+              {POWERTRAINS.find((option) => option.value === powertrain)?.label}
             </span>
           </span>
         }
@@ -90,8 +117,12 @@ export function CarPage() {
         testId="car-page"
       >
         <div className="relative h-full">
+          <PowertrainSwitcher value={powertrain} onChange={setPowertrain} />
           <CarViewer
+            modelId={selectedModelId}
+            powertrain={powertrain}
             counts={data.counts}
+            markerParts={markerParts}
             selected={selected}
             view={view}
             preset={preset}
@@ -99,7 +130,9 @@ export function CarPage() {
             onSelect={setSelected}
           />
           <p className="pointer-events-none absolute bottom-3 left-4 text-xs text-muted">
-            BMW-inspired sketch · drag to turn, scroll to zoom, click any part
+            Sketch: {active.model.name} ·{" "}
+            {POWERTRAINS.find((option) => option.value === powertrain)?.description} · schematic
+            sketch · drag to turn, scroll to zoom, click any part
           </p>
         </div>
       </Panel>
@@ -159,6 +192,10 @@ export function CarPage() {
         )}
         <PartPanel
           selected={selected}
+          availableParts={availableParts}
+          subclasses={subclasses}
+          markerMenu={markerMenu}
+          onMenuToggle={onMenuToggle}
           byPart={data.byPart}
           counts={data.counts}
           total={data.total}

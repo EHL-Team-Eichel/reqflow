@@ -32,6 +32,10 @@ export type ResearchProvider = z.infer<typeof ResearchProvider>;
 export const ThemePreference = z.enum(["system", "light", "dark"]);
 export type ThemePreference = z.infer<typeof ThemePreference>;
 
+/** Conceptual powertrain shown on the Car tab; not a production vehicle specification. */
+export const CarPowertrain = z.enum(["hydrogen", "hybrid", "electric", "fuel"]);
+export type CarPowertrain = z.infer<typeof CarPowertrain>;
+
 /** Language of AI-written text (findings, requirements). The UI itself is English. */
 export const OutputLanguage = z.enum(["en", "de"]);
 export type OutputLanguage = z.infer<typeof OutputLanguage>;
@@ -188,6 +192,8 @@ export type AgentSettings = z.infer<typeof AgentSettings>;
  * OS keychain by the main process (`settings.setSecret`); the UI only learns whether one is configured.
  */
 export const Settings = z.object({
+  // Missing in older settings files: retain the original electric sketch.
+  model: z.object({ powertrain: CarPowertrain }).default({ powertrain: "electric" }),
   app: z.object({
     theme: ThemePreference,
     snapToGrid: z.boolean(), // workplace
@@ -242,6 +248,7 @@ export const Settings = z.object({
 export type Settings = z.infer<typeof Settings>;
 
 export const DEFAULT_SETTINGS: Settings = {
+  model: { powertrain: "electric" },
   app: {
     theme: "system",
     snapToGrid: true,
