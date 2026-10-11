@@ -248,3 +248,7 @@ I have some new changes. See if the add to car is now fully functionable
 ---
 
 fix whats wrong with the ai splitter. when splitting into categories of car components you should be able to select to which depth (just differentiate between exterior and interior vs dinstignuish between seats and steering wheel). The number of outputs is than automatically adjustet
+
+---
+
+look at all the changes made locally. commit and push all of them. merge all of them with main and then start the fully merged app
