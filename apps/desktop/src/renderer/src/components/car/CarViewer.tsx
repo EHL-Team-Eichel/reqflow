@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import type { CarPowertrain } from "@reqflow/core";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { cx } from "@/lib/cx";
@@ -502,7 +503,13 @@ export function CarViewer(props: Props) {
   );
   const markers = markerPresentation(props.markerParts, eligibleMarkers);
   return (
-    <div ref={hostRef} className="relative h-full w-full overflow-hidden" data-testid="car-viewer">
+    <div
+      ref={hostRef}
+      className="relative h-full w-full overflow-hidden"
+      data-testid="car-viewer"
+      data-powertrain={props.powertrain}
+      data-model-id={props.modelId}
+    >
       {markers.partIds.map((partId) => {
         const n = props.counts.get(partId) ?? 0;
         return (

@@ -31,7 +31,8 @@ export const BATCH_4_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "Liberty Walk Japan works widebody conversion with exposed riveted overfenders, massive front splitter and rear ducktail.",
+    description:
+      "Liberty Walk Japan works widebody conversion with exposed riveted overfenders, massive front splitter and rear ducktail.",
   },
   {
     id: "bmw_x1_xdrive18d_2020",
@@ -56,7 +57,8 @@ export const BATCH_4_MODELS: VehicleModel[] = [
       groundClearance: 0.18,
     },
     specialParts: ["roof_rails", "skid_plates", "exhaust_system", "fuel_system"],
-    description: "Compact premium Sports Activity Vehicle with raised seating, xDrive AWD, roof rails and efficient turbodiesel.",
+    description:
+      "Compact premium Sports Activity Vehicle with raised seating, xDrive AWD, roof rails and efficient turbodiesel.",
   },
   {
     id: "bmw_x7_xdrive40i_2019",
@@ -81,7 +83,8 @@ export const BATCH_4_MODELS: VehicleModel[] = [
       groundClearance: 0.22,
     },
     specialParts: ["roof_rails", "skid_plates", "exhaust_system", "fuel_system"],
-    description: "Three-row luxury flagship SAV featuring prominent kidney grille, two-axle air suspension and split electric tailgate.",
+    description:
+      "Three-row luxury flagship SAV featuring prominent kidney grille, two-axle air suspension and split electric tailgate.",
   },
   {
     id: "bmw_x6_xdrive40i_2020",
@@ -106,7 +109,8 @@ export const BATCH_4_MODELS: VehicleModel[] = [
       groundClearance: 0.21,
     },
     specialParts: ["rear_spoiler", "rear_diffuser", "skid_plates", "exhaust_system", "fuel_system"],
-    description: "Third-generation Sports Activity Coupé with illuminated Iconic Glow grille, athletic roofline and dual rear spoilers.",
+    description:
+      "Third-generation Sports Activity Coupé with illuminated Iconic Glow grille, athletic roofline and dual rear spoilers.",
   },
   {
     id: "bmw_x2_xdrive20d_m_sport_x_2019",
@@ -131,7 +135,8 @@ export const BATCH_4_MODELS: VehicleModel[] = [
       groundClearance: 0.18,
     },
     specialParts: ["rear_spoiler", "skid_plates", "rear_diffuser", "exhaust_system", "fuel_system"],
-    description: "Extroverted urban crossover coupé with inverted kidney grilles, C-pillar BMW roundels and Frozen Grey M accents.",
+    description:
+      "Extroverted urban crossover coupé with inverted kidney grilles, C-pillar BMW roundels and Frozen Grey M accents.",
   },
   {
     id: "bmw_x4_xdrive20d_2019",
@@ -156,7 +161,8 @@ export const BATCH_4_MODELS: VehicleModel[] = [
       groundClearance: 0.2,
     },
     specialParts: ["rear_spoiler", "rear_diffuser", "exhaust_system", "fuel_system"],
-    description: "Medium-sized Sports Activity Coupé with fastback silhouette, low roofline and wide rear track stance.",
+    description:
+      "Medium-sized Sports Activity Coupé with fastback silhouette, low roofline and wide rear track stance.",
   },
   {
     id: "bmw_x3_xdrive30i_2022",
@@ -181,7 +187,8 @@ export const BATCH_4_MODELS: VehicleModel[] = [
       groundClearance: 0.2,
     },
     specialParts: ["roof_rails", "skid_plates", "exhaust_system", "fuel_system"],
-    description: "Facelifted G01 LCI with redesigned three-dimensional LED taillights, satin aluminium roof rails and xLine styling.",
+    description:
+      "Facelifted G01 LCI with redesigned three-dimensional LED taillights, satin aluminium roof rails and xLine styling.",
   },
   {
     id: "bmw_x3_g01_model_m_2018",
@@ -206,7 +213,8 @@ export const BATCH_4_MODELS: VehicleModel[] = [
       groundClearance: 0.2,
     },
     specialParts: ["roof_rails", "rear_diffuser", "exhaust_system", "fuel_system"],
-    description: "M Sport line X3 featuring high-gloss shadowline exterior trim, athletic front bumper air curtains and M sports suspension.",
+    description:
+      "M Sport line X3 featuring high-gloss shadowline exterior trim, athletic front bumper air curtains and M sports suspension.",
   },
   {
     id: "bmw_3d_design_i8_2018",
@@ -230,14 +238,9 @@ export const BATCH_4_MODELS: VehicleModel[] = [
       tyreWidth: 0.245,
       groundClearance: 0.11,
     },
-    specialParts: [
-      "gt_wing",
-      "front_splitter",
-      "rear_diffuser",
-      "exhaust_system",
-      "fuel_system",
-    ],
-    description: "Japanese 3D Design full dry carbon aero kit for the i8 hybrid supercar, with carbon front lip and elevated rear wing.",
+    specialParts: ["gt_wing", "front_splitter", "rear_diffuser", "exhaust_system", "fuel_system"],
+    description:
+      "Japanese 3D Design full dry carbon aero kit for the i8 hybrid supercar, with carbon front lip and elevated rear wing.",
   },
   {
     id: "bmw_energy_motor_sport_i8_2015",
@@ -270,6 +273,7 @@ export const BATCH_4_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "Extreme Cyberpunk-style widebody transformation from Energy Motor Sport Japan with twin rear winglets and overfenders.",
+    description:
+      "Extreme Cyberpunk-style widebody transformation from Energy Motor Sport Japan with twin rear winglets and overfenders.",
   },
 ];

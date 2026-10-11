@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import type { PowertrainType, VehicleModel } from "./types";
 import { getVehicleModelById, VEHICLE_MODELS } from "./registry";
+import { settingsStore } from "../../../lib/settings";
+import { settingsPowertrain, sketchPowertrain } from "../model/powertrains";
 
 interface VehicleState {
   selectedModelId: string;
@@ -71,6 +73,10 @@ export const useVehicleStore = create<VehicleState>((set, get) => {
 
     setPowertrain: (powertrain: PowertrainType) => {
       if (!isPowertrain(powertrain)) throw new Error("Unknown powertrain");
+      const error = settingsStore
+        .getState()
+        .update("model", { powertrain: settingsPowertrain(powertrain) });
+      if (error) throw new Error(error);
       set({ powertrain });
       persist(get().selectedModelId, powertrain);
     },
@@ -78,6 +84,20 @@ export const useVehicleStore = create<VehicleState>((set, get) => {
     setSearchQuery: (searchQuery: string) => set({ searchQuery }),
     setSelectedCategory: (selectedCategory: string) => set({ selectedCategory }),
   };
+});
+
+// Both Settings screens and the Car switcher share the persisted powertrain choice.
+settingsStore.subscribe((state, previous) => {
+  if (
+    state.settings.model.powertrain === previous.settings.model.powertrain &&
+    state.persistence === previous.persistence
+  )
+    return;
+  const powertrain = sketchPowertrain(state.settings.model.powertrain);
+  if (useVehicleStore.getState().powertrain !== powertrain) {
+    useVehicleStore.setState({ powertrain });
+    persist(useVehicleStore.getState().selectedModelId, powertrain);
+  }
 });
 
 export function getActiveVehicle(): { model: VehicleModel; powertrain: PowertrainType } {

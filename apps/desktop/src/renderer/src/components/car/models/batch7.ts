@@ -32,7 +32,8 @@ export const BATCH_7_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "Factory customer racing GT4 machine featuring carbon-fiber doors, motorsport rear wing, front splitter with dive planes and FIA roll cage.",
+    description:
+      "Factory customer racing GT4 machine featuring carbon-fiber doors, motorsport rear wing, front splitter with dive planes and FIA roll cage.",
   },
   {
     id: "bmw_m4_coupe_f82_2015",
@@ -57,7 +58,8 @@ export const BATCH_7_MODELS: VehicleModel[] = [
       groundClearance: 0.12,
     },
     specialParts: ["rear_spoiler", "rear_diffuser", "exhaust_system", "fuel_system"],
-    description: "Inaugural F82 M4 coupé with carbon-fiber reinforced plastic roof, power dome bonnet and twin-turbo S55 straight-six.",
+    description:
+      "Inaugural F82 M4 coupé with carbon-fiber reinforced plastic roof, power dome bonnet and twin-turbo S55 straight-six.",
   },
   {
     id: "bmw_m850i_gran_coupe_2020",
@@ -82,7 +84,8 @@ export const BATCH_7_MODELS: VehicleModel[] = [
       groundClearance: 0.13,
     },
     specialParts: ["rear_spoiler", "rear_diffuser", "exhaust_system", "fuel_system"],
-    description: "Luxury four-door flagship gran coupé with panoramic glass roof, 4.4L TwinPower V8 and muscular shoulder line.",
+    description:
+      "Luxury four-door flagship gran coupé with panoramic glass roof, 4.4L TwinPower V8 and muscular shoulder line.",
   },
   {
     id: "bmw_m4_gts_2016",
@@ -115,7 +118,8 @@ export const BATCH_7_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "Track-honed limited edition with innovative water injection system, adjustable carbon front splitter, CNC-milled rear wing and Acid Orange roll bar.",
+    description:
+      "Track-honed limited edition with innovative water injection system, adjustable carbon front splitter, CNC-milled rear wing and Acid Orange roll bar.",
   },
   {
     id: "bmw_varis_f82_m4_gts_sema_2019",
@@ -150,7 +154,8 @@ export const BATCH_7_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "Varis VRS widebody conversion showcased at SEMA with dry carbon fiber aero, vented cooling bonnet and high-downforce GT wing.",
+    description:
+      "Varis VRS widebody conversion showcased at SEMA with dry carbon fiber aero, vented cooling bonnet and high-downforce GT wing.",
   },
   {
     id: "bmw_m8_competition_convertible_2020",
@@ -181,7 +186,8 @@ export const BATCH_7_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "Open-top grand tourer powered by a 625 hp twin-turbo V8 with multilayer acoustic soft-top, M xDrive and quad black chrome tailpipes.",
+    description:
+      "Open-top grand tourer powered by a 625 hp twin-turbo V8 with multilayer acoustic soft-top, M xDrive and quad black chrome tailpipes.",
   },
   {
     id: "bmw_ac_schnitzer_i8_acs8_2017",
@@ -213,7 +219,8 @@ export const BATCH_7_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "AC Schnitzer carbon aerodynamic package for the plug-in hybrid i8 including carbon front spoiler elements, side wings and racing rear wing.",
+    description:
+      "AC Schnitzer carbon aerodynamic package for the plug-in hybrid i8 including carbon front spoiler elements, side wings and racing rear wing.",
   },
   {
     id: "bmw_lb_works_i8_ver2_2019",
@@ -245,7 +252,8 @@ export const BATCH_7_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "Liberty Walk Version 2 aggressive widebody aero kit with wide bolted fender flares, slammed air suspension and towering GT rear wing.",
+    description:
+      "Liberty Walk Version 2 aggressive widebody aero kit with wide bolted fender flares, slammed air suspension and towering GT rear wing.",
   },
   {
     id: "bmw_i8_coupe_2015",
@@ -270,7 +278,8 @@ export const BATCH_7_MODELS: VehicleModel[] = [
       groundClearance: 0.12,
     },
     specialParts: ["rear_diffuser", "exhaust_system", "fuel_system"],
-    description: "Groundbreaking plug-in hybrid sports car with LifeDrive architecture, carbon fiber passenger cell, dihedral butterfly doors and stream flow aero.",
+    description:
+      "Groundbreaking plug-in hybrid sports car with LifeDrive architecture, carbon fiber passenger cell, dihedral butterfly doors and stream flow aero.",
   },
   {
     id: "bmw_218i_gran_coupe_2021",
@@ -295,6 +304,7 @@ export const BATCH_7_MODELS: VehicleModel[] = [
       groundClearance: 0.14,
     },
     specialParts: ["rear_spoiler", "rear_diffuser", "exhaust_system", "fuel_system"],
-    description: "Compact four-door gran coupé on the front-wheel-drive architecture featuring frameless doors, wide kidney grille and LED light signatures.",
+    description:
+      "Compact four-door gran coupé on the front-wheel-drive architecture featuring frameless doors, wide kidney grille and LED light signatures.",
   },
 ];

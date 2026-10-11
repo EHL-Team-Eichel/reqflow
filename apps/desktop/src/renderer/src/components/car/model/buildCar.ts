@@ -1,6 +1,8 @@
 import { buildPowertrain } from "../modelSwitcher/buildPowertrain";
 import type { PowertrainType } from "../models/types";
 import * as THREE from "three";
+import { CarPowertrain } from "@reqflow/core";
+import { sketchPowertrain } from "./powertrains";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { band, projectPatch, projectSketchLine, superellipse, type View } from "./decals";
 import { BMW_REFERENCE } from "./reference";
@@ -63,9 +65,10 @@ export interface CarModel {
 const SIDES = [-1, 1] as const; // left (−z, driver in LHD), right (+z)
 const DRIVER_Z = -0.38;
 
-export function buildCar(powertrain: PowertrainType = "electric"): CarModel {
+export function buildCar(model: PowertrainType | CarPowertrain = "electric"): CarModel {
+  const powertrain = sketchPowertrain(model);
   const root = new THREE.Group();
-  root.name = "BMW sedan sketch — Hot Wheels reference";
+  root.name = `BMW sedan sketch — ${powertrain} concept`;
   const pieces: CarPiece[] = [];
 
   const add = (

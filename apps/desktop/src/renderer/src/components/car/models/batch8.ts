@@ -24,7 +24,8 @@ export const BATCH_8_MODELS: VehicleModel[] = [
       groundClearance: 0.12,
     },
     specialParts: ["rear_spoiler", "front_splitter", "exhaust_system", "fuel_system"],
-    description: "Peak homologation evolution (Evo III) with enlarged 2.5L S14 engine, adjustable front splitter lip and adjustable rear wing gurney flap.",
+    description:
+      "Peak homologation evolution (Evo III) with enlarged 2.5L S14 engine, adjustable front splitter lip and adjustable rear wing gurney flap.",
   },
   {
     id: "bmw_m3_e46_coupe_2003",
@@ -49,7 +50,8 @@ export const BATCH_8_MODELS: VehicleModel[] = [
       groundClearance: 0.11,
     },
     specialParts: ["rear_spoiler", "rear_diffuser", "hood_vents", "exhaust_system", "fuel_system"],
-    description: "Facelift LCI E46 M3 featuring revised LED taillights, S54 inline-six with individual throttle bodies and M variable differential lock.",
+    description:
+      "Facelift LCI E46 M3 featuring revised LED taillights, S54 inline-six with individual throttle bodies and M variable differential lock.",
   },
   {
     id: "bmw_m6_coupe_e63_2005",
@@ -74,7 +76,8 @@ export const BATCH_8_MODELS: VehicleModel[] = [
       groundClearance: 0.12,
     },
     specialParts: ["rear_spoiler", "rear_diffuser", "exhaust_system", "fuel_system"],
-    description: "Formula 1 inspired S85 5.0L naturally aspirated V10 grand tourer with contoured carbon fiber roof and aggressive Bangle styling.",
+    description:
+      "Formula 1 inspired S85 5.0L naturally aspirated V10 grand tourer with contoured carbon fiber roof and aggressive Bangle styling.",
   },
   {
     id: "bmw_m6_coupe_f13_2013",
@@ -99,7 +102,8 @@ export const BATCH_8_MODELS: VehicleModel[] = [
       groundClearance: 0.12,
     },
     specialParts: ["rear_spoiler", "rear_diffuser", "exhaust_system", "fuel_system"],
-    description: "S63 4.4L twin-scroll twin-turbo V8 high-performance luxury coupé with lightweight carbon roof, M carbon ceramic brakes and Active M Differential.",
+    description:
+      "S63 4.4L twin-scroll twin-turbo V8 high-performance luxury coupé with lightweight carbon roof, M carbon ceramic brakes and Active M Differential.",
   },
   {
     id: "bmw_m5_f90_2018",
@@ -124,7 +128,8 @@ export const BATCH_8_MODELS: VehicleModel[] = [
       groundClearance: 0.13,
     },
     specialParts: ["rear_spoiler", "rear_diffuser", "exhaust_system", "fuel_system"],
-    description: "First M5 equipped with switchable M xDrive all-wheel drive, carbon-fiber roof, 600 hp 4.4L V8 and 2WD drift mode.",
+    description:
+      "First M5 equipped with switchable M xDrive all-wheel drive, carbon-fiber roof, 600 hp 4.4L V8 and 2WD drift mode.",
   },
   {
     id: "bmw_m5_g99_touring_2025",
@@ -149,7 +154,8 @@ export const BATCH_8_MODELS: VehicleModel[] = [
       groundClearance: 0.14,
     },
     specialParts: ["rear_spoiler", "roof_rails", "rear_diffuser", "exhaust_system", "fuel_system"],
-    description: "High-performance plug-in hybrid super-estate delivering 727 hp from an M Hybrid V8 system, flared widebody fenders and panoramic touring space.",
+    description:
+      "High-performance plug-in hybrid super-estate delivering 727 hp from an M Hybrid V8 system, flared widebody fenders and panoramic touring space.",
   },
   {
     id: "bmw_m5_sedan_g90_2025",
@@ -174,7 +180,8 @@ export const BATCH_8_MODELS: VehicleModel[] = [
       groundClearance: 0.14,
     },
     specialParts: ["rear_spoiler", "rear_diffuser", "exhaust_system", "fuel_system"],
-    description: "Seventh-generation G90 M5 with M Hybrid electrified powertrain, illuminated Iconic Glow kidney grille, sculpted body surfaces and quad 100mm exhaust pipes.",
+    description:
+      "Seventh-generation G90 M5 with M Hybrid electrified powertrain, illuminated Iconic Glow kidney grille, sculpted body surfaces and quad 100mm exhaust pipes.",
   },
   {
     id: "bmw_5series_gran_turismo_2014",
@@ -199,7 +206,8 @@ export const BATCH_8_MODELS: VehicleModel[] = [
       groundClearance: 0.15,
     },
     specialParts: ["rear_spoiler", "exhaust_system", "fuel_system"],
-    description: "Luxury long-wheelbase Gran Turismo with elevated semi-command seating, two-piece bi-modal tailgate and first-class rear executive lounge.",
+    description:
+      "Luxury long-wheelbase Gran Turismo with elevated semi-command seating, two-piece bi-modal tailgate and first-class rear executive lounge.",
   },
   {
     id: "bmw_z4_m_coupe_e86_2006",
@@ -224,7 +232,8 @@ export const BATCH_8_MODELS: VehicleModel[] = [
       groundClearance: 0.11,
     },
     specialParts: ["rear_diffuser", "exhaust_system", "fuel_system"],
-    description: "Purist fixed-roof sports car with 'double-bubble' roof contours, hydraulic steering, S54 inline-six and quad exhaust tips.",
+    description:
+      "Purist fixed-roof sports car with 'double-bubble' roof contours, hydraulic steering, S54 inline-six and quad exhaust tips.",
   },
   {
     id: "bmw_m3_e46_gtr_nfs_2005",
@@ -259,6 +268,7 @@ export const BATCH_8_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "Legendary Need for Speed Most Wanted hero car based on the ALMS homologated V8 M3 GTR with iconic blue and silver vinyl livery and straight-cut side exhaust.",
+    description:
+      "Legendary Need for Speed Most Wanted hero car based on the ALMS homologated V8 M3 GTR with iconic blue and silver vinyl livery and straight-cut side exhaust.",
   },
 ];

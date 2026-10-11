@@ -1,0 +1,25 @@
+{
+  "sessionID": "ses_ed83a725affd9j7r3O59id1hXH",
+  "agent": "OpenCode",
+  "model": "openai/gpt-6.1-sol",
+  "branch": "ws4-car-models",
+  "featureCommit": "067b076a0fce37014ccb53e739bb7d764a8d1405",
+  "entireCheckpoint": "01M4KXKG4WV98KXZD06D103AJ9",
+  "request": "Add Settings → Model with Hydrogen, Hybrid, Electric and Fuel models using the same car shell, then commit and push.",
+  "outcome": [
+    "Persisted model selection through the existing settings IPC and audit trail.",
+    "Kept the same body shell, cabin and chassis while varying selectable powertrain components.",
+    "Kept off-model requirements available for review without changing scope or decisions.",
+    "Preserved concurrent work in the original checkout."
+  ],
+  "verification": {
+    "typecheck": "passed",
+    "testsPassed": 430,
+    "testsSkipped": 25,
+    "nativeSmoke": "passed",
+    "screenshotsReviewed": "Model settings, all four powertrains, selected fuel cell and dark rendering",
+    "smokeScreenshotCount": 45
+  },
+  "transcript": "../transcripts/car-models.json",
+  "publication": "User requested the session log in .entire. Hidden reasoning, system messages, provider state and credential-like strings are excluded from the public transcript. Entire compatibility conversion is temporary; no installed hooks or OpenCode storage are changed."
+}

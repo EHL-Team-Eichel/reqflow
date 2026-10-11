@@ -87,7 +87,8 @@ export function CarPage() {
             BMW {scope.vehicleLine}
             {scope.derivative ? ` ${scope.derivative}` : ""}
             <span className="text-sm font-normal text-muted">
-              {scope.market} · {scope.horizonYears}-year horizon
+              {scope.market} · {scope.horizonYears}-year horizon ·{" "}
+              {POWERTRAINS.find((option) => option.value === powertrain)?.label}
             </span>
           </span>
         }

@@ -24,7 +24,8 @@ export const BATCH_10_MODELS: VehicleModel[] = [
       groundClearance: 0.12,
     },
     specialParts: ["rear_spoiler", "rear_diffuser", "exhaust_system", "fuel_system"],
-    description: "Luxury flagship sports coupé powered by a 600 hp 4.4L M TwinPower Turbo V8 with double-bubble carbon fiber roof.",
+    description:
+      "Luxury flagship sports coupé powered by a 600 hp 4.4L M TwinPower Turbo V8 with double-bubble carbon fiber roof.",
   },
   {
     id: "bmw_m8_competition_coupe_2020",
@@ -49,7 +50,8 @@ export const BATCH_10_MODELS: VehicleModel[] = [
       groundClearance: 0.12,
     },
     specialParts: ["rear_spoiler", "rear_diffuser", "exhaust_system", "fuel_system"],
-    description: "Competition specification with 625 hp, stiffer engine mounts, increased front camber and M Sport exhaust with black chrome tips.",
+    description:
+      "Competition specification with 625 hp, stiffer engine mounts, increased front camber and M Sport exhaust with black chrome tips.",
   },
   {
     id: "bmw_m8_pride_convertible_2020",
@@ -80,7 +82,8 @@ export const BATCH_10_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "Bespoke celebratory Pride edition M8 Competition Convertible featuring rainbow gradient livery accents, soft-top and 625 hp V8.",
+    description:
+      "Bespoke celebratory Pride edition M8 Competition Convertible featuring rainbow gradient livery accents, soft-top and 625 hp V8.",
   },
   {
     id: "bmw_m235i_coupe_2014",
@@ -105,7 +108,8 @@ export const BATCH_10_MODELS: VehicleModel[] = [
       groundClearance: 0.13,
     },
     specialParts: ["rear_spoiler", "rear_diffuser", "exhaust_system", "fuel_system"],
-    description: "Agile rear-wheel-drive M Performance compact coupe with 3.0L N55 turbo inline-six, M sport brakes and Ferric Grey exterior accents.",
+    description:
+      "Agile rear-wheel-drive M Performance compact coupe with 3.0L N55 turbo inline-six, M sport brakes and Ferric Grey exterior accents.",
   },
   {
     id: "bmw_m2_competition_f87_2019",
@@ -130,7 +134,8 @@ export const BATCH_10_MODELS: VehicleModel[] = [
       groundClearance: 0.12,
     },
     specialParts: ["rear_spoiler", "rear_diffuser", "exhaust_system", "fuel_system"],
-    description: "True M-engineered sports coupé upgraded with the S55 twin-turbo engine from the M3/M4, CFRP strut brace and high-gloss black kidney grille.",
+    description:
+      "True M-engineered sports coupé upgraded with the S55 twin-turbo engine from the M3/M4, CFRP strut brace and high-gloss black kidney grille.",
   },
   {
     id: "bmw_m2_m_performance_g87_2023",
@@ -163,7 +168,8 @@ export const BATCH_10_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "G87 M2 loaded with factory M Performance carbon catalog: central stacked quad titanium exhaust, carbon fixed rear wing and carbon aero winglets.",
+    description:
+      "G87 M2 loaded with factory M Performance carbon catalog: central stacked quad titanium exhaust, carbon fixed rear wing and carbon aero winglets.",
   },
   {
     id: "bmw_m2_coupe_g87_2023",
@@ -188,7 +194,8 @@ export const BATCH_10_MODELS: VehicleModel[] = [
       groundClearance: 0.12,
     },
     specialParts: ["rear_spoiler", "rear_diffuser", "exhaust_system", "fuel_system"],
-    description: "Second-generation G87 M2 with muscular boxy wheel arches, frameless horizontal kidney grilles, 460 hp S58 power and 6-speed manual option.",
+    description:
+      "Second-generation G87 M2 with muscular boxy wheel arches, frameless horizontal kidney grilles, 460 hp S58 power and 6-speed manual option.",
   },
   {
     id: "bmw_325li_g28_2021",
@@ -213,7 +220,8 @@ export const BATCH_10_MODELS: VehicleModel[] = [
       groundClearance: 0.14,
     },
     specialParts: ["exhaust_system", "fuel_system"],
-    description: "Long-wheelbase G28 3 Series executive sedan tailored for rear-seat legroom, acoustic comfort and panoramic glass sunroof.",
+    description:
+      "Long-wheelbase G28 3 Series executive sedan tailored for rear-seat legroom, acoustic comfort and panoramic glass sunroof.",
   },
   {
     id: "bmw_30_csl_hommage_concept_2015",
@@ -246,7 +254,8 @@ export const BATCH_10_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "Visionary design study celebrating the 1970s Batmobile, built extensively in CFRP with integrated roof spoiler, giant rear wing and Golf Yellow paint.",
+    description:
+      "Visionary design study celebrating the 1970s Batmobile, built extensively in CFRP with integrated roof spoiler, giant rear wing and Golf Yellow paint.",
   },
   {
     id: "bmw_m3_touring_g81_2023",
@@ -270,13 +279,8 @@ export const BATCH_10_MODELS: VehicleModel[] = [
       tyreWidth: 0.285,
       groundClearance: 0.12,
     },
-    specialParts: [
-      "rear_spoiler",
-      "roof_rails",
-      "rear_diffuser",
-      "exhaust_system",
-      "fuel_system",
-    ],
-    description: "First official production M3 Touring estate combining 510 hp Competition xDrive performance with versatile long-roof wagon practicality.",
+    specialParts: ["rear_spoiler", "roof_rails", "rear_diffuser", "exhaust_system", "fuel_system"],
+    description:
+      "First official production M3 Touring estate combining 510 hp Competition xDrive performance with versatile long-roof wagon practicality.",
   },
 ];

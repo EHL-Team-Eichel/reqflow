@@ -3,16 +3,18 @@ import { CAR_PARTS } from "../parts";
 import { buildCar } from "./buildCar";
 import { buildBodyGrid, G60, RING, STATIONS, topLine } from "./body";
 import * as THREE from "three";
+import { isModelPartAvailable } from "./powertrains";
 
 describe("buildCar", () => {
   const car = buildCar();
 
   it("has a clickable mesh and a badge anchor for every part in the catalog", () => {
     expect(CAR_PARTS).toHaveLength(71);
+    const available = CAR_PARTS;
     const modelled = new Set(car.pieces.map((p) => p.partId).filter(Boolean));
-    const missing = CAR_PARTS.map((p) => p.id).filter((id) => !modelled.has(id));
+    const missing = available.map((p) => p.id).filter((id) => !modelled.has(id));
     expect(missing).toEqual([]);
-    for (const part of CAR_PARTS) expect(car.anchors.has(part.id)).toBe(true);
+    for (const part of available) expect(car.anchors.has(part.id)).toBe(true);
   });
 
   it("gives detailed drive units separate meshes instead of duplicating an assembly label", () => {
