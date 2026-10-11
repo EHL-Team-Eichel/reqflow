@@ -1,0 +1,76 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4MX7Q2H73ESG2D4RD9TRDCV",
+  "session_id": "ses_ed7d4edc8ffeyeDuO4pvaYf7jC",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-11T07:18:51.646082Z",
+  "branch": "ws3-review-ui",
+  "checkpoints_count": 1,
+  "save_step_count": 1,
+  "files_touched": [
+    "docs/STATUS.md"
+  ],
+  "agent": "OpenCode",
+  "model": "gpt-6.1-sol",
+  "turn_id": "5caab817e31d",
+  "checkpoint_transcript_start": 143,
+  "transcript_lines_at_start": 143,
+  "compact_transcript_start": 143,
+  "token_usage": {
+    "input_tokens": 1091183,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 58996389,
+    "output_tokens": 56374,
+    "api_call_count": 114
+  },
+  "session_metrics": {
+    "turn_count": 13
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-11T07:18:51.269194Z",
+    "agent_lines": 53,
+    "agent_removed": 4,
+    "human_added": 99,
+    "human_modified": 24,
+    "human_removed": 0,
+    "total_committed": 174,
+    "total_lines_changed": 182,
+    "agent_percentage": 31.318681318681318,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 2894,
+      "user_lines_removed": 52,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "apps/desktop/src/renderer/src/components/audit/AuditTimeline.test.ts": 100,
+        "apps/desktop/src/renderer/src/components/audit/AuditTimeline.tsx": 212,
+        "apps/desktop/src/renderer/src/components/audit/audit-view.test.ts": 202,
+        "apps/desktop/src/renderer/src/components/audit/audit-view.ts": 123,
+        "apps/desktop/src/renderer/src/components/car/PartPanel.tsx": 3,
+        "apps/desktop/src/renderer/src/components/car/review-smoke.cjs": 370,
+        "apps/desktop/src/renderer/src/components/car/useCarRequirements.ts": 15,
+        "apps/desktop/src/renderer/src/components/requirements/RequirementBrowser.test.ts": 99,
+        "apps/desktop/src/renderer/src/components/requirements/RequirementBrowser.tsx": 356,
+        "apps/desktop/src/renderer/src/components/requirements/RequirementDialog.tsx": 100,
+        "apps/desktop/src/renderer/src/components/requirements/RequirementReview.test.ts": 54,
+        "apps/desktop/src/renderer/src/components/requirements/RequirementReview.tsx": 387,
+        "apps/desktop/src/renderer/src/components/requirements/requirement-browser.test.ts": 185,
+        "apps/desktop/src/renderer/src/components/requirements/requirement-browser.ts": 114,
+        "apps/desktop/src/renderer/src/components/requirements/requirement-review.test.ts": 323,
+        "apps/desktop/src/renderer/src/components/requirements/requirement-review.ts": 144,
+        "apps/desktop/src/renderer/src/pages/CarPage.tsx": 105,
+        "docs/STATUS.md": 2
+      },
+      "user_removed_per_file": {
+        "apps/desktop/src/renderer/src/components/car/useCarRequirements.ts": 5,
+        "apps/desktop/src/renderer/src/components/requirements/RequirementDialog.tsx": 2,
+        "apps/desktop/src/renderer/src/pages/CarPage.tsx": 44,
+        "docs/STATUS.md": 1
+      }
+    }
+  ]
+}
