@@ -3,15 +3,25 @@
   "checkpoint_id": "01M4M9VJPD8SK49ZKGNSAV8Z0M",
   "strategy": "manual-commit",
   "branch": "ws5-pdf-ingestion",
-  "checkpoints_count": 1,
+  "checkpoints_count": 2,
   "files_touched": [
+    "PRODUCT.md",
+    "apps/desktop/electron-builder.yml",
+    "apps/desktop/electron.vite.config.ts",
     "apps/desktop/src/main/handlers.test.ts",
     "apps/desktop/src/main/handlers.ts",
     "apps/desktop/src/main/preview.test.ts",
     "apps/desktop/src/main/preview.ts",
+    "apps/desktop/src/main/smoke.ts",
     "data/samples/README.md",
+    "docs/ARCHITECTURE.md",
     "package-lock.json",
-    "packages/blocks/package.json"
+    "packages/blocks/package.json",
+    "packages/blocks/src/raw/raw.test.ts",
+    "packages/blocks/src/raw/raw.ts",
+    "packages/blocks/src/raw/read.ts",
+    "packages/blocks/src/raw/records.ts",
+    "packages/core/src/blocks.ts"
   ],
   "sessions": [
     {
@@ -20,14 +30,21 @@
       "compact_transcript": "/0/transcript.jsonl",
       "content_hash": "/0/content_hash.txt",
       "prompt": "/0/prompt.txt"
+    },
+    {
+      "metadata": "/1/metadata.json",
+      "transcript": "/1/full.jsonl",
+      "compact_transcript": "/1/transcript.jsonl",
+      "content_hash": "/1/content_hash.txt",
+      "prompt": "/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 1758,
+    "input_tokens": 128554,
     "cache_creation_tokens": 2551913,
-    "cache_read_tokens": 293358976,
-    "output_tokens": 1342666,
-    "api_call_count": 880,
+    "cache_read_tokens": 294300629,
+    "output_tokens": 1349742,
+    "api_call_count": 895,
     "subagent_tokens": {
       "input_tokens": 92,
       "cache_creation_tokens": 156839,
