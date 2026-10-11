@@ -1,0 +1,33 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4MJ262TVMTF4YYPFXPH3FS6",
+  "strategy": "manual-commit",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".gitignore",
+    "apps/desktop/src/renderer/src/components/car/CarViewer.tsx",
+    "apps/desktop/src/renderer/src/components/car/modelSwitcher/PowertrainSwitcher.tsx",
+    "apps/desktop/src/renderer/src/components/car/modelSwitcher/catalogSwitching.test.ts",
+    "apps/desktop/src/renderer/src/components/car/modelSwitcher/powertrains.ts",
+    "apps/desktop/src/renderer/src/components/car/models/features.test.ts",
+    "apps/desktop/src/renderer/src/components/car/models/registry.ts",
+    "apps/desktop/src/renderer/src/pages/CarPage.tsx",
+    "docs/STATUS.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 23542,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 26487,
+    "output_tokens": 159,
+    "api_call_count": 3
+  }
+}
