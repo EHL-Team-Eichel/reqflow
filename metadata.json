@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4MRMMDWCW0CTYFH8PG8627K",
   "strategy": "manual-commit",
   "branch": "ws2-editor-completion",
-  "checkpoints_count": 3,
+  "checkpoints_count": 5,
   "files_touched": [
     "PRODUCT.md",
     "apps/desktop/src/renderer/src/components/dataflow/BlockNode.tsx",
@@ -62,6 +62,13 @@
       "compact_transcript": "/2/transcript.jsonl",
       "content_hash": "/2/content_hash.txt",
       "prompt": "/2/prompt.txt"
+    },
+    {
+      "metadata": "/3/metadata.json",
+      "transcript": "/3/full.jsonl",
+      "compact_transcript": "/3/transcript.jsonl",
+      "content_hash": "/3/content_hash.txt",
+      "prompt": ""
     }
   ],
   "token_usage": {
