@@ -1,0 +1,10 @@
+Please update `packages/blocks/src/research/summarizer.ts` to:
+1. Handle `assessedSelection(record)` from `packages/blocks/src/research/tabular.ts`:
+   - If `selection.reviewed && !selection.excerpts.length && !selection.tableRows.size`, skip the record (it was excluded by assessment review).
+2. Handle `record.recordType === "table"` and `record.table`:
+   - Rather than summarizing structured table records as if they were unformatted text passages, preserve table records using the existing tabular conversion from `packages/blocks/src/research/tabular.ts` (`researchTableRows`), preserving `record.table`, `table: { ...record.table, rows: [values] }`, `fields`, and original metadata.
+3. If `selection.excerpts.length > 0`, use the selected excerpts for text extraction rather than the whole text if applicable (similar to `tabular.ts`).
+
+Verify your changes by running:
+`npm test packages/blocks/src/research/`
+Ensure all tests in `packages/blocks/src/research/` pass!
