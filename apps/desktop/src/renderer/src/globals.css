@@ -71,6 +71,7 @@
   --color-viz-seq-4: #1f74c4;
   --color-viz-seq-5: #16588e;
   --color-viz-seq-6: #0d3a60;
+  --color-viz-seq-ink-high: #ffffff;
 }
 
 :root[data-theme="dark"] {
@@ -117,6 +118,7 @@
   --color-viz-seq-4: #3f86cc;
   --color-viz-seq-5: #74aee6;
   --color-viz-seq-6: #b5d6f5;
+  --color-viz-seq-ink-high: #0b1520;
 }
 
 html,
