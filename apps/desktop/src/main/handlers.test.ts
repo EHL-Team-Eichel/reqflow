@@ -10,6 +10,7 @@ import {
   defaultBlockParams,
   emptyPipelineData,
   setBlockParams,
+  type LlmClient,
   type WorkflowRun,
 } from "@reqflow/core";
 import { fixtureRecords, fixtureSources } from "@reqflow/core/fixtures";
@@ -609,5 +610,149 @@ describe("handlers (All IPC methods against SQLite and stores)", () => {
     await expect(handlers.reasoning.forRun("invalid", "car")).rejects.toThrow();
 
     db.close();
+  });
+
+  it("lazy no-call for spreadsheet: previewing CSV does not invoke or initialize AI", async () => {
+    const mockLlm: LlmClient = {
+      generateText: vi.fn(),
+      generateObject: vi.fn(),
+    };
+    const files = createFileStore(join(tempDir, "uploads"));
+    const handlers = createHandlers({
+      dataDir: tempDir,
+      dbPath,
+      files,
+      llm: mockLlm,
+      secretsStore: syntheticSecrets(tempDir),
+      pickFile: vi.fn().mockResolvedValue(null),
+      appInfo: () => ({
+        version: "0.1.0",
+        platform: "darwin",
+        dataDir: tempDir,
+        isPackaged: false,
+      }),
+    });
+
+    const csvPath = join(tempDir, "sample.csv");
+    writeFileSync(csvPath, "id,comment\n1,Great seat comfort\n", "utf8");
+    const file = await files.importFile(csvPath);
+
+    const preview = await handlers.blocks.preview({
+      kind: "raw",
+      params: {
+        ...defaultBlockParams("raw"),
+        dataset: "customer_feedback",
+        file: { fileId: file.id, name: file.name },
+      },
+      scope: DEFAULT_SETTINGS.defaultScope,
+    });
+
+    expect(preview.outputs.out?.records).toHaveLength(1);
+    expect(mockLlm.generateText).not.toHaveBeenCalled();
+    expect(mockLlm.generateObject).not.toHaveBeenCalled();
+  });
+
+  it("invokes configured default model via configuredLlm when preview invokes AI and handles deps.llm test seam", async () => {
+    const mockLlm: LlmClient = {
+      generateText: vi
+        .fn()
+        .mockResolvedValue({ text: "extracted requirements", model: "test-model" }),
+      generateObject: vi.fn().mockResolvedValue({ object: {} }),
+    };
+    const testRegistry = new BlockRegistry([
+      ...allBlockImplementations.filter((b) => b.kind !== "raw"),
+      defineBlock({
+        kind: "raw",
+        async run(_inputs, _params, ctx) {
+          ctx.log("Starting raw preview with AI extraction");
+          const res = await ctx.llm.generateText({ prompt: "extract from doc" });
+          return {
+            status: "ok",
+            outputs: {
+              out: {
+                ...emptyPipelineData(),
+                records: [{ id: "R1", text: res.text, sourceId: "S1" }],
+              },
+            },
+          };
+        },
+      }),
+    ]);
+    const files = createFileStore(join(tempDir, "uploads"));
+    const handlers = createHandlers({
+      dataDir: tempDir,
+      dbPath,
+      files,
+      llm: mockLlm,
+      registry: testRegistry,
+      secretsStore: syntheticSecrets(tempDir),
+      pickFile: vi.fn().mockResolvedValue(null),
+      appInfo: () => ({
+        version: "0.1.0",
+        platform: "darwin",
+        dataDir: tempDir,
+        isPackaged: false,
+      }),
+    });
+
+    const preview = await handlers.blocks.preview({
+      kind: "raw",
+      params: defaultBlockParams("raw"),
+      scope: DEFAULT_SETTINGS.defaultScope,
+    });
+
+    expect(mockLlm.generateText).toHaveBeenCalledWith({ prompt: "extract from doc" });
+    expect(preview.outputs.out?.records).toHaveLength(1);
+    expect(preview.outputs.out?.records[0]?.text).toBe("extracted requirements");
+  });
+
+  it("wraps AI provider failure safely during preview and preserves logs", async () => {
+    const failingLlm: LlmClient = {
+      generateText: vi
+        .fn()
+        .mockRejectedValue(new Error('Provider error 401: {"key":"sk-ant-test-super-secret"}')),
+      generateObject: vi.fn().mockRejectedValue(new Error("fail")),
+    };
+    const testRegistry = new BlockRegistry([
+      ...allBlockImplementations.filter((b) => b.kind !== "raw"),
+      defineBlock({
+        kind: "raw",
+        async run(_inputs, _params, ctx) {
+          ctx.log("Log recorded prior to failure");
+          await ctx.llm.generateText({ prompt: "extract" });
+          return { status: "ok", outputs: {} };
+        },
+      }),
+    ]);
+    const files = createFileStore(join(tempDir, "uploads"));
+    const handlers = createHandlers({
+      dataDir: tempDir,
+      dbPath,
+      files,
+      llm: failingLlm,
+      registry: testRegistry,
+      secretsStore: syntheticSecrets(tempDir),
+      pickFile: vi.fn().mockResolvedValue(null),
+      appInfo: () => ({
+        version: "0.1.0",
+        platform: "darwin",
+        dataDir: tempDir,
+        isPackaged: false,
+      }),
+    });
+
+    await expect(
+      handlers.blocks.preview({
+        kind: "raw",
+        params: defaultBlockParams("raw"),
+        scope: DEFAULT_SETTINGS.defaultScope,
+      }),
+    ).rejects.toMatchObject({
+      code: "block_failed",
+      message: expect.not.stringContaining("sk-ant-test-super-secret"),
+      details: {
+        logs: expect.arrayContaining(["Log recorded prior to failure"]),
+      },
+    });
   });
 });

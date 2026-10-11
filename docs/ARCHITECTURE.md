@@ -134,8 +134,17 @@ analysts (map) ─┴→ synthesizer (themes) → code picks themes → architec
 ## Data flow: one envelope per port
 
 Every port carries a `PipelineData` envelope (`sources, records, findings, themes, requirements`).
-Raw and Research emit sources and records (the "unified data stream"). Raw accepts Excel, CSV,
-read-only SQLite queries, and declared Research JSON envelopes. JSON import validates core schemas
+Raw and Research emit sources and records (the "unified data stream"). Raw accepts Excel, CSV, PDF,
+read-only SQLite queries, and declared Research JSON envelopes. PDF.js reads embedded text with spatial
+spacing; sparse/image-only pages use local Tesseract English/German OCR with bundled models. The default
+configured LLM structures each page using a strict schema; code checks excerpts and cell values against
+the extracted text. Original pages remain alongside AI-derived items, with page locators, OCR confidence,
+model IDs and a needs-review marker. A source-ingestion audit records the actual model. No findings or
+requirements are invented by PDF ingestion. Mock explicitly refuses PDF structuring. Runtime PDF/OCR
+packages and their installed dependency closure ship in `out/main/node_modules`, unpacked from ASAR for
+native rendering, workers and WASM. PDF limits fail explicitly: 30 MB, 100 pages, 50k characters/page,
+8M rendered pixels and 45-second OCR-operation timeouts. Preview uses a lazy configured LLM; spreadsheet
+previews do not require credentials. JSON import validates core schemas
 and references but preserves the original objects, extensions, provenance and envelope metadata;
 it rejects duplicate identities and dangling evidence rather than dropping them. Later blocks enrich the same
 envelope: AI Filter keeps matching items (and extracts evidence-linked findings), AI Splitter routes

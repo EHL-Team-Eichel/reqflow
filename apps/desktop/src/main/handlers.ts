@@ -402,7 +402,22 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
   };
   const handlers: ReqflowHandlers = {
     app: { info: async () => deps.appInfo() },
-    blocks: { preview: (request) => previewBlock(registry, deps.files, request) },
+    blocks: {
+      preview: async (request) => {
+        const settings = loadSettings(dataDir);
+        const lazyLlm: LlmClient = {
+          generateText: async (options) => {
+            const client = await configuredLlm(settings);
+            return client.generateText(options);
+          },
+          generateObject: async (options) => {
+            const client = await configuredLlm(settings);
+            return client.generateObject(options);
+          },
+        };
+        return previewBlock(registry, deps.files, request, { settings, llm: lazyLlm });
+      },
+    },
     templates: { list: async () => [BMW_DEFAULT_TEMPLATE] },
     workflows: {
       list: async () => listWorkflows(dataDir),

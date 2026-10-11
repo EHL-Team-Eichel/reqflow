@@ -5,6 +5,8 @@ import {
   parseBlockParams,
   ProductScope,
   type FileStore,
+  type LlmClient,
+  type Settings,
 } from "@reqflow/core";
 import type { BlockPreview } from "@reqflow/core/ipc";
 import { NO_AGENT_SERVICES, type BlockContext, type BlockRegistry } from "@reqflow/engine";
@@ -21,6 +23,39 @@ const unavailable = (what: string) => () => {
   throw new Error(`${what} isn't available in a preview; run the flow instead`);
 };
 
+export interface PreviewBlockDeps {
+  settings?: Settings;
+  llm?: LlmClient;
+}
+
+export class AiPreviewError extends Error {
+  constructor(
+    message = "AI provider failed to generate a preview response. Check your AI settings and credentials.",
+  ) {
+    super(message);
+    this.name = "AiPreviewError";
+  }
+}
+
+function safePreviewLlm(client: LlmClient): LlmClient {
+  return {
+    async generateText(options) {
+      try {
+        return await client.generateText(options);
+      } catch (_err) {
+        throw new AiPreviewError();
+      }
+    },
+    async generateObject(options) {
+      try {
+        return await client.generateObject(options);
+      } catch (_err) {
+        throw new AiPreviewError();
+      }
+    },
+  };
+}
+
 /**
  * Runs a block without inputs on its own (blocks.preview). Electron-free so it can be unit-tested.
  * The request comes from the renderer, so it is validated like any untrusted input.
@@ -29,6 +64,7 @@ export async function previewBlock(
   registry: BlockRegistry,
   files: FileStore,
   request: unknown,
+  deps?: PreviewBlockDeps,
 ): Promise<BlockPreview> {
   const { kind, params: rawParams, scope } = Request.parse(request);
   const spec = BLOCK_SPECS[kind];
@@ -50,12 +86,20 @@ export async function previewBlock(
   }
 
   const logs: string[] = [];
+  const settings: Settings = {
+    ...(deps?.settings ?? DEFAULT_SETTINGS),
+    defaultScope: scope,
+  };
+  const llm: LlmClient = deps?.llm
+    ? safePreviewLlm(deps.llm)
+    : { generateObject: unavailable("AI"), generateText: unavailable("AI") };
+
   const ctx: BlockContext = {
     runId: "preview",
     blockId: "preview",
     scope,
-    settings: { ...DEFAULT_SETTINGS, defaultScope: scope },
-    llm: { generateObject: unavailable("AI"), generateText: unavailable("AI") },
+    settings,
+    llm,
     agents: NO_AGENT_SERVICES, // only blocks without inputs are previewed; none of them use agents
     audit: {
       record: async (e) => ({
@@ -78,9 +122,16 @@ export async function previewBlock(
   try {
     result = await registry.get(kind).run({}, params, ctx);
   } catch (err) {
-    throw new ReqflowError("block_failed", err instanceof Error ? err.message : String(err), {
-      logs,
-    });
+    let message = err instanceof Error ? err.message : String(err);
+    if (
+      err instanceof AiPreviewError ||
+      (err instanceof Error && err.name === "AiPreviewError") ||
+      /(\{"error"|api[_-]?key|bearer\s+[a-z0-9_-]+)/i.test(message)
+    ) {
+      message =
+        "AI provider failed to generate a preview response. Check your AI settings and credentials.";
+    }
+    throw new ReqflowError("block_failed", message, { logs });
   }
   if (result.status !== "ok") throw new ReqflowError("block_failed", result.message, { logs });
   return { outputs: result.outputs, logs };

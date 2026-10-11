@@ -2,8 +2,9 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createBlockRegistry } from "@reqflow/blocks";
-import { DEFAULT_SETTINGS, defaultBlockParams } from "@reqflow/core";
+import { DEFAULT_SETTINGS, defaultBlockParams, type LlmClient, type Settings } from "@reqflow/core";
 import { createFileStore } from "@reqflow/db";
+import type { BlockContext } from "@reqflow/engine";
 import { afterAll, describe, expect, it, vi } from "vitest";
 import { ReqflowError } from "./dispatch";
 import { previewBlock } from "./preview";
@@ -55,6 +56,85 @@ describe("blocks.preview", () => {
     expect(preview.outputs.out!.records).toHaveLength(17);
     expect(preview.outputs.out!.findings.length).toBeGreaterThan(0);
     expect(preview.logs.join("\n")).toMatch(/Read 17 record/);
+  });
+
+  it("passes supplied settings and llm client to block context", async () => {
+    const mockLlm: LlmClient = {
+      generateText: vi.fn().mockResolvedValue({ text: "ok", model: "custom-test-model" }),
+      generateObject: vi.fn().mockResolvedValue({ object: {} }),
+    };
+    const customSettings: Settings = {
+      ...DEFAULT_SETTINGS,
+      llm: { ...DEFAULT_SETTINGS.llm, model: "custom-preview-model" },
+    };
+    let capturedCtx: BlockContext | undefined;
+    const rawImpl = registry.get("raw");
+    const originalRun = rawImpl.run;
+    const spy = vi.spyOn(rawImpl, "run").mockImplementation(async (inputs, params, ctx) => {
+      capturedCtx = ctx;
+      return originalRun.call(rawImpl, inputs, params, ctx);
+    });
+    try {
+      const info = await files.importFile(join(SAMPLES, "equipment_take_rates.csv"));
+      const params = {
+        ...defaultBlockParams("raw"),
+        dataset: "equipment_data",
+        file: { fileId: info.id, name: info.name },
+      };
+      await previewBlock(
+        registry,
+        files,
+        { kind: "raw", params, scope },
+        { settings: customSettings, llm: mockLlm },
+      );
+      expect(capturedCtx).toBeDefined();
+      expect(capturedCtx?.settings.llm.model).toBe("custom-preview-model");
+      expect(capturedCtx?.settings.defaultScope).toEqual(scope);
+      await capturedCtx?.llm.generateText({ prompt: "test prompt" });
+      expect(mockLlm.generateText).toHaveBeenCalledWith({ prompt: "test prompt" });
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it("wraps AI provider failure into generic message and keeps logs safe", async () => {
+    const failingLlm: LlmClient = {
+      generateText: vi
+        .fn()
+        .mockRejectedValue(new Error('Anthropic 401: {"error":{"api_key":"sk-ant-secret-12345"}}')),
+      generateObject: vi.fn().mockRejectedValue(new Error("Secret provider payload")),
+    };
+    const rawImpl = registry.get("raw");
+    const spy = vi.spyOn(rawImpl, "run").mockImplementation(async (_inputs, _params, ctx) => {
+      ctx.log("Starting preview before AI call");
+      await ctx.llm.generateText({ prompt: "test" });
+      return { status: "ok", outputs: {} };
+    });
+    try {
+      const info = await files.importFile(join(SAMPLES, "equipment_take_rates.csv"));
+      const params = {
+        ...defaultBlockParams("raw"),
+        dataset: "equipment_data",
+        file: { fileId: info.id, name: info.name },
+      };
+      let thrownError: unknown;
+      try {
+        await previewBlock(registry, files, { kind: "raw", params, scope }, { llm: failingLlm });
+      } catch (err) {
+        thrownError = err;
+      }
+      expect(thrownError).toBeInstanceOf(ReqflowError);
+      const reqError = thrownError as ReqflowError;
+      expect(reqError.code).toBe("block_failed");
+      expect(reqError.message).not.toContain("sk-ant-secret-12345");
+      expect(reqError.message).not.toContain("Anthropic 401");
+      expect(reqError.message).toMatch(/AI provider failed/i);
+      expect((reqError.details as { logs?: string[] })?.logs).toContain(
+        "Starting preview before AI call",
+      );
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it("refuses what it can't preview, with distinct error codes", async () => {
