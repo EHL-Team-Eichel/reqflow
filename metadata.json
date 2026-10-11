@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4MSH1K50KJ2T5K2C3NXBZAH",
+  "strategy": "manual-commit",
+  "branch": "ws8-scoring-integrity",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "docs/STATUS.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 60,
+    "cache_creation_tokens": 48037,
+    "cache_read_tokens": 15469648,
+    "output_tokens": 32051,
+    "api_call_count": 30
+  }
+}

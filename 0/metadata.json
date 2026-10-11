@@ -1,0 +1,147 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4MSH1K50KJ2T5K2C3NXBZAH",
+  "session_id": "4bfdd1b9-8491-4269-b104-23d39ef58f77",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-11T06:13:45.056396Z",
+  "branch": "ws8-scoring-integrity",
+  "checkpoints_count": 1,
+  "save_step_count": 3,
+  "files_touched": [
+    "docs/STATUS.md"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-opus-5-5",
+  "turn_id": "76b418068d59",
+  "checkpoint_transcript_start": 1359,
+  "transcript_lines_at_start": 1359,
+  "compact_transcript_start": 192,
+  "token_usage": {
+    "input_tokens": 60,
+    "cache_creation_tokens": 48037,
+    "cache_read_tokens": 15469648,
+    "output_tokens": 32051,
+    "api_call_count": 30
+  },
+  "skill_events_version": 1,
+  "skill_events": [
+    {
+      "id": "claude-skill-toolu_015bSdXGuraNZ8HJQU1Rxg48",
+      "event_type": "tool_invocation",
+      "skill": {
+        "name": "claude-api"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "skill_tool_use",
+        "confidence": "explicit"
+      },
+      "turn_id": "9844fc3c55e1",
+      "transcript_anchor": {
+        "unit": "line",
+        "start": 309,
+        "end": 310,
+        "entry_ids": [
+          "1654eeb0-eae6-4ac0-8066-d56c18c58134"
+        ],
+        "tool_use_id": "toolu_015bSdXGuraNZ8HJQU1Rxg48"
+      },
+      "native": {
+        "tool_name": "Skill",
+        "tool_use_id": "toolu_015bSdXGuraNZ8HJQU1Rxg48"
+      },
+      "collapse": {
+        "target": "tool_pair",
+        "label": "Skill: claude-api",
+        "default_collapsed": true
+      }
+    }
+  ],
+  "session_metrics": {
+    "turn_count": 3
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-11T06:13:44.960453Z",
+    "agent_lines": 0,
+    "agent_removed": 0,
+    "human_added": 757,
+    "human_modified": 15,
+    "human_removed": 0,
+    "total_committed": 757,
+    "total_lines_changed": 786,
+    "agent_percentage": 0,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 2877,
+      "user_lines_removed": 52,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "apps/desktop/src/renderer/src/components/audit/AuditTimeline.test.ts": 100,
+        "apps/desktop/src/renderer/src/components/audit/AuditTimeline.tsx": 212,
+        "apps/desktop/src/renderer/src/components/audit/audit-view.test.ts": 202,
+        "apps/desktop/src/renderer/src/components/audit/audit-view.ts": 123,
+        "apps/desktop/src/renderer/src/components/car/PartPanel.tsx": 3,
+        "apps/desktop/src/renderer/src/components/car/review-smoke.cjs": 367,
+        "apps/desktop/src/renderer/src/components/car/useCarRequirements.ts": 15,
+        "apps/desktop/src/renderer/src/components/requirements/RequirementBrowser.test.ts": 99,
+        "apps/desktop/src/renderer/src/components/requirements/RequirementBrowser.tsx": 342,
+        "apps/desktop/src/renderer/src/components/requirements/RequirementDialog.tsx": 100,
+        "apps/desktop/src/renderer/src/components/requirements/RequirementReview.test.ts": 54,
+        "apps/desktop/src/renderer/src/components/requirements/RequirementReview.tsx": 387,
+        "apps/desktop/src/renderer/src/components/requirements/requirement-browser.test.ts": 185,
+        "apps/desktop/src/renderer/src/components/requirements/requirement-browser.ts": 114,
+        "apps/desktop/src/renderer/src/components/requirements/requirement-review.test.ts": 323,
+        "apps/desktop/src/renderer/src/components/requirements/requirement-review.ts": 144,
+        "apps/desktop/src/renderer/src/pages/CarPage.tsx": 105,
+        "docs/STATUS.md": 2
+      },
+      "user_removed_per_file": {
+        "apps/desktop/src/renderer/src/components/car/useCarRequirements.ts": 5,
+        "apps/desktop/src/renderer/src/components/requirements/RequirementDialog.tsx": 2,
+        "apps/desktop/src/renderer/src/pages/CarPage.tsx": 44,
+        "docs/STATUS.md": 1
+      }
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 2877,
+      "agent_lines_removed": 52
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 159,
+      "user_lines_removed": 142,
+      "agent_lines_added": 2877,
+      "agent_lines_removed": 52,
+      "user_added_per_file": {
+        "apps/desktop/src/renderer/src/components/car/review-smoke.cjs": 4,
+        "apps/desktop/src/renderer/src/components/requirements/RequirementBrowser.tsx": 155
+      },
+      "user_removed_per_file": {
+        "apps/desktop/src/renderer/src/components/car/review-smoke.cjs": 1,
+        "apps/desktop/src/renderer/src/components/requirements/RequirementBrowser.tsx": 141
+      }
+    },
+    {
+      "checkpoint_number": 4,
+      "user_lines_added": 159,
+      "user_lines_removed": 142,
+      "agent_lines_added": 2877,
+      "agent_lines_removed": 52,
+      "user_added_per_file": {
+        "apps/desktop/src/renderer/src/components/car/review-smoke.cjs": 4,
+        "apps/desktop/src/renderer/src/components/requirements/RequirementBrowser.tsx": 155
+      },
+      "user_removed_per_file": {
+        "apps/desktop/src/renderer/src/components/car/review-smoke.cjs": 1,
+        "apps/desktop/src/renderer/src/components/requirements/RequirementBrowser.tsx": 141
+      }
+    }
+  ]
+}
