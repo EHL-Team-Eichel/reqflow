@@ -1,0 +1,54 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4M5YS1459Q4VF3SYR82SNR9",
+  "strategy": "manual-commit",
+  "branch": "integrate/2026-10-11",
+  "checkpoints_count": 4,
+  "files_touched": [
+    "apps/desktop/src/main/handlers.test.ts",
+    "apps/desktop/src/main/settings-storage.test.ts",
+    "apps/desktop/src/main/smoke.ts",
+    "apps/desktop/src/renderer/src/components/car/CarViewer.tsx",
+    "apps/desktop/src/renderer/src/components/car/PartPanel.tsx",
+    "apps/desktop/src/renderer/src/components/car/model/buildCar.test.ts",
+    "apps/desktop/src/renderer/src/components/car/model/buildCar.ts",
+    "apps/desktop/src/renderer/src/components/car/model/powertrains.test.ts",
+    "apps/desktop/src/renderer/src/components/car/model/powertrains.ts",
+    "apps/desktop/src/renderer/src/components/car/models/batch10.ts",
+    "apps/desktop/src/renderer/src/components/car/models/batch11.ts",
+    "apps/desktop/src/renderer/src/components/car/models/batch3.ts",
+    "apps/desktop/src/renderer/src/components/car/models/batch4.ts",
+    "apps/desktop/src/renderer/src/components/car/models/batch5.ts",
+    "apps/desktop/src/renderer/src/components/car/models/batch6.ts",
+    "apps/desktop/src/renderer/src/components/car/models/batch7.ts",
+    "apps/desktop/src/renderer/src/components/car/models/batch8.ts",
+    "apps/desktop/src/renderer/src/components/car/models/batch9.ts",
+    "apps/desktop/src/renderer/src/components/car/models/vehicleStore.test.ts",
+    "apps/desktop/src/renderer/src/components/car/models/vehicleStore.ts",
+    "apps/desktop/src/renderer/src/components/car/partTags.ts",
+    "apps/desktop/src/renderer/src/components/settings/sections/ModelSection.tsx",
+    "apps/desktop/src/renderer/src/components/settings/sections/ModelSwitcherSection.tsx",
+    "apps/desktop/src/renderer/src/lib/settings-store.test.ts",
+    "apps/desktop/src/renderer/src/pages/CarPage.tsx",
+    "apps/desktop/src/renderer/src/pages/SettingsPage.tsx",
+    "docs/STATUS.md",
+    "packages/core/src/settings.test.ts",
+    "packages/core/src/settings.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  }
+}

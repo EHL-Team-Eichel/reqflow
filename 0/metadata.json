@@ -1,0 +1,77 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4M5YS1459Q4VF3SYR82SNR9",
+  "session_id": "ses_ed82df501ffezfw15VutYcR1OP",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-11T00:31:51.314765Z",
+  "branch": "integrate/2026-10-11",
+  "checkpoints_count": 4,
+  "files_touched": [
+    "apps/desktop/src/main/handlers.test.ts",
+    "apps/desktop/src/main/settings-storage.test.ts",
+    "apps/desktop/src/main/smoke.ts",
+    "apps/desktop/src/renderer/src/components/car/CarViewer.tsx",
+    "apps/desktop/src/renderer/src/components/car/PartPanel.tsx",
+    "apps/desktop/src/renderer/src/components/car/model/buildCar.test.ts",
+    "apps/desktop/src/renderer/src/components/car/model/buildCar.ts",
+    "apps/desktop/src/renderer/src/components/car/model/powertrains.test.ts",
+    "apps/desktop/src/renderer/src/components/car/model/powertrains.ts",
+    "apps/desktop/src/renderer/src/components/car/models/batch10.ts",
+    "apps/desktop/src/renderer/src/components/car/models/batch11.ts",
+    "apps/desktop/src/renderer/src/components/car/models/batch3.ts",
+    "apps/desktop/src/renderer/src/components/car/models/batch4.ts",
+    "apps/desktop/src/renderer/src/components/car/models/batch5.ts",
+    "apps/desktop/src/renderer/src/components/car/models/batch6.ts",
+    "apps/desktop/src/renderer/src/components/car/models/batch7.ts",
+    "apps/desktop/src/renderer/src/components/car/models/batch8.ts",
+    "apps/desktop/src/renderer/src/components/car/models/batch9.ts",
+    "apps/desktop/src/renderer/src/components/car/models/vehicleStore.test.ts",
+    "apps/desktop/src/renderer/src/components/car/models/vehicleStore.ts",
+    "apps/desktop/src/renderer/src/components/car/partTags.ts",
+    "apps/desktop/src/renderer/src/components/settings/sections/ModelSection.tsx",
+    "apps/desktop/src/renderer/src/components/settings/sections/ModelSwitcherSection.tsx",
+    "apps/desktop/src/renderer/src/lib/settings-store.test.ts",
+    "apps/desktop/src/renderer/src/pages/CarPage.tsx",
+    "apps/desktop/src/renderer/src/pages/SettingsPage.tsx",
+    "docs/STATUS.md",
+    "packages/core/src/settings.test.ts",
+    "packages/core/src/settings.ts"
+  ],
+  "agent": "OpenCode",
+  "model": "gpt-6.1-sol",
+  "turn_id": "cbb35ea53e05",
+  "checkpoint_transcript_start": 145,
+  "transcript_lines_at_start": 145,
+  "compact_transcript_start": 145,
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  },
+  "session_metrics": {
+    "turn_count": 9
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-11T00:31:51.183989Z",
+    "agent_lines": 0,
+    "agent_removed": 0,
+    "human_added": 5738,
+    "human_modified": 351,
+    "human_removed": 0,
+    "total_committed": 5738,
+    "total_lines_changed": 6089,
+    "agent_percentage": 0,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}
