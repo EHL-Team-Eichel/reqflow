@@ -460,6 +460,42 @@ export async function runSmoke(
   await shot("splitter-inner-two");
   check(await click('[data-testid="crumb-0"]'), "splitter: breadcrumb back missing");
   await delay(400);
+
+  // Car parts: the depth sets the outputs (areas or part groups), always with Other last.
+  check(await click('[data-testid="block-ai_splitter"]'), "splitter: cannot reselect");
+  await delay(200);
+  const splitterOutputs = () =>
+    count('[data-testid="block-ai_splitter"] .react-flow__handle.source');
+  const splitMode = await js<string>(
+    `document.querySelector('[data-testid="inspector"] select').value`,
+  );
+  await setSelect('[data-testid="inspector"] select', "car_parts");
+  await delay(300);
+  check((await splitterOutputs()) === 4, "splitter: car parts by area should have 4 outputs");
+  await setSelect('[data-testid="splitter-depth"] select', "groups");
+  await delay(300);
+  check(
+    (await splitterOutputs()) === 14,
+    "splitter: car parts by part group should have 14 outputs",
+  );
+  const partOutputs = await text('[data-testid="splitter-part-outputs"]');
+  check(
+    partOutputs.includes("Seats") && partOutputs.includes("Cockpit & controls"),
+    "splitter: part-group outputs should name seats and the cockpit",
+  );
+  await shot("splitter-car-part-groups");
+  check(await click('[data-testid="inspector-open-inner"]'), "splitter: no inner workplace button");
+  await delay(600);
+  check(
+    (await count('[data-testid="boundary-output"]')) === 14,
+    "splitter: the inner workplace should follow the part-group outputs",
+  );
+  check(await click('[data-testid="crumb-0"]'), "splitter: breadcrumb back missing");
+  await delay(400);
+  check(await click('[data-testid="block-ai_splitter"]'), "splitter: cannot reselect");
+  await delay(200);
+  await setSelect('[data-testid="inspector"] select', splitMode);
+  await delay(300);
   check(await click('[data-testid="block-ai_splitter"]'), "typing: can't reselect the splitter");
   await delay(200);
   await type('[aria-label="Branch name 1"]', ["Top ", "priority"]);
@@ -1418,15 +1454,15 @@ export async function runSmoke(
   await go("/car");
   await delay(600);
 
-  // Reset: asks in place, removes every requirement, and the car is empty afterwards.
-  // Reset stays disabled until the page has loaded its requirements: wait for that, not a fixed delay.
-  for (
-    let i = 0;
-    i < 50 &&
-    (await js<boolean>(`!!document.querySelector('[data-testid="car-reset"]')?.disabled`));
-    i++
-  )
+  // Reset: asks in place, removes every requirement, and the car is empty afterwards. The button
+  // stays disabled until the requirements have loaded: wait for that, not a fixed time.
+  for (let i = 0; i < 50; i++) {
+    if (
+      await js<boolean>(`document.querySelector('[data-testid="car-reset"]')?.disabled === false`)
+    )
+      break;
     await delay(100);
+  }
   check(await click('[data-testid="car-reset"]'), "car: no reset button");
   await delay(200);
   check((await count('[data-testid="car-reset-confirm"]')) === 1, "car: reset didn't ask first");

@@ -1,4 +1,4 @@
-import { CATEGORY_LABELS, ScoreFactor, Source, SourceRecord } from "@reqflow/core";
+import { CAR_PART_GROUPS, CATEGORY_LABELS, ScoreFactor, Source, SourceRecord } from "@reqflow/core";
 import { z } from "zod";
 
 const Item = z.object({
@@ -51,7 +51,7 @@ const RawBase = {
   mode: z.enum(["customer_priority", "car_parts", "custom"]),
   instruction: z.string().max(5000),
 };
-const BranchCount = z.number().int().min(2).max(10);
+const BranchCount = z.number().int().min(2).max(16);
 const RawPayload = z.discriminatedUnion("contract", [
   z.strictObject({
     contract: z.literal("reqflow.ai-splitter.discover@1"),
@@ -69,6 +69,9 @@ const RawPayload = z.discriminatedUnion("contract", [
     contract: z.literal("reqflow.ai-splitter.plan@1"),
     ...RawBase,
     branchCount: BranchCount,
+    fixedGroups: z
+      .array(z.strictObject({ id: RawId, label: z.string().min(1), description: z.string() }))
+      .optional(),
     needs: z.array(CanonicalNeed).max(400),
   }),
   z.strictObject({
@@ -260,6 +263,43 @@ function impact(quote: string): 0 | 25 | 50 | 75 | 100 | null {
   return null;
 }
 
+/** Offline keyword topic → the Car tab's part group (its area is used at the coarser depth). */
+const TOPIC_PART_GROUP: Record<string, string> = {
+  seating: "seats",
+  space: "seats",
+  infotainment: "cockpit_controls",
+  controls: "cockpit_controls",
+  storage: "luggage_storage",
+  climate: "comfort_atmosphere",
+  noise: "comfort_atmosphere",
+  quality: "comfort_atmosphere",
+  driving: "suspension_components",
+  range: "power_chassis",
+  charging: "power_chassis",
+  design: "body_design",
+};
+
+/** Fixed car-part plan: each need goes to its topic's group or area, else "other". */
+function fixedPartPlan(
+  fixed: { id: string; label: string; description: string }[],
+  needs: Canonical[],
+) {
+  const ids = new Set(fixed.map((g) => g.id));
+  const groups = fixed.map((g) => ({
+    ...g,
+    needIds: [] as string[],
+    reason: "[MOCK] Deterministic car-part keywords; not semantic AI grouping.",
+  }));
+  for (const need of needs) {
+    const groupId = TOPIC_PART_GROUP[topicFor(need)?.key ?? ""];
+    const area = CAR_PART_GROUPS.find((g) => g.id === groupId)?.area;
+    const target = groupId && ids.has(groupId) ? groupId : area && ids.has(area) ? area : "other";
+    const group = groups.find((g) => g.id === target) ?? groups[groups.length - 1]!;
+    group.needIds.push(need.id);
+  }
+  return groups;
+}
+
 const CAR_GROUPS = [
   { label: "Seats & passenger space", keys: ["seating", "space"] },
   { label: "Infotainment & controls", keys: ["infotainment", "controls"] },
@@ -353,6 +393,11 @@ function rawObject(raw: unknown, promptLength: number): unknown {
       checkCatalog(p.needs);
       if (p.mode === "customer_priority")
         throw new Error("Mock customer-priority mode uses canonical needs, not a group-plan call.");
+      if (p.fixedGroups) {
+        if (p.fixedGroups.length !== p.branchCount)
+          throw new Error("Mock fixed car-part groups must match the output count.");
+        return { contract: p.contract, groups: fixedPartPlan(p.fixedGroups, p.needs) };
+      }
       const requested = p.instruction
         .match(/^(?:labels|groups)\s*:\s*(.+)$/is)?.[1]
         ?.split(/[;,\n]/)

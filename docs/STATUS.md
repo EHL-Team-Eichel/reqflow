@@ -68,7 +68,7 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 ## WS0 — Lead / integrator
 
-**Status:** review (Analytics integration verified; PR #19 ready to merge) · **Owner:** OpenCode (Analytics integration) · **Branch:** `analytics-and-timeline`
+**Status:** review (Analytics integration tests verified; latest native smoke incomplete) · **Owner:** OpenCode (Analytics integration) · **Branch:** `analytics-and-timeline`
 
 **Tasks**
 
@@ -81,7 +81,7 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 **Log**
 
-- 2026-10-11: Human requested merging the completed Analytics branch into main and launching ReqFlow locally. Integrated latest main into `analytics-and-timeline` for merge-commit PR #19; the only conflict was the product block table, resolved by keeping both PDF ingestion and Analytics. Verified `npm run typecheck`, `npm run format:check`, `npm test -- --maxWorkers=2 --testTimeout=30000` (2,562 passed, 6 skipped), and native macOS `npm run smoke` (82 screenshots). Default test timeouts and the initial two-minute smoke command expired under concurrent machine load; retries passed without code changes. Inspected Analytics overview, timeline, topics, source comparison, flow, quality and the preserved grey-line Car interior. Synthetic-only verification; no BMW values, live providers or credentials used. The separate `reqflow/` checkout has uncommitted Car work and is left untouched; launch will use the merged main in this clean integration checkout. Human authorized replacing the existing app instance. Windows/Linux remain unverified.
+- 2026-10-11: Human requested merging completed Analytics into main through PR #19 and launching locally. Integrated main through `a3d7bef`, preserving PDF ingestion, splitter car-part depth and the grey-line Car transition. Resolved product-table conflicts by keeping all block descriptions; kept main's equivalent Reset-ready wait in smoke. Latest combined code passes `npm run typecheck`, `npm run format:check` and `npm test -- --maxWorkers=2 --testTimeout=30000` (2,569 passed, 6 skipped). Native macOS smoke passed before the final splitter-depth refresh (82 screenshots); final refreshed-code smoke remains incomplete: one run hung in later Settings checks and a fresh isolated run exited before writing its final report (78 screenshots), so neither is claimed as passing. Inspected Analytics overview, timeline, topics, source comparison, flow, quality and preserved grey-line Car interior. Synthetic-only checks; no BMW values, live providers or credentials used. The separate `reqflow/` checkout's uncommitted Car work is untouched. Launch uses merged main in this clean checkout; human authorized replacing the existing app instance. Windows/Linux remain unverified.
 - 2026-10-11: OpenCode is creating a synthetic 100-row F70 feedback workbook and block-by-block test guide. Inspected only the supplied workbook's sheet/header/counts; no BMW cell values used. New fixture paths only; preserve concurrent PDF-ingestion work.
 - 2026-10-11: Publishable snapshot including the latest Car class/feature adaptation passes `npm run check` (2,307 tests, 5 skipped) and native macOS smoke (70 screenshots). Inspected final M5 baseline, catalog selection/restoration, compact details and light/dark views. All ready remote branches are included; only the four old experiment branches and human-excluded Analytics WIP stay out. No live providers, credentials or BMW files used in verification; Windows/Linux remain unverified.
 - 2026-10-11: Final remote refresh found Car follow-up `db64757` (class-aware features and M5 baseline) and newly published `analytics-and-timeline`. Car follow-up is included. Analytics is not buildable: five engine modules are missing and its chart tabs are placeholders. Human explicitly chose to publish ready branches and leave Analytics to its author. Ready integration is isolated at `integrate/ready-2026-10-11`; the attempted Analytics merge remains on `integrate/2026-10-11`, not on main. Final exclusions are the four old engine/judging experiments plus Analytics WIP.
@@ -769,6 +769,14 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 **Log**
 
+- 2026-10-11: AI Splitter car-part depth (`ws7-splitter-depth`). Split by car parts now offers a
+  depth: areas (Exterior, Interior, Technology & chassis) or the 13 part groups of the Car tab (Seats,
+  Cockpit & controls, …), each plus Other; the outputs follow the depth automatically instead of the
+  branch list (which used to name them "Part group 1…" while the AI invented different groups).
+  Groups live in `core/car-parts.ts`, shared with the Car tab's part menu; older flows migrate to
+  areas. Smoke: the Car reset step now waits for the requirements to load instead of 600 ms (it
+  raced). Verified: `npm run check` (2,316 tests), `npm run smoke` (71 screenshots, incl.
+  `splitter-car-part-groups`).
 - 2026-10-11: Add to Car verified on merged main (`8cb210d`): `npm run check` (2,314 tests), smoke
   (70 screenshots; editor run → HIL → thought process, Car → Why?), offline `eval:f70` on BMW's F70
   files (2,128 findings, 100 % verbatim excerpts, 10 requirements). Fix: the agents' default AI is

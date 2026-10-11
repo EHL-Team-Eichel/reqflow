@@ -73,7 +73,7 @@ export const SplitterReport = z.object({
   branches: z
     .array(z.object({ portId: z.string(), label: z.string(), primaryItemCount: Count }))
     .min(2)
-    .max(10),
+    .max(16), // custom splits 2–10; car parts by part group 13 + Other
   groups: z.array(SplitterGroup),
   assignments: z.array(SplitterAssignment),
   signals: z.array(SplitterSignal),

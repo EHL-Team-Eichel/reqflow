@@ -14,7 +14,7 @@ export const SPLITTER_MODE_HELP: Record<SplitterReport["mode"], string> = {
   customer_priority:
     "Groups raw feedback into customer needs, then routes by 70% normalized frequency and 30% interpreted impact. This is not the six-factor requirement priority.",
   car_parts:
-    "AI discovers car-part groups from raw evidence. Each item has one output; it may provide signals for several needs. No requirement decision is made.",
+    "Sorts raw feedback by the Car tab's parts: choose the depth below and the outputs follow. Each item has one output; it may provide signals for several needs. No requirement decision is made.",
   custom:
     "AI interprets your instruction to discover or route groups. A score exists only when the saved report records a scoring method.",
   priority:

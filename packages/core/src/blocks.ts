@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CAR_PART_DEPTH_LABELS, CarPartDepth, carPartOutputs } from "./car-parts";
 import { RESEARCH_AGENT_IDS } from "./research";
 
 /**
@@ -63,8 +64,12 @@ interface ParamBase {
   key: string;
   label: string;
   help?: string;
-  /** Show the field only while another param has this value (e.g. Excel vs database fields). */
-  visibleWhen?: { key: string; equals: string | boolean };
+  /**
+   * Show the field only while another param has this value (e.g. Excel vs database fields), or,
+   * with `notEquals`, while it has any other value.
+   */
+  visibleWhen?:
+    { key: string; equals: string | boolean } | { key: string; notEquals: string | boolean };
 }
 
 export type ParamSpec = ParamBase &
@@ -121,6 +126,18 @@ function listPorts(params: BlockParams, key: string, prefix: "in" | "out"): Port
   const items = params[key];
   if (!Array.isArray(items)) return [];
   return items.map((label, i) => ({ id: `${prefix}-${i}`, label: String(label) }));
+}
+
+/**
+ * The AI Splitter's output labels, in port order. Split by car parts, they follow the chosen depth
+ * (areas or part groups, then Other); otherwise they are the user's branch list.
+ */
+export function splitterOutputLabels(params: BlockParams): string[] {
+  if (params.splitBy === "car_parts") {
+    const depth = CarPartDepth.safeParse(params.partDepth);
+    return carPartOutputs(depth.success ? depth.data : "areas").map((o) => o.label);
+  }
+  return listPorts(params, "branches", "out").map((p) => p.label);
 }
 
 /** Add to Car: how a context input is read. "auto" lets the agents work out what the data is. */
@@ -446,12 +463,24 @@ export const BLOCK_SPECS: { readonly [K in PaletteBlockKind]: BlockSpec & { kind
         default: "customer_priority",
         options: [
           { value: "customer_priority", label: "Customer priority (raw feedback)" },
-          { value: "car_parts", label: "Car parts (AI-discovered)" },
+          { value: "car_parts", label: "Car parts (choose depth)" },
           { value: "priority", label: "Priority" },
           { value: "category", label: "Requirement category" },
           { value: "sentiment", label: "Sentiment" },
           { value: "custom", label: "Custom instruction" },
         ],
+      },
+      {
+        key: "partDepth",
+        label: "Depth",
+        help: "How finely the car is divided. The outputs follow: one per area or part group, plus Other.",
+        type: "select",
+        default: "areas",
+        options: CarPartDepth.options.map((value) => ({
+          value,
+          label: CAR_PART_DEPTH_LABELS[value],
+        })),
+        visibleWhen: { key: "splitBy", equals: "car_parts" },
       },
       {
         key: "branches",
@@ -461,6 +490,7 @@ export const BLOCK_SPECS: { readonly [K in PaletteBlockKind]: BlockSpec & { kind
         minItems: 2,
         maxItems: 10,
         itemPlaceholder: "Branch name",
+        visibleWhen: { key: "splitBy", notEquals: "car_parts" },
       },
       {
         key: "instruction",
@@ -472,7 +502,10 @@ export const BLOCK_SPECS: { readonly [K in PaletteBlockKind]: BlockSpec & { kind
       },
       { key: "model", label: "Model", type: "select", default: "default", options: MODEL_OPTIONS },
     ],
-    ports: (params) => ({ inputs: [IN], outputs: listPorts(params, "branches", "out") }),
+    ports: (params) => ({
+      inputs: [IN],
+      outputs: splitterOutputLabels(params).map((label, i) => ({ id: `out-${i}`, label })),
+    }),
   },
   hil: {
     kind: "hil",
@@ -704,11 +737,13 @@ export function defaultBlockParams(kind: PaletteBlockKind): BlockParams {
 }
 
 /**
- * Params saved by older builds, brought up to date so they validate. Only Add to Car changed: its
+ * Params saved by older builds, brought up to date so they validate. Add to Car's
  * named rankings ("Must have", …) became numbered priority inputs on the same ports (`in-0`, …),
- * and context inputs were added. Anything else is returned unchanged, so validation still reports it.
+ * and context inputs were added. The AI Splitter gained `partDepth`. Anything else is returned unchanged, so validation still reports it.
  */
 export function migrateBlockParams(kind: BlockKind, params: BlockParams): BlockParams {
+  // The AI Splitter gained a car-part depth; older flows split by AI-chosen groups get areas.
+  if (kind === "ai_splitter" && !("partDepth" in params)) return { ...params, partDepth: "areas" };
   if (kind !== "add_to_car" || !("rankings" in params)) return params;
   const { rankings, mergeDuplicates: _merged, ...rest } = params;
   const count = Array.isArray(rankings) ? rankings.length : 3;
@@ -727,7 +762,9 @@ export function parseBlockParams(kind: BlockKind, params: unknown): BlockParams 
 
 /** Whether a param field is shown, given the block's current params. */
 export function isParamVisible(spec: ParamSpec, params: BlockParams): boolean {
-  return !spec.visibleWhen || params[spec.visibleWhen.key] === spec.visibleWhen.equals;
+  const when = spec.visibleWhen;
+  if (!when) return true;
+  return "equals" in when ? params[when.key] === when.equals : params[when.key] !== when.notEquals;
 }
 
 /**

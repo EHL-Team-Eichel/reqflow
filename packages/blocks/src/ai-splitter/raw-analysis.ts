@@ -1,5 +1,7 @@
 import {
+  carPartOutputs,
   SplitterReport,
+  type CarPartOutput,
   type DataKey,
   type PipelineData,
   type Source,
@@ -73,8 +75,32 @@ function bounded(payload: unknown): string {
   return prompt;
 }
 
+/**
+ * The model's plan for fixed car-part outputs: exactly the given ids, put back in port order, with
+ * our labels and descriptions (the model only decides which needs go where).
+ */
+function fixedPlan(groups: PlannedGroup[], parts: CarPartOutput[]): PlannedGroup[] {
+  unique(
+    groups.map((g) => g.id),
+    "planned group IDs",
+  );
+  coverage(
+    groups.map((g) => g.id),
+    parts.map((p) => p.id),
+    "car-part groups",
+  );
+  const byId = new Map(groups.map((g) => [g.id, g]));
+  return parts.map((part) => ({
+    ...byId.get(part.id)!,
+    label: part.label,
+    description: part.description,
+  }));
+}
+
 export async function analyzeRaw(input: PipelineData, params: SplitterParams, ctx: BlockContext) {
-  const count = params.branches.length;
+  // Split by car parts, the outputs are fixed by the chosen depth (Other last), not by the AI.
+  const fixedParts = params.splitBy === "car_parts" ? carPartOutputs(params.partDepth) : null;
+  const count = fixedParts?.length ?? params.branches.length;
   const customerMode = params.splitBy === "customer_priority";
   const models = new Set<string>();
   const limitations = new Set<string>([
@@ -82,7 +108,9 @@ export async function analyzeRaw(input: PipelineData, params: SplitterParams, ct
     "Global need consolidation, opinion classification, stances, and expressed impact are AI judgements grounded in cited excerpts; confidence is separate from demand.",
     customerMode
       ? "Absent expressed supporting impact means no computed demand score. Context or unscored records use the default lowest band, not a real customer priority."
-      : "Absent expressed supporting impact means no computed demand score. Car-part/custom routes follow semantic groups, not customer priority; unmatched records use the explicit default lowest output.",
+      : fixedParts
+        ? "Absent expressed supporting impact means no computed demand score. Car-part routes follow the Car tab's parts, not customer priority; records about no specific part go to Other."
+        : "Absent expressed supporting impact means no computed demand score. Custom routes follow semantic groups, not customer priority; unmatched records use the explicit default lowest output.",
   ]);
   const base = {
     mode: params.splitBy,
@@ -197,9 +225,16 @@ export async function analyzeRaw(input: PipelineData, params: SplitterParams, ct
         }));
       } else {
         const planned = await request(
-          { contract: "reqflow.ai-splitter.plan@1", ...base, branchCount: count, needs: canonical },
+          {
+            contract: "reqflow.ai-splitter.plan@1",
+            ...base,
+            branchCount: count,
+            ...(fixedParts ? { fixedGroups: fixedParts } : {}),
+            needs: canonical,
+          },
           GroupPlan,
         );
+        if (fixedParts) planned.groups = fixedPlan(planned.groups, fixedParts);
         if (planned.groups.length !== count)
           throw new Error(`AI Splitter fixed group plan must contain exactly ${count} groups`);
         unique(
@@ -282,7 +317,9 @@ export async function analyzeRaw(input: PipelineData, params: SplitterParams, ct
       "No raw records are available; customer demand cannot be computed. Original upstream context is retained once without an LLM call.",
     );
 
-  if (!plan.length && !customerMode) {
+  if (!plan.length && fixedParts) {
+    plan = fixedParts.map((part) => ({ ...part, needIds: [], reason: "No raw need evidence" }));
+  } else if (!plan.length && !customerMode) {
     plan = Array.from({ length: count }, (_, i) => ({
       id: `empty_group_${i}`,
       label: `Unclassified ${i + 1}`,

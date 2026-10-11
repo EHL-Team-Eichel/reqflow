@@ -1,4 +1,5 @@
 import {
+  CAR_PART_GROUPS,
   DEFAULT_SETTINGS,
   PipelineData,
   SplitterReport,
@@ -8,6 +9,7 @@ import {
   type PipelineData as Data,
   type Source,
   type SourceRecord,
+  splitterOutputLabels,
 } from "@reqflow/core";
 import { fixturePipelineData } from "@reqflow/core/fixtures";
 import type { BlockContext, BlockResult } from "@reqflow/engine";
@@ -94,8 +96,10 @@ function peer(change?: (response: any, payload: any) => void): LlmClient {
         response = {
           contract: p.contract,
           groups: Array.from({ length: p.branchCount }, (_, i) => ({
-            id: `group_${i}`,
-            label: `${p.mode === "custom" ? "Instruction" : "Car part"} ${i + 1}`,
+            id: p.fixedGroups?.[i]?.id ?? `group_${i}`,
+            label:
+              p.fixedGroups?.[i]?.label ??
+              `${p.mode === "custom" ? "Instruction" : "Car part"} ${i + 1}`,
             description: `Global group ${i + 1}`,
             needIds: p.needs
               .filter((_: unknown, n: number) => n % p.branchCount === i)
@@ -356,7 +360,47 @@ describe("raw AI Splitter analytical protocol", () => {
     expect(report.limitations.join(" ")).toMatch(/impact.*not.*expressed|absent.*impact/i);
   });
 
-  it.each(["car_parts", "custom"])(
+  it.each([
+    ["areas", ["Exterior", "Interior", "Technology & chassis", "Other (no specific part)"]],
+    ["groups", [...CAR_PART_GROUPS.map((g) => g.label), "Other (no specific part)"]],
+  ] as const)(
+    "splits car parts by %s: outputs follow the depth, not the branch list",
+    async (depth, labels) => {
+      const llm = peer();
+      const p = { ...params, splitBy: "car_parts", partDepth: depth, branches: ["Old A", "Old B"] };
+      const { report, out } = result(
+        await aiSplitterBlock.run(
+          { in: data([record("a", topics("seat")), record("b", topics("screen"))]) },
+          p,
+          context(llm),
+        ),
+      );
+      expect(report.branches.map((b) => b.label)).toEqual(labels);
+      expect(report.groups.map((g) => g.label)).toEqual(labels);
+      expect(Object.keys(out)).toHaveLength(labels.length);
+      expect(splitterOutputLabels(p)).toEqual(labels);
+      const plan = vi
+        .mocked(llm.generateObject)
+        .mock.calls.map(([r]) => JSON.parse(r.prompt))
+        .find((q) => q.contract === "reqflow.ai-splitter.plan@1");
+      expect(plan.fixedGroups.map((g: { label: string }) => g.label)).toEqual(labels);
+    },
+  );
+
+  it("rejects a car-part plan that invents or drops groups", async () => {
+    const llm = peer((r, p) => {
+      if (p.contract.endsWith("plan@1")) r.groups[0].id = "invented";
+    });
+    await expect(
+      aiSplitterBlock.run(
+        { in: data([record("a", topics("seat"))]) },
+        { ...params, splitBy: "car_parts", partDepth: "areas" },
+        context(llm),
+      ),
+    ).rejects.toThrow(/car-part groups/);
+  });
+
+  it.each(["custom"])(
     "creates exactly requested global %s groups, including empty groups, without saving labels",
     async (splitBy) => {
       const input = data([record("a", topics("seat")), record("b", topics("screen"))]);
@@ -494,15 +538,21 @@ describe("raw AI Splitter analytical protocol", () => {
         { key: "cargo", impact: 25 },
       ]),
     ]);
+    // Every need lands in the same car-part group (Interior).
+    const llm = peer((r, p) => {
+      if (!p.contract.endsWith("plan@1")) return;
+      for (const g of r.groups)
+        g.needIds = g.id === "interior" ? p.needs.map((n: any) => n.id) : [];
+    });
     const { report } = result(
       await aiSplitterBlock.run(
         { in: input },
-        { ...params, splitBy: "car_parts", branches: ["Old A", "Old B"] },
-        context(),
+        { ...params, splitBy: "car_parts", partDepth: "areas" },
+        context(llm),
       ),
     );
     expect(report.signals).toHaveLength(3);
-    expect(report.assignments[0]!.groupIds).toHaveLength(2);
+    expect(report.assignments[0]!.groupIds).toEqual(["interior"]);
     expect(report.signals.map((s) => s.reason).join(" ")).toMatch(/seat/);
     expect(report.signals.map((s) => s.reason).join(" ")).toMatch(/screen/);
     expect(report.signals.map((s) => s.reason).join(" ")).toMatch(/cargo/);
@@ -733,7 +783,13 @@ describe("raw AI Splitter analytical protocol", () => {
       const { report, out } = result(
         await aiSplitterBlock.run(
           { in: input },
-          { ...params, splitBy, instruction: "Groups: Seats, Screens, Other", model: "fast" },
+          {
+            ...params,
+            splitBy,
+            partDepth: "groups",
+            instruction: "Groups: Seats, Screens, Other",
+            model: "fast",
+          },
           context(llm),
         ),
       );

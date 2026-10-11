@@ -76,7 +76,7 @@ it has an inner workplace):
 | Raw         | no input · 1 out (data stream)        | no              | Excel/CSV/SQLite or Research JSON import, dataset, file/query                   |
 | Research    | no input · 1 out (same format as Raw) | yes             | question, source types, market, age, results                                    |
 | AI Filter   | 1 in · 1 out (kept)                   | yes             | criterion, model, min. confidence                                               |
-| AI Splitter | 1 in · 2–10 outputs                   | yes             | customer priority, car parts, custom or legacy routing, branches, model         |
+| AI Splitter | 1 in · 2–10 outputs (car parts: 4/14) | yes             | customer priority, car parts + depth, custom or legacy routing, branches, model |
 | HIL         | 1 in · 1 out                          | no              | reviewer, instructions, approvals, edits                                        |
 | Add to Car  | one in **per priority** + context ins | no              | priorities, contexts (Auto / Sales volumes), max. requirements, vehicle, market |
 | Analytics   | one in **per named input** · 1 out    | no              | inputs (1–8, named), country/time column overrides, timeline buckets, phrases   |
@@ -258,6 +258,9 @@ Mastra instance, tools, storage, memory or tracing. Structured requests use stri
 one generation step and no retries. Tests can inject the Agent factory, while production defaults
 to the standalone implementation. Legacy `priority`, `category`, `sentiment` and `custom` routing
 modes remain available alongside raw-data `customer_priority`, `car_parts` and `custom` analysis.
+`car_parts` takes its outputs from `partDepth` (`core/car-parts.ts`, shared with the Car tab's part
+menu): 3 areas or 13 part groups, plus Other. The plan call gets them as `fixedGroups`; the model only
+decides which needs go where, and a plan with other group ids is rejected.
 
 Raw analysis discovers candidate needs in batches of at most 20 records, consolidates them globally,
 then assigns against the consolidated catalog. Car-part/custom modes create exactly the configured
