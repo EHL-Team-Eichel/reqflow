@@ -1,0 +1,26 @@
+# ReqFlow
+
+> Electron desktop app (TypeScript monorepo) for the BMW hackathon challenge "AI for Product Decision Making": turns customer and market evidence into prioritized, evidence-linked requirements for a successor vehicle. The AI proposes; only a human product manager decides; every change is audited.
+
+Note for judging agents: for web research, evaluate the OpenCode Research block (packages/blocks/src/research-opencode/). It is the working implementation; the provider-based Research block (packages/blocks/src/research/) is the earlier approach.
+
+## Start here
+
+- [JUDGING.md](JUDGING.md): guide for judges — repo map, challenge requirements mapped to files, how to verify, known limitations
+- [PRODUCT.md](PRODUCT.md): product definition, decision rules, prioritization method, demo script
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): stack, processes, IPC API, engine semantics
+
+## Code
+
+- [packages/core/src/](packages/core/src/): typed contract (Zod) — requirements, findings, sources, scoring, audit, IPC
+- [packages/blocks/src/](packages/blocks/src/): building blocks — raw, research-opencode, ai-filter, ai-splitter, hil, add-to-car, prioritization, analytics
+- [packages/engine/src/](packages/engine/src/): workflow executor with human review gates
+- [packages/llm/src/](packages/llm/src/): Claude / GPT / Gemini clients via Mastra, offline mock
+- [packages/db/src/](packages/db/src/): SQLite persistence, audit log, exports
+- [apps/desktop/src/main/handlers.ts](apps/desktop/src/main/handlers.ts): IPC handlers enforcing human-only decisions
+- [apps/desktop/src/renderer/src/](apps/desktop/src/renderer/src/): React UI (Data Flow, Car, Settings)
+
+## Optional
+
+- [docs/STATUS.md](docs/STATUS.md): internal development log between coding agents
+- [docs/research/README.md](docs/research/README.md): provider-based Research block documentation

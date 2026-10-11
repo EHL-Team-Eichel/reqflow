@@ -1,5 +1,8 @@
 # Project status — the handoff file
 
+> Reviewers: this is our internal development log. For an overview of the app, read
+> [JUDGING.md](../JUDGING.md).
+
 The next agent starts here. **Edit only your own workstream's section** (so parallel agents never
 conflict), and update it whenever you start, finish a slice, get blocked or stop. Keep entries short.
 Status values: `open` · `in progress` · `blocked` · `review` · `done`.

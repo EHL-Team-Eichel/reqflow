@@ -4,16 +4,21 @@ From customer evidence to prioritized, PM-approved vehicle requirements. A **des
 macOS and Linux** (Electron), built as a hackathon prototype for the BMW challenge _AI for Product
 Decision Making_.
 
-| Read                                         | For                                                     |
-| -------------------------------------------- | ------------------------------------------------------- |
-| [PRODUCT.md](PRODUCT.md)                     | What we build and why (the product definition)          |
-| [AGENTS.md](AGENTS.md)                       | Challenge digest and rules for every coding agent       |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Stack, layout, processes, IPC API, engine semantics     |
-| [docs/WORKSTREAMS.md](docs/WORKSTREAMS.md)   | Parallel work packages and path ownership               |
-| [docs/STATUS.md](docs/STATUS.md)             | Current state, task list per workstream, handoffs       |
-| [docs/AGENT_PROMPT.md](docs/AGENT_PROMPT.md) | The prompt that starts a new AI teammate                |
-| [docs/decisions/](docs/decisions/)           | Architecture decisions (why Electron, why one TS stack) |
-| [context/](context/)                         | Original briefing material                              |
+> **Judges and review agents:** start with [JUDGING.md](JUDGING.md). For web research, the
+> **OpenCode Research** block ([packages/blocks/src/research-opencode/](packages/blocks/src/research-opencode/))
+> is the working implementation.
+
+| Read                                         | For                                                        |
+| -------------------------------------------- | ---------------------------------------------------------- |
+| [JUDGING.md](JUDGING.md)                     | Guide for judges: map, requirement coverage, how to verify |
+| [PRODUCT.md](PRODUCT.md)                     | What we build and why (the product definition)             |
+| [AGENTS.md](AGENTS.md)                       | Challenge digest and rules for every coding agent          |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Stack, layout, processes, IPC API, engine semantics        |
+| [docs/WORKSTREAMS.md](docs/WORKSTREAMS.md)   | Parallel work packages and path ownership                  |
+| [docs/STATUS.md](docs/STATUS.md)             | Current state, task list per workstream, handoffs          |
+| [docs/AGENT_PROMPT.md](docs/AGENT_PROMPT.md) | The prompt that starts a new AI teammate                   |
+| [docs/decisions/](docs/decisions/)           | Architecture decisions (why Electron, why one TS stack)    |
+| [context/](context/)                         | Original briefing material                                 |
 
 ## Setup (once)
 
