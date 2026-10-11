@@ -1,0 +1,54 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4MVGXTGA5KRF8215VHTXPTM",
+  "strategy": "manual-commit",
+  "branch": "ws6-ai-providers",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "apps/desktop/src/main/index.ts",
+    "apps/desktop/src/main/preview.test.ts",
+    "apps/desktop/src/main/preview.ts",
+    "apps/desktop/src/main/research/integration.test.ts",
+    "apps/desktop/src/main/research/runtime.test.ts",
+    "apps/desktop/src/main/research/runtime.ts",
+    "apps/desktop/src/main/research/smoke-fixture.ts",
+    "apps/desktop/src/main/smoke.ts",
+    "apps/desktop/src/renderer/src/components/dataflow/ParamField.tsx",
+    "apps/desktop/src/renderer/src/components/dataflow/RawPreview.tsx",
+    "apps/desktop/src/renderer/src/components/dataflow/ResearchConfiguration.tsx",
+    "apps/desktop/src/renderer/src/components/dataflow/report/DataPanel.tsx",
+    "apps/desktop/src/renderer/src/components/dataflow/report/preview.ts",
+    "apps/desktop/src/renderer/src/components/dataflow/usePreview.ts",
+    "docs/STATUS.md",
+    "docs/research/README.md",
+    "docs/research/exports.md",
+    "packages/blocks/src/research/agents.ts",
+    "packages/blocks/src/research/export.test.ts",
+    "packages/blocks/src/research/export.ts",
+    "packages/blocks/src/research/index.test.ts",
+    "packages/blocks/src/research/index.ts",
+    "packages/blocks/src/research/raw.ts",
+    "packages/blocks/src/research/runtime.test.ts",
+    "packages/blocks/src/research/runtime.ts",
+    "packages/blocks/src/research/summarizer.test.ts",
+    "packages/llm/src/default-client.ts",
+    "packages/llm/src/mock.ts",
+    "packages/llm/src/providers.test.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 96566,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 1036766,
+    "output_tokens": 6051,
+    "api_call_count": 27
+  }
+}

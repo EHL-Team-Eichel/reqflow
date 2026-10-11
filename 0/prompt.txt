@@ -1,0 +1,19 @@
+Inspect packages/blocks/src/research/summarizer.ts and packages/blocks/src/research/summarizer.test.ts:
+1. Verify that `parallelMap` executes concurrent requests properly using the worker pool (concurrency default 4).
+2. Ensure that if `ctx.llm` is provided, it calls `generateObject` in parallel for each record.
+3. Verify that all 12 BMW feedback headers are present in `row.fields`:
+   - ID
+   - Source
+   - Brand
+   - Sales Description
+   - Country
+   - Derivate (e-code)
+   - Engine Type
+   - Feedback Type
+   - Customer Feedback
+   - Vfc level2 3 Name
+   - Vfc level2 Name
+   - Vfc level3 Name
+4. Ensure error handling is robust: if one LLM call fails, it falls back to `offlineSummarizeRecord` for that record without failing the whole batch, logging a notice.
+5. Run `npm test packages/blocks/src/research/summarizer.test.ts` to ensure all tests pass.
+Report back with confirmation.
