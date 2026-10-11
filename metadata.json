@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4MB891J4SQWZ1GT98VBPRGQ",
   "strategy": "manual-commit",
   "branch": "ai-filter-selection",
-  "checkpoints_count": 2,
+  "checkpoints_count": 4,
   "files_touched": [
     "docs/STATUS.md"
   ],
@@ -21,14 +21,21 @@
       "compact_transcript": "/1/transcript.jsonl",
       "content_hash": "/1/content_hash.txt",
       "prompt": ""
+    },
+    {
+      "metadata": "/2/metadata.json",
+      "transcript": "/2/full.jsonl",
+      "compact_transcript": "/2/transcript.jsonl",
+      "content_hash": "/2/content_hash.txt",
+      "prompt": "/2/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 4,
+    "input_tokens": 2692,
     "cache_creation_tokens": 1142,
-    "cache_read_tokens": 614941,
-    "output_tokens": 1154,
-    "api_call_count": 2,
+    "cache_read_tokens": 2772264,
+    "output_tokens": 1970,
+    "api_call_count": 11,
     "subagent_tokens": {
       "input_tokens": 0,
       "cache_creation_tokens": 0,
