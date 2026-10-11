@@ -78,10 +78,79 @@ export const COLUMN_SYNONYMS = {
 
 export type ColumnRole = keyof typeof COLUMN_SYNONYMS;
 
+export type ColumnMapping = Partial<Record<ColumnRole, number>>;
+
 const norm = (s: string) => s.toLowerCase().replace(/[\s_\-./%()]+/g, "");
 
-/** Every column that could have `role`: exact synonym matches first, then prefix matches. */
-export function findColumns(header: readonly string[], role: ColumnRole): number[] {
+/**
+ * Parses user column mapping syntax: `role=Header; role=Header` (separators: `;`, `,`, or newlines).
+ * Roles must be one of the keys in COLUMN_SYNONYMS.
+ * Headers are matched case-insensitively using the same normalization as synonyms.
+ */
+export function parseColumnMapping(
+  spec: string,
+  header: readonly string[],
+): { mapping: ColumnMapping; notes: string[] } {
+  const trimmed = spec.trim();
+  if (!trimmed) return { mapping: {}, notes: [] };
+
+  const validRoles = Object.keys(COLUMN_SYNONYMS) as ColumnRole[];
+  const mapping: ColumnMapping = {};
+  const notes: string[] = [];
+  const mappedRoles = new Set<ColumnRole>();
+
+  const entries = trimmed
+    .split(/[;\n,]+/)
+    .map((e) => e.trim())
+    .filter(Boolean);
+
+  for (const entry of entries) {
+    const eq = entry.indexOf("=");
+    if (eq === -1) {
+      throw new Error(`Column mapping: malformed pair "${entry}". Expected role=Header.`);
+    }
+    const roleStr = entry.slice(0, eq).trim();
+    const headerStr = entry.slice(eq + 1).trim();
+    if (!roleStr || !headerStr) {
+      throw new Error(`Column mapping: malformed pair "${entry}". Expected role=Header.`);
+    }
+
+    const role = validRoles.find((r) => r.toLowerCase() === roleStr.toLowerCase());
+    if (!role) {
+      throw new Error(
+        `Column mapping: unknown role "${roleStr}". Roles: ${validRoles.join(", ")}.`,
+      );
+    }
+
+    if (mappedRoles.has(role)) {
+      throw new Error(`Column mapping: role "${roleStr}" mapped twice.`);
+    }
+    mappedRoles.add(role);
+
+    const normTarget = norm(headerStr);
+    const colIndex = header.findIndex((h) => norm(h) === normTarget);
+    if (colIndex === -1) {
+      throw new Error(
+        `Column mapping: no column "${headerStr}" in this sheet. Columns: ${header.map((h) => `"${h}"`).join(", ")}.`,
+      );
+    }
+
+    mapping[role] = colIndex;
+    notes.push(`Column mapping: ${role} = "${header[colIndex]}".`);
+  }
+
+  return { mapping, notes };
+}
+
+/** Every column that could have `role`: explicit mapping wins, then exact synonym matches, then prefix matches. */
+export function findColumns(
+  header: readonly string[],
+  role: ColumnRole,
+  mapping?: ColumnMapping,
+): number[] {
+  if (mapping?.[role] !== undefined) {
+    return [mapping[role]!];
+  }
   const names = header.map(norm);
   const synonyms: readonly string[] = COLUMN_SYNONYMS[role];
   const exact = names.flatMap((n, i) => (synonyms.includes(n) ? [i] : []));
@@ -91,9 +160,13 @@ export function findColumns(header: readonly string[], role: ColumnRole): number
   return [...exact, ...prefix];
 }
 
-/** Index of the column for `role`, or -1. Exact synonym matches win over prefix matches. */
-export function findColumn(header: readonly string[], role: ColumnRole): number {
-  return findColumns(header, role)[0] ?? -1;
+/** Index of the column for `role`, or -1. Explicit mapping wins over synonym detection. */
+export function findColumn(
+  header: readonly string[],
+  role: ColumnRole,
+  mapping?: ColumnMapping,
+): number {
+  return findColumns(header, role, mapping)[0] ?? -1;
 }
 
 /**
