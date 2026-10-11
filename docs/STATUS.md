@@ -206,29 +206,29 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 ## WS2 — Data Flow editor UI
 
-**Status:** review (remaining editor features complete; full smoke passes after authorized readiness fix) · **Owner:** OpenCode · **Branch:** `ws2-editor-completion`
+**Status:** done (human-assigned remaining editor features) · **Owner:** OpenCode · **Branch:** `ws2-editor-completion` · **Merged:** PR #25
 **Assigned scope:** human requested latest main and completion of the still-unworked WS2 editor gaps. Start/templates/HIL/Filter/Analytics behavior stays intact. No other workstream tasks claimed.
 **Depends on:** WS1 for save/load and runs. Tasks 1–3 can start now.
 
 **Tasks**
 
-- [ ] Undo / redo (⌘Z / ⇧⌘Z) in `components/dataflow/store.ts`: history of `root` snapshots, with tests.
-- [ ] Copy / paste / duplicate blocks (⌘C / ⌘V / ⌘D): fresh ids for the block and everything in its
+- [x] Undo / redo (⌘Z / ⇧⌘Z) in `components/dataflow/store.ts`: history of `root` snapshots, with tests.
+- [x] Copy / paste / duplicate blocks (⌘C / ⌘V / ⌘D): fresh ids for the block and everything in its
       inner workplace, edges between copied blocks kept; tests.
 - [x] "New from template": load `api.templates.list()` → `BMW_DEFAULT_TEMPLATE` onto the workplace
       (confirm before replacing a non-empty flow).
-- [ ] Save, load and autosave with `api.workflows.*`; show unsaved changes; flow name in the header.
+- [x] Save, load and autosave with `api.workflows.*`; show unsaved changes; flow name in the header.
       Until WS1 lands, show the `not_implemented` state instead of failing silently.
-- [ ] Problems view: run `validateGraph` plus "input not connected" / "Raw block has no file" checks and
+- [x] Problems view: run `validateGraph` plus "input not connected" / "Raw block has no file" checks and
       mark the affected blocks.
-- [ ] Run button and live status on every block (`api.runs.start`, `api.runs.onUpdate`): status dot,
+- [x] Run button and live status on every block (`api.runs.start`, `api.runs.onUpdate`): status dot,
       counts, logs; a "waiting for review" banner linking to the Car tab. Mock with `fixtureRun` until WS1.
-- [ ] Output inspector: click a finished block → `api.runs.blockOutput()` per port.
+- [x] Output inspector: click a finished block → `api.runs.blockOutput()` per port.
 - [x] HIL report with real data for steps that need a run: Raw steps already show their real data
       (`blocks.preview`); for the others, replace the "no run yet" state in
       `components/dataflow/report/DataPanel.tsx` with the step's data from the latest run (`api.runs.blockOutput`; for the HIL itself merge what
       its incoming edges carried with `mergePipelineData`). The synthetic sample was removed on 2026-10-10.
-- [ ] Polish: "Tidy up" auto-layout, multi-select actions, minimap colours per block group.
+- [x] Polish: "Tidy up" auto-layout, multi-select actions, minimap colours per block group.
 - [x] Fix direct Raw → HIL report input preview (merged in PR #4 and verified).
 - [x] Save and execute the current flow so Add to Car publishes proposed requirements; expose status, block logs and cancellation (PR #8).
 - [x] Explicit Start button for the full workflow, including inner workplaces; prevent duplicate runs
@@ -238,6 +238,7 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 **Log**
 
+- 2026-10-11: PR #25 merged after the human-authorized smoke readiness fix. Remaining assigned WS2 checklist is complete. Verify with root typechecks/formatting, `npm test -- --maxWorkers=2 --testTimeout=30000` (2,832 passed, 6 skipped), and fresh native smoke (90 screenshots); isolated WS2 UI probe also passes 7 light/dark/minimum-window/library screenshots. Only last workflow ID is stored in renderer localStorage; workflow/data persistence remains main-only. Clipboard is in-app, no model/API/key changes or automatic approval/resume. Windows/Linux and live-provider checks remain unverified. Stop here: any further work or verification requires a new explicit human assignment.
 - 2026-10-11: Human assigned remaining WS2 after checking latest main (`e9705c9`), open PRs and implementation handoffs. Shared clean checkout fast-forwarded; work isolated in `EHL-ws2-editor`. Scope: root-snapshot undo/redo, nested-safe copy/paste/duplicate, save/load/autosave and workflow identity, problems/marking, per-block run status/counts/logs and persisted per-port outputs, current-workplace layout and minimap polish. Use existing core/API contracts only; renderer has no Node/files/network. Preserve human HIL gates and frozen run snapshots. Verification is offline/synthetic; Gemini key is unavailable and no live requests are authorized. Other WS2 slices already merged are not rebuilt, and no unrelated follow-on work is authorized.
 - 2026-10-11: Remaining editor features implemented in WS2 renderer paths only: history/drag coalescing, nested clipboard/duplicates and shortcuts, save/load/autosave with scoped document identity and a Start write reservation, input/source problems and node markers, saved per-port/layer output/counts/logs, layout and group-colored minimap. Loaded scope is respected by Start and previews; active/paused run switching stays blocked. Delegation was unavailable (quota/stalled approved profiles); parent implemented and verified directly. Focused tests pass (58), root typechecks pass, native smoke passes 91 screenshots, and a separate isolated synthetic Electron probe passes actual controls/keyboard, save-only/no-run behavior, reload, saved US scope, frozen 3-record output and HIL safeguards (7 light/dark/minimum-window screenshots). Full-suite first run exposed only three old RunControls mocks lacking workflowStore; mocks updated and their 56-test subset now passes. Final full gate and integration review still pending; no successful live-provider or Windows/Linux claim.
 - 2026-10-11: Final latest-main integration: all typechecks and formatting pass; `npm test -- --maxWorkers=2 --testTimeout=30000` passes 162 files / 2,829 tests, 6 skipped. The default 5-second gate timed out four source-model Car tests; no Car changes made. Earlier native smoke passed 91 screens. Current fresh broad smoke completes 90 screens but fails only Car canvas-loading checks (fuel on one run; hydrogen/hybrid/electric on another). WS2-only native Electron probe re-run alone on the current build passes all actual controls, autosave/reload, loaded scope, saved 3-record output and HIL safety checks (7 light/dark/minimum-window/library screenshots, inspected). Current output previews cap rows, text and JSON without truncating stored originals. No core/main/engine/db/dependency changes; only WS2 renderer, PRODUCT and own handoff/documentation. Public branch is ready for review; ask the human before merging with the outstanding broader Car-smoke failures. No live requests/keys/BMW values used, and no other workstreams started.
