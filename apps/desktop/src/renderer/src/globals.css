@@ -41,6 +41,36 @@
   --color-group-ai: #16588e; /* M dark blue */
   --color-group-human: #e7222e; /* M red: a person has to act here */
   --color-group-output: #111214; /* the car itself */
+  --color-group-insight: #6b3fa0; /* BMW M Techno Violet: reading the data, not changing it */
+
+  /*
+   * Analytics charts in the BMW M colorway: the M stripe first (light blue, red, dark blue), then
+   * M paint colors (São Paulo Yellow, Isle of Man Green, Techno Violet, Fire Orange, Ruby).
+   * Fixed order, never cycled; validated for colour-vision deficiency on the panel surface
+   * (adjacent pairs; the first three on all pairs). Yellow and orange are below 3:1, so charts
+   * always label them directly or offer a table.
+   */
+  --color-viz-1: #2b8ee6;
+  --color-viz-2: #e7222e;
+  --color-viz-3: #16588e;
+  --color-viz-4: #d9a300;
+  --color-viz-5: #0e8a5c;
+  --color-viz-6: #6b3fa0;
+  --color-viz-7: #f07a1f;
+  --color-viz-8: #c2367f;
+  --color-viz-other: #9aa0a6;
+  /* Diverging (sentiment): M red ← neutral grey → M blue. */
+  --color-viz-negative: #e7222e;
+  --color-viz-neutral: #c4c8cd;
+  --color-viz-positive: #2b8ee6;
+  /* Sequential (magnitude, heatmaps): one M blue hue, light → dark. */
+  --color-viz-seq-0: #eef5fc;
+  --color-viz-seq-1: #c9e0f6;
+  --color-viz-seq-2: #8fc0ee;
+  --color-viz-seq-3: #4c9be3;
+  --color-viz-seq-4: #1f74c4;
+  --color-viz-seq-5: #16588e;
+  --color-viz-seq-6: #0d3a60;
 }
 
 :root[data-theme="dark"] {
@@ -66,6 +96,27 @@
   --color-group-ai: #4b8fd1; /* M dark blue, lifted for dark backgrounds */
   --color-group-human: #ff4752;
   --color-group-output: #f2f3f5;
+  --color-group-insight: #a47ddc;
+
+  --color-viz-1: #3f95e0;
+  --color-viz-2: #ee3d48;
+  --color-viz-3: #4f5bb8;
+  --color-viz-4: #b58a10;
+  --color-viz-5: #1c9468;
+  --color-viz-6: #a47ddc;
+  --color-viz-7: #d4691f;
+  --color-viz-8: #d65a9c;
+  --color-viz-other: #6b7178;
+  --color-viz-negative: #ee3d48;
+  --color-viz-neutral: #4a4f56;
+  --color-viz-positive: #3f95e0;
+  --color-viz-seq-0: #16202b;
+  --color-viz-seq-1: #17324d;
+  --color-viz-seq-2: #1b4a75;
+  --color-viz-seq-3: #23649e;
+  --color-viz-seq-4: #3f86cc;
+  --color-viz-seq-5: #74aee6;
+  --color-viz-seq-6: #b5d6f5;
 }
 
 html,
