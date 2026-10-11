@@ -3,8 +3,9 @@
   "checkpoint_id": "01M4MASF2A5PG8631GS63RSN9X",
   "strategy": "manual-commit",
   "branch": "ai-filter-selection",
-  "checkpoints_count": 2,
+  "checkpoints_count": 3,
   "files_touched": [
+    "docs/STATUS.md",
     "packages/core/src/audit.ts",
     "packages/core/src/workflow.ts"
   ],
@@ -22,6 +23,13 @@
       "compact_transcript": "/1/transcript.jsonl",
       "content_hash": "/1/content_hash.txt",
       "prompt": ""
+    },
+    {
+      "metadata": "/2/metadata.json",
+      "transcript": "/2/full.jsonl",
+      "compact_transcript": "/2/transcript.jsonl",
+      "content_hash": "/2/content_hash.txt",
+      "prompt": "/2/prompt.txt"
     }
   ],
   "token_usage": {
