@@ -58,6 +58,21 @@ describe("Vehicle Models & Builder", () => {
     expect(car.anchors.has("roll_cage")).toBe(true);
   });
 
+  it("builds the standard 2025 BMW M5 Sedan with benchmark 4-door executive styling", () => {
+    const m5 = getVehicleModelById("bmw_m5_sedan_g90_2025")!;
+    expect(m5).toBeDefined();
+    const car = buildVehicleModel(m5, "hybrid");
+
+    const parts = new Set(car.pieces.map((p) => p.partId));
+    expect(parts.has("rear_doors")).toBe(true);
+    expect(parts.has("rear_seats")).toBe(true);
+    expect(parts.has("rear_spoiler")).toBe(true);
+    expect(parts.has("rear_diffuser")).toBe(true);
+    expect(parts.has("exhaust_system")).toBe(true);
+    expect(parts.has("battery_pack")).toBe(true);
+    expect(parts.has("charging_port")).toBe(true);
+  });
+
   it("searches and filters models by name, chassis and category", () => {
     const m2Results = searchVehicleModels("G87");
     expect(m2Results.length).toBeGreaterThan(0);

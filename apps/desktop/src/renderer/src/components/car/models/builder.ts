@@ -9,12 +9,27 @@ import {
 } from "../model/buildCar";
 import { G60 } from "../model/body";
 import type { PowertrainType, VehicleModel } from "./types";
+import {
+  isTwoDoor,
+  isTwoSeater,
+  isSingleSeaterRaceCar,
+  isConvertible,
+  isSuv,
+  isTouring,
+  isWidebody,
+  modelExcludedPartIds,
+} from "./features";
 
 /**
  * Builds a 3D car model based on the baseline blueprint (`buildCar`), customized
  * for the selected vehicle model's dimensions, body style, powertrain architecture,
  * and car-specific aerodynamic/chassis components (spoilers, splitters, diffusers,
  * roll cages, roof rails, etc.).
+ *
+ * It removes non-existent components (e.g. rear doors on 2-door coupes, rear seats on
+ * roadsters/race cars, luxury items on stripped race cockpits) and adds distinct
+ * class-defining geometry so each BMW class (Sedan, Coupé, SUV/SAV, Touring/Wagon,
+ * Roadster/Convertible, and pure Motorsport/Race) is immediately recognizable.
  */
 export function buildVehicleModel(
   model?: VehicleModel,
@@ -27,6 +42,27 @@ export function buildVehicleModel(
   root.name = `${model.name} (${model.chassisCode}) — ${powertrain}`;
   const pieces = base.pieces;
   const anchors = base.anchors;
+
+  // 1. Remove non-existent features from the baseline blueprint
+  const excluded = modelExcludedPartIds(model);
+  if (excluded.size > 0) {
+    for (let i = pieces.length - 1; i >= 0; i--) {
+      const piece = pieces[i]!;
+      if (piece.partId && excluded.has(piece.partId)) {
+        root.remove(piece.mesh);
+        piece.mesh.geometry.dispose();
+        if (Array.isArray(piece.mesh.material)) {
+          piece.mesh.material.forEach((m) => m.dispose());
+        } else if (piece.mesh.material) {
+          piece.mesh.material.dispose();
+        }
+        pieces.splice(i, 1);
+      }
+    }
+    for (const id of excluded) {
+      anchors.delete(id);
+    }
+  }
 
   const add = (
     geometry: THREE.BufferGeometry,
@@ -66,37 +102,135 @@ export function buildVehicleModel(
     );
   };
 
-  const disc = (
-    partId: string | null,
-    kind: PieceKind,
-    layer: PieceLayer,
-    radius: number,
-    depth: number,
-    pos: [number, number, number],
-    segments = 28,
-  ) =>
-    add(
-      new THREE.CylinderGeometry(radius, radius, depth, segments).rotateX(Math.PI / 2),
-      partId,
-      kind,
-      layer,
-      (m) => m.position.set(...pos),
-    );
-
   const frontAxleX = G60.frontAxleX;
   const rearAxleX = G60.rearAxleX;
   const frontX = G60.frontX;
   const rearX = G60.rearX;
   const halfTrack = G60.track / 2;
   const tyreRadius = G60.tyreRadius;
-
-  // ---- Car-Specific Components -----------------------------------------------------------
   const specialParts = model.specialParts;
   const deckY = 1.14;
 
+  // ---- 2. Recognizable Class-Specific Geometry -------------------------------------------
+
+  // A. Coupé (2-door): Seamless rear quarter flanks, low roof ridge, and elongated frameless sills
+  if (isTwoDoor(model)) {
+    for (const side of [-1, 1]) {
+      // Sculpted continuous rear quarter flank replacing rear door aperture
+      box("body", "paint", "exterior", [1.14, 0.44, 0.05], [-0.74, 0.62, side * 0.94], {
+        radius: 0.035,
+      });
+      // Elongated coupe sill extension
+      box("body", "dark", "exterior", [1.68, 0.08, 0.04], [-0.15, 0.28, side * 0.94], {
+        radius: 0.015,
+      });
+      // Sleek Hofmeister kink quarter window styling
+      box("side_windows", "dark", "exterior", [0.46, 0.22, 0.02], [-0.88, 1.08, side * 0.74], {
+        radius: 0.015,
+        rotZ: -0.22,
+      });
+    }
+    // M double-bubble carbon roof ridge contour along centerline
+    box("roof", "dark", "exterior", [1.42, 0.025, 0.52], [-0.46, 1.49, 0], {
+      radius: 0.01,
+    });
+  }
+
+  // B. 2-Seaters (Roadsters, M1, track specials): Rear bulkhead & luggage shelf
+  if (isTwoSeater(model)) {
+    box("luggage", "trim", "interior", [0.54, 0.12, 1.24], [-0.98, 0.68, 0], { radius: 0.025 });
+  }
+
+  // C. Single-Seater Race Cars: Stripped lightweight cockpit with racing switchboard and fire extinguisher
+  if (isSingleSeaterRaceCar(model)) {
+    box("center_console", "metal", "interior", [0.38, 0.16, 0.18], [0.12, 0.62, 0], {
+      radius: 0.02,
+    });
+    box("center_console", "accent", "interior", [0.12, 0.28, 0.12], [-0.32, 0.48, 0.38], {
+      radius: 0.04,
+      rotZ: 1.57,
+    });
+  }
+
+  // D. SUV / SAV / SAC: Rugged protective wheel arch & rocker cladding, SAV tailgate roof spoiler
+  if (isSuv(model)) {
+    for (const side of [-1, 1]) {
+      // Rugged dark wheel arch cladding
+      box(
+        "body",
+        "dark",
+        "exterior",
+        [0.84, 0.22, 0.045],
+        [frontAxleX, tyreRadius + 0.12, side * (halfTrack + 0.035)],
+        { radius: 0.03 },
+      );
+      box(
+        "body",
+        "dark",
+        "exterior",
+        [0.86, 0.24, 0.045],
+        [rearAxleX, tyreRadius + 0.13, side * (halfTrack + 0.04)],
+        { radius: 0.035 },
+      );
+      // Heavy-duty lower rocker sill protective armor
+      box(
+        "body",
+        "dark",
+        "exterior",
+        [frontAxleX - rearAxleX - 0.72, 0.09, 0.04],
+        [(frontAxleX + rearAxleX) / 2, 0.26, side * (halfTrack + 0.03)],
+        { radius: 0.02 },
+      );
+    }
+    // Upright SAV tailgate roof spoiler (for non-coupe SUVs like X1, X3, X5, X7)
+    if (
+      !model.series.includes("X4") &&
+      !model.series.includes("X6") &&
+      !model.name.includes("X4") &&
+      !model.name.includes("X6")
+    ) {
+      box("body", "paint", "exterior", [0.28, 0.065, 1.24], [rearX + 0.18, 1.48, 0], {
+        radius: 0.02,
+      });
+      box("rear_window", "dark", "exterior", [0.12, 0.48, 1.14], [rearX + 0.22, 1.18, 0], {
+        radius: 0.025,
+        rotZ: 0.18,
+      });
+    }
+  }
+
+  // E. Touring / Wagon / Estate: Extended continuous estate roofline & D-pillar cargo glass
+  if (isTouring(model)) {
+    // Extended estate roofline covering cargo compartment
+    box("roof", "paint", "exterior", [1.1, 0.06, 1.28], [-1.22, 1.47, 0], { radius: 0.03 });
+    // D-pillar upright estate cargo glazing
+    for (const side of [-1, 1]) {
+      box("side_windows", "dark", "exterior", [0.72, 0.26, 0.02], [-1.22, 1.14, side * 0.72], {
+        radius: 0.015,
+      });
+    }
+    // Tailgate roof edge spoiler
+    box("body", "dark", "exterior", [0.26, 0.045, 1.22], [rearX + 0.22, 1.46, 0], {
+      radius: 0.015,
+    });
+    // Luggage cargo bay floor
+    box("luggage", "trim", "interior", [0.94, 0.06, 1.16], [-1.28, 0.48, 0], { radius: 0.02 });
+  }
+
+  // F. Convertible / Roadster: Rollover hoops and tonneau cover
+  if (isConvertible(model)) {
+    for (const side of [-1, 1]) {
+      box("body", "metal", "interior", [0.06, 0.22, 0.24], [-0.64, 1.08, side * 0.38], {
+        radius: 0.03,
+      });
+    }
+    box("body", "paint", "exterior", [0.58, 0.05, 1.32], [-0.98, 0.94, 0], { radius: 0.02 });
+  }
+
+  // ---- 3. Special Equipment & Aerodynamic Components -------------------------------------
+
   // 1. GT Wing / Motorsport Wing
   if (specialParts.includes("gt_wing")) {
-    // Twin curved carbon upright stanchions mounted to trunk deck
     box(
       "rear_spoiler",
       "dark",
@@ -119,12 +253,10 @@ export function buildVehicleModel(
         rotZ: -0.15,
       },
     );
-    // Main inverted aerodynamic carbon wing blade
     box("rear_spoiler", "dark", "exterior", [0.32, 0.035, 1.48], [rearX + 0.24, deckY + 0.28, 0], {
       radius: 0.012,
       rotZ: 0.08,
     });
-    // Aerodynamic vertical endplates
     box(
       "rear_spoiler",
       "dark",
@@ -147,7 +279,6 @@ export function buildVehicleModel(
     );
     anchors.set("rear_spoiler", new THREE.Vector3(rearX + 0.24, deckY + 0.28, 0));
   } else if (specialParts.includes("duckbill_spoiler") || specialParts.includes("rear_spoiler")) {
-    // Sculpted aerodynamic duckbill spoiler or lip spoiler along rear trunk edge
     box("rear_spoiler", "dark", "exterior", [0.14, 0.065, 1.18], [rearX + 0.08, deckY + 0.035, 0], {
       radius: 0.015,
       rotZ: 0.4,
@@ -157,11 +288,9 @@ export function buildVehicleModel(
 
   // 2. Front Splitter & Canards
   if (specialParts.includes("front_splitter")) {
-    // Protruding carbon front splitter blade
     box("front_splitter", "dark", "exterior", [0.24, 0.026, 1.76], [frontX + 0.09, 0.21, 0], {
       radius: 0.01,
     });
-    // Dual tie-rod turnbuckle support struts
     box("front_splitter", "metal", "exterior", [0.012, 0.13, 0.012], [frontX + 0.11, 0.28, -0.34], {
       rotZ: 0.38,
     });
@@ -172,7 +301,6 @@ export function buildVehicleModel(
   }
 
   if (specialParts.includes("canards")) {
-    // Dual aerodynamic dive planes / canards on front bumper corners
     for (const [y, rot] of [
       [0.44, 0.28],
       [0.54, 0.34],
@@ -190,12 +318,10 @@ export function buildVehicleModel(
 
   // 3. Rear Diffuser
   if (specialParts.includes("rear_diffuser")) {
-    // Underbody aerodynamic diffuser tray
     box("rear_diffuser", "dark", "exterior", [0.42, 0.07, 1.32], [rearX + 0.24, 0.27, 0], {
       radius: 0.02,
       rotZ: -0.24,
     });
-    // 4 vertical aerodynamic guide fins / strakes
     for (const z of [-0.48, -0.16, 0.16, 0.48]) {
       box("rear_diffuser", "dark", "exterior", [0.36, 0.075, 0.018], [rearX + 0.24, 0.25, z], {
         rotZ: -0.24,
@@ -205,8 +331,7 @@ export function buildVehicleModel(
   }
 
   // 4. Widebody Kit & Arch Flares
-  if (specialParts.includes("widebody_flares")) {
-    // Front arch blister flares
+  if (specialParts.includes("widebody_flares") || isWidebody(model)) {
     for (const side of [-1, 1]) {
       box(
         "widebody_flares",
@@ -224,7 +349,6 @@ export function buildVehicleModel(
         [rearAxleX, tyreRadius + 0.18, side * (halfTrack + 0.06)],
         { radius: 0.04 },
       );
-      // Side skirt extensions connecting the flared arches
       box(
         "widebody_flares",
         "dark",
@@ -243,7 +367,6 @@ export function buildVehicleModel(
   // 5. Motorsport Safety Roll Cage
   if (specialParts.includes("roll_cage")) {
     const cageZ = 0.52;
-    // B-Pillar main roll hoop
     box("roll_cage", "accent", "interior", [0.045, 0.82, 0.045], [-0.46, 0.95, -cageZ], {
       radius: 0.02,
     });
@@ -253,7 +376,6 @@ export function buildVehicleModel(
     box("roll_cage", "accent", "interior", [0.045, 0.045, cageZ * 2], [-0.46, 1.34, 0], {
       radius: 0.02,
     });
-    // Diagonal X-bracing in rear cabin
     box("roll_cage", "accent", "interior", [0.85, 0.042, 0.042], [-0.92, 0.96, -cageZ * 0.45], {
       radius: 0.018,
       rotZ: -0.52,
@@ -271,7 +393,6 @@ export function buildVehicleModel(
       box("roof_rails", "metal", "exterior", [1.9, 0.038, 0.032], [-0.52, 1.52, side * 0.58], {
         radius: 0.012,
       });
-      // Foot mountings
       for (const x of [0.35, -0.52, -1.38]) {
         box("roof_rails", "dark", "exterior", [0.08, 0.035, 0.04], [x, 1.5, side * 0.58], {
           radius: 0.01,
@@ -309,6 +430,24 @@ export function buildVehicleModel(
       });
     }
     anchors.set("hood_vents", new THREE.Vector3(1.38, 1.03, 0.34));
+  }
+
+  // ---- 4. Proportional Dimensional Scaling & Stance --------------------------------------
+  const scaleX = model.dimensions.length / G60.length;
+  const scaleY = model.dimensions.height / G60.height;
+  const scaleZ = model.dimensions.width / G60.width;
+  const baselineGroundClearance = 0.14;
+  const groundOffset =
+    (model.dimensions.groundClearance ?? baselineGroundClearance) - baselineGroundClearance;
+
+  root.scale.set(scaleX, scaleY, scaleZ);
+  root.position.y += groundOffset;
+
+  // Transform badge anchors into world space to match scaled geometry
+  for (const [_, vec] of anchors) {
+    vec.x *= scaleX;
+    vec.y = vec.y * scaleY + groundOffset;
+    vec.z *= scaleZ;
   }
 
   root.updateMatrixWorld(true);

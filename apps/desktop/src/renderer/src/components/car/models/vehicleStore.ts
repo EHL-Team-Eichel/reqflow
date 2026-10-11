@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type { PowertrainType, VehicleModel } from "./types";
-import { getVehicleModelById, VEHICLE_MODELS } from "./registry";
+import { DEFAULT_MODEL_ID, getVehicleModelById, VEHICLE_MODELS } from "./registry";
 import { settingsStore } from "../../../lib/settings";
 import { settingsPowertrain, sketchPowertrain } from "../model/powertrains";
 
@@ -37,7 +37,7 @@ function loadSaved(): { modelId: string; powertrain: PowertrainType } {
     // Ignore localStorage parse errors
   }
   return {
-    modelId: VEHICLE_MODELS[0]?.id ?? "bmw_330i_xdrive_2025",
+    modelId: DEFAULT_MODEL_ID,
     powertrain: "electric",
   };
 }

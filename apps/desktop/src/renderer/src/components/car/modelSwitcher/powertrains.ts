@@ -1,6 +1,7 @@
 import { CAR_PARTS, EXTENDED_CAR_PARTS } from "../parts";
 import { PART_SUBCLASSES, type PartSubclass } from "../partMenu";
 import type { PowertrainType, VehicleModel } from "../models/types";
+import { modelExcludedPartIds } from "../models/features";
 
 /** Schematic layouts, independent of the configured requirement scope/vehicle derivative. */
 export const POWERTRAINS = [
@@ -53,10 +54,13 @@ export function availablePartIds(
   powertrain: PowertrainType,
   model?: VehicleModel,
 ): ReadonlySet<string> {
+  const excluded = modelExcludedPartIds(model);
   return new Set([
-    ...CAR_PARTS.filter((p) => !VARIABLE_PARTS.includes(p.id)).map((p) => p.id),
-    ...POWERTRAIN_PARTS[powertrain],
-    ...modelPartIds(model),
+    ...CAR_PARTS.filter((p) => !VARIABLE_PARTS.includes(p.id) && !excluded.has(p.id)).map(
+      (p) => p.id,
+    ),
+    ...POWERTRAIN_PARTS[powertrain].filter((id) => !excluded.has(id)),
+    ...modelPartIds(model).filter((id) => !excluded.has(id)),
   ]);
 }
 
@@ -88,7 +92,7 @@ export function powertrainSubclasses(
         ? [
             ...subclass.partIds.filter((id) => !VARIABLE_PARTS.includes(id)),
             ...POWERTRAIN_PARTS[powertrain],
-          ]
+          ].filter((id) => available.has(id))
         : subclass.partIds.filter((id) => available.has(id)),
   }));
   const existing = new Set(subclasses.flatMap((subclass) => subclass.partIds));

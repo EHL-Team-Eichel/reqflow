@@ -291,6 +291,27 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - 2026-10-10: Implemented an 850 ms reversible exterior flight: all exterior meshes (including wheels and wheel-well masks) separate outward, fade away to expose the assembled cabin, and retrace their exact paths back. Rapid toggles reverse without jumps; badges follow/fade with their pieces, departed pieces cannot intercept canvas picks, and reduced motion snaps to the endpoint (including live preference changes). No car geometry, core contracts or main-process files changed. Added 12 colocated regressions. Verified `npm run typecheck && npm test` (259 passed, 25 real-data tests skipped), `npm run smoke` (29 screenshots), changed-file Prettier and `git diff --check`. An isolated synthetic native UI probe also passed outward/return, mid-flight reversal, badge behavior, cabin selection, dark theme and live reduced motion (8 additional screenshots); inspected assembled, departing, returning and interior screenshots in `apps/desktop/out/smoke/`. Requested slice complete; branch ready for integration with concurrent shape work. WS1/WS0 follow-up: add transition-progress, rapid-reversal and reduced-motion checks to shared `main/smoke.ts`.
 
 - 2026-10-10: Claimed the requested reversible exterior/interior animation in an isolated worktree to preserve concurrent car-shape work. Exterior pieces fly away to reveal the assembled cabin and return along the same paths; preserve all catalog parts, picking, theme styling and camera controls. Scope: WS3 car renderer, colocated tests and this section. User requested commit and push after verification.
+- 2026-10-11: Refined BMW 3D models and classification architecture across all 105 Sketchfab vehicles.
+  Configured 2025 BMW M5 Sedan (`bmw_m5_sedan_g90_2025`) as the standard running benchmark model (index 0).
+  Implemented functional class recognition and procedural feature removal/addition:
+  - 2-Door Coupés (69 models): removed non-existent rear doors (`rear_doors`), added seamless rear quarter
+    flank styling, lower sill extensions, M double-bubble carbon roof ridge and Hofmeister kink quarter windows.
+  - 2-Seaters (Z4, M1, CSL/GTS track specials): removed non-existent rear seats (`rear_seats`, individual seats,
+    `rear_air_vents`), added rear cabin bulkhead and luggage parcel shelf.
+  - Dedicated Single-Seater Race Cars (GT3, GT4, DTM, GTR): stripped lightweight motorsport cockpit removing
+    passenger seat, cup holders, armrest, glovebox and wireless charger; added racing switchboard console,
+    cockpit fire suppression, full FIA roll cage, GT wing, front splitter with struts, dive plane canards,
+    hood extractor louvers, widebody blister flares and multi-strake race diffuser.
+  - SUVs / SAVs (15 models): elevated ground clearance (+0.07m), rugged dark lower wheel arch cladding and rocker armor,
+    underbody skid plates, longitudinal roof rails and SAV upright tailgate roof spoiler.
+  - Tourings / Wagons (5 models): extended continuous estate roofline canopy, upright D-pillar estate cargo glazing,
+    roof rails, luggage cargo floor and tailgate roof spoiler.
+  - Convertibles (5 models): acoustic folding soft-top canopy (`convertible_roof`), dual rollover safety hoops and rear deck tonneau cover.
+  - Proportional dimensional scaling based on length, width, height, track and ground clearance relative to G60 baseline,
+    with badge anchors transformed into world space.
+  - Integrated with `availablePartIds` and `powertrainSubclasses` ensuring catalog and interactive 3D geometry consistency;
+    51 test files and 578 tests passing across all workspaces.
+
 - 2026-10-11: Model-switcher requested slice complete. Isolated commit `b64563e` passes
   root typecheck and `npm test -- --maxWorkers=4` (488 passed, 25 skipped); the unconstrained
   parallel run hit CPU-contention timeouts. Production build and the synthetic Electron
