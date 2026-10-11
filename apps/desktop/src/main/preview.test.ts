@@ -6,6 +6,7 @@ import { DEFAULT_SETTINGS, defaultBlockParams, type LlmClient, type Settings } f
 import { createFileStore } from "@reqflow/db";
 import type { BlockContext } from "@reqflow/engine";
 import { afterAll, describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 import { ReqflowError } from "./dispatch";
 import { previewBlock } from "./preview";
 
@@ -167,5 +168,39 @@ describe("blocks.preview", () => {
       code: "block_failed",
       message: expect.stringMatching(/Choose an Excel or CSV file/),
     });
+  });
+
+  it("preserves quota diagnostics across preview without exposing provider bodies", async () => {
+    const llm: LlmClient = {
+      generateObject: vi
+        .fn()
+        .mockRejectedValue(
+          new Error("Google request failed (HTTP 429): PRIVATE_PROVIDER_BODY synthetic-key"),
+        ),
+      generateText: vi.fn(),
+    };
+    const spy = vi
+      .spyOn(registry.get("raw"), "run")
+      .mockImplementation(async (_inputs, _params, ctx) => {
+        await ctx.llm.generateObject({
+          prompt: "Synthetic only",
+          schema: z.strictObject({ ok: z.boolean() }),
+        });
+        return { status: "ok", outputs: {} };
+      });
+    try {
+      const error = await previewBlock(
+        registry,
+        files,
+        { kind: "raw", params: defaultBlockParams("raw"), scope },
+        { llm },
+      ).catch((failure: unknown) => failure);
+      expect(error).toBeInstanceOf(ReqflowError);
+      expect((error as Error).message).toContain("HTTP 429");
+      expect((error as Error).message).not.toContain("PRIVATE_PROVIDER_BODY");
+      expect((error as Error).message).not.toContain("synthetic-key");
+    } finally {
+      spy.mockRestore();
+    }
   });
 });
