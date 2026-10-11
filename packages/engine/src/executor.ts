@@ -23,6 +23,7 @@ import {
   type Workflow,
   type WorkflowGraph,
   type WebSearch,
+  type FilterOverride,
 } from "@reqflow/core";
 import type { BlockContext, CarService } from "./block";
 import type { BlockRegistry } from "./registry";
@@ -77,6 +78,7 @@ export interface WorkflowExecutorOptions {
       blockId: string,
       settings: Settings,
     ) => ResearchCollector | undefined;
+    filterOverrides?: (workflowId: string, blockId: string) => Promise<FilterOverride[]>;
   };
   outputStore?: BlockOutputStore;
   /** Persist the snapshot and then push it. The executor awaits this callback. */
@@ -118,6 +120,10 @@ export class WorkflowExecutor {
 
   getRun(runId: string): WorkflowRun {
     return structuredClone(this.session(runId).run);
+  }
+
+  isRunActive(runId: string): boolean {
+    return this.sessions.get(runId)?.busy ?? false;
   }
 
   private session(runId: string): RunSession {
@@ -303,6 +309,11 @@ export class WorkflowExecutor {
       // The kernel owns logs and progress, including immutable ordered updates.
       log() {},
       progress() {},
+      filterOverrides: async () => {
+        if (!services.filterOverrides) return [];
+        const overrides = await services.filterOverrides(session.run.workflowId, blockId);
+        return structuredClone(overrides);
+      },
     };
   }
 

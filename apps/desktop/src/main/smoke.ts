@@ -575,7 +575,14 @@ export async function runSmoke(
     ('S3', 'The infotainment screen is broken and needs a restart'),
     ('S4', 'I cannot use the infotainment screen'),
     ('S5', 'I like the rear seats'),
-    ('S6', 'I want a bigger trunk');`);
+     ('S6', 'I want a bigger trunk');`);
+  db.exec(`DROP TABLE IF EXISTS filter_feedback; CREATE TABLE filter_feedback (id TEXT, comment TEXT);
+    INSERT INTO filter_feedback VALUES
+    ('F1', 'The seats are comfortable'),
+    ('F2', 'Pricing and tax.'),
+    ('F3', 'Unknown synthetic topic.'),
+    ('F4', 'Tax is high but seats are uncomfortable'),
+    ('F5', 'Acceleration is excellent, but the price is high');`);
   db.close();
   check(await click('[data-testid="block-raw"]'), "raw: can't select the Raw block");
   await delay(300);
@@ -981,6 +988,191 @@ export async function runSmoke(
     );
   }
   await click('[aria-label="Close report"]');
+  // Selection-only Filter through the real editor: originals, exclusions, review and next-run restore.
+  await js("void (window.confirm = () => true)");
+  for (let i = 0; i < 30 && (await count('.react-flow__node [data-testid^="block-"]')); i++) {
+    await click('.react-flow__node [data-testid^="block-"]');
+    await delay(60);
+    check(await click('[data-testid="inspector-delete"]'), "filter: cannot clear editor");
+    await delay(60);
+  }
+  for (const kind of ["raw", "ai_filter", "hil"] as const) {
+    check(await click(`[data-testid="palette-item-${kind}"]`), `filter: cannot add ${kind}`);
+    await delay(150);
+  }
+  await click('[data-testid="block-raw"]');
+  await delay(200);
+  await setSelect('[data-testid="inspector"] select', "database");
+  await type('input[placeholder="/path/to/data.sqlite"]', [dbPath]);
+  await type('textarea[placeholder="SELECT * FROM customer_feedback"]', [
+    "SELECT * FROM filter_feedback",
+  ]);
+  await click('[data-testid="block-ai_filter"]');
+  await delay(200);
+  check(
+    (await count('[data-testid="ai-filter-configuration"]')) === 1,
+    "filter: customization missing",
+  );
+  await setSelect('[data-testid="ai-filter-configuration"] select', "customer-facing");
+  check(
+    await js<boolean>(
+      `(() => { const b = [...document.querySelectorAll('[data-testid="ai-filter-configuration"] button')].find(b => b.textContent.trim() === 'Apply preset'); b?.click(); return !!b; })()`,
+    ),
+    "filter: explicit preset action missing",
+  );
+  await delay(200);
+  await shot("filter-configuration");
+  await click('[aria-label="Close details"]');
+  await drag(handle("raw", "source"), handle("ai_filter", "target"));
+  await drag(handle("ai_filter", "source"), handle("hil", "target"));
+  check(await click('[data-testid="flow-run"]'), "filter: editor start missing");
+  const filterDeadline = Date.now() + 10000;
+  while (
+    !/Waiting for human review/i.test(await text('[data-testid="flow-run-status"]')) &&
+    Date.now() < filterDeadline
+  )
+    await delay(100);
+  const filterRun = (await invoke("runs", "list")).find(
+    (run) =>
+      run.status === "waiting_for_review" && run.blockRuns.some((state) => state.filterReport),
+  );
+  const filterReport = filterRun?.blockRuns.find((state) => state.filterReport)?.filterReport;
+  check(!!filterRun && !!filterReport, "filter: saved selection report missing");
+  if (filterRun && filterReport) {
+    const outcomes = filterReport.decisions;
+    check(
+      outcomes.filter((d) => d.outcome === "keep").length === 3 &&
+        outcomes.filter((d) => d.outcome === "exclude").length === 1 &&
+        outcomes.filter((d) => d.outcome === "review").length === 1,
+      "filter: expected three keep, one exclude and one review",
+    );
+    const originalOutput = await invoke("runs", "blockOutput", filterRun.id, filterReport.blockId);
+    check(
+      originalOutput.out?.records.length === 4,
+      "filter: unsure should pass through by default",
+    );
+    check(
+      originalOutput.out?.records.every(
+        (record) =>
+          JSON.stringify(record) ===
+          JSON.stringify(filterReport.originalInput.records.find((item) => item.id === record.id)),
+      ) === true,
+      "filter: output altered original records",
+    );
+    await click('[data-testid="block-ai_filter"]');
+    await delay(150);
+    check(
+      await click('[data-testid="inspector-open-filter-report"]'),
+      "filter: inspector report entry missing",
+    );
+    await delay(500);
+    check((await count('[data-testid="filter-report"]')) === 1, "filter: review panel missing");
+    await shot("filter-kept");
+    const filterTab = (label: string) =>
+      js<boolean>(
+        `(() => { const b = [...document.querySelectorAll('[aria-label="Filter dispositions"] button')].find(b => b.textContent.startsWith(${JSON.stringify(label)})); b?.click(); return !!b; })()`,
+      );
+    check(await filterTab("Needs review"), "filter: review tab missing");
+    await delay(150);
+    await shot("filter-needs-review");
+    check(await filterTab("Excluded"), "filter: excluded tab missing");
+    await delay(150);
+    check(
+      await click('[data-testid="filter-report"] tbody button'),
+      "filter: excluded detail missing",
+    );
+    await delay(150);
+    await shot("filter-excluded");
+    await type('[data-testid="filter-restore-rationale"]', [
+      "Synthetic PM: retain this item for contextual comparison.",
+    ]);
+    check(await click('[data-testid="filter-restore"]'), "filter: restore action missing");
+    const restoreDeadline = Date.now() + 5000;
+    while (
+      !/Restore saved for the next full run/.test(await text('[data-testid="filter-report"]')) &&
+      Date.now() < restoreDeadline
+    )
+      await delay(100);
+    check(
+      /Restore saved for the next full run/.test(await text('[data-testid="filter-report"]')),
+      "filter: UI restore not confirmed",
+    );
+    await js(
+      `document.querySelector('[data-testid="filter-restore"]')?.scrollIntoView({block:'center'})`,
+    );
+    await shot("filter-restore-pending");
+    check(
+      JSON.stringify(await invoke("runs", "blockOutput", filterRun.id, filterReport.blockId)) ===
+        JSON.stringify(originalOutput),
+      "filter: restoration mutated historical output",
+    );
+    check(
+      (await invoke("runs", "get", filterRun.id)).status === "waiting_for_review",
+      "filter: restoration started or resumed flow",
+    );
+    const restorationAudit = await invoke("audit", "list", {
+      runId: filterRun.id,
+      action: "filter.restored",
+    });
+    check(
+      restorationAudit.length === 1 && restorationAudit[0]?.actor.type === "human",
+      "filter: human restoration audit missing",
+    );
+    const savedSettings = Settings.parse(await invoke("settings", "get"));
+    await invoke("settings", "save", {
+      ...savedSettings,
+      app: { ...savedSettings.app, theme: "dark" },
+    });
+    const originalFilterTheme = await js<string>(
+      `document.documentElement.getAttribute("data-theme") || "light"`,
+    );
+    await js(`document.documentElement.setAttribute("data-theme", "dark")`);
+    await delay(250);
+    await shot("filter-review-dark");
+    win.setSize(1024, 640);
+    await delay(250);
+    await shot("filter-review-minimum");
+    win.setSize(1440, 900);
+    await invoke("settings", "save", savedSettings);
+    await js(
+      `document.documentElement.setAttribute("data-theme", ${JSON.stringify(originalFilterTheme)})`,
+    );
+    check(await click('[data-testid="filter-tab-data"]'), "filter: preserved input tab missing");
+    await delay(150);
+    await shot("filter-original-input");
+    await click('[aria-label="Close report"]');
+    // A paused run must explicitly be cancelled before Start can create a new full run.
+    await click('[aria-label="Close details"]');
+    check(await click('[data-testid="flow-cancel"]'), "filter: cancel before rerun missing");
+    await delay(400);
+    check(await click('[data-testid="flow-run"]'), "filter: explicit rerun missing");
+    const rerunDeadline = Date.now() + 10000;
+    let rerun: WorkflowRun | undefined;
+    while (Date.now() < rerunDeadline) {
+      rerun = (await invoke("runs", "list", filterRun.workflowId)).find(
+        (run) => run.id !== filterRun.id && run.status === "waiting_for_review",
+      );
+      if (rerun) break;
+      await delay(100);
+    }
+    const restoredReport = rerun?.blockRuns.find(
+      (state) => state.blockId === filterReport.blockId,
+    )?.filterReport;
+    check(
+      restoredReport?.configurationHash === filterReport.configurationHash &&
+        restoredReport.decisions.some((d) => d.override && d.outcome === "keep"),
+      "filter: pending restore did not apply on explicit rerun",
+    );
+    if (rerun) {
+      const restoredOutput = await invoke("runs", "blockOutput", rerun.id, filterReport.blockId);
+      check(
+        restoredOutput.out?.records.length === 5,
+        "filter: explicit rerun did not forward all restored originals",
+      );
+      await click('[data-testid="flow-cancel"]');
+      await delay(400);
+    }
+  }
   await go("/settings");
   check(await click('[data-testid="settings-section-ai"]'), "settings: no ai section");
   await delay(200);
@@ -1334,7 +1526,12 @@ export async function runSmoke(
     await delay(100);
   }
   check(await click('[data-testid="car-reset"]'), "car: no reset button");
-  await delay(200);
+  const resetConfirmDeadline = Date.now() + 5000;
+  while (
+    (await count('[data-testid="car-reset-confirm"]')) === 0 &&
+    Date.now() < resetConfirmDeadline
+  )
+    await delay(100);
   check((await count('[data-testid="car-reset-confirm"]')) === 1, "car: reset didn't ask first");
   await shot("car-reset-confirm");
   check(await click('[data-testid="car-reset-confirm-button"]'), "car: no confirm button");

@@ -49,7 +49,7 @@ Blocks are finalized one at a time; **State** says how far each one is.
 | **Custom**      | (f/t/1/1)    | An empty block. Build any sub-flow inside it.                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | placeholder                                                                                                                  |
 | **Raw**         | (t/f/0/1)    | Brings in Excel (.xlsx), CSV, PDF, Research JSON or a SQLite query as one unified data stream. Feedback rows merge, study sheets retain sections, and structured datasets emit usage findings. PDF text and local English/German OCR feed the configured default AI, yielding original page records plus evidence-checked structured items with page references and explicit review/uncertainty metadata. Explicit PDF preview/run sends extracted text to the AI provider; mock refuses to invent extraction.             | **built**: .xlsx, CSV, PDF, JSON, SQLite; PDF original text is retained and AI interpretation requires human review          |
 | **Research**    | (t/t/0/1)    | Searches the web; emits a data stream in the same format as Raw.                                                                                                                                                                                                                                                                                                                                                                                                                                                           | placeholder params                                                                                                           |
-| **AI Filter**   | (t/t/1/1)    | Keeps the items that match a criterion written in plain language.                                                                                                                                                                                                                                                                                                                                                                                                                                                          | placeholder params                                                                                                           |
+| **AI Filter**   | (t/t/1/1)    | Selects relevant original items unchanged using editable criteria, examples and selected fields. Every item gets a saved keep/exclude/review decision, reason and verified quotes. Uncertain items pass through by default; mixed-topic items stay intact. Excluded originals remain reviewable, with audited human restoration on an explicit later run.                                                                                                                                                                  | **built**: structured LLM classification and labelled offline mock; selection report, provenance and next-run restorations   |
 | **AI Splitter** | (t/t/1/2–10) | Routes each primary item while retaining linked evidence. Raw-data modes analyze customer demand into 2–10 bands, the Car tab's parts at a chosen depth (areas: exterior, interior, technology; or 13 part groups such as seats and cockpit, each plus Other — the outputs follow the depth) or custom global groups; legacy priority, category, sentiment and custom-instruction routing remain supported. An untouched inner workplace uses built-in routing; adding blocks or connections overrides it with a sub-flow. | **built**: standalone Mastra Agent through the injected `LlmClient`, plus offline mock; report and paused-HIL routing review |
 | **HIL**         | (t/f/1/1)    | Human in the loop (capacitor icon). The flow waits here until a person has reviewed what arrived, then passes it on. **Double-click opens the review report:** a flow chart of how the data was collected (every step it passed through, across inner workplaces) and a table icon on every step to see the data at that point.                                                                                                                                                                                            | **finalized** — report and pause/continue logic built; runs once the executor exists (WS1)                                   |
 | **Add to Car**  | (t/f/n/0)    | AI agents turn what arrives into requirements for the successor. Inputs **1. Priority … n. Priority** (the input an item arrives on sets its ranking) and **context inputs** (Auto, or Sales volumes) that are background only. Analysts, a synthesizer, an architect and a critic write and review each requirement; a judge rates it, and every requirement gets a **confidence score**. The block's **thought process** view shows, step by step, how the agents got there.                                             | **built**: agents on any API setup from Settings, offline mock without a key; `npm run eval:f70`                             |
@@ -83,19 +83,42 @@ Raw: customer feedback ┐
 Raw: customer study    ┤
 Raw: equipment data    ┼─▶ AI Filter ───────────────▶ AI Splitter ──must───▶ 🧑 HIL ──▶ 1. Priority ┐
 Research: web          ┘   "customer-facing only"     "by priority" ──should─▶ 🧑 HIL ──▶ 2. Priority ┼─ Add to Car
-                           (findings + evidence;       (explainable ──could──────────────▶ 3. Priority ┤  (agents: requirements
+                           (unchanged originals;       (explainable ──could──────────────▶ 3. Priority ┤  (agents: requirements
                            drops regulatory,           weighted       (unreviewed)                     │   with confidence and
                            engineering, pricing)       score)                                          │   a thought process)
 Raw: sales volumes ─────────────────────────────────────────────────────────────────────▶ Context 1   ┘
                                                                                           (Sales volumes: background only)
 ```
 
-**Where AI acts on its own:** ingestion (Raw, Research), filtering and extracting evidence-linked
-findings (AI Filter), scoring and routing (AI Splitter), drafting, reviewing and rating requirements
+**Where AI acts on its own:** ingestion (Raw, Research), selection-only relevance filtering
+(AI Filter), scoring and routing (AI Splitter), evidence-linked finding extraction, drafting, reviewing and rating requirements
 (the Add to Car agents, each step visible in its thought-process view).
 **Where a human must act:** at every HIL block, and when approving, rejecting, deferring or editing a
 requirement, overriding a priority or answering a challenge on the Car tab. The AI can **never** set
 a requirement to `approved` or `rejected`.
+
+## AI Filter preservation and review
+
+The built-in filter classifies the most advanced populated layer (requirements, themes, findings,
+then records) and retains available supporting and conflicting evidence. Objects, IDs, fields,
+provenance and order are unchanged. Dependencies that would otherwise be excluded are explicitly
+labelled retained supporting context; unrelated upstream items are not silently reintroduced.
+Source-only inputs pass through as unclassified context. An authored inner workplace overrides the
+built-in filter and is visibly labelled as a bypass in the inspector.
+
+The selection report keeps the original input, exact model, effective instructions and decisions
+locally, including excluded items. Confidence is a model assessment, not a calibrated probability.
+Classification audit events are attempts, not proof of publication: only a succeeded saved block
+report/output records what actually passed downstream. Invalid responses, quotes or audit failures
+fail the step visibly; no partial filtered output is accepted.
+
+Restore on next run requires a human rationale and records a version-checked audit event. It leaves
+historical outputs and downstream requirements unchanged and never resumes or starts a flow.
+Restorations apply only to the same workflow/block, evidence content, scope, instructions and model;
+Raw's refreshed retrieval timestamp alone does not invalidate them. A paused run must be explicitly
+completed or cancelled before a new full run starts. A full rerun may create additional requirements.
+The offline mock supports only a narrow, labelled customer-facing keyword preset; custom semantic
+criteria and unfamiliar topics become review cases. No vector or Jev filtering is claimed.
 
 ## Core objects (full schemas in `packages/core`)
 
@@ -141,7 +164,7 @@ customer studies (the F70 next to the G60/G68 5 Series and G70 7 Series), sales 
 list. The requirements are for the F70's successor. This is the default scope in Settings.
 
 1. Open the default template, attach the BMW files to the Raw blocks, enable web research, and run.
-2. Watch the blocks fill up, then click the AI Filter to see findings with their evidence.
+2. Watch the blocks fill up, then click the AI Filter to inspect kept, excluded and uncertain originals, with reasons and exact source quotes.
 3. The run pauses at the HIL block. On the Car tab, open a must-have and trace it down to a verbatim customer quote.
 4. Challenge one requirement. The AI answers. Edit one, approve one with a priority override, and reject one.
 5. Resume the run, which publishes and exports. The audit trail shows the full history of one requirement.

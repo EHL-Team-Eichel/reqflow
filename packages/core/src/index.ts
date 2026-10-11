@@ -5,6 +5,7 @@ export * from "./blocks";
 export * from "./car-parts";
 export * from "./category";
 export * from "./finding";
+export * from "./filter-report";
 export * from "./graph";
 export * from "./ids";
 export * from "./ipc";

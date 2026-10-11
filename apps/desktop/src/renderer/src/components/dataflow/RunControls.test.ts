@@ -86,6 +86,8 @@ describe("shared run controls integration", () => {
         list: vi.fn(),
         blockOutput: vi.fn(),
         reviewSplitter: vi.fn(),
+        filterReviewState: vi.fn(),
+        reviewFilter: vi.fn(),
         get: vi.fn().mockResolvedValue(paused),
         onUpdate: (listener) => {
           listeners.add(listener);

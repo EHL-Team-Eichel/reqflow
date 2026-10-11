@@ -878,6 +878,10 @@ export const fixtureWorkflow: Workflow = withSplitterWorkplaces<Workflow>({
       position: { x: 320, y: 300 },
       params: {
         criterion: "are customer-facing, not regulation, engineering specs or pricing.",
+        include: "",
+        exclude: "",
+        examples: "",
+        fields: "",
         model: "fast",
         minConfidence: 0.7,
         keepUnsure: true,

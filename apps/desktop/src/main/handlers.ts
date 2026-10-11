@@ -1,4 +1,5 @@
 import { basename, join } from "node:path";
+import { isDeepStrictEqual } from "node:util";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
 import type { SaveDialogOptions, SaveDialogReturnValue } from "electron";
@@ -34,6 +35,9 @@ import {
   Workflow,
   PipelineData,
   BlockId,
+  FilterReview,
+  FilterReport,
+  walkBlocks,
   type WorkflowRun,
   type WorkflowSave,
   type LlmClient,
@@ -55,6 +59,10 @@ import {
   SqliteReasoningRepository,
   SqliteRequirementRepository,
   RequirementConflictError,
+  FilterOverrideRepository,
+  FilterOverrideConflictError,
+  FilterOverrideValidationError,
+  FilterOverrideStateError,
   SqliteRunRepository,
   type LocalFileStore,
 } from "@reqflow/db";
@@ -241,6 +249,7 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
       reqRepo.saveVersionWithAudit(req, expectedVersion, events.map(requirementAudit)),
     );
   const datasets = new ResearchDatasetRepository(db);
+  const filterRepo = new FilterOverrideRepository(db);
   const research = createResearchService({
     ...deps.researchOptions,
     files: deps.files,
@@ -322,6 +331,10 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
           await reasoningRepo.save(trace);
         },
       },
+      filterOverrides: async (workflowId, blockId) => {
+        const state = await filterRepo.get(workflowId, blockId);
+        return state.overrides;
+      },
     },
     outputStore: {
       async saveBlockOutput(runId, blockId, outputs) {
@@ -399,6 +412,56 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
     } finally {
       restoring.delete(runId);
     }
+  };
+  const filterSource = async (runId: string, blockId: string) => {
+    const persisted = await runRepo.get(runId).catch((error: unknown) => {
+      if (error instanceof Error && error.message.startsWith("Run not found:"))
+        throw new ReqflowError("not_found", `Run not found: ${runId}`);
+      throw new ReqflowError("storage_error", "Filter source run could not be read.");
+    });
+    let current = persisted;
+    try {
+      current = executor.getRun(runId);
+    } catch {
+      // Historical runs need no live executor session to review their reports.
+    }
+    for (const run of [current, persisted]) {
+      if (!["completed", "waiting_for_review"].includes(run.status))
+        throw new ReqflowError(
+          "invalid_state",
+          "Cannot restore filter items on run unless completed or waiting_for_review.",
+        );
+      const block = [...walkBlocks(run.graph)].find(({ block }) => block.id === blockId)?.block;
+      const state = run.blockRuns.find((state) => state.blockId === blockId);
+      if (!block || !state) throw new ReqflowError("not_found", "Filter block not found in run.");
+      const report = FilterReport.safeParse(state.filterReport);
+      if (
+        block.kind !== "ai_filter" ||
+        state.status !== "succeeded" ||
+        !report.success ||
+        report.data.runId !== runId ||
+        report.data.blockId !== blockId
+      )
+        throw new ReqflowError(
+          "invalid_state",
+          "Block has no valid completed filter report for this run.",
+        );
+    }
+    const report = current.blockRuns.find((state) => state.blockId === blockId)!.filterReport!;
+    const storedReport = persisted.blockRuns.find(
+      (state) => state.blockId === blockId,
+    )!.filterReport!;
+    if (
+      current.workflowId !== persisted.workflowId ||
+      !isDeepStrictEqual(JSON.parse(JSON.stringify(report)), storedReport)
+    )
+      throw new ReqflowError("invalid_state", "Filter report does not match persisted run.");
+    if (executor.isRunActive(runId) || restoring.has(runId))
+      throw new ReqflowError(
+        "invalid_state",
+        "Filter review requires a stopped or HIL-paused run.",
+      );
+    return { workflowId: persisted.workflowId, report };
   };
   const handlers: ReqflowHandlers = {
     app: { info: async () => deps.appInfo() },
@@ -532,6 +595,57 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
           review,
           { type: "human", ...reviewer },
         );
+      },
+      filterReviewState: async (runId: string, blockId: string) => {
+        await ready;
+        const rId = parseArg(RunId, runId, "runId");
+        const bId = parseArg(BlockId, blockId, "blockId");
+        const source = await filterSource(rId, bId);
+        try {
+          return await filterRepo.get(source.workflowId, bId);
+        } catch {
+          throw new ReqflowError("storage_error", "Filter review state could not be read.");
+        }
+      },
+      reviewFilter: async (runId: string, blockId: string, reviewInput: unknown) => {
+        await ready;
+        const rId = parseArg(RunId, runId, "runId");
+        const bId = parseArg(BlockId, blockId, "blockId");
+        const review = parseArg(FilterReview, reviewInput, "review");
+        const source = await filterSource(rId, bId);
+
+        const reviewer = loadSettings(dataDir).review.reviewer;
+        const actor = {
+          type: "human" as const,
+          userId: reviewer.userId,
+          name: reviewer.name,
+          role: reviewer.role,
+        };
+
+        try {
+          // Resume reserves the executor synchronously, even before its status reaches SQLite.
+          if (executor.isRunActive(rId) || restoring.has(rId))
+            throw new ReqflowError(
+              "invalid_state",
+              "Filter review requires a stopped or HIL-paused run.",
+            );
+          return await filterRepo.restore(source.workflowId, bId, source.report, review, actor);
+        } catch (error) {
+          if (error instanceof FilterOverrideConflictError) {
+            throw new ReqflowError("conflict", error.message);
+          }
+          if (error instanceof ReqflowError) {
+            throw error;
+          }
+          if (error instanceof z.ZodError) {
+            throw new ReqflowError("invalid_input", "Input failed validation", error.issues);
+          }
+          if (error instanceof FilterOverrideValidationError)
+            throw new ReqflowError("invalid_input", error.message);
+          if (error instanceof FilterOverrideStateError)
+            throw new ReqflowError("invalid_state", error.message);
+          throw new ReqflowError("storage_error", "Failed to restore filter items");
+        }
       },
       cancel: async (runId: string) => {
         const rId = RunId.parse(runId);
