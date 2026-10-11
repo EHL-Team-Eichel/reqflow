@@ -5,6 +5,7 @@ import type { ReqflowApi, RequirementDetail } from "@reqflow/core/ipc";
 import {
   buildRequirementDecision,
   buildRequirementEdit,
+  challengeOutcome,
   requirementDraft,
   reviewError,
   saveRequirementReview,
@@ -319,5 +320,33 @@ describe("API-shaped review submission", () => {
     }
     expect(reviewError(new Error("Reload details"))).toBe("Reload details");
     expect(reviewError(null)).toContain("Unable to save");
+  });
+});
+
+describe("challenge outcome notice", () => {
+  const at = (n: number) => `2026-10-11T09:0${n}:00.000Z`;
+  it("points to History when the AI answered, using the newest outcome", () => {
+    expect(
+      challengeOutcome([
+        { action: "requirement.challenge_failed", at: at(1), rationale: "Old failure." },
+        { action: "requirement.challenged", at: at(2) },
+        { action: "requirement.challenge_answered", at: at(2) },
+      ]),
+    ).toBe("The AI's answer is in History; it is advice, not a decision.");
+  });
+  it("shows the recorded reason when the AI gave no usable answer", () => {
+    expect(
+      challengeOutcome([
+        { action: "requirement.challenge_answered", at: at(1) },
+        {
+          action: "requirement.challenge_failed",
+          at: at(3),
+          rationale: "The AI gave no usable answer: outage. Challenge again to retry.",
+        },
+      ]),
+    ).toBe("The AI gave no usable answer: outage. Challenge again to retry.");
+  });
+  it("falls back to History when no outcome is in the trail", () => {
+    expect(challengeOutcome([])).toMatch(/Open History/);
   });
 });

@@ -142,3 +142,21 @@ export function reviewError(error: unknown): string {
   }
   return error instanceof Error ? error.message : "Unable to save the review. Please try again.";
 }
+
+type OutcomeEvent = { action: string; at: string; rationale?: string };
+
+/** What the PM sees after a challenge: the AI's answer is in History, or why there is none. */
+export function challengeOutcome(events: readonly OutcomeEvent[]): string {
+  const latest = events
+    .filter(
+      (event) =>
+        event.action === "requirement.challenge_answered" ||
+        event.action === "requirement.challenge_failed",
+    )
+    .sort((a, b) => a.at.localeCompare(b.at))
+    .at(-1);
+  if (!latest) return "Open History for the AI's answer.";
+  if (latest.action === "requirement.challenge_failed")
+    return latest.rationale ?? "The AI gave no usable answer; challenge again to retry.";
+  return "The AI's answer is in History; it is advice, not a decision.";
+}

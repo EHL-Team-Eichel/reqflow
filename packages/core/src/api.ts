@@ -13,18 +13,19 @@ export const DECISION_TO_STATUS: Record<DecisionKind, DecisionStatus> = {
   approve: "approved",
   reject: "rejected",
   defer: "deferred",
-  challenge: "challenged", // AI answers, then the requirement returns to "in_review"
+  challenge: "challenged", // stays challenged after the AI's answer, until the PM decides
   reopen: "in_review",
 };
 
 /**
  * Which human decisions each status allows. A decided requirement (approved, rejected) must be
- * reopened before anyone decides again; "challenged" waits for the AI's answer or a decision.
+ * reopened before anyone decides again. A challenged requirement waits for the PM's decision; the PM
+ * may challenge it again (another question, or a retry when the AI couldn't answer).
  */
 export const ALLOWED_DECISIONS: Record<DecisionStatus, readonly DecisionKind[]> = {
   proposed: ["approve", "reject", "defer", "challenge"],
   in_review: ["approve", "reject", "defer", "challenge"],
-  challenged: ["approve", "reject", "defer", "reopen"],
+  challenged: ["approve", "reject", "defer", "challenge", "reopen"],
   deferred: ["approve", "reject", "challenge", "reopen"],
   approved: ["reopen"],
   rejected: ["reopen"],

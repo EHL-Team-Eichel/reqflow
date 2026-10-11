@@ -48,8 +48,9 @@ describe("human review markup", () => {
         onSaved: mocks.onSaved,
       }),
     );
-    expect(html).toContain("Challenge requests a response from the configured AI");
-    expect(html).toContain("not a human approval or verified new evidence");
+    expect(html).toContain("re-check it against its linked evidence");
+    expect(html).toContain("it is advice, not a human approval or new evidence");
+    expect(html).toContain("stays Challenged until you decide");
     expect(html).toContain("No workflow resumes automatically.");
     expect(html).toContain(`Version ${fixtureRequirements[0]!.version}`);
     expect(mocks.get).not.toHaveBeenCalled();

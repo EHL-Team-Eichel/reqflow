@@ -125,8 +125,8 @@ describe("requirements.decide: allowed transitions", () => {
         refused++;
       }
     }
-    // proposed/in_review: reopen; challenged: challenge; deferred: defer; approved/rejected: 4 each.
-    expect(refused).toBe(12);
+    // proposed/in_review: reopen; challenged: none; deferred: defer; approved/rejected: 4 each.
+    expect(refused).toBe(11);
     expect(llmCalls).toBe(0);
     for (const req of reqs)
       expect((await handlers.requirements.get(req.id)).versions).toEqual([req]);

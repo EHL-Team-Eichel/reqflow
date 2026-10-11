@@ -191,22 +191,22 @@ UI code calls `api.<namespace>.<method>(…)` from `@/lib/api`. Main implements 
 (`invalid_input`, `not_found`, `not_implemented`, `internal`, …). Arguments must be plain data. Main
 validates every argument with the Zod schemas, because the renderer counts as untrusted input.
 
-| Method                                               | Purpose                                                                                                                                   |
-| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `app.info()`                                         | Version, OS, data directory (**built**)                                                                                                   |
-| `templates.list()`                                   | Workflow templates (`BMW_DEFAULT_TEMPLATE`) (**built**)                                                                                   |
-| `workflows.list/get/save/remove`                     | Workflow CRUD. `save` assigns the id and bumps `version`                                                                                  |
-| `blocks.preview(request)`                            | Runs a block without inputs (Raw) on its own and returns its output and log (**built**)                                                   |
-| `files.import()`                                     | Native open dialog → copies the file into the data dir → `StoredFileInfo` (`null` if cancelled). Raw's `file` param stores it (**built**) |
-| `runs.start/get/list/blockOutput/resume/cancel`      | Run lifecycle. `blockOutput` returns that block's output per port                                                                         |
-| `runs.onUpdate(listener)`                            | Push events on every status, progress or log change (no polling)                                                                          |
-| `requirements.list(filter)` · `requirements.get(id)` | Latest versions · `RequirementDetail` (findings, evidence, sources, versions)                                                             |
-| `requirements.edit(id, RequirementEdit)`             | PM edit, rationale required → new version and audit                                                                                       |
-| `requirements.decide(id, RequirementDecision)`       | Approve / reject / defer / challenge / reopen. A challenge makes the AI answer (`challenge_answered`) and returns it to `in_review`       |
-| `requirements.reset()`                               | Removes every requirement (Car page → Reset). Writes one `requirement.deleted` audit event each; ids are never reused                     |
-| `audit.list(filter)`                                 | Audit events, ascending by time                                                                                                           |
-| `settings.get/save` · `settings.secrets/setSecret`   | `Settings` (save logs `settings.changed` with a diff) · API-key status / store a key in the keychain                                      |
-| `exports.requirements({ runId, format })`            | Native save dialog → JSON / CSV / Markdown (logs `export.created`)                                                                        |
+| Method                                               | Purpose                                                                                                                                                              |
+| ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app.info()`                                         | Version, OS, data directory (**built**)                                                                                                                              |
+| `templates.list()`                                   | Workflow templates (`BMW_DEFAULT_TEMPLATE`) (**built**)                                                                                                              |
+| `workflows.list/get/save/remove`                     | Workflow CRUD. `save` assigns the id and bumps `version`                                                                                                             |
+| `blocks.preview(request)`                            | Runs a block without inputs (Raw) on its own and returns its output and log (**built**)                                                                              |
+| `files.import()`                                     | Native open dialog → copies the file into the data dir → `StoredFileInfo` (`null` if cancelled). Raw's `file` param stores it (**built**)                            |
+| `runs.start/get/list/blockOutput/resume/cancel`      | Run lifecycle. `blockOutput` returns that block's output per port                                                                                                    |
+| `runs.onUpdate(listener)`                            | Push events on every status, progress or log change (no polling)                                                                                                     |
+| `requirements.list(filter)` · `requirements.get(id)` | Latest versions · `RequirementDetail` (findings, evidence, sources, versions)                                                                                        |
+| `requirements.edit(id, RequirementEdit)`             | PM edit, rationale required → new version and audit                                                                                                                  |
+| `requirements.decide(id, RequirementDecision)`       | Approve / reject / defer / challenge / reopen. A challenge sets `challenged`; the AI's answer (`challenge_answered`) or failure (`challenge_failed`) is audited only |
+| `requirements.reset()`                               | Removes every requirement (Car page → Reset). Writes one `requirement.deleted` audit event each; ids are never reused                                                |
+| `audit.list(filter)`                                 | Audit events, ascending by time                                                                                                                                      |
+| `settings.get/save` · `settings.secrets/setSecret`   | `Settings` (save logs `settings.changed` with a diff) · API-key status / store a key in the keychain                                                                 |
+| `exports.requirements({ runId, format })`            | Native save dialog → JSON / CSV / Markdown (logs `export.created`)                                                                                                   |
 
 To add a method: add it to `ReqflowApi` **and** `IPC_INVOKE_METHODS` (the compiler enforces both),
 then implement it in `handlers.ts`.

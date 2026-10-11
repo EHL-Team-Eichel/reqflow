@@ -4,6 +4,7 @@ export * from "./audit";
 export * from "./blocks";
 export * from "./car-parts";
 export * from "./category";
+export * from "./challenge";
 export * from "./finding";
 export * from "./filter-report";
 export * from "./graph";

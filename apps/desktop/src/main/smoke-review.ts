@@ -129,12 +129,12 @@ export async function runReviewSmoke({
       `review: audit trail misses steps (${aTrail.join(", ")})`,
     );
 
-    // Challenge: recorded by the human, answered by the (offline) AI, back in review.
+    // Challenge: recorded by the human, answered by the (offline) AI; challenged until decided.
     const challenged = await ok<Requirement>("requirements", "decide", b.id, {
       decision: "challenge",
       rationale: RATIONALE,
     });
-    check(challenged.status === "in_review", "review: a challenge should end in review");
+    check(challenged.status === "challenged", "review: a challenge should stay challenged");
     const bTrail = (await trail(b.id)).map((e) => e.action);
     check(
       bTrail.includes("requirement.challenged") &&

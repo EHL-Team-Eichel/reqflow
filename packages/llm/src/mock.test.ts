@@ -1,4 +1,12 @@
-import { DEFAULT_SETTINGS, emptyPipelineData, type Source, type SourceRecord } from "@reqflow/core";
+import {
+  ChallengeAnswer,
+  challengePayload,
+  DEFAULT_SETTINGS,
+  emptyPipelineData,
+  type Source,
+  type SourceRecord,
+} from "@reqflow/core";
+import { fixtureFindings, fixtureRequirements, fixtureSources } from "@reqflow/core/fixtures";
 import type { BlockContext } from "@reqflow/engine";
 import { describe, expect, it, vi } from "vitest";
 import { aiSplitterBlock } from "../../blocks/src/ai-splitter/ai-splitter";
@@ -420,4 +428,26 @@ describe("analytical mock protocol", () => {
       expect(fetch).not.toHaveBeenCalled();
     },
   );
+});
+
+describe("mock challenge answers", () => {
+  it("sorts linked findings by relation, cites nothing else and says no model judged it", () => {
+    const requirement = fixtureRequirements.find((r) => r.conflictingFindingIds.length)!;
+    const prompt = JSON.stringify(
+      challengePayload(
+        {
+          requirement,
+          findings: fixtureFindings,
+          sources: fixtureSources,
+          records: [],
+          versions: [requirement],
+        },
+        "Synthetic doubt",
+      ),
+    );
+    const answer = ChallengeAnswer.parse(mockObject(prompt));
+    expect(answer.backsRequirement).toEqual(requirement.findingIds);
+    expect(answer.backsChallenge).toEqual(requirement.conflictingFindingIds);
+    expect(answer.summary).toMatch(/no AI model assessed/);
+  });
 });
