@@ -126,3 +126,40 @@ export function DownloadIcon(props: IconProps) {
     </Icon>
   );
 }
+
+/** Bar chart on axes: the analytics view. */
+export function ChartIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M3 3v18h18" />
+      <path d="M7 16v-3M11 16V9M15 16v-5M19 16V6" />
+    </Icon>
+  );
+}
+
+/** Four corner brackets pointing out: enter full screen. */
+export function MaximizeIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3" />
+    </Icon>
+  );
+}
+
+/** Four corner brackets pointing in: leave full screen. */
+export function MinimizeIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M8 3v3a2 2 0 0 1-2 2H3M16 3v3a2 2 0 0 0 2 2h3M8 21v-3a2 2 0 0 0-2-2H3M16 21v-3a2 2 0 0 1 2-2h3" />
+    </Icon>
+  );
+}
+
+/** Plus sign: add an entry. */
+export function PlusIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M12 5v14M5 12h14" />
+    </Icon>
+  );
+}

@@ -96,6 +96,45 @@ export const FEEDBACK_TEMPLATES: readonly WorkflowTemplate[] = [
   feedbackSetup(true),
 ];
 
+/** Two feedback sources side by side in one Analytics block: counts by rules, no AI, no run needed. */
+function analyticsSetup(): WorkflowTemplate {
+  const sources = ["Feedback A", "Feedback B"].map((label, i) => {
+    const raw = createBlock("raw", {
+      id: `source-${i}`,
+      label,
+      position: { x: 0, y: i * 200 },
+    });
+    raw.params = { ...raw.params, dataset: "customer_feedback" };
+    return raw;
+  });
+  const analytics = createBlock("analytics", {
+    id: "analytics",
+    label: "Feedback analytics",
+    position: { x: 380, y: 80 },
+  });
+  let graph: WorkflowGraph = { blocks: [...sources, analytics], edges: [] };
+  graph = setBlockParams(graph, analytics.id, {
+    ...analytics.params,
+    inputs: sources.map((s) => s.label),
+  }).graph;
+  sources.forEach((source, i) => {
+    graph = connect(graph, {
+      source: source.id,
+      sourcePort: "out",
+      target: analytics.id,
+      targetPort: `in-${i}`,
+    });
+  });
+  return {
+    name: "Compare feedback sources",
+    description:
+      "Choose two feedback files and open the Analytics block: who says what by country, over time and by topic, and how the two sources differ. Rules only, no AI provider needed.",
+    graph,
+  };
+}
+
+export const ANALYTICS_TEMPLATES: readonly WorkflowTemplate[] = [analyticsSetup()];
+
 /** Fresh parent and boundary ids keep nested wiring intact when core syncs a block's ports. */
 export function instantiateTemplate(
   input: WorkflowTemplate,

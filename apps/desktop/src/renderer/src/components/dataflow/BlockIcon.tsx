@@ -70,6 +70,13 @@ export function BlockIcon({
           <path d="M2 12h8 M14 12h8 M10 5v14 M14 5v14" />
         </svg>
       );
+    case "analytics":
+      return (
+        <svg {...svgProps}>
+          <path d="M3 3v18h18" />
+          <path d="M7 16v-3M11 16V9M15 16v-5M19 16V6" />
+        </svg>
+      );
     case "block_input":
       return (
         <svg {...svgProps}>

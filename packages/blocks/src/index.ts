@@ -2,6 +2,7 @@
 // Specs, ports and params of every block live in @reqflow/core (BLOCK_SPECS).
 import { BlockRegistry, type BlockImplementation } from "@reqflow/engine";
 import { addToCarImplementations } from "./add-to-car";
+import { analyticsImplementations } from "./analytics";
 import { aiFilterImplementations } from "./ai-filter";
 import { aiSplitterImplementations } from "./ai-splitter";
 import { hilImplementations } from "./hil";
@@ -15,6 +16,7 @@ export const allBlockImplementations: readonly BlockImplementation[] = [
   ...aiSplitterImplementations,
   ...hilImplementations,
   ...addToCarImplementations,
+  ...analyticsImplementations,
 ];
 
 export function createBlockRegistry(): BlockRegistry {

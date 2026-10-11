@@ -4,8 +4,13 @@ import type { BlockFlowNode } from "./flow";
 import { BlockIcon } from "./BlockIcon";
 import { GROUP_STYLE } from "./groups";
 import { dataflowStore } from "./store";
-import { isBoundaryBlockKind, isPaletteBlockKind, type ParamSpec } from "@reqflow/core";
-import { ExpandIcon, ReportIcon, ThoughtIcon } from "@/components/ui/icons";
+import {
+  isBoundaryBlockKind,
+  isPaletteBlockKind,
+  MAX_ANALYTICS_INPUTS,
+  type ParamSpec,
+} from "@reqflow/core";
+import { ChartIcon, ExpandIcon, PlusIcon, ReportIcon, ThoughtIcon } from "@/components/ui/icons";
 import { useSettings } from "@/lib/settings";
 import { cx } from "@/lib/cx";
 import { summarizeParams } from "./summary";
@@ -76,6 +81,22 @@ export const BlockNode = memo(function BlockNode({ data, selected }: NodeProps<B
               }}
             >
               <ThoughtIcon className="size-4" />
+            </button>
+          )}
+
+          {block.kind === "analytics" && (
+            <button
+              type="button"
+              data-testid="analytics-open"
+              className="nodrag shrink-0 rounded-md p-1 text-muted hover:bg-panel-2 hover:text-ink"
+              aria-label={`Open the analytics of ${block.label} full screen`}
+              title="Open analytics (full screen)"
+              onClick={(e) => {
+                e.stopPropagation();
+                dataflowStore.getState().openAnalytics(block.id);
+              }}
+            >
+              <ChartIcon className="size-4" />
             </button>
           )}
 
@@ -179,6 +200,22 @@ export const BlockNode = memo(function BlockNode({ data, selected }: NodeProps<B
               </div>
             );
           })}
+          {block.kind === "analytics" && ports.inputs.length < MAX_ANALYTICS_INPUTS && (
+            <button
+              type="button"
+              data-testid="analytics-add-input"
+              className="nodrag mx-3 mt-1 flex h-6 items-center gap-1 rounded-md px-1 text-xs text-muted hover:bg-panel-2 hover:text-ink"
+              aria-label={`Add an input to ${block.label}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                const error = dataflowStore.getState().addAnalyticsInput(block.id);
+                if (error) dataflowStore.getState().notify("error", error);
+              }}
+            >
+              <PlusIcon className="size-3.5" />
+              Add input
+            </button>
+          )}
         </div>
       )}
     </div>

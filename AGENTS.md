@@ -5,7 +5,7 @@
 **ReqFlow** is a hackathon prototype for the BMW challenge _"AI for Product Decision Making"_: a
 **native desktop app for Windows, macOS and Linux** (Electron, not a web app) with three tabs. On
 **Data Flow**, an n8n-style flow of **building blocks** (Custom, Raw, Research, AI Filter, AI Splitter,
-HIL, Add to Car; some expand into their own inner workplace) turns customer and market data into
+HIL, Add to Car, Analytics; some expand into their own inner workplace) turns customer and market data into
 prioritized, evidence-linked car requirements. The **Car** tab shows them for the PM to review, and
 **Settings** configures the app, global parameters and collaboration. Full spec: [PRODUCT.md](PRODUCT.md). Your task: [docs/WORKSTREAMS.md](docs/WORKSTREAMS.md).
 Current state and handoffs: [docs/STATUS.md](docs/STATUS.md).

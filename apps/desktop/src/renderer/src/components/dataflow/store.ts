@@ -1,5 +1,6 @@
 import {
   BLOCK_SPECS,
+  MAX_ANALYTICS_INPUTS,
   checkConnection,
   connect as connectPorts,
   createBlock,
@@ -64,6 +65,8 @@ export interface DataflowState {
   report: { blockId: string; path: string[] } | null;
   /** The Add to Car block whose thought process is open, if any. */
   reasoning: { blockId: string } | null;
+  /** The Analytics block whose full-screen view is open, if any (block id + its workplace). */
+  analytics: { blockId: string; path: string[] } | null;
 
   /** Adds a block to the open workplace, selects it and returns its id. */
   addBlock(kind: PaletteBlockKind, position: XY): string;
@@ -87,6 +90,11 @@ export interface DataflowState {
   /** Opens the thought process of an Add to Car block (anywhere in the workflow). */
   openReasoning(blockId: string): void;
   closeReasoning(): void;
+  /** Opens the full-screen analytics of an Analytics block on the open workplace. */
+  openAnalytics(blockId: string): void;
+  closeAnalytics(): void;
+  /** Adds one more input to an Analytics block ("Input 2", "Input 3", …). Returns an error or null. */
+  addAnalyticsInput(blockId: string): string | null;
   /** Opens the workplace at `path` and selects the block there (closes the report). */
   revealBlock(path: string[], blockId: string): void;
   notify(tone: Notice["tone"], message: string): void;
@@ -169,6 +177,7 @@ export function createDataflowStore(initial: WorkflowGraph = emptyGraph()) {
       notice: null,
       report: null,
       reasoning: null,
+      analytics: null,
 
       loadTemplate(template, beforeReplace) {
         try {
@@ -186,6 +195,7 @@ export function createDataflowStore(initial: WorkflowGraph = emptyGraph()) {
             measured: {},
             report: null,
             reasoning: null,
+            analytics: null,
           });
           get().notify(
             "info",
@@ -345,6 +355,33 @@ export function createDataflowStore(initial: WorkflowGraph = emptyGraph()) {
         set({ reasoning: null });
       },
 
+      openAnalytics(blockId) {
+        const block = selectWorkplace(get()).blocks.find((b) => b.id === blockId);
+        if (block?.kind !== "analytics") {
+          get().notify("error", `"${block?.label ?? blockId}" has no analytics.`);
+          return;
+        }
+        set({ analytics: { blockId, path: [...get().path] } });
+      },
+
+      closeAnalytics() {
+        set({ analytics: null });
+      },
+
+      addAnalyticsInput(blockId) {
+        const block = selectWorkplace(get()).blocks.find((b) => b.id === blockId);
+        if (block?.kind !== "analytics") {
+          return `"${block?.label ?? blockId}" is not an Analytics block.`;
+        }
+        const current = Array.isArray(block.params.inputs) ? block.params.inputs.map(String) : [];
+        if (current.length >= MAX_ANALYTICS_INPUTS) {
+          return `An Analytics block has at most ${MAX_ANALYTICS_INPUTS} inputs.`;
+        }
+        let n = current.length + 1;
+        while (current.includes(`Input ${n}`)) n++;
+        return get().setParams(blockId, { ...block.params, inputs: [...current, `Input ${n}`] });
+      },
+
       revealBlock(path, blockId) {
         try {
           if (!graphAt(get().root, path).blocks.some((b) => b.id === blockId)) {
@@ -360,6 +397,7 @@ export function createDataflowStore(initial: WorkflowGraph = emptyGraph()) {
           selectedEdgeIds: [],
           report: null,
           reasoning: null,
+          analytics: null,
         });
       },
 

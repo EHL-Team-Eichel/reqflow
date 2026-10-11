@@ -28,6 +28,12 @@ export const GROUP_STYLE: Record<
     tile: "bg-group-human/10 text-group-human",
     border: "!border-group-human",
   },
+  insight: {
+    name: "Insight",
+    text: "text-group-insight",
+    tile: "bg-group-insight/10 text-group-insight",
+    border: "!border-group-insight",
+  },
   output: {
     name: "Output",
     text: "text-group-output",

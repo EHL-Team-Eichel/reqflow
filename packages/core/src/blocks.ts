@@ -18,6 +18,7 @@ export const PALETTE_BLOCK_KINDS = [
   "ai_splitter",
   "hil",
   "add_to_car",
+  "analytics",
 ] as const;
 export type PaletteBlockKind = (typeof PALETTE_BLOCK_KINDS)[number];
 
@@ -40,7 +41,7 @@ export function isBoundaryBlockKind(kind: string): kind is BoundaryBlockKind {
 }
 
 /** Drives the accent color in the editor. */
-export type BlockGroup = "structure" | "source" | "ai" | "human" | "output";
+export type BlockGroup = "structure" | "source" | "ai" | "human" | "output" | "insight";
 
 export interface PortSpec {
   id: string; // stable within the block: "in", "out", "out-0", "in-2", …
@@ -153,6 +154,20 @@ const CONTEXT_MODE_OPTIONS: readonly SelectOption[] = ContextMode.options.map((v
 }));
 export const MAX_PRIORITY_INPUTS = 10;
 export const MAX_CONTEXT_INPUTS = 5;
+export const MAX_ANALYTICS_INPUTS = 8;
+
+/** Analytics: time buckets of the timeline. "auto" picks one from the span of the data. */
+export const TimeGranularity = z.enum(["auto", "day", "week", "month", "quarter", "year"]);
+export type TimeGranularity = z.infer<typeof TimeGranularity>;
+
+/**
+ * The inputs of an Analytics block: one port per named entry of `inputs` (`in-0` "Input 1", …).
+ * Each input is one data source the analytics view can compare with the others.
+ */
+export function analyticsInputs(params: BlockParams): PortSpec[] {
+  const ports = listPorts(params, "inputs", "in");
+  return ports.length ? ports : [{ id: "in-0", label: "Input 1" }];
+}
 
 /** "1. Priority" is the most important input. Ports `in-0`, `in-1`, … keep older flows wired. */
 export function priorityPortLabel(rank: number): string {
@@ -611,6 +626,68 @@ export const BLOCK_SPECS: { readonly [K in PaletteBlockKind]: BlockSpec & { kind
         outputs: [],
       };
     },
+  },
+  analytics: {
+    kind: "analytics",
+    label: "Analytics",
+    description:
+      "Counts what the data says by country, time and topic, and compares its inputs. Rules only, no AI.",
+    group: "insight",
+    hasInnerWorkplace: false,
+    params: [
+      {
+        key: "inputs",
+        label: "Inputs (one port each)",
+        type: "list",
+        default: ["Input 1"],
+        minItems: 1,
+        maxItems: MAX_ANALYTICS_INPUTS,
+        itemPlaceholder: "Input name",
+        help: "Each input is a data source. Name them to tell them apart when you compare them.",
+      },
+      {
+        key: "countryColumn",
+        label: "Country column",
+        type: "text",
+        default: "",
+        placeholder: "Auto (Country, Market, Land, …)",
+        help: "Leave empty to detect it. Records without one fall back to their market.",
+      },
+      {
+        key: "timeColumn",
+        label: "Time column",
+        type: "text",
+        default: "",
+        placeholder: "Auto (Date, Created, Month, Year, …)",
+        help: "Leave empty to detect it. Without a time column the timeline stays empty.",
+      },
+      {
+        key: "timeGranularity",
+        label: "Timeline buckets",
+        type: "select",
+        default: "auto",
+        options: [
+          { value: "auto", label: "Auto" },
+          { value: "day", label: "Day" },
+          { value: "week", label: "Week" },
+          { value: "month", label: "Month" },
+          { value: "quarter", label: "Quarter" },
+          { value: "year", label: "Year" },
+        ],
+      },
+      {
+        key: "phrases",
+        label: "Tracked phrases",
+        type: "textarea",
+        default: "",
+        placeholder: "seat comfort\nnoise\nnavigation",
+        help: "One per line. The analytics view counts how many records and people say each one.",
+      },
+    ],
+    ports: (params) => ({
+      inputs: analyticsInputs(params),
+      outputs: [{ id: "out", label: "All inputs" }],
+    }),
   },
 };
 

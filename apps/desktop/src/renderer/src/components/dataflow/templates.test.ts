@@ -12,7 +12,7 @@ import {
   type WorkflowTemplate,
 } from "@reqflow/core";
 import { describe, expect, it } from "vitest";
-import { FEEDBACK_TEMPLATES, instantiateTemplate } from "./templates";
+import { ANALYTICS_TEMPLATES, FEEDBACK_TEMPLATES, instantiateTemplate } from "./templates";
 
 function ids() {
   let count = 0;
@@ -75,6 +75,24 @@ describe("product-management workflow templates", () => {
       "3. Priority",
       "Context 1 · Auto",
     ]);
+  });
+
+  it("provides an analytics setup comparing two feedback sources without AI or a run", () => {
+    const [template] = ANALYTICS_TEMPLATES;
+    expect(validateGraph(template!.graph)).toEqual([]);
+    const analytics = template!.graph.blocks.find((b) => b.kind === "analytics")!;
+    expect(BLOCK_SPECS.analytics.ports(analytics.params).inputs.map((p) => p.label)).toEqual([
+      "Feedback A",
+      "Feedback B",
+    ]);
+    const sources = template!.graph.edges.filter((e) => e.target === analytics.id);
+    expect(sources.map((e) => e.targetPort)).toEqual(["in-0", "in-1"]);
+    expect(
+      template!.graph.blocks
+        .filter((b) => b.kind === "raw")
+        .every((b) => b.params.file === null && b.params.dataset === "customer_feedback"),
+    ).toBe(true);
+    expect(instantiateTemplate(template!, ids()).blocks).toHaveLength(3);
   });
 
   it("assigns fresh ids across the whole tree and deep-clones parameters and positions", () => {

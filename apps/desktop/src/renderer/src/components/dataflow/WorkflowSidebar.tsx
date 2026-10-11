@@ -11,7 +11,7 @@ import { BlockPalette } from "./BlockPalette";
 import { BlockIcon } from "./BlockIcon";
 import { dataflowStore } from "./store";
 import { runStore } from "./run-session";
-import { FEEDBACK_TEMPLATES, WorkflowTemplateSchema } from "./templates";
+import { ANALYTICS_TEMPLATES, FEEDBACK_TEMPLATES, WorkflowTemplateSchema } from "./templates";
 
 const MODES = [
   { value: "blocks", label: "Blocks" },
@@ -102,7 +102,7 @@ export function WorkflowSidebar({ canvasRef }: { canvasRef: RefObject<HTMLDivEle
                 Finish the current run or cancel it before loading another setup.
               </p>
             )}
-            {[...FEEDBACK_TEMPLATES, ...shared].map((template, index) => {
+            {[...FEEDBACK_TEMPLATES, ...ANALYTICS_TEMPLATES, ...shared].map((template, index) => {
               const kinds = [...new Set(template.graph.blocks.map((block) => block.kind))];
               const sources = template.graph.blocks.filter(
                 (block) => block.kind === "raw" || block.kind === "research",

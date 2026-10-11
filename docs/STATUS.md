@@ -68,7 +68,7 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 ## WS0 — Lead / integrator
 
-**Status:** review (ready branches verified; Analytics WIP excluded by human) · **Owner:** OpenCode (remaining-branch integration) · **Branch:** `integrate/ready-2026-10-11`
+**Status:** review (Analytics integration tests verified; latest native smoke incomplete) · **Owner:** OpenCode (Analytics integration) · **Branch:** `analytics-and-timeline`
 
 **Tasks**
 
@@ -81,6 +81,7 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 **Log**
 
+- 2026-10-11: Human requested merging completed Analytics into main through PR #19 and launching locally. Integrated main through `85d3d36`, preserving PDF ingestion, splitter car-part depth, AI Filter decisions, provenance reports and the grey-line Car transition. Resolved product-table conflicts by keeping all block descriptions; kept main's equivalent Reset-ready wait in smoke and both Analytics-open and AI Filter-report buttons on block nodes. Latest combined code passes `npm run typecheck`, `npm run format:check` and `npm test -- --maxWorkers=2 --testTimeout=30000` (2,698 passed, 6 skipped). Native macOS smoke passed before the final main refreshes (82 screenshots); refreshed-code smoke remains incomplete: one run hung in later Settings checks and a fresh isolated run exited before writing its final report (78 screenshots), so neither is claimed as passing. Inspected Analytics overview, timeline, topics, source comparison, flow, quality and preserved grey-line Car interior. Synthetic-only checks; no BMW values, live providers or credentials used. The separate `reqflow/` checkout's uncommitted Car work is untouched. Launch uses merged main in this clean checkout; human authorized replacing the existing app instance. Windows/Linux remain unverified.
 - 2026-10-11: OpenCode is creating a synthetic 100-row F70 feedback workbook and block-by-block test guide. Inspected only the supplied workbook's sheet/header/counts; no BMW cell values used. New fixture paths only; preserve concurrent PDF-ingestion work.
 - 2026-10-11: Publishable snapshot including the latest Car class/feature adaptation passes `npm run check` (2,307 tests, 5 skipped) and native macOS smoke (70 screenshots). Inspected final M5 baseline, catalog selection/restoration, compact details and light/dark views. All ready remote branches are included; only the four old experiment branches and human-excluded Analytics WIP stay out. No live providers, credentials or BMW files used in verification; Windows/Linux remain unverified.
 - 2026-10-11: Final remote refresh found Car follow-up `db64757` (class-aware features and M5 baseline) and newly published `analytics-and-timeline`. Car follow-up is included. Analytics is not buildable: five engine modules are missing and its chart tabs are placeholders. Human explicitly chose to publish ready branches and leave Analytics to its author. Ready integration is isolated at `integrate/ready-2026-10-11`; the attempted Analytics merge remains on `integrate/2026-10-11`, not on main. Final exclusions are the four old engine/judging experiments plus Analytics WIP.
@@ -920,6 +921,32 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - [ ] Export the function the AI Splitter's priority mode calls (`weightedTotal` + `priorityForScore`).
 
 **Log**
+
+## WS9 — Analytics & timeline
+
+**Status:** review · **Owner:** Claude Code (Alexander) · **Branch:** `analytics-and-timeline`
+**Paths:** `apps/desktop/src/renderer/src/components/analytics/`, `packages/blocks/src/analytics/`;
+contract: the `analytics` kind, `analyticsInputs`, `TimeGranularity` and group `insight` in
+`packages/core/src/blocks.ts` (requested by the human).
+
+**Tasks**
+
+- [x] Analytics block: 1–8 named inputs (default one, "Add input" on the block), pass-through
+      output, params for country/time column overrides, timeline buckets, tracked phrases.
+- [x] Full-screen view with eight tabs; rules only, no AI; BMW M chart palette (CVD-validated).
+- [x] Compare data sources (inputs, source files, countries, classification columns) with
+      two-proportion z-tests; Sankey flow charts; timeline that fills in once data has dates.
+- [x] Template "Compare feedback sources"; native smoke scenario with synthetic data only.
+- [ ] Persist the computed analytics with the run (today they're recomputed from saved outputs).
+- [ ] Try on BMW's real exports locally (structure only in transcripts) and tune the topic lexicon.
+
+**Log**
+
+- 2026-10-11: Built on `analytics-and-timeline` (Haiku subagents wrote the country/time, text and
+  sentiment modules and the chart components; lead integrated, wrote dataset/counting/view/tabs).
+  Column roles are detected per source file, so sources that name their country column
+  differently both count. Verify: `npm run check` (2,500+ tests) and `npm run smoke` (screens
+  `analytics-*`, light and dark). Synthetic data only; no BMW values in tests, logs or transcripts.
 
 <!--
 Template for your section (replace the "open" line, keep log entries newest-first):
