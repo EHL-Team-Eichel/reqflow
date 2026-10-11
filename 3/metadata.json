@@ -1,0 +1,71 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4M7KWH9QDXW0FC0PMEC3P1Y",
+  "session_id": "ses_ed821d7afffeQa962sH5iEvaZh",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-11T01:00:49.770711Z",
+  "branch": "ws5-pdf-ingestion",
+  "checkpoints_count": 4,
+  "save_step_count": 1,
+  "files_touched": [
+    "apps/desktop/src/main/agents.test.ts",
+    "apps/desktop/src/main/agents.ts",
+    "apps/desktop/src/main/eval-f70.ts",
+    "apps/desktop/src/main/handlers.ts"
+  ],
+  "agent": "OpenCode",
+  "model": "gpt-6.1-sol",
+  "turn_id": "a675348b8ff1",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 175511,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 646246,
+    "output_tokens": 4453,
+    "api_call_count": 19
+  },
+  "session_metrics": {
+    "turn_count": 4
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-11T01:00:49.750279Z",
+    "agent_lines": 403,
+    "agent_removed": 114,
+    "human_added": 0,
+    "human_modified": 5,
+    "human_removed": 22,
+    "total_committed": 408,
+    "total_lines_changed": 544,
+    "agent_percentage": 95.03676470588235,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 461,
+      "user_lines_removed": 31,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "apps/desktop/src/main/agents.ts": 33,
+        "apps/desktop/src/main/eval-f70.ts": 9,
+        "apps/desktop/src/main/handlers.ts": 3,
+        "package-lock.json": 407,
+        "packages/blocks/package.json": 9
+      },
+      "user_removed_per_file": {
+        "apps/desktop/src/main/agents.ts": 1,
+        "apps/desktop/src/main/eval-f70.ts": 9,
+        "apps/desktop/src/main/handlers.ts": 17,
+        "packages/blocks/package.json": 4
+      }
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 489,
+      "agent_lines_removed": 32
+    }
+  ]
+}

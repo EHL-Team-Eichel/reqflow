@@ -3,8 +3,9 @@
   "checkpoint_id": "01M4M7KWH9QDXW0FC0PMEC3P1Y",
   "strategy": "manual-commit",
   "branch": "ws5-pdf-ingestion",
-  "checkpoints_count": 3,
+  "checkpoints_count": 7,
   "files_touched": [
+    "apps/desktop/src/main/agents.test.ts",
     "apps/desktop/src/main/agents.ts",
     "apps/desktop/src/main/eval-f70.ts",
     "apps/desktop/src/main/handlers.ts"
@@ -30,13 +31,20 @@
       "compact_transcript": "/2/transcript.jsonl",
       "content_hash": "/2/content_hash.txt",
       "prompt": "/2/prompt.txt"
+    },
+    {
+      "metadata": "/3/metadata.json",
+      "transcript": "/3/full.jsonl",
+      "compact_transcript": "/3/transcript.jsonl",
+      "content_hash": "/3/content_hash.txt",
+      "prompt": "/3/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 175480,
+    "input_tokens": 350991,
     "cache_creation_tokens": 2457075,
-    "cache_read_tokens": 280769433,
-    "output_tokens": 1307293,
-    "api_call_count": 842
+    "cache_read_tokens": 281415679,
+    "output_tokens": 1311746,
+    "api_call_count": 861
   }
 }
