@@ -1,0 +1,7 @@
+In packages/blocks/src/research/index.test.ts:
+Update the tests that failed due to the new Research Summarizer feature (which turns collected research sources into BMW-compatible feedback rows with detailed summaries).
+Specifically:
+1. In `it("retains raw original metadata in the stream without analysis or fabricated reliability")`: update this test to expect the summarized BMW feedback row (with `[Summary]`, `Brand: "[BMW]"`, `Derivate: "F70"`, etc.) and verify that original metadata and provenance are retained.
+2. In `it("completes a legitimate empty collection and retains partially collected originals")`: update the expectation for partially collected originals to expect the summarized row from `summarizeResearchDataset(raw, ...)` instead of unsummarized `researchTableRows(raw)`.
+3. Run `npm test packages/blocks/src/research/index.test.ts` and ensure all 31 tests in `index.test.ts` pass!
+Report back when verified.
