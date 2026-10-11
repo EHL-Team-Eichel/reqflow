@@ -76,7 +76,11 @@ describe("vehicle sketch state", () => {
   it("restores a valid saved sketch and rejects invalid runtime choices", async () => {
     memory.set(
       STORAGE_KEY,
-      JSON.stringify({ modelId: VEHICLE_MODELS[1]!.id, powertrain: "hybrid" }),
+      JSON.stringify({
+        modelId: VEHICLE_MODELS[1]!.id,
+        powertrain: "hybrid",
+        previewDefaultVersion: 1,
+      }),
     );
     const { useVehicleStore, getActiveVehicle } = await import("./vehicleStore");
     expect(getActiveVehicle().model.id).toBe(VEHICLE_MODELS[1]!.id);
@@ -88,6 +92,38 @@ describe("vehicle sketch state", () => {
       "Unknown vehicle model",
     );
     expect(getActiveVehicle().powertrain).toBe("hybrid");
+  });
+
+  it("migrates the legacy saved default sedan to M4 once, retaining powertrain and scope", async () => {
+    memory.set(
+      STORAGE_KEY,
+      JSON.stringify({ modelId: "bmw_m5_sedan_g90_2025", powertrain: "hybrid" }),
+    );
+    const { getActiveVehicle, useVehicleStore } = await import("./vehicleStore");
+    expect(getActiveVehicle().model.id).toBe("bmw_m4_competition_2025");
+    expect(getActiveVehicle().powertrain).toBe("hybrid");
+    expect(JSON.parse(memory.get(STORAGE_KEY)!)).toEqual({
+      modelId: "bmw_m4_competition_2025",
+      powertrain: "hybrid",
+      previewDefaultVersion: 1,
+    });
+    expect(settingsStore.getState().settings.defaultScope).toEqual(DEFAULT_SETTINGS.defaultScope);
+
+    useVehicleStore.getState().selectModel("bmw_m5_sedan_g90_2025");
+    vi.resetModules();
+    const reloaded = await import("./vehicleStore");
+    expect(reloaded.getActiveVehicle().model.id).toBe("bmw_m5_sedan_g90_2025");
+    expect(reloaded.getActiveVehicle().powertrain).toBe("hybrid");
+  });
+
+  it("retains other legacy saved models", async () => {
+    const other = VEHICLE_MODELS.find(
+      (model) => model.id !== "bmw_m5_sedan_g90_2025" && model.id !== "bmw_m4_competition_2025",
+    )!;
+    memory.set(STORAGE_KEY, JSON.stringify({ modelId: other.id, powertrain: "h2" }));
+    const { getActiveVehicle } = await import("./vehicleStore");
+    expect(getActiveVehicle().model.id).toBe(other.id);
+    expect(getActiveVehicle().powertrain).toBe("h2");
   });
 
   it.each([
