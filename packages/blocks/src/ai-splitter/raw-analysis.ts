@@ -129,6 +129,28 @@ export async function analyzeRaw(input: PipelineData, params: SplitterParams, ct
     );
     return response.object;
   };
+  /**
+   * One model answer that must pass `check` (known IDs, verbatim evidence, full coverage, …).
+   * A model sometimes slips on one item in a batch; that answer is discarded and the same request
+   * is asked once more. A second invalid answer fails the run. Nothing invalid is ever accepted,
+   * and `check` only returns what it validated, so a discarded answer leaves no trace.
+   */
+  const validated = async <T, R>(
+    what: string,
+    payload: unknown,
+    schema: import("zod").z.ZodType<T>,
+    check: (answer: T) => R,
+  ): Promise<R> => {
+    try {
+      return check(await request(payload, schema));
+    } catch (error) {
+      ctx.signal.throwIfAborted();
+      ctx.log(
+        `AI Splitter ${what}: the answer failed validation (${error instanceof Error ? error.message : String(error)}); asking once more.`,
+      );
+      return check(await request(payload, schema));
+    }
+  };
   let plan: PlannedGroup[] = [];
   let canonical: CanonicalNeed[] = [];
   const discovered = new Map<string, DiscoveredItem>();
@@ -158,36 +180,45 @@ export async function analyzeRaw(input: PipelineData, params: SplitterParams, ct
     for (const [batchIndex, batch] of discoveryBatches.entries()) {
       ctx.signal.throwIfAborted();
       const prefix = `d${batchIndex}_`;
-      const response = await request(discoverPayload(batch, batchIndex), Discover);
-      const entries = validateIds(
-        response.items,
-        batch.map((i) => i.id),
+      const { response, found } = await validated(
+        `discovery batch ${batchIndex + 1}`,
+        discoverPayload(batch, batchIndex),
+        Discover,
+        (response) => {
+          const entries = validateIds(
+            response.items,
+            batch.map((i) => i.id),
+          );
+          unique(
+            response.needs.map((n) => n.id),
+            "discovery need IDs",
+          );
+          if (response.needs.some((n) => !n.id.startsWith(prefix)))
+            throw new Error("AI Splitter discovery need uses wrong batch prefix");
+          const needs = new Set(response.needs.map((n) => n.id));
+          const used = new Set<string>();
+          const found = new Map<string, DiscoveredItem>();
+          for (const item of batch) {
+            const entry = entries.get(item.id)!;
+            unique(entry.needIds, "discovered item need IDs");
+            if (entry.needIds.some((id) => !needs.has(id)))
+              throw new Error("AI Splitter discovery item references unknown need");
+            for (const id of entry.needIds) used.add(id);
+            if (entry.evidence) checkEvidence(entry.evidence, item);
+            if (entry.kind === "feedback" && !entry.evidence)
+              throw new Error(`AI Splitter feedback ${item.id} requires verbatim opinion evidence`);
+            // Eligibility is enforced in code even if the model treats sales/equipment facts as opinions.
+            found.set(item.id, {
+              ...entry,
+              kind: FEEDBACK_KINDS.has(item.source.kind) ? entry.kind : "context",
+            });
+          }
+          if (response.needs.some((n) => !used.has(n.id)))
+            throw new Error("AI Splitter discovered an unsupported need without any record");
+          return { response, found };
+        },
       );
-      unique(
-        response.needs.map((n) => n.id),
-        "discovery need IDs",
-      );
-      if (response.needs.some((n) => !n.id.startsWith(prefix)))
-        throw new Error("AI Splitter discovery need uses wrong batch prefix");
-      const needs = new Set(response.needs.map((n) => n.id));
-      const used = new Set<string>();
-      for (const item of batch) {
-        const entry = entries.get(item.id)!;
-        unique(entry.needIds, "discovered item need IDs");
-        if (entry.needIds.some((id) => !needs.has(id)))
-          throw new Error("AI Splitter discovery item references unknown need");
-        for (const id of entry.needIds) used.add(id);
-        if (entry.evidence) checkEvidence(entry.evidence, item);
-        if (entry.kind === "feedback" && !entry.evidence)
-          throw new Error(`AI Splitter feedback ${item.id} requires verbatim opinion evidence`);
-        // Eligibility is enforced in code even if the model treats sales/equipment facts as opinions.
-        discovered.set(item.id, {
-          ...entry,
-          kind: FEEDBACK_KINDS.has(item.source.kind) ? entry.kind : "context",
-        });
-      }
-      if (response.needs.some((n) => !used.has(n.id)))
-        throw new Error("AI Splitter discovered an unsupported need without any record");
+      for (const [id, entry] of found) discovered.set(id, entry);
       discoveredNeeds.push(...response.needs);
       ctx.log(
         `AI Splitter discovery batch ${batchIndex + 1}/${discoveryBatches.length}: ${batch.length} records, ${response.needs.length} candidate needs.`,
@@ -198,20 +229,23 @@ export async function analyzeRaw(input: PipelineData, params: SplitterParams, ct
       );
     }
     if (discoveredNeeds.length) {
-      const response = await request(
+      canonical = await validated(
+        "consolidation",
         { contract: "reqflow.ai-splitter.consolidate@1", ...base, needs: discoveredNeeds },
         Consolidate,
+        (response) => {
+          unique(
+            response.needs.map((n) => n.id),
+            "canonical need IDs",
+          );
+          coverage(
+            response.needs.flatMap((n) => n.aliasIds),
+            discoveredNeeds.map((n) => n.id),
+            "need aliases",
+          );
+          return response.needs;
+        },
       );
-      unique(
-        response.needs.map((n) => n.id),
-        "canonical need IDs",
-      );
-      coverage(
-        response.needs.flatMap((n) => n.aliasIds),
-        discoveredNeeds.map((n) => n.id),
-        "need aliases",
-      );
-      canonical = response.needs;
       ctx.log(
         `AI Splitter consolidated ${discoveredNeeds.length} candidate needs into ${canonical.length} global needs.`,
       );
@@ -224,7 +258,8 @@ export async function analyzeRaw(input: PipelineData, params: SplitterParams, ct
           reason: "Globally consolidated customer need",
         }));
       } else {
-        const planned = await request(
+        plan = await validated(
+          "group plan",
           {
             contract: "reqflow.ai-splitter.plan@1",
             ...base,
@@ -233,24 +268,26 @@ export async function analyzeRaw(input: PipelineData, params: SplitterParams, ct
             needs: canonical,
           },
           GroupPlan,
+          (planned) => {
+            const groups = fixedParts ? fixedPlan(planned.groups, fixedParts) : planned.groups;
+            if (groups.length !== count)
+              throw new Error(`AI Splitter fixed group plan must contain exactly ${count} groups`);
+            unique(
+              groups.map((g) => g.id),
+              "planned group IDs",
+            );
+            unique(
+              groups.map((g) => g.label.toLowerCase()),
+              "planned group labels",
+            );
+            coverage(
+              groups.flatMap((g) => g.needIds),
+              canonical.map((n) => n.id),
+              "planned needs",
+            );
+            return groups;
+          },
         );
-        if (fixedParts) planned.groups = fixedPlan(planned.groups, fixedParts);
-        if (planned.groups.length !== count)
-          throw new Error(`AI Splitter fixed group plan must contain exactly ${count} groups`);
-        unique(
-          planned.groups.map((g) => g.id),
-          "planned group IDs",
-        );
-        unique(
-          planned.groups.map((g) => g.label.toLowerCase()),
-          "planned group labels",
-        );
-        coverage(
-          planned.groups.flatMap((g) => g.needIds),
-          canonical.map((n) => n.id),
-          "planned needs",
-        );
-        plan = planned.groups;
       }
       const aliases = new Map(
         canonical.flatMap((n) => n.aliasIds.map((id) => [id, n.id] as const)),
@@ -271,27 +308,37 @@ export async function analyzeRaw(input: PipelineData, params: SplitterParams, ct
       ctx.progress(0.5, "Fixed global group plan ready");
       for (const [batchIndex, batch] of assignmentBatches.entries()) {
         ctx.signal.throwIfAborted();
-        const response = await request(assignPayload(batch), SignalAssignments);
-        const entries = validateIds(
-          response.items,
-          batch.map((i) => i.id),
-        );
-        for (const item of batch) {
-          const entry = entries.get(item.id)!;
-          coverage(
-            entry.signals.map((s) => s.needId),
-            item.needIds,
-            "assigned needs",
-          );
-          for (const signal of entry.signals) {
-            checkEvidence(signal.evidence, item);
-            if (signal.impact !== null && (item.kind !== "feedback" || signal.stance !== "support"))
-              throw new Error(
-                `AI Splitter impact is only valid for supporting feedback ${item.id}`,
+        const entries = await validated(
+          `assignment batch ${batchIndex + 1}`,
+          assignPayload(batch),
+          SignalAssignments,
+          (response) => {
+            const entries = validateIds(
+              response.items,
+              batch.map((i) => i.id),
+            );
+            for (const item of batch) {
+              const entry = entries.get(item.id)!;
+              coverage(
+                entry.signals.map((s) => s.needId),
+                item.needIds,
+                "assigned needs",
               );
-          }
-          assigned.set(item.id, entry);
-        }
+              for (const signal of entry.signals) {
+                checkEvidence(signal.evidence, item);
+                if (
+                  signal.impact !== null &&
+                  (item.kind !== "feedback" || signal.stance !== "support")
+                )
+                  throw new Error(
+                    `AI Splitter impact is only valid for supporting feedback ${item.id}`,
+                  );
+              }
+            }
+            return entries;
+          },
+        );
+        for (const item of batch) assigned.set(item.id, entries.get(item.id)!);
         ctx.log(
           `AI Splitter assignment batch ${batchIndex + 1}/${assignmentBatches.length}: ${batch.length} records.`,
         );
