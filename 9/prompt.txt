@@ -1,1 +1,1 @@
-I have started the merge of all of the branches except for alexes old branches with claude code. he has not finished. finish what he was doing
+write a short dataset of around 100 lines that is structure like the one from bmw:/Users/johannesnirschl/Downloads/F70_feedback_hackathon.xlsx This one we should be able to use to do some testing. Then tell me what result i should expect from each possible buildingblock and at the end what requirements I should see on the car in the end.
