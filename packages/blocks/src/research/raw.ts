@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
+import { ASSESSMENT_FIELD, sourceAssessments } from "./assessment";
 import {
   CollectedItem,
   ResearchDataset,
@@ -35,8 +36,24 @@ function identity(item: CollectedItem): string {
     ? `${normalizedUrl(item.sourceUrl)}|document`
     : `${new URL(item.sourceUrl).hostname}|${item.provider}|${item.recordId}`;
 }
+function contentPayload(item: CollectedItem): unknown {
+  const substantiveMetadata = item.metadata ? { ...item.metadata } : undefined;
+  if (substantiveMetadata) {
+    delete substantiveMetadata.search;
+    delete substantiveMetadata.requestId;
+    delete substantiveMetadata.usage;
+    delete substantiveMetadata.executionTimeMs;
+  }
+  return {
+    text: item.text,
+    table: item.table,
+    recordType: item.recordType,
+    metadata: substantiveMetadata,
+  };
+}
+
 export function normalizeItem(
-  input: CollectedItem,
+  input: unknown,
   agentId: ResearchAgentId,
   runId: string,
   retrievedAt: string,
@@ -55,13 +72,15 @@ export function normalizeItem(
       : undefined,
     retrievedAt,
   });
+  const rawMeta = (item.metadata ?? {}) as Record<string, unknown>;
+  const { rawHtml: _rawHtml, pages: _pages, pdfDump: _pdfDump, ...compactOriginal } = rawMeta;
   const record = ResearchRecord.parse({
     id: `rec_${digest(identity(item)).slice(0, 32)}`,
     sourceId,
     text: item.text,
     locator: item.locator,
     language: item.language,
-    fields: { original: item.metadata, table: item.table },
+    fields: { original: compactOriginal, ...(item.table ? { table: item.table } : {}) },
     recordType: item.recordType,
     originalSourceId: item.sourceId,
     originalRecordId: item.recordId,
@@ -80,9 +99,7 @@ export function normalizeItem(
     table: item.table,
     metadata: item.metadata,
     limitations: item.limitations,
-    contentHash: digest(
-      JSON.stringify({ text: item.text, table: item.table, metadata: item.metadata }),
-    ),
+    contentHash: digest(JSON.stringify(contentPayload(item))),
   });
   return { source, record };
 }
@@ -109,6 +126,24 @@ export function mergeResearchDatasets(...datasets: ResearchDataset[]): ResearchD
           : record;
       records.set(record.id, {
         ...latest,
+        fields: {
+          ...latest.fields,
+          ...((previous?.fields && Object.hasOwn(previous.fields, ASSESSMENT_FIELD)) ||
+          Object.hasOwn(record.fields ?? {}, ASSESSMENT_FIELD)
+            ? {
+                [ASSESSMENT_FIELD]: [
+                  ...new Map(
+                    [...(previous ? sourceAssessments(previous) : []), ...sourceAssessments(record)]
+                      .filter((assessment) => assessment.contentHash === latest.contentHash)
+                      .map((assessment) => [
+                        `${assessment.agentId}:${assessment.runId}:${JSON.stringify(assessment.scope)}`,
+                        assessment,
+                      ]),
+                  ).values(),
+                ],
+              }
+            : {}),
+        },
         collectingAgents: [
           ...new Set([...(previous?.collectingAgents ?? []), ...record.collectingAgents]),
         ],

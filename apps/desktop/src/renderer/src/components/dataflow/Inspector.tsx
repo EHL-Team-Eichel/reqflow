@@ -20,6 +20,7 @@ import { ParamField } from "./ParamField";
 import { RawPreview } from "./RawPreview";
 import { ResearchConfiguration } from "./ResearchConfiguration";
 import { AiFilterConfiguration } from "./AiFilterConfiguration";
+import { ResearchOpenCodeConfiguration } from "./ResearchOpenCodeConfiguration";
 import { canPreview } from "./usePreview";
 import { dataflowStore, selectInspectedBlock, useDataflow } from "./store";
 import { SPLITTER_MODE_HELP, splitterBranches } from "./report/splitter-view";
@@ -66,13 +67,10 @@ function BlockInspector({ block, kind }: { block: WorkflowBlock; kind: PaletteBl
   const ports = blockPorts(block);
   const innerCount = block.inner?.blocks.filter((b) => !isBoundaryBlockKind(b.kind)).length ?? 0;
   const params = spec.params.filter(
-    (p) =>
-      isParamVisible(p, block.params) &&
-      // Research owns its validated scope and canonical agent controls. Keep every budget generic.
-      (kind !== "research" || !["agents", "scopeJson", "sources"].includes(p.key)),
+    (p) => isParamVisible(p, block.params) && (block.kind !== "ai_splitter" || p.key !== "splitBy"),
   );
   const researchQuestion =
-    kind === "research" ? params.find((p) => p.key === "question") : undefined;
+    kind === "research" ? spec.params.find((p) => p.key === "question") : undefined;
   const portList = (list: { label: string }[]) =>
     list.length ? list.map((p) => p.label).join(", ") : "none";
 
@@ -177,6 +175,7 @@ function BlockInspector({ block, kind }: { block: WorkflowBlock; kind: PaletteBl
           <h3 className="text-xs font-semibold tracking-wide text-muted uppercase">Parameters</h3>
           {researchQuestion && <ParamField block={block} spec={researchQuestion} />}
           {kind === "research" && <ResearchConfiguration block={block} />}
+          {kind === "research_opencode" && <ResearchOpenCodeConfiguration block={block} />}
           {kind === "ai_filter" && <AiFilterConfiguration block={block} />}
           {spec.params.length === 0 ? (
             <p className="text-sm text-muted">

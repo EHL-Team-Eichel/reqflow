@@ -1,8 +1,9 @@
 import { defineBlock, type BlockImplementation } from "@reqflow/engine";
 import { emptyPipelineData, FileRef, ResearchRequest, ResearchScope } from "@reqflow/core";
 import { mergeResearchDomainPolicy } from "./runtime";
+import { summarizeResearchDataset } from "./summarizer";
 
-// Owner: WS6 — the Research block emits only original source records, never analysis.
+// Owner: WS6 — the Research block emits BMW-compatible feedback rows with comprehensive source summaries.
 export const researchImplementations: BlockImplementation<"research">[] = [
   defineBlock({
     kind: "research",
@@ -69,10 +70,32 @@ export const researchImplementations: BlockImplementation<"research">[] = [
           `Research collection failed: ${detail || "Collector returned no agent results."}`,
         );
       }
+      const rows = await summarizeResearchDataset(dataset, {
+        llm: ctx.llm,
+        scope: ctx.scope,
+        signal: ctx.signal,
+        log: ctx.log,
+        concurrency: typeof params.concurrency === "number" ? params.concurrency : 4,
+      });
+      if (rows.length === 0 && dataset.records.length > 0) {
+        ctx.log(
+          `Research collection completed with ${dataset.records.length} archived records, but 0 passed relevance filtering. Downstream usable output is empty. Check source assessments in the Research Inspector or export for details.`,
+        );
+      } else {
+        ctx.log(
+          `Prepared ${rows.length} BMW-compatible summarized feedback rows from ${dataset.records.length} original research records.`,
+        );
+      }
       return {
         status: "ok",
         outputs: {
-          out: { ...emptyPipelineData(), sources: dataset.sources, records: dataset.records },
+          out: {
+            ...emptyPipelineData(),
+            sources: dataset.sources.filter((source) =>
+              rows.some((row) => row.sourceId === source.id),
+            ),
+            records: rows,
+          },
         },
       };
     },

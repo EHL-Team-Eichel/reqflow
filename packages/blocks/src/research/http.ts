@@ -424,7 +424,7 @@ export function createProviderHttp(options: ProviderHttpOptions): ProviderHttpCl
         );
       } catch {
         if (signal.aborted) throw abortError(signal);
-        if (method === "GET" && attempt < options.limits.retries) {
+        if ((method === "GET" || opts.retryPost === true) && attempt < options.limits.retries) {
           await delay(250 * 2 ** attempt, signal);
           continue;
         }
@@ -440,7 +440,7 @@ export function createProviderHttp(options: ProviderHttpOptions): ProviderHttpCl
             : Math.max(0, Date.parse(retryAfter) - Date.now())
           : 250 * 2 ** attempt;
         if (
-          method === "GET" &&
+          (method === "GET" || opts.retryPost === true) &&
           (status === 429 || status >= 500) &&
           attempt < options.limits.retries &&
           Number.isFinite(wait) &&

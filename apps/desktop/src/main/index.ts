@@ -9,6 +9,7 @@ import { dataDir, loadDevEnv, uploadsDir } from "./paths";
 import { parseEvalArg, runEvalF70 } from "./eval-f70";
 import { SecretsStore } from "./secrets";
 import { parseSmokeArg, runSmoke } from "./smoke";
+import { syntheticSourceReviewLlm } from "./research/smoke-fixture";
 
 const smokeDir = parseSmokeArg(process.argv);
 const evalDir = parseEvalArg(process.argv);
@@ -117,6 +118,7 @@ void app
       }),
       researchOptions: {
         fetchImpl: smokeDir ? rejectSmokeFetch : undefined,
+        sourceReviewLlm: smokeDir ? syntheticSourceReviewLlm : undefined,
         xlsxWorkerPath: join(
           __dirname.replace(/app\.asar(?=[\\/])/, "app.asar.unpacked"),
           "research-xlsx-worker.js",

@@ -18,6 +18,7 @@ import {
 import { createHandlers, type HandlerDeps } from "../handlers";
 import { SecretsStore, type SecureStorage } from "../secrets";
 import { ResearchDatasetRepository } from "../../../../../packages/db/src/research";
+import { syntheticSourceReviewLlm } from "./smoke-fixture";
 
 vi.mock("electron", () => {
   throw new Error("Synthetic tests must stay Electron-free");
@@ -26,6 +27,14 @@ const seams = vi.hoisted(() => ({
   documentReads: [] as ReturnType<typeof vi.fn>[],
   llmOptions: [] as unknown[],
   collectorSettings: [] as unknown[],
+  generateObjectCalls: [] as { tier?: string; prompt: string; schema: any }[],
+  generateObjectImpl: undefined as
+    | ((req: {
+        tier?: string;
+        prompt: string;
+        schema: any;
+      }) => Promise<{ model: string; object: unknown }>)
+    | undefined,
 }));
 vi.mock("@reqflow/blocks", async (original) => {
   const actual = await original<typeof import("@reqflow/blocks")>();
@@ -51,7 +60,11 @@ vi.mock("@reqflow/llm", async (original) => {
       seams.llmOptions.push(args);
       return {
         generateText: async () => ({ text: "Synthetic analysis", model: "synthetic" }),
-        generateObject: async () => {
+        generateObject: async (req: any) => {
+          seams.generateObjectCalls.push(req);
+          if (seams.generateObjectImpl) {
+            return seams.generateObjectImpl(req);
+          }
           throw new Error("No synthetic object requested");
         },
       };
@@ -79,6 +92,8 @@ beforeEach(async () => {
   seams.documentReads.length = 0;
   seams.llmOptions.length = 0;
   seams.collectorSettings.length = 0;
+  seams.generateObjectCalls.length = 0;
+  seams.generateObjectImpl = undefined;
   fetched = vi.fn<typeof fetch>(async () => {
     throw new Error("No live calls allowed");
   });
@@ -87,7 +102,7 @@ beforeEach(async () => {
     files: createFileStore(join(dir, "uploads")),
     pickFile: async () => null,
     secretsStore: new SecretsStore(dir, { secureStorage: storage, environment: {} }),
-    researchOptions: { fetchImpl: fetched },
+    researchOptions: { fetchImpl: fetched, sourceReviewLlm: syntheticSourceReviewLlm },
     pushRunUpdate: (run) => {
       updates.push(run);
     },
@@ -129,6 +144,107 @@ async function document() {
 }
 
 describe("one authoritative main/SQLite Research integration", () => {
+  it("requires source assessment in production wiring and excludes failed Quality reviews without losing originals", async () => {
+    deps.researchOptions!.sourceReviewLlm = undefined;
+    handlers = createHandlers(deps);
+    const settings = await handlers.settings.get();
+    await handlers.settings.save({
+      ...settings,
+      llm: {
+        ...settings.llm,
+        provider: "google",
+        model: "synthetic-quality-model",
+        fastModel: "synthetic-fast-model",
+      },
+    });
+    await handlers.settings.setSecret("google_api_key", "synthetic-review-key");
+    const file = await document();
+    const workflow = await save([
+      research("research", { document: { fileId: file.id, name: file.name } }),
+    ]);
+    const queued = await handlers.runs.start(workflow.id);
+    const run = await wait(queued.id);
+    const dataset = await handlers.research.dataset(run.id);
+    expect(dataset.records).toHaveLength(1);
+    expect(dataset.records[0]!.text).toContain("Synthetic deliveries 7.");
+    expect(dataset.records[0]!.fields!.researchAssessments).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ agentId: "bmw_sales", verdict: "unreviewed" }),
+        expect.objectContaining({ agentId: "bmw_strategy", verdict: "unreviewed" }),
+      ]),
+    );
+    expect((await handlers.runs.blockOutput(run.id, "research")).out?.records).toEqual([]);
+    expect(dataset.results.every((result) => result.status === "partial")).toBe(true);
+    expect(seams.llmOptions).toEqual(
+      expect.arrayContaining([
+        [
+          expect.objectContaining({
+            provider: "google",
+            model: "synthetic-quality-model",
+            fastModel: "synthetic-fast-model",
+          }),
+          expect.objectContaining({ apiKey: "synthetic-review-key" }),
+        ],
+      ]),
+    );
+    expect(fetched).not.toHaveBeenCalled();
+  });
+  it("rejects non-relevant sources using configured Quality model without extra Fast calls: preserves archive while usable block output records are empty", async () => {
+    deps.researchOptions!.sourceReviewLlm = undefined;
+    handlers = createHandlers(deps);
+    const settings = await handlers.settings.get();
+    await handlers.settings.save({
+      ...settings,
+      llm: {
+        ...settings.llm,
+        provider: "google",
+        model: "synthetic-quality-model",
+        fastModel: "synthetic-fast-model",
+      },
+    });
+    await handlers.settings.setSecret("google_api_key", "synthetic-review-key");
+    seams.generateObjectImpl = async (req) => ({
+      model: "synthetic-quality-model",
+      object: req.schema.parse({
+        verdict: "irrelevant",
+        reason: "Synthetic irrelevant source.",
+        uncertainty: "Not relevant to assignment.",
+        summary: "",
+        excerpts: [],
+        tableRows: [],
+      }),
+    });
+    const file = await document();
+    const workflow = await save([
+      research("research", { document: { fileId: file.id, name: file.name } }),
+    ]);
+    const queued = await handlers.runs.start(workflow.id);
+    const run = await wait(queued.id);
+    const dataset = await handlers.research.dataset(run.id);
+
+    // Archive preserved with original records, source, and assessments
+    expect(dataset.records).toHaveLength(1);
+    expect(dataset.sources).toHaveLength(1);
+    expect(dataset.records[0]!.fields!.researchAssessments).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ agentId: "bmw_sales", verdict: "irrelevant" }),
+        expect.objectContaining({ agentId: "bmw_strategy", verdict: "irrelevant" }),
+      ]),
+    );
+
+    // Usable block output records are empty (source rejected)
+    const blockOutput = await handlers.runs.blockOutput(run.id, "research");
+    expect(blockOutput.out?.records).toEqual([]);
+    const referencedSources = (blockOutput.out?.sources ?? []).filter((source) =>
+      blockOutput.out?.records?.some((record) => record.sourceId === source.id),
+    );
+    expect(referencedSources).toEqual([]);
+
+    // Main configured Quality model used for assessment summary and no additional Fast calls
+    expect(seams.generateObjectCalls.length).toBeGreaterThan(0);
+    expect(seams.generateObjectCalls.every((call) => call.tier === "default")).toBe(true);
+    expect(seams.generateObjectCalls.some((call) => call.tier === "fast")).toBe(false);
+  });
   it.each(["queued", "running"] as const)(
     "recovers interrupted %s runs without active block states or lost artifacts, exactly once",
     async (status) => {
@@ -353,8 +469,17 @@ describe("one authoritative main/SQLite Research integration", () => {
     expect(await restored.research.dataset(run.id)).toEqual(dataset);
     expect((await restored.runs.blockOutput(run.id, "first")).out?.records[0]).toMatchObject({
       id: dataset.records[0]!.id,
-      text: dataset.records[0]!.text,
+      recordType: "passage",
+      text: expect.stringContaining("Synthetic deliveries 7."),
       collectingAgents: ["bmw_sales", "bmw_strategy"],
+      metadata: expect.objectContaining({ textOrigin: "ai_summary" }),
+      fields: expect.objectContaining({
+        Brand: null,
+        "Derivate (e-code)": null,
+        "Sales Description": null,
+        "Customer Feedback": expect.stringContaining("Synthetic source summary:"),
+        "Original Evidence": expect.stringContaining("Synthetic deliveries 7."),
+      }),
     });
     await expect(readFile(join(dir, "app-state.json"))).rejects.toMatchObject({ code: "ENOENT" });
   });

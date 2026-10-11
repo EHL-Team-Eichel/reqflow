@@ -13,6 +13,8 @@ import { researchImplementations } from "./index";
 import { normalizeItem } from "./raw";
 import { createResearchCollector } from "./runtime";
 import type { ProviderAdapter } from "./provider";
+import { summarizeResearchDataset } from "./summarizer";
+import type { ResearchTableRow } from "./tabular";
 
 const at = "2026-10-10T12:00:00.000Z";
 function dataset(): ResearchDataset {
@@ -234,14 +236,41 @@ describe("Research block", () => {
 
     const result = await run();
 
+    const expectedRecords = await summarizeResearchDataset(raw, {
+      llm: context.llm,
+      scope: context.scope,
+      signal: context.signal,
+      concurrency: 3,
+    });
+
     expect(result).toEqual({
       status: "ok",
       outputs: {
-        out: { ...emptyPipelineData(), sources: raw.sources, records: raw.records },
+        out: { ...emptyPipelineData(), sources: raw.sources, records: expectedRecords },
       },
     });
+
+    const [row] = expectedRecords;
+    expect(row).toBeDefined();
+    expect(row!.text).toContain("Synthetic original — unchanged.");
+    expect(row!.fields).toMatchObject({
+      Source: "local_documents",
+    });
+    expect(String(row!.fields!["Customer Feedback"] ?? "")).toContain(
+      "Synthetic original — unchanged.",
+    );
+
+    // Verify original metadata and provenance are retained
+    expect(row!.metadata.nested).toEqual({ extra: false });
+    expect(row!.metadata.originalArtifact).toEqual({ fileId: "file_synthetic" });
+    expect(row!.originalRecordId).toBe(raw.records[0]!.originalRecordId);
+    expect(row!.originalSourceId).toBe(raw.records[0]!.originalSourceId);
+    expect(row!.originalUrl).toBe(raw.records[0]!.originalUrl);
+    expect(row!.provider).toBe(raw.records[0]!.provider);
+    expect(row!.locator).toBe(raw.records[0]!.locator);
+    expect(row!.sourceId).toBe(raw.records[0]!.sourceId);
+
     expect(raw.sources[0]?.reliability).toBeUndefined();
-    expect(context.llm.generateObject).not.toHaveBeenCalled();
     expect(context.llm.generateText).not.toHaveBeenCalled();
     expect(context.car.add).not.toHaveBeenCalled();
   });
@@ -311,7 +340,7 @@ describe("Research block", () => {
   );
 
   it("completes a legitimate empty collection and retains partially collected originals", async () => {
-    const { run, collect, raw } = setup();
+    const { run, collect, raw, context } = setup();
     collect.mockResolvedValueOnce({
       ...raw,
       sources: [],
@@ -329,7 +358,16 @@ describe("Research block", () => {
         limitations: ["Synthetic later provider failed."],
       })),
     });
-    expect(await run()).toMatchObject({ status: "ok", outputs: { out: { records: raw.records } } });
+    const expected = await summarizeResearchDataset(raw, {
+      llm: context.llm,
+      scope: context.scope,
+      signal: context.signal,
+      concurrency: 3,
+    });
+    expect(await run()).toMatchObject({
+      status: "ok",
+      outputs: { out: { records: expected } },
+    });
   });
 
   it.each(["blocked", "missing_credentials", "error"] as const)(

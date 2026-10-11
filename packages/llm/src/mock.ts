@@ -662,6 +662,41 @@ export function mockObject(prompt: string): unknown {
   ) {
     return rawObject(raw, prompt.length);
   }
+  if (
+    raw &&
+    typeof raw === "object" &&
+    "contract" in raw &&
+    raw.contract === "reqflow.research.summarize@1"
+  ) {
+    const input = raw as {
+      content?: string;
+      source?: { title?: string; publisher?: string };
+      scope?: { vehicleLine?: string; market?: string };
+    };
+    const content = typeof input.content === "string" ? input.content : "";
+    const title = input.source?.title || input.source?.publisher || "Research Source";
+    const vehicle = input.scope?.vehicleLine || "1 Series";
+    const derivate = /5\s*series|5er|g60/i.test(vehicle)
+      ? "G60"
+      : /7\s*series|7er|g70/i.test(vehicle)
+        ? "G70"
+        : "F70";
+    return {
+      items: [
+        {
+          brand: "[BMW]",
+          salesDescription: `[BMW ${vehicle}]`,
+          country: input.scope?.market || "EU",
+          derivate,
+          engineType: "ICE",
+          feedbackType: "Likes",
+          summary: `[Mock Summary] Substantive evaluation of ${title}: ${content.slice(0, 200)}`,
+          vfcLevel2Name: "Drive, driving dynamics and chassis, overall technology",
+          vfcLevel3Name: "Like: performance",
+        },
+      ],
+    };
+  }
   const checked = Payload.safeParse(raw);
   if (!checked.success) {
     throw new Error(

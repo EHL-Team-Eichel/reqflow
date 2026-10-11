@@ -7,8 +7,11 @@ import {
   type WorkflowBlock,
 } from "@reqflow/core";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useStore } from "zustand";
 import { api, ReqflowError } from "@/lib/api";
 import { useSettings } from "@/lib/settings";
+import { runStore } from "./run-session";
+import { previewSource } from "./source-preview";
 
 export type PreviewState =
   | { status: "idle" }
@@ -16,7 +19,7 @@ export type PreviewState =
   | { status: "ready"; data: PipelineData; logs: string[] }
   | { status: "error"; message: string; logs: string[] };
 
-/** Blocks without inputs (Raw, Research) can show their own output without a run. */
+/** Raw reads its source; Research reads its persisted output from a matching run. */
 export function canPreview(block: WorkflowBlock): boolean {
   return isPaletteBlockKind(block.kind) && blockPorts(block).inputs.length === 0;
 }
@@ -32,20 +35,22 @@ const logsOf = (details: unknown): string[] =>
  */
 export function useBlockPreview(block: WorkflowBlock | null) {
   const scope = useSettings((s) => s.settings.defaultScope);
+  const run = useStore(runStore, (s) => s.run);
+  const savedStatus = run?.blockRuns.find((entry) => entry.blockId === block?.id)?.status;
   const [state, setState] = useState<PreviewState>({ status: "idle" });
   const request = useRef(0);
 
   useEffect(() => {
     request.current++;
     setState({ status: "idle" });
-  }, [block?.id, block?.params, scope]);
+  }, [block?.id, block?.params, block?.inner, scope, run?.id, savedStatus]);
 
   const load = useCallback(async () => {
     if (!block || !isPaletteBlockKind(block.kind)) return;
     const id = ++request.current;
     setState({ status: "loading" });
     try {
-      const res = await api.blocks.preview({ kind: block.kind, params: block.params, scope });
+      const res = await previewSource(api, block, scope, run);
       if (id !== request.current) return;
       const data = Object.values(res.outputs)[0] ?? emptyPipelineData();
       setState({ status: "ready", data, logs: res.logs });
@@ -63,7 +68,7 @@ export function useBlockPreview(block: WorkflowBlock | null) {
         logs: err instanceof ReqflowError ? logsOf(err.details) : [],
       });
     }
-  }, [block, scope]);
+  }, [block, scope, run]);
 
   return { state, load };
 }

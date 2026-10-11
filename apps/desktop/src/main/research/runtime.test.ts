@@ -10,9 +10,11 @@ import {
   ResearchDataset,
   ResearchProviderConfig,
   type BlockParams,
+  type ProductScope,
   type WorkflowBlock,
   type WorkflowRun,
 } from "@reqflow/core";
+import { summarizeResearchDataset } from "@reqflow/blocks";
 import type { ReqflowHandlers, StoredFileInfo } from "@reqflow/core/ipc";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { dispatch } from "../dispatch";
@@ -56,6 +58,13 @@ const cipherPrefix = "synthetic-cipher:v1:";
 const syntheticKey = "synthetic-private-firecrawl-credential";
 const syntheticText =
   "Synthetic publication: deliveries are 7.\nSynthetic strategy statement remains verbatim.\n舒适 — unchanged.\n";
+
+async function expectedLocalTextRows(
+  dataset: ResearchDataset,
+  scope: ProductScope = DEFAULT_SETTINGS.defaultScope,
+) {
+  return summarizeResearchDataset(dataset, { scope, signal: new AbortController().signal });
+}
 function secureStorage(): SecureStorage {
   return {
     isEncryptionAvailable: () => true,
@@ -494,7 +503,7 @@ describe("local raw Research workflow and exports", () => {
       expect(output.out).toEqual({
         ...emptyPipelineData(),
         sources: dataset.sources,
-        records: dataset.records,
+        records: await expectedLocalTextRows(dataset),
       });
       expect(
         ResearchDataset.parse(
@@ -647,7 +656,7 @@ describe("local raw Research workflow and exports", () => {
     expect(await restarted.api.runs.get(run.id)).toEqual(run);
     expect(await restarted.api.research.dataset(run.id)).toEqual(dataset);
     expect((await restarted.api.runs.blockOutput(run.id, "research")).out?.records).toEqual(
-      dataset.records,
+      await expectedLocalTextRows(dataset),
     );
     expect(restarted.fetchImpl).not.toHaveBeenCalled();
   });
@@ -699,11 +708,24 @@ describe("local raw Research workflow and exports", () => {
       },
       collectingAgents: ["bmw_sales", "bmw_strategy"],
     });
-    expect(output.out?.records).toEqual(dataset.records);
+    expect(output.out?.records).toHaveLength(1);
+    expect(output.out?.records?.[0]).toMatchObject({
+      collectedRecordId: dataset.records[0]!.id,
+      id: `${dataset.records[0]!.id}_row1`,
+      sourceId: dataset.records[0]!.sourceId,
+      text: "Metric: Synthetic deliveries; Count (vehicles): 7; Supplied flag: false",
+      fields: { Metric: "Synthetic deliveries", "Count (vehicles)": 7, "Supplied flag": false },
+      originalSourceId: file.id,
+      originalRecordId: `${file.id}:sheet:1`,
+      metadata: dataset.records[0]!.metadata,
+      table: dataset.records[0]!.table,
+      collectingAgents: ["bmw_sales", "bmw_strategy"],
+    });
+    expect(await restarted.api.research.dataset(started.id)).toEqual(dataset);
     expect(
       JSON.parse(await readFile(join(h.dir, `${started.id}.outputs.json`), "utf8")).research.out
         .records,
-    ).toEqual(dataset.records);
+    ).toEqual(output.out?.records);
     expect(restarted.fetchImpl).not.toHaveBeenCalled();
   });
 
@@ -726,7 +748,7 @@ describe("local raw Research workflow and exports", () => {
     });
     expect(await restarted.api.research.dataset(run.id)).toEqual(dataset);
     expect((await restarted.api.runs.blockOutput(run.id, "research")).out?.records).toEqual(
-      dataset.records,
+      await expectedLocalTextRows(dataset),
     );
     expect(await restarted.api.runs.list()).toEqual([restored]);
     expect(restarted.fetchImpl).not.toHaveBeenCalled();

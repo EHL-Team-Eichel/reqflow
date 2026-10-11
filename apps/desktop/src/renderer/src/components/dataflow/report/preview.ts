@@ -54,12 +54,18 @@ export async function previewReportInputs(
   inputs: PreviewInput[],
   scope: ProductScope,
   preview: (request: BlockPreviewRequest) => Promise<BlockPreview>,
+  savedResearch?: (block: WorkflowBlock) => Promise<BlockPreview>,
 ): Promise<{ data: PipelineData; logs: string[] }> {
   const outputs = new Map<string, BlockPreview>();
   for (const { block } of inputs) {
     if (outputs.has(block.id)) continue;
     try {
-      outputs.set(block.id, await preview({ kind: block.kind, params: block.params, scope }));
+      outputs.set(
+        block.id,
+        (block.kind === "research" || block.kind === "research_opencode") && savedResearch
+          ? await savedResearch(block)
+          : await preview({ kind: block.kind, params: block.params, scope }),
+      );
     } catch (err) {
       throw new Error(
         `Couldn't read ${block.label}: ${err instanceof Error ? err.message : String(err)}`,

@@ -263,7 +263,10 @@ describe("research export round trips", () => {
     const book = await workbook(input);
 
     expect(sheetRows(book.getWorksheet("Feedback_Explorer")!)).toHaveLength(1);
-    expect(csvRows(exportResearchCsv(input))).toHaveLength(1);
+    expect(csvRows(exportResearchCsv(input))).toHaveLength(input.records.length);
+    expect(csvRows(exportResearchCsv(input)).map((row) => row["Record Type"])).toEqual(
+      input.records.map((row) => row.recordType),
+    );
     expect(sheetRows(book.getWorksheet("Research Records")!)).toHaveLength(input.records.length);
   });
 
@@ -436,7 +439,7 @@ describe("exports of the real local-reader metadata contract", () => {
 
       const rows =
         format === "csv"
-          ? csvRows(exportResearchCsv(input))
+          ? csvRows(exportResearchCsv(input)).filter((row) => row["Record Type"] === "feedback")
           : sheetRows((await workbook(input)).getWorksheet("Feedback_Explorer")!);
 
       expect(rows).toHaveLength(2);
@@ -466,7 +469,7 @@ describe("exports of the real local-reader metadata contract", () => {
 
       const rows =
         format === "csv"
-          ? csvRows(exportResearchCsv(input))
+          ? csvRows(exportResearchCsv(input)).filter((row) => row["Record Type"] === "feedback")
           : sheetRows((await workbook(input)).getWorksheet("Feedback_Explorer")!);
 
       expect(rows[0]).toMatchObject({

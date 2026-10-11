@@ -105,10 +105,16 @@ export function WorkflowSidebar({ canvasRef }: { canvasRef: RefObject<HTMLDivEle
             {[...FEEDBACK_TEMPLATES, ...ANALYTICS_TEMPLATES, ...shared].map((template, index) => {
               const kinds = [...new Set(template.graph.blocks.map((block) => block.kind))];
               const sources = template.graph.blocks.filter(
-                (block) => block.kind === "raw" || block.kind === "research",
+                (block) =>
+                  block.kind === "raw" ||
+                  block.kind === "research" ||
+                  block.kind === "research_opencode",
               ).length;
               const reviews = template.graph.blocks.filter((block) => block.kind === "hil").length;
-              const blueprint = kinds.includes("research") || kinds.includes("ai_filter");
+              const blueprint =
+                kinds.includes("research") ||
+                kinds.includes("research_opencode") ||
+                kinds.includes("ai_filter");
               return (
                 <section
                   key={`${index < FEEDBACK_TEMPLATES.length ? "feedback" : "shared"}-${template.name}-${index}`}

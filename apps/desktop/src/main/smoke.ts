@@ -2318,23 +2318,23 @@ export async function runSmoke(
           (result) =>
             result.status === "partial" &&
             result.recordIds.length === 2 &&
-            result.requests === 0 &&
+            result.requests === 2 &&
             /off|disabled/i.test(result.limitations.join(" ")),
         ),
-      "both agents honestly report partial local collection, blocked web and zero API requests",
+      "both agents honestly report partial local collection, blocked web and assessment requests",
     );
     ensure(
       salesStatus.includes("Partial collection") &&
         strategyStatus.includes("Partial collection") &&
-        salesStatus.includes("0 requests") &&
-        strategyStatus.includes("0 requests"),
+        salesStatus.includes("2 requests") &&
+        strategyStatus.includes("2 requests"),
       "renderer displays honest agent statuses and record/request counts",
     );
     const output = await invoke("runs", "blockOutput", run.id, block.id);
     ensure(
       output.out?.records.length === dataset.records.length &&
         output.out.records.some(
-          (record) => record.id === opinion.id && record.text === SYNTHETIC_FEEDBACK,
+          (record) => record.id === opinion.id && record.text.includes(SYNTHETIC_FEEDBACK),
         ) &&
         output.out.findings.length === 0 &&
         output.out.requirements.length === 0,
@@ -2387,6 +2387,49 @@ export async function runSmoke(
         audit.some((event) => event.action === "run.completed") &&
         audit.filter((event) => event.action === "export.created").length === 3,
       "native persistence records start, completion and all three exports in audit",
+    );
+
+    // Preview the completed source and a HIL inserted afterwards, without a second collection.
+    const runsBeforePreview = await invoke("runs", "list");
+    ensure(await click('[data-testid="block-research"]'), "select completed Research source");
+    ensure(await click('[data-testid="preview-load"]'), "open saved Research Inspector preview");
+    await waitFor("saved Research Inspector data", async () =>
+      /2 records/.test(await text('[data-testid="preview-counts"]')),
+    );
+    ensure(
+      (await text('[data-testid="block-preview"]')).includes(SYNTHETIC_FEEDBACK) &&
+        (await count('[data-testid="block-preview"] [role="alert"]')) === 0,
+      "Inspector previews persisted Research rows instead of refusing collection",
+    );
+    await js(
+      `document.querySelector('[data-testid="block-preview"]').scrollIntoView({ block: 'end' })`,
+    );
+    await delay(100);
+    await shot("research-saved-preview");
+    ensure(await click('[aria-label="Close details"]'), "close saved Research Inspector");
+    ensure(await click('[data-testid="palette-item-hil"]'), "insert HIL after completed Research");
+    await delay(300);
+    ensure(await click('[aria-label="Close details"]'), "close new HIL Inspector");
+    await drag(handle("research", "source"), handle("hil", "target"));
+    ensure((await count(".react-flow__edge")) === 1, "connect Research to newly inserted HIL");
+    await js(
+      `document.querySelector('[data-testid="block-hil"]').dispatchEvent(new MouseEvent("dblclick", { bubbles: true }))`,
+    );
+    await waitFor("new HIL saved Research data", async () =>
+      (await text('[data-testid="data-panel"]')).includes(SYNTHETIC_FEEDBACK),
+    );
+    ensure(
+      (await count('[data-testid="data-empty"]')) === 0 &&
+        (await count('[data-testid="hil-review-actions"]')) === 0 &&
+        (await text('[data-testid="data-real"]')).includes(runId),
+      "new HIL shows saved source data without inventing a paused review gate",
+    );
+    await shot("hil-research-saved-preview");
+    ensure(await click('[aria-label="Close report"]'), "close saved Research HIL report");
+    ensure(
+      (await invoke("runs", "list")).length === runsBeforePreview.length &&
+        JSON.stringify(await invoke("research", "dataset", runId)) === JSON.stringify(dataset),
+      "source previews neither start another run nor modify the collected archive",
     );
     nativeResearch.ok = true;
   } catch (error) {
