@@ -73,7 +73,9 @@ export const DraftAnswer = z.object({
   kano: KanoClass,
   targets: z
     .array(z.object({ metric: z.string(), target: z.string(), acceptance: z.string() }))
-    .describe("1–3 customer-perceivable, measurable targets with how a test would confirm them."),
+    .describe(
+      "1–3 customer-perceivable, measurable targets with how a test would confirm them. At least 1 is required; leave it empty only if nothing about the theme can be measured, and it is held back.",
+    ),
   assumptions: z.array(z.string()),
   uncertainties: z.array(z.string()),
   why: z.string().describe("2–3 sentences for the product manager, citing signals like [s3]."),
@@ -92,10 +94,6 @@ export const ReviewAnswer = z.object({
   fixes: z.array(z.string()).describe("How to fix each issue."),
   rejectReason: z.string().describe('Why it can\'t become a requirement; "" unless rejected.'),
   factors: z.object({
-    customer_impact: Factor,
-    evidence_strength: Factor,
-    competitive_gap: Factor,
-    trend_momentum: Factor,
     brand_fit: Factor,
     ease: Factor,
   }),

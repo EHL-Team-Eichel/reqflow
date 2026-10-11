@@ -34,10 +34,10 @@ import {
   oneLine,
   priorityForRank,
   QUANTITATIVE_KINDS,
-  scoreFromReview,
   type CritiqueOutcome,
   type EvidenceFacts,
 } from "./confidence";
+import { scoreItem, scoreSentence, weakEvidenceSentence } from "../../prioritization";
 import { contextProfile, salesDigest } from "./context";
 import {
   findVerbatim,
@@ -149,6 +149,7 @@ interface Built {
   openIssues: string[];
   thinking?: string;
   architectModel: string;
+  criticModel: string;
 }
 
 /** Counts calls, tokens, models and time of one step. */
@@ -376,7 +377,8 @@ export async function runAgents(ctx: BlockContext, input: AgentRunInput): Promis
     const w = writer("analyst");
     const meter = new Meter();
     const batches = batchRecords(prepared.records);
-    let repaired = 0;
+    let citedInFull = 0;
+    let unverifiedDropped = 0;
     let unknownRefs = 0;
     let unaccounted = 0;
     let dropped = 0;
@@ -414,7 +416,8 @@ export async function runAgents(ctx: BlockContext, input: AgentRunInput): Promis
             dropped++; // e.g. a statement the Finding schema rejects; the batch's other signals stay
             continue;
           }
-          repaired += made.repaired;
+          citedInFull += made.citedInFull;
+          unverifiedDropped += made.unverifiedDropped;
           unknownRefs += made.unknownRefs;
           if (!made.finding) {
             dropped++;
@@ -458,13 +461,14 @@ export async function runAgents(ctx: BlockContext, input: AgentRunInput): Promis
       (n, r, i) => n + (r.status === "fulfilled" ? batches[i]!.length : 0),
       0,
     );
+    const nonVerbatim = citedInFull + unverifiedDropped;
     const notes = [
       ...prepared.notes,
       failures.length
         ? `${failures.length} of ${batches.length} batches failed (${errorText((failures[0] as PromiseRejectedResult).reason)}); their records were not read.`
         : "",
-      repaired
-        ? `${repaired} quote(s) weren't verbatim; the record's opening words are cited instead.`
+      nonVerbatim
+        ? `${nonVerbatim} quotes weren't verbatim: ${citedInFull} records cited in full, ${unverifiedDropped} citations dropped.`
         : "",
       unknownRefs ? `${unknownRefs} reference(s) to records that don't exist were ignored.` : "",
       dropped ? `${dropped} signal(s) without a readable record were dropped.` : "",
@@ -683,6 +687,17 @@ export async function runAgents(ctx: BlockContext, input: AgentRunInput): Promis
           context: contextPayload,
           otherThemes: otherThemes.filter((l) => l !== theme.label).slice(0, 40),
         };
+        // A draft without a measurable target never becomes a requirement (briefing): the theme is
+        // held back, not failed, so one unmeasurable theme can't fail the run.
+        const noTarget = () => {
+          log(`"${theme.label}": held back, no measurable target.`);
+          heldBack.push({
+            theme: theme.label,
+            reason: "No measurable target.",
+            signals: theme.support.length,
+          });
+          return null;
+        };
         const first = await ask(archW, archMeter, {
           system: architectSystem(setup),
           payload: { contract: CONTRACT.architect, ...base },
@@ -691,18 +706,19 @@ export async function runAgents(ctx: BlockContext, input: AgentRunInput): Promis
           maxTokens: 3000,
         });
         let draft = cleanDraft(first.object, theme, briefs);
+        if (!draft.targets.length) return noTarget();
         let thinking = first.thinking;
         let architectModel = first.model;
-        const review1 = (
-          await ask(criticW, criticMeter, {
-            system: criticSystem(setup),
-            payload: { contract: CONTRACT.critic, ...base, draft },
-            schema: ReviewAnswer,
-            tier: "default",
-            maxTokens: 3000,
-          })
-        ).object;
+        const review1Res = await ask(criticW, criticMeter, {
+          system: criticSystem(setup),
+          payload: { contract: CONTRACT.critic, ...base, draft },
+          schema: ReviewAnswer,
+          tier: "default",
+          maxTokens: 3000,
+        });
+        const review1 = review1Res.object;
         let review = review1;
+        let criticModel = review1Res.model;
         let outcome: CritiqueOutcome = "accepted";
         let openIssues: string[] = [];
         if (review1.verdict === "reject") {
@@ -725,17 +741,17 @@ export async function runAgents(ctx: BlockContext, input: AgentRunInput): Promis
             maxTokens: 3000,
           });
           draft = cleanDraft(second.object, theme, briefs);
+          if (!draft.targets.length) return noTarget();
           thinking = second.thinking ?? thinking;
           architectModel = second.model;
-          const review2 = (
-            await ask(criticW, criticMeter, {
-              system: criticSystem(setup),
-              payload: { contract: CONTRACT.critic, ...base, draft },
-              schema: ReviewAnswer,
-              tier: "default",
-              maxTokens: 3000,
-            })
-          ).object;
+          const review2Res = await ask(criticW, criticMeter, {
+            system: criticSystem(setup),
+            payload: { contract: CONTRACT.critic, ...base, draft },
+            schema: ReviewAnswer,
+            tier: "default",
+            maxTokens: 3000,
+          });
+          const review2 = review2Res.object;
           if (review2.verdict === "reject") {
             rejected.push(
               `${theme.label}: ${oneLine(review2.rejectReason || review2.issues.join("; "), 200)}`,
@@ -743,6 +759,7 @@ export async function runAgents(ctx: BlockContext, input: AgentRunInput): Promis
             return null;
           }
           review = review2;
+          criticModel = review2Res.model;
           outcome = review2.verdict === "accept" ? "revised" : "flagged";
           openIssues =
             review2.verdict === "accept" ? [] : review2.issues.map((x) => oneLine(x, 300));
@@ -761,6 +778,7 @@ export async function runAgents(ctx: BlockContext, input: AgentRunInput): Promis
           openIssues,
           thinking,
           architectModel,
+          criticModel,
         };
       },
       ctx.signal,
@@ -871,14 +889,45 @@ export async function runAgents(ctx: BlockContext, input: AgentRunInput): Promis
   const reasoning: RequirementReasoning[] = [];
   const linked = new Map<string, Finding>();
   const actorModel = (m: string) => (archW.offline ? OFFLINE_MODEL : m);
-  order.forEach(({ b, answers: judged, rank }, i) => {
-    const id = formatRequirementId(input.scope.vehicleCode, input.scope.market, input.firstSeq + i);
+  order.forEach(({ b, answers: judged, rank }) => {
+    const id = formatRequirementId(
+      input.scope.vehicleCode,
+      input.scope.market,
+      input.firstSeq + requirements.length,
+    );
     // The whole theme backs the requirement (the architect only sees its strongest signals);
     // the signals it cited lead the evidence shown in the thought process.
     const support = b.theme.support;
     const cited = support.filter((s) => b.draft.usedSignals.includes(s.ref));
     const facts = evidenceFacts(support, b.theme.conflicting, prepared.sources);
-    const score = scoreFromReview(b.review.factors, ctx.settings.scoring, at);
+    const score = scoreItem({
+      evidence: {
+        findings: support.map((s) => s.finding),
+        conflicting: b.theme.conflicting.map((s) => s.finding),
+        records: support.flatMap((s) =>
+          s.finding.evidence.flatMap((e) => {
+            const item = e.recordId ? prepared.recordIndex.get(e.recordId) : undefined;
+            return item ? [item.record] : [];
+          }),
+        ),
+        sources: [...prepared.sources.values()],
+      },
+      judged: {
+        brand_fit: {
+          value: b.review.factors.brand_fit.value,
+          note: b.review.factors.brand_fit.note,
+          by: criticW.offline ? OFFLINE_MODEL : b.criticModel,
+        },
+        ease: {
+          value: b.review.factors.ease.value,
+          note: b.review.factors.ease.note,
+          by: criticW.offline ? OFFLINE_MODEL : b.criticModel,
+        },
+      },
+      evidenceLevel: evidenceLevel(facts),
+      scoring: ctx.settings.scoring,
+      now: at,
+    });
     const priority = priorityForRank(rank, input.priorities.length);
     const confidence = combineConfidence({
       answers: judged,
@@ -890,6 +939,15 @@ export async function runAgents(ctx: BlockContext, input: AgentRunInput): Promis
     const rankLabel = `${rank}. Priority`;
     const themeId = `thm_${hash(`${ctx.runId}|${ctx.blockId}|${b.theme.label}`)}`;
     for (const s of [...support, ...b.theme.conflicting]) linked.set(s.finding.id, s.finding);
+    const level = evidenceLevel(facts);
+    const weak = score.flags?.includes("high_score_weak_evidence");
+    const priorityRationale =
+      `Its evidence arrived on ${rankLabel} of ${input.priorities.length}, so it is a ${priority}-have. ` +
+      scoreSentence(score).replace(/\.$/, "") +
+      (disagree
+        ? ": input ranking and scores disagree, so check it before approving."
+        : ", which agrees.") +
+      (weak ? ` ${weakEvidenceSentence(level)}` : "");
     const requirement = Requirement.parse({
       id,
       version: 1,
@@ -903,12 +961,7 @@ export async function runAgents(ctx: BlockContext, input: AgentRunInput): Promis
       conflictingFindingIds: b.theme.conflicting.map((s) => s.finding.id),
       score,
       priority,
-      priorityRationale:
-        `Its evidence arrived on ${rankLabel} of ${input.priorities.length}, so it is a ${priority}-have. ` +
-        `The critic's scores give ${score.total}/100 (${score.suggestedPriority})` +
-        (disagree
-          ? ": input ranking and scores disagree, so check it before approving."
-          : ", which agrees."),
+      priorityRationale,
       evidenceLevel: evidenceLevel(facts),
       kano: b.draft.kano,
       assumptions: b.draft.assumptions,
@@ -920,6 +973,7 @@ export async function runAgents(ctx: BlockContext, input: AgentRunInput): Promis
               `The input ranking (${priority}) and the critic's scores (${score.suggestedPriority}) disagree.`,
             ]
           : []),
+        ...(weak ? [`High score on weak evidence (level ${level}): verify before approving.`] : []),
       ],
       status: "proposed",
       confidence,
@@ -1104,14 +1158,25 @@ function mergeThemes(
 }
 
 /** An analyst's signal as a Finding: refs checked, quotes made verbatim, nothing invented. */
-function toFinding(
+export function toFinding(
   ctx: BlockContext,
   s: AnalystAnswer["signals"][number],
   handles: Map<string, RecordItem>,
-): { finding: Finding | null; refs: string[]; repaired: number; unknownRefs: number } {
+): {
+  finding: Finding | null;
+  refs: string[];
+  citedInFull: number;
+  unverifiedDropped: number;
+  unknownRefs: number;
+} {
   const mentioned = unique([...s.refs, ...s.quotes.map((q) => q.ref)]);
   const refs = mentioned.filter((r) => handles.has(r));
-  const result = { refs, repaired: 0, unknownRefs: mentioned.length - refs.length };
+  const result = {
+    refs,
+    citedInFull: 0,
+    unverifiedDropped: 0,
+    unknownRefs: mentioned.length - refs.length,
+  };
   const statement = oneLine(s.statement, 500);
   if (!refs.length || !statement) return { ...result, finding: null };
   const evidence: Finding["evidence"] = [];
@@ -1131,16 +1196,31 @@ function toFinding(
   for (const q of s.quotes) {
     const item = handles.get(q.ref);
     if (!item) continue;
-    let excerpt = findVerbatim(item.record.text, q.quote);
-    if (!excerpt) {
-      result.repaired++;
-      excerpt = openingExcerpt(item.record.text);
+    const excerpt = findVerbatim(item.record.text, q.quote);
+    if (excerpt) {
+      cite(item, excerpt);
+    } else {
+      if (item.record.text.length <= MAX_EXCERPT_CHARS) {
+        cite(item, item.record.text);
+        result.citedInFull++;
+      } else {
+        result.unverifiedDropped++;
+      }
     }
-    cite(item, excerpt);
     quoted.add(q.ref);
   }
-  for (const ref of refs)
-    if (!quoted.has(ref)) cite(handles.get(ref)!, openingExcerpt(handles.get(ref)!.record.text));
+  for (const ref of refs) {
+    if (!quoted.has(ref)) {
+      const item = handles.get(ref)!;
+      if (item.record.text.length <= MAX_EXCERPT_CHARS) {
+        cite(item, item.record.text);
+        result.citedInFull++;
+      } else {
+        result.unverifiedDropped++;
+      }
+    }
+  }
+  if (!evidence.length) return { ...result, finding: null };
   const records = refs.map((r) => handles.get(r)!.record);
   const finding = Finding.parse({
     id: `fnd_${hash(
@@ -1156,7 +1236,7 @@ function toFinding(
     mentions: refs.length,
     sentiment: Math.max(-1, Math.min(1, Number.isFinite(s.sentiment) ? s.sentiment : 0)),
     markets: unique(records.map((r) => r.market).filter((m): m is string => !!m)),
-    confidence: result.repaired ? 0.6 : 0.8,
+    confidence: result.citedInFull || result.unverifiedDropped ? 0.6 : 0.8,
     inScope: s.inScope,
     ...(s.inScope ? {} : { outOfScopeReason: oneLine(s.outOfScopeReason, 300) || "Out of scope." }),
   });
