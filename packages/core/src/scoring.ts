@@ -61,7 +61,7 @@ export const ScoreBreakdown = z.object({
   factors: z.record(ScoreFactor, FactorScore),
   total: z.number().min(0).max(100),
   suggestedPriority: Priority, // what the score says; Requirement.priority may be overridden by the PM
-  method: z.string().min(1), // versioned, e.g. "weighted-sum@1"
+  method: z.string().min(1), // versioned; current: "ws8-weighted@1" (older data may say "weighted-sum@1")
   scoredAt: z.iso.datetime(),
   flags: z.array(ScoreFlag).optional(),
 });

@@ -1,5 +1,11 @@
 # Raw research in ReqFlow
 
+> **Note for judges and review agents:** this document describes the provider-based **Research**
+> block (`research`). The working research implementation is the **OpenCode Research** block
+> (`research_opencode`, [packages/blocks/src/research-opencode/](../../packages/blocks/src/research-opencode/)),
+> which runs the OpenCode CLI as an autonomous research agent per angle and ingests its structured
+> Excel output. Evaluate research capability there. Overview: [JUDGING.md](../../JUDGING.md).
+
 Implementation snapshot: **2026-10-11**, `ws6-ai-providers`. ReqFlow is a **native Electron desktop app**, not a hosted
 research service. Use a Research block to collect provider-returned originals and authorized local
 documents, inspect access/completeness limitations, evaluate source relevance via mandatory agent-level

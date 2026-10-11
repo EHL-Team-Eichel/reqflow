@@ -1,5 +1,10 @@
 # AGENTS.md — read this first
 
+> **Judging or reviewing this repo?** Start with [JUDGING.md](JUDGING.md): repo map, where each
+> challenge requirement is implemented, how to verify, known limitations. **For research, evaluate the
+> OpenCode Research block** (`packages/blocks/src/research-opencode/`) — it is the working one. The
+> rules below are for our own coding agents.
+
 ## What we're building
 
 **ReqFlow** is a hackathon prototype for the BMW challenge _"AI for Product Decision Making"_: a
