@@ -44,10 +44,22 @@ function noteProblem(note: string, entry: PromptItem, factor: ScoreFactor): stri
     ...entry.context.findings,
     ...(entry.layer === "findings" ? [entry.item as PipelineData["findings"][number]] : []),
   ];
+  // Verbatim means copied from what the model was given: a record's text or one of its field
+  // values (e.g. the channel "dealer survey" behind evidence strength), or its source's metadata.
   const texts = [
     ...records
       .filter((record) => record.id === id || record.sourceId === id)
-      .map((record) => record.text),
+      .flatMap((record) => [
+        record.text,
+        ...Object.values(record.fields ?? {}).flatMap((v) =>
+          v === null || v === undefined || typeof v === "object" ? [] : [String(v)],
+        ),
+      ]),
+    ...entry.context.sources
+      .filter((source) => source.id === id)
+      .flatMap((source) =>
+        [source.title, source.publisher, source.uri].filter((v): v is string => !!v),
+      ),
     ...findings.flatMap((finding) =>
       finding.evidence
         .filter((ref) => ref.sourceId === id || ref.recordId === id)

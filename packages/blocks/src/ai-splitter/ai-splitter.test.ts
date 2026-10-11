@@ -563,6 +563,16 @@ describe("AI Splitter", () => {
     expect(logs).not.toContain("invented quote");
   });
 
+  it("accepts a verbatim quote of a record's field value as evidence", async () => {
+    const input = records(["The seats hurt."]);
+    input.records[0]!.fields = { channel: "dealer survey" };
+    const note = 'Evidence: rec_0 | "dealer survey" | one dealer comment, no volume';
+    const factors = Object.fromEntries(ScoreFactor.options.map((f) => [f, { value: 2, note }]));
+    const c = context(fakeLlm({ scores: [{ id: "rec_0", factors }] }));
+    await aiSplitterBlock.run({ in: input }, defaults, c.ctx);
+    expect(c.log.mock.calls.flat().join(" ")).not.toMatch(/unverified assumption/);
+  });
+
   it("accepts only verifiable Evidence notes for provisional factors", async () => {
     const factors = Object.fromEntries(
       ScoreFactor.options.map((f) => [
