@@ -413,7 +413,7 @@ function InputStrip({ inputs }: { inputs: AnalyticsInput[] }) {
           <span className="font-medium text-ink">{input.label}</span>
           <span className={cx(input.status === "error" ? "text-danger" : "text-muted")}>
             {input.status === "ready"
-              ? `${formatNumber(input.data?.records.length ?? 0)} records · ${formatNumber(input.data?.sources.length ?? 0)} sources`
+              ? `${plural(input.data?.records.length ?? 0, "record")} · ${plural(input.data?.sources.length ?? 0, "source")}`
               : input.status === "unconnected"
                 ? "not connected"
                 : input.status === "needs_run"
@@ -448,4 +448,8 @@ function NothingYet({ inputs }: { inputs: AnalyticsInput[] }) {
       </ul>
     </div>
   );
+}
+
+function plural(n: number, word: string): string {
+  return `${formatNumber(n)} ${word}${n === 1 ? "" : "s"}`;
 }

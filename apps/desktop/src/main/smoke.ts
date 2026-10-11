@@ -297,7 +297,7 @@ export async function runSmoke(
   const blockCount = await count(".react-flow__node");
   check(
     blockCount === PALETTE_BLOCK_KINDS.length,
-    `dataflow: expected 7 blocks, got ${blockCount}`,
+    `dataflow: expected ${PALETTE_BLOCK_KINDS.length} blocks, got ${blockCount}`,
   );
   for (const kind of PALETTE_BLOCK_KINDS) {
     check((await count(`[data-testid="block-${kind}"]`)) === 1, `dataflow: block ${kind} missing`);
@@ -1170,6 +1170,136 @@ export async function runSmoke(
   check(await click('[aria-label="Close thought process"]'), "dataflow: no reasoning close button");
   await delay(300);
 
+  // Analytics, as a user would: the "Compare feedback sources" template, two synthetic feedback
+  // files, then the block opens full screen and every tab renders. Counting is rules only (no AI).
+  try {
+    const second = join(outDir, "analytics-feedback-b.csv");
+    const countries = ["DE", "FR", "GB", "IT", "US", "CN"];
+    const comments = [
+      "The seat is uncomfortable on long trips and the lumbar support is weak.",
+      "Great navigation, but the screen freezes after the update.",
+      "Wind noise above 120 km/h is annoying.",
+      "Please add wireless Apple CarPlay.",
+      "Love the design and the comfortable seats.",
+      "The range in winter is disappointing and charging takes too long.",
+      "Excellent handling and precise steering.",
+      "The trunk is too small for a family.",
+    ];
+    writeFileSync(
+      second,
+      [
+        "id,date,country,feedback type,comment",
+        ...Array.from({ length: 40 }, (_, i) => {
+          const month = String((i % 12) + 1).padStart(2, "0");
+          const type = i % 3 === 0 ? "Praise" : i % 3 === 1 ? "Complaint" : "Suggestion";
+          return `S${i + 1},${2025 + (i % 2)}-${month}-${String((i % 27) + 1).padStart(2, "0")},${countries[i % countries.length]},${type},"${comments[i % comments.length]}"`;
+        }),
+      ].join("\n"),
+    );
+    await go("/dataflow");
+    await js("window.confirm = () => true; true");
+    check(await click('[data-testid="sidebar-mode-templates"]'), "analytics: no templates tab");
+    for (let i = 0; i < 30 && (await count('[data-testid="workflow-template"]')) === 0; i++)
+      await delay(100);
+    const usedTemplate = await js<boolean>(`(() => {
+      const cards = [...document.querySelectorAll('[data-testid="workflow-template"]')];
+      const i = cards.findIndex((c) => c.querySelector("h3")?.textContent === "Compare feedback sources");
+      const use = i < 0 ? null : document.querySelector('[data-testid="template-use-' + i + '"]');
+      use?.click();
+      return !!use;
+    })()`);
+    check(usedTemplate, "analytics: no 'Compare feedback sources' template");
+    await delay(600);
+    check(
+      (await count('[data-testid="block-analytics"]')) === 1,
+      "analytics: template has no block",
+    );
+    for (const [index, file] of [
+      [0, join(deps.samplesDir, "customer_feedback.csv")],
+      [1, second],
+    ] as const) {
+      await js(`document.querySelectorAll('[data-testid="block-raw"]')[${index}]?.click(); true`);
+      await delay(300);
+      deps.queuePick(file);
+      const chose = await js<boolean>(`(() => {
+        const b = [...document.querySelectorAll('[data-testid="inspector"] button')]
+          .find((e) => e.textContent.trim() === "Choose file…");
+        b?.click();
+        return !!b;
+      })()`);
+      check(chose, `analytics: Raw block ${index + 1} has no file button`);
+      const name = file.split(/[\\/]/).pop()!;
+      for (let i = 0; i < 30 && !(await text('[data-testid="inspector"]')).includes(name); i++)
+        await delay(100);
+    }
+    await shot("analytics-editor");
+    check(await click('[data-testid="analytics-open"]'), "analytics: no analytics button");
+    for (
+      let i = 0;
+      i < 100 &&
+      ((await count('[data-testid="analytics-view"]')) === 0 ||
+        (await count('[data-testid="analytics-loading"]')) > 0);
+      i++
+    )
+      await delay(100);
+    check((await count('[data-testid="analytics-view"]')) === 1, "analytics: view didn't open");
+    const inputsText = await text('[data-testid="analytics-inputs"]');
+    check(
+      /Feedback A\s*35 records/.test(inputsText) && /Feedback B\s*40 records/.test(inputsText),
+      `analytics: inputs should read 35 and 40 records, got "${inputsText}"`,
+    );
+    check(
+      (await js<boolean>(
+        `(() => { const r = document.querySelector('[data-testid="analytics-view"]').getBoundingClientRect(); return r.left === 0 && r.top === 0 && r.width === window.innerWidth && r.height === window.innerHeight; })()`,
+      )) === true,
+      "analytics: the view should fill the whole window",
+    );
+    check(
+      (await count('[data-testid="kpi-records"]')) === 1 &&
+        (await text('[data-testid="kpi-records"]')).includes("75"),
+      "analytics: overview should count 75 records",
+    );
+    await delay(400);
+    await shot("analytics-overview");
+    for (const tab of ["countries", "timeline", "voice", "topics", "compare", "flow", "quality"]) {
+      check(await click(`[data-testid="analytics-tab-${tab}"]`), `analytics: no ${tab} tab`);
+      await delay(400);
+      check(
+        (await count(`[data-testid="analytics-${tab}"]`)) === 1,
+        `analytics: ${tab} tab didn't render`,
+      );
+      if (tab === "voice") {
+        await type('[data-testid="voice-phrase-input"]', ["seat*"]);
+        check(await click('[data-testid="voice-phrase-add"]'), "analytics: no Track button");
+        await delay(500);
+        check(
+          (await count('[data-testid="chart-voice-quotes"] li')) > 0,
+          "analytics: a tracked phrase should show verbatim quotes",
+        );
+      }
+      if (tab === "flow") {
+        check(
+          (await count('[data-testid="chart-flow"] svg')) >= 1,
+          "analytics: the flow chart should render",
+        );
+      }
+      await shot(`analytics-${tab}`);
+    }
+    await js(`document.documentElement.dataset.theme = "dark"; true`);
+    await click('[data-testid="analytics-tab-overview"]');
+    await delay(400);
+    await shot("analytics-overview-dark");
+    await click('[data-testid="analytics-tab-compare"]');
+    await delay(400);
+    await shot("analytics-compare-dark");
+    await js(`document.documentElement.dataset.theme = "light"; true`);
+    check(await click('[data-testid="analytics-close"]'), "analytics: no close button");
+    await delay(300);
+    check((await count('[data-testid="analytics-view"]')) === 0, "analytics: didn't close");
+  } catch (err) {
+    check(false, `analytics: crashed: ${String(err)}`);
+  }
+
   // Settings -> AI API setups
   await go("/settings");
   check(await click('[data-testid="settings-section-ai"]'), "settings: no AI section");
@@ -1188,6 +1318,14 @@ export async function runSmoke(
   await delay(600);
 
   // Reset: asks in place, removes every requirement, and the car is empty afterwards.
+  // Reset stays disabled until the page has loaded its requirements: wait for that, not a fixed delay.
+  for (
+    let i = 0;
+    i < 50 &&
+    (await js<boolean>(`!!document.querySelector('[data-testid="car-reset"]')?.disabled`));
+    i++
+  )
+    await delay(100);
   check(await click('[data-testid="car-reset"]'), "car: no reset button");
   await delay(200);
   check((await count('[data-testid="car-reset-confirm"]')) === 1, "car: reset didn't ask first");

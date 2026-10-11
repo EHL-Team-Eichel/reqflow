@@ -1,4 +1,4 @@
-import type { PipelineData, Source, SourceKind } from "@reqflow/core";
+import type { PipelineData, Source, SourceKind, SourceRecord } from "@reqflow/core";
 import { countryColumnScore, countryRecognitionRate, normalizeCountry } from "./countries";
 import { looksLikeSentimentColumn, scoreSentiment, sentimentFromLabel } from "./sentiment";
 import { parseTime, timeColumnScore, timeRecognitionRate } from "./time";
@@ -301,8 +301,36 @@ export function buildDataset(
   );
   const allRecords = ready.flatMap((i) => i.data.records);
   const stats = profileColumns(allRecords);
-  const detected = detectColumns(stats, allRecords.length, options);
-  const notes = [...detected.notes];
+  // Sources name their columns differently ("market" here, "Country" there), so every column
+  // role is detected per source file; the same source on two inputs is detected once.
+  const recordsBySource = new Map<string, SourceRecord[]>();
+  for (const record of allRecords) {
+    const list = recordsBySource.get(record.sourceId) ?? [];
+    list.push(record);
+    recordsBySource.set(record.sourceId, list);
+  }
+  const perSource = new Map<string, Detected>();
+  for (const [sourceId, records] of recordsBySource) {
+    perSource.set(sourceId, detectColumns(profileColumns(records), records.length, options));
+  }
+  const detections = [...perSource.values()];
+  const namesOf = (pick: (d: Detected) => string | null) => [
+    ...new Set(detections.map(pick).filter((n): n is string => !!n)),
+  ];
+  const countryNames = namesOf((d) => d.country);
+  const timeNames = namesOf((d) => d.time);
+  const idNames = namesOf((d) => d.id);
+  const sentimentNames = namesOf((d) => d.sentiment);
+  const quoted = (names: string[]) => names.map((n) => `"${n}"`).join(" / ");
+  const sentimentFirst = new Set(sentimentNames);
+  const categoryColumns = [
+    ...new Set([
+      ...sentimentNames,
+      ...detections.flatMap((d) => d.categories.filter((c) => !sentimentFirst.has(c))),
+    ]),
+  ];
+  const yearColumnNames = [...new Set(detections.flatMap((d) => d.yearColumns.map((c) => c.name)))];
+  const notes = [...new Set(detections.flatMap((d) => d.notes))];
   const now = options.now ?? Date.now();
   const thisYear = new Date(now).getUTCFullYear();
 
@@ -315,7 +343,7 @@ export function buildDataset(
       if (kind && TEXT_KINDS.has(kind)) textCount++;
     }
   }
-  const hasTextColumn = [...detected.roles.values()].includes("text");
+  const hasTextColumn = detections.some((d) => [...d.roles.values()].includes("text"));
   const textual =
     allRecords.length > 0 &&
     (textCount >= 0.5 * allRecords.length ||
@@ -328,6 +356,7 @@ export function buildDataset(
     const sources = new Map<string, Source>(input.data.sources.map((s) => [s.id, s]));
     for (const record of input.data.records) {
       const source = sources.get(record.sourceId);
+      const detected = perSource.get(record.sourceId)!;
       const fields = record.fields ?? {};
 
       let country: string | null = null;
@@ -414,17 +443,26 @@ export function buildDataset(
     }
   }
 
+  const roleOf = (name: string): ColumnRole => {
+    const roles = detections.map((d) => d.roles.get(name)).filter((r): r is ColumnRole => !!r);
+    return roles.find((r) => r !== "other") ?? roles[0] ?? "other";
+  };
   const columns: ColumnProfile[] = [...stats.values()].map((s) => ({
     name: s.name,
-    role: detected.roles.get(s.name) ?? "other",
+    role: roleOf(s.name),
     filled: s.filled,
     distinct: s.distinct.size,
   }));
 
   if (rows.length) {
     const countries = new Set(rows.map((r) => r.country).filter(Boolean));
-    if (detected.country) {
-      notes.push(`Country from the column "${detected.country}" (${countries.size} countries).`);
+    if (countryNames.length) {
+      const without = rows.filter((r) => r.country === null).length;
+      notes.push(
+        `Country from the column${countryNames.length > 1 ? "s" : ""} ${quoted(countryNames)} (${countries.size} countries${without ? `; ${without} records without one` : ""}).`,
+      );
+      if (marketFallback)
+        notes.push(`${marketFallback} records use the market they were tagged with.`);
     } else if (marketFallback) {
       notes.push(
         `No country column; ${marketFallback} records use the market they were tagged with.`,
@@ -432,28 +470,29 @@ export function buildDataset(
     } else {
       notes.push("No country column found, so country charts stay empty.");
     }
-    if (detected.time) {
+    if (timeNames.length) {
       const dated = rows.filter((r) => r.time !== null).length;
       notes.push(
-        `Time from the column "${detected.time}" (${dated} of ${rows.length} records dated).`,
+        `Time from the column${timeNames.length > 1 ? "s" : ""} ${quoted(timeNames)} (${dated} of ${rows.length} records dated).`,
       );
     } else {
       notes.push(
         "No time column yet. The timeline fills in as soon as a dataset has a date, month, quarter or year column.",
       );
     }
-    if (detected.id) {
+    if (idNames.length) {
       const people = new Set(rows.map((r) => r.person).filter(Boolean)).size;
+      const anonymous = rows.filter((r) => r.person === null).length;
       notes.push(
-        `People counted by the column "${detected.id}": ${people} people, ${rows.length} records.`,
+        `People counted by the column${idNames.length > 1 ? "s" : ""} ${quoted(idNames)}: ${people} people${anonymous ? ` plus ${anonymous} records without an ID, one person each` : ""}, ${rows.length} records.`,
       );
     } else {
       notes.push("No ID column, so every record counts as one person.");
     }
     if (textual) {
       notes.push(
-        detected.sentiment
-          ? `Sentiment from the column "${detected.sentiment}" where it names one, else from a word list.`
+        sentimentNames.length
+          ? `Sentiment from the column${sentimentNames.length > 1 ? "s" : ""} ${quoted(sentimentNames)} where it names one, else from a word list.`
           : "Sentiment from an English and German word list (rules, no AI).",
       );
     } else {
@@ -461,9 +500,9 @@ export function buildDataset(
         "These records are tables of figures, so there is no sentiment or topic to count.",
       );
     }
-    if (detected.yearColumns.length) {
+    if (yearColumnNames.length) {
       notes.push(
-        `Year columns read as a time series: ${detected.yearColumns.map((c) => c.name).join(", ")}${
+        `Year columns read as a time series: ${yearColumnNames.join(", ")}${
           yearSeries.some((p) => p.planned) ? " (years after this one are plans)" : ""
         }.`,
       );
@@ -479,11 +518,11 @@ export function buildDataset(
     })),
     rows,
     columns,
-    countryColumn: detected.country,
-    timeColumn: detected.time,
-    idColumn: detected.id,
-    sentimentColumn: detected.sentiment,
-    categoryColumns: detected.categories,
+    countryColumn: countryNames.join(" / ") || null,
+    timeColumn: timeNames.join(" / ") || null,
+    idColumn: idNames.join(" / ") || null,
+    sentimentColumn: sentimentNames.join(" / ") || null,
+    categoryColumns,
     textual,
     yearSeries,
     notes,

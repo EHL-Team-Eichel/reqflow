@@ -86,7 +86,7 @@ export const BlockNode = memo(function BlockNode({ data, selected }: NodeProps<B
           {block.kind === "analytics" && (
             <button
               type="button"
-              data-testid="block-analytics"
+              data-testid="analytics-open"
               className="nodrag shrink-0 rounded-md p-1 text-muted hover:bg-panel-2 hover:text-ink"
               aria-label={`Open the analytics of ${block.label} full screen`}
               title="Open analytics (full screen)"

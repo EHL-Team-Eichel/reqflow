@@ -105,6 +105,30 @@ describe("buildDataset", () => {
     expect(ds.rows.filter((r) => r.input === 2)).toHaveLength(2);
   });
 
+  it("detects columns per source, so differently named country columns both count", () => {
+    const renamed = feedbackData(SAMPLE_ROWS.slice(0, 4), { source: "b" });
+    renamed.records = renamed.records.map((r) => {
+      const { Country, ...fields } = r.fields!;
+      return { ...r, fields: { ...fields, Land: Country } };
+    });
+    const ds = buildDataset(
+      [
+        readyInput(0, "A", feedbackData(SAMPLE_ROWS.slice(4), { source: "a" })),
+        readyInput(1, "B", renamed),
+      ],
+      { now: NOW },
+    );
+    expect(ds.countryColumn).toBe("Country / Land");
+    expect(ds.rows.filter((r) => r.input === 1).map((r) => r.country)).toEqual([
+      "DE",
+      "DE",
+      "GB",
+      "GB",
+    ]);
+    expect(ds.notes.join(" ")).toMatch(/columns "Country" \/ "Land"/);
+    expect(ds.columns.find((c) => c.name === "Land")!.role).toBe("country");
+  });
+
   it("returns an empty dataset without notes when nothing arrived", () => {
     const empty = buildDataset([], { now: NOW });
     expect(empty.rows).toEqual([]);
