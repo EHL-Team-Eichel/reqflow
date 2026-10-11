@@ -6,6 +6,7 @@ import { label } from "./classify";
 import { partTag } from "./partTags";
 import { markerPresentation } from "./markerMenu";
 import { trackIdleOrbit } from "./idleOrbit";
+import { acceleratePicking } from "./model/acceleratedPicking";
 import { buildCar, type CarPiece } from "./model/buildCar";
 import { buildVehicleModel } from "./models/builder";
 import { getVehicleModelById, getSourceMeshInfoById, loadSourceMeshById } from "./models/registry";
@@ -146,6 +147,9 @@ export function CarViewer(props: Props) {
         ? buildVehicleModel(activeModel, props.powertrain)
         : buildCar(props.powertrain);
     scene.add(car.root);
+    const releasePicking = car.pieces
+      .filter((piece) => piece.mesh.geometry.userData.sourceMesh)
+      .map((piece) => acceleratePicking(piece.mesh));
     setAnchors(car.anchors);
     const exteriorTargets = new Map(
       exteriorBadgeTargets(car.pieces, car.exteriorAnchors ?? car.anchors),
@@ -508,6 +512,7 @@ export function CarViewer(props: Props) {
       el.removeEventListener("pointerup", onUp);
       controls.removeEventListener("start", onOrbitStart);
       controls.dispose();
+      for (const release of releasePicking) release();
       const geometries = new Set<THREE.BufferGeometry>();
       scene.traverse((o) => {
         if (o instanceof THREE.Mesh || o instanceof THREE.LineSegments) geometries.add(o.geometry);
