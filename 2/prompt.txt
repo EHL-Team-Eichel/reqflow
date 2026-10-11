@@ -1,0 +1,1 @@
+push and commit that there is an animation when going from exterior to interior , so that it is like before that the lines are just greyed out etc. and merge in main (maybe this repo still has the old prefered version , if not recover it) and merge main and see it where came from etc. make sure that it wont be changed
