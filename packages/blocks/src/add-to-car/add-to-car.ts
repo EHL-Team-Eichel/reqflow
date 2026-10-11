@@ -3,6 +3,7 @@ import {
   emptyPipelineData,
   parseBlockParams,
   PipelineData,
+  vehicleCodeFor,
   type Actor,
   type AgentRole,
   type ProductScope,
@@ -19,21 +20,20 @@ interface AddToCarParams {
   market: string;
 }
 
-/** Short codes for requirement ids when the block overrides the vehicle line. */
-const VEHICLE_CODES: Record<string, string> = {
-  "1 Series": "F70",
-  "5 Series": "G60",
-  "7 Series": "G70",
-};
-
 export function scopeFor(params: AddToCarParams, base: ProductScope): ProductScope {
   const scope = { ...base };
-  if (params.vehicle !== "global" && params.vehicle !== base.vehicleLine) {
+  if (params.market !== "global") scope.market = params.market;
+  if (params.vehicle !== "global") {
     scope.vehicleLine = params.vehicle;
-    scope.vehicleCode = VEHICLE_CODES[params.vehicle] ?? base.vehicleCode;
+    const code = vehicleCodeFor(params.vehicle, scope.market);
+    if (!code) {
+      throw new Error(
+        `Add to Car: no requirement-id code for vehicle line "${params.vehicle}". Use "From Settings" and set the vehicle code there.`,
+      );
+    }
+    scope.vehicleCode = code;
     delete scope.derivative;
   }
-  if (params.market !== "global") scope.market = params.market;
   return scope;
 }
 
@@ -112,6 +112,14 @@ export const addToCarBlock = defineBlock({
         rationale: f.outOfScopeReason ?? "Out of scope.",
       });
     }
+    // Store the evidence with the requirements, so the Car page can show quotes and sources.
+    await ctx.car.add(result.requirements, {
+      sources: result.sources,
+      records: result.records,
+      findings: [...result.findings, ...result.excluded, ...result.upstreamUsed],
+      themes: result.themes,
+    });
+    // Only requirements the car actually accepted get their proposal on the audit trail.
     for (const r of result.requirements) {
       await ctx.audit.record({
         ...base,
@@ -132,17 +140,10 @@ export const addToCarBlock = defineBlock({
           { path: "score", before: null, after: r.score },
           { path: "confidence", before: null, after: r.confidence },
         ],
-        rationale: `Critic's score ${r.score?.total ?? "–"}/100; confidence ${Math.round((r.confidence?.value ?? 0) * 100)} % (${r.confidence?.level ?? "–"}).`,
+        rationale: `Score ${r.score?.total ?? "–"}/100 (${r.score?.suggestedPriority ?? "–"}, ${r.score?.method ?? "–"}); confidence ${Math.round((r.confidence?.value ?? 0) * 100)} % (${r.confidence?.level ?? "–"}).`,
       });
     }
 
-    // Store the evidence with the requirements, so the Car page can show quotes and sources.
-    await ctx.car.add(result.requirements, {
-      sources: result.sources,
-      records: result.records,
-      findings: [...result.findings, ...result.excluded, ...result.upstreamUsed],
-      themes: result.themes,
-    });
     await ctx.car.saveReasoning?.(result.trace);
 
     const t = result.trace.totals;

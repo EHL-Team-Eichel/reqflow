@@ -97,7 +97,6 @@ export async function structurePdf(
         extractionMethod: page.method,
         ocrConfidence: page.confidence ?? null,
       },
-      market: options.scope.market,
       ...(origLang ? { language: origLang } : {}),
     };
     originalRecords.push(origRecord);
@@ -208,7 +207,6 @@ ${page.text}`;
           interpretationStatus: "ai_derived_needs_review",
           verified: false,
         },
-        market: options.scope.market,
         ...(itemLang ? { language: itemLang } : {}),
       };
       structuredRecords.push(structuredRecord);
@@ -220,6 +218,13 @@ ${page.text}`;
   }
 
   const allRecords = [...originalRecords, ...structuredRecords];
+  const knownMarkets = allRecords.map((r) => r.market).filter((m): m is string => Boolean(m));
+  const uniqueMarkets = new Set(knownMarkets);
+  const singleMarket =
+    uniqueMarkets.size === 1 && knownMarkets.length === allRecords.length
+      ? [...uniqueMarkets][0]
+      : undefined;
+
   const source: Source = {
     id: sourceId,
     kind: DATASET_KIND[options.dataset],
@@ -229,7 +234,7 @@ ${page.text}`;
     publisher: "BMW",
     retrievedAt: options.retrievedAt,
     reliability: "high",
-    market: options.scope.market,
+    ...(singleMarket ? { market: singleMarket } : {}),
     vehicleLine: options.scope.vehicleLine,
   };
 

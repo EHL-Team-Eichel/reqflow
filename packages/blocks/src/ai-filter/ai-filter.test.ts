@@ -417,12 +417,31 @@ describe("evidence closure and human restore hashes", () => {
       await aiFilterBlock.run({ in: freeze(data) }, defaults, test.ctx),
     );
     expect(report.primaryLayer).toBe("requirements");
-    expect(report.decisions).toHaveLength(1);
+    // The requirement, plus the record nothing refers to: classified on its own, not dropped.
+    expect(report.decisions.map((d) => [d.layer, d.itemId])).toEqual([
+      ["requirements", data.requirements[0]!.id],
+      ["records", "rec_2"],
+    ]);
     expect(report.decisions[0]!.quotes).toEqual([]);
     expect(output.findings).toEqual(data.findings);
     expect(output.themes).toEqual(data.themes);
-    expect(output.records).toEqual(data.records.slice(0, 2));
+    expect(output.records).toEqual(data.records);
     expect(output.requirements[0]).toBe(data.requirements[0]);
+  });
+  it("classifies feedback without findings next to findings from other inputs", async () => {
+    const data = linked();
+    data.themes = [];
+    for (const f of data.findings) f.themeId = undefined;
+    data.findings = data.findings.slice(0, 1); // rec_1 and rec_2 have no finding
+    const test = context(fake());
+    const { output, report } = ok(await aiFilterBlock.run({ in: data }, defaults, test.ctx));
+    expect(report.primaryLayer).toBe("findings");
+    expect(report.decisions.map((d) => [d.layer, d.itemId])).toEqual([
+      ["findings", "fnd_0"],
+      ["records", "rec_1"],
+      ["records", "rec_2"],
+    ]);
+    expect(output.records).toEqual(data.records);
   });
   it("classifies themes before findings and preserves referenced excluded primary as context, cycle safe", async () => {
     const data = linked();

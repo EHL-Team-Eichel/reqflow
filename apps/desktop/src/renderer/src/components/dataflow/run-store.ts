@@ -5,6 +5,8 @@ import {
   type ReqflowApi,
   type WorkflowGraph,
   type WorkflowRun,
+  type Workflow,
+  type WorkflowSave,
 } from "@reqflow/core";
 import { createStore } from "zustand/vanilla";
 
@@ -14,6 +16,8 @@ interface RunState {
   run: WorkflowRun | null;
   busy: boolean;
   error: string | null;
+  /** Informational message, e.g. a recorded approval on a gate that needs more reviewers. */
+  notice: string | null;
   start(graph: WorkflowGraph, scope: ProductScope, name?: string): Promise<void>;
   cancel(): Promise<void>;
   resume(runId: string, blockId: string, confirmed: boolean): Promise<void>;
@@ -39,20 +43,25 @@ const staleActiveUpdate = (current: WorkflowRun | null, next: WorkflowRun) =>
   current?.id === next.id && !active(current) && active(next);
 
 /** Kept outside the page so changing tabs does not lose the current run or saved workflow id. */
-export function createRunStore(api: RunApi) {
+export function createRunStore(
+  api: RunApi,
+  saveForRun?: (input: WorkflowSave) => Promise<{ workflow: Workflow; release(): void }>,
+) {
   return createStore<RunState>()((set, get) => ({
     workflowId: null,
     run: null,
     busy: false,
     error: null,
+    notice: null,
     reset() {
       if (get().busy || active(get().run)) return false;
-      set({ workflowId: null, run: null, error: null });
+      set({ workflowId: null, run: null, error: null, notice: null });
       return true;
     },
     async start(graph, scope, name = "Data Flow") {
       if (get().busy || active(get().run)) return;
-      set({ busy: true, error: null });
+      set({ busy: true, error: null, notice: null });
+      let release: (() => void) | undefined;
       try {
         if (!graph.blocks.length)
           throw new Error("Add and connect blocks before running the flow.");
@@ -60,12 +69,15 @@ export function createRunStore(api: RunApi) {
         if (issues.length) throw new Error(issues.map((issue) => issue.message).join("; "));
         // Snapshot before awaiting IPC: edits made while saving belong to the next run.
         const snapshot = structuredClone(graph);
-        const saved = await api.workflows.save({
+        const input = {
           ...snapshot,
           scope: structuredClone(scope),
           name,
           ...(get().workflowId ? { id: get().workflowId! } : {}),
-        });
+        };
+        const reservation = saveForRun ? await saveForRun(input) : null;
+        release = reservation?.release;
+        const saved = reservation?.workflow ?? (await api.workflows.save(input));
         set({ workflowId: saved.id, run: null });
         const updates = new Map<string, WorkflowRun>();
         const unsubscribe = api.runs.onUpdate((run) => {
@@ -81,6 +93,7 @@ export function createRunStore(api: RunApi) {
       } catch (err) {
         set({ error: err instanceof Error ? err.message : String(err) });
       } finally {
+        release?.();
         set({ busy: false });
       }
     },
@@ -104,14 +117,7 @@ export function createRunStore(api: RunApi) {
         set({ error: "Review and confirm the current paused HIL step before continuing." });
         return;
       }
-      if (gate.block.params.approvals !== 1) {
-        set({
-          error:
-            "This gate requires multiple reviewers. Multiple review confirmations are not supported yet.",
-        });
-        return;
-      }
-      set({ busy: true, error: null });
+      set({ busy: true, error: null, notice: null });
       const updates = new Map<string, WorkflowRun>();
       const unsubscribe = api.runs.onUpdate((next) => {
         if (next.id !== runId || staleActiveUpdate(get().run, next)) return;
@@ -123,6 +129,14 @@ export function createRunStore(api: RunApi) {
         const resumed = await api.runs.resume(runId);
         const latest = updates.get(runId) ?? resumed;
         if (get().run?.id === runId && !staleActiveUpdate(get().run, latest)) set({ run: latest });
+        // The backend records one approval per reviewer; the gate stays paused until enough
+        // different reviewers have approved it.
+        if (pausedHil(latest)?.block.id === blockId) {
+          const needed = Number(gate.block.params.approvals);
+          set({
+            notice: `Your approval of "${gate.block.label}" is recorded. It needs ${needed} approvals from different reviewers: the next reviewer enters their name in Settings and confirms again.`,
+          });
+        }
       } catch (err) {
         set({ error: err instanceof Error ? err.message : String(err) });
       } finally {

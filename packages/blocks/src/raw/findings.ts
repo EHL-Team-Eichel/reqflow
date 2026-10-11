@@ -5,9 +5,10 @@ import {
   type ProductScope,
   type SourceRecord,
 } from "@reqflow/core";
-import { findColumn, parseNumber } from "./columns";
+import { findColumn, parseNumber, type ColumnMapping } from "./columns";
 import type { Ingested, RawDataset } from "./records";
-import { marketColumn, shortHash } from "./records";
+import { marketColumn, parseMarketCode, shortHash } from "./records";
+import { customerStudyFindings } from "./study";
 import { cellText, listRows, type Table } from "./table";
 
 /** A take rate at or above this means most buyers choose it: a basic expectation (Kano "basic"). */
@@ -97,6 +98,7 @@ function finding(
  * - sales volumes: markets or derivatives whose volume rose or fell clearly between the first and
  *   last period (one row per period, or one column per period like "volume_2024"). Periods after
  *   the year the data was read are plan figures and worded as such.
+ * - customer study: comparison between target vehicle and comparators in the same market.
  * Every finding cites the rows it rests on.
  */
 export function usageFindings(
@@ -104,26 +106,34 @@ export function usageFindings(
   table: Table,
   ingested: Ingested,
   scope: ProductScope,
+  mapping?: ColumnMapping,
+  sheet?: string,
 ): { findings: Finding[]; notes: string[] } {
-  if (dataset === "equipment_data") return takeRateFindings(table, ingested, scope);
-  if (dataset === "sales_volume") return volumeFindings(table, ingested, scope);
+  if (dataset === "equipment_data") return takeRateFindings(table, ingested, scope, mapping);
+  if (dataset === "sales_volume") return volumeFindings(table, ingested, scope, mapping);
+  if (dataset === "customer_study") return customerStudyFindings(table, ingested, scope, sheet);
   return { findings: [], notes: [] };
 }
 
-function takeRateFindings(table: Table, ingested: Ingested, scope: ProductScope) {
+function takeRateFindings(
+  table: Table,
+  ingested: Ingested,
+  scope: ProductScope,
+  mapping?: ColumnMapping,
+) {
   const notes: string[] = [];
-  const optionCol = findColumn(table.header, "option");
-  const rateCol = findColumn(table.header, "takeRate");
+  const optionCol = findColumn(table.header, "option", mapping);
+  const rateCol = findColumn(table.header, "takeRate", mapping);
   if (optionCol === -1 || rateCol === -1) {
     notes.push(
       `No ${optionCol === -1 ? "option" : "take-rate"} column found, so no take-rate findings were derived.`,
     );
     return { findings: [], notes };
   }
-  const marketCol = marketColumn(table);
-  const modelCol = findColumn(table.header, "model");
-  const derivativeCol = findColumn(table.header, "derivative");
-  const categoryCol = findColumn(table.header, "category");
+  const marketCol = marketColumn(table, mapping);
+  const modelCol = findColumn(table.header, "model", mapping);
+  const derivativeCol = findColumn(table.header, "derivative", mapping);
+  const categoryCol = findColumn(table.header, "category", mapping);
 
   const parsed = table.rows.map((row) => parseNumber(row.cells[rateCol]));
   const valid = parsed.filter((n): n is number => n !== null);
@@ -147,7 +157,9 @@ function takeRateFindings(table: Table, ingested: Ingested, scope: ProductScope)
     }
     const option = cellText(row.cells[optionCol] ?? null);
     if (!option) return;
-    const market = marketCol !== -1 ? cellText(row.cells[marketCol] ?? null) : "";
+    const market =
+      record.market ??
+      (marketCol !== -1 ? parseMarketCode(cellText(row.cells[marketCol] ?? null)) : undefined);
     const context = [
       market,
       modelCol !== -1 ? cellText(row.cells[modelCol] ?? null) : "",
@@ -160,7 +172,7 @@ function takeRateFindings(table: Table, ingested: Ingested, scope: ProductScope)
       categoryCol !== -1 ? cellText(row.cells[categoryCol] ?? null) : "",
       option,
     );
-    const markets = [market || scope.market];
+    const markets = market ? [market] : [];
     if (pct >= BASIC_EXPECTATION_MIN_PCT) {
       findings.push(
         finding(
@@ -194,21 +206,27 @@ function takeRateFindings(table: Table, ingested: Ingested, scope: ProductScope)
 const PERIOD_IN_NAME = /(?:19|20)\d{2}(?:\s*[-_/ ]\s*(?:Q[1-4]|H[12]))?/i;
 
 type Point = { period: string; units: number; record: SourceRecord };
-type Series = { label: string; market: string; points: Point[] };
+type Series = { label: string; market?: string; points: Point[] };
 
-function volumeFindings(table: Table, ingested: Ingested, scope: ProductScope) {
+function volumeFindings(
+  table: Table,
+  ingested: Ingested,
+  scope: ProductScope,
+  mapping?: ColumnMapping,
+) {
   const notes: string[] = [];
-  const marketCol = marketColumn(table);
+  const marketCol = marketColumn(table, mapping);
   const groupCols = (["market", "model", "derivative"] as const)
-    .map((role) => findColumn(table.header, role))
+    .map((role) => findColumn(table.header, role, mapping))
     .filter((c) => c !== -1);
   const labelOf = (row: Table["rows"][number]) =>
     groupCols
       .map((c) => cellText(row.cells[c] ?? null))
       .filter(Boolean)
       .join(" ") || "all sales";
-  const marketOf = (row: Table["rows"][number]) =>
-    (marketCol !== -1 ? cellText(row.cells[marketCol] ?? null) : "") || scope.market;
+  const marketOf = (row: Table["rows"][number], record?: SourceRecord) =>
+    record?.market ??
+    (marketCol !== -1 ? parseMarketCode(cellText(row.cells[marketCol] ?? null)) : undefined);
 
   // Wide: one column per period with numbers in it ("volume_2024", "volume_2025", …).
   const periodCols = table.header.flatMap((h, j) => {
@@ -233,11 +251,11 @@ function volumeFindings(table: Table, ingested: Ingested, scope: ProductScope) {
         else points.push({ period, units, record });
       }
       const label = labelOf(row);
-      series.set(label, { label, market: marketOf(row), points });
+      series.set(label, { label, market: marketOf(row, record), points });
     });
   } else {
-    const unitsCol = findColumn(table.header, "units");
-    const periodCol = findColumn(table.header, "period");
+    const unitsCol = findColumn(table.header, "units", mapping);
+    const periodCol = findColumn(table.header, "period", mapping);
     if (unitsCol === -1 || periodCol === -1) {
       notes.push(
         `No ${unitsCol === -1 ? "units" : "period"} column found, so no sales findings were derived.`,
@@ -245,15 +263,16 @@ function volumeFindings(table: Table, ingested: Ingested, scope: ProductScope) {
       return { findings: [], notes };
     }
     table.rows.forEach((row, i) => {
-      const units = parseNumber(row.cells[unitsCol]);
       const record = ingested.recordOfRow[i];
+      if (!record) return; // skipped earlier (already reported), e.g. another market
+      const units = parseNumber(row.cells[unitsCol]);
       const period = cellText(row.cells[periodCol] ?? null);
-      if (units === null || units < 0 || !period || !record) {
+      if (units === null || units < 0 || !period) {
         bad.push(row.line);
         return;
       }
       const label = labelOf(row);
-      const s = series.get(label) ?? { label, market: marketOf(row), points: [] };
+      const s = series.get(label) ?? { label, market: marketOf(row, record), points: [] };
       s.points.push({ period, units, record });
       series.set(label, s);
     });
@@ -301,7 +320,7 @@ function volumeFindings(table: Table, ingested: Ingested, scope: ProductScope) {
         `Sales of ${g.label} ${verb} ${fmt(Math.abs(change))}% from ${first.period} to ${last.period} (${fmt(first.units)} → ${fmt(last.units)} units${plan ? `; ${last.period} is a plan figure` : ""}).`,
         "variants_packages",
         records,
-        [g.market],
+        g.market ? [g.market] : [],
       ),
     );
   }

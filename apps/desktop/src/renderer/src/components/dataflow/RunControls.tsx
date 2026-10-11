@@ -1,13 +1,13 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useStore } from "zustand";
 import { Link } from "react-router";
 import { Button } from "../ui/Button";
-import { useSettings } from "../../lib/settings";
 import { dataflowStore, useDataflow } from "./store";
 import { pausedHil } from "./run-store";
-import { runStore } from "./run-session";
+import { runStore, workflowStore } from "./run-session";
 import { startControl } from "./start-control";
 import { ResearchResults, ResearchRunDetails } from "./ResearchResults";
+import { workflowProblems } from "./problems";
 
 const STATUS_LABELS = {
   queued: "Queued",
@@ -21,13 +21,16 @@ const STATUS_LABELS = {
 export function RunControls() {
   const name = useDataflow((s) => s.name);
   const root = useDataflow((s) => s.root);
-  const scope = useSettings((s) => s.settings.defaultScope);
+  const scope = useStore(workflowStore, (s) => s.scope);
+  const loading = useStore(workflowStore, (s) => s.loading);
   const run = useStore(runStore, (s) => s.run);
   const busy = useStore(runStore, (s) => s.busy);
   const error = useStore(runStore, (s) => s.error);
+  const notice = useStore(runStore, (s) => s.notice);
   const active = run && ["queued", "running", "waiting_for_review"].includes(run.status);
   const gate = pausedHil(run);
   const start = startControl(run?.status ?? null, busy, root.blocks.length);
+  const problems = useMemo(() => workflowProblems(root), [root]);
   useEffect(() => runStore.getState().subscribe(), []);
 
   return (
@@ -40,8 +43,17 @@ export function RunControls() {
         <Button
           variant="primary"
           data-testid="flow-run"
-          disabled={start.disabled}
-          title={start.title}
+          disabled={
+            start.disabled ||
+            loading ||
+            !name.trim() ||
+            problems.some((problem) => problem.severity === "error")
+          }
+          title={
+            problems.length && !active
+              ? `Fix workflow problems first: ${problems[0]!.message}`
+              : start.title
+          }
           onClick={() => void runStore.getState().start(root, scope, name)}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -71,9 +83,20 @@ export function RunControls() {
           </Button>
         )}
         <div className="min-w-0 flex-1 text-sm">
+          {!!problems.length && !active && (
+            <p className="text-xs text-warn">
+              {problems.length} configuration problem{problems.length === 1 ? "" : "s"}. Open
+              Problems before starting.
+            </p>
+          )}
           {error && (
             <p role="alert" className="text-danger">
               {error}
+            </p>
+          )}
+          {notice && (
+            <p role="status" data-testid="flow-run-notice" className="text-xs text-ink">
+              {notice}
             </p>
           )}
           {run ? (

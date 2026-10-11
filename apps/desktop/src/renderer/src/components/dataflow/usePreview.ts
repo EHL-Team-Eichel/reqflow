@@ -10,7 +10,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useStore } from "zustand";
 import { api, ReqflowError } from "@/lib/api";
 import { useSettings } from "@/lib/settings";
-import { runStore } from "./run-session";
+import { runStore, workflowStore } from "./run-session";
 import { previewSource } from "./source-preview";
 
 export type PreviewState =
@@ -34,8 +34,9 @@ const logsOf = (details: unknown): string[] =>
  * change (a stale preview would show the wrong file), and late answers from older requests are ignored.
  */
 export function useBlockPreview(block: WorkflowBlock | null) {
-  const scope = useSettings((s) => s.settings.defaultScope);
+  const draftScope = useStore(workflowStore, (s) => s.scope);
   const run = useStore(runStore, (s) => s.run);
+  const scope = run?.scope ?? draftScope;
   const savedStatus = run?.blockRuns.find((entry) => entry.blockId === block?.id)?.status;
   const [state, setState] = useState<PreviewState>({ status: "idle" });
   const request = useRef(0);

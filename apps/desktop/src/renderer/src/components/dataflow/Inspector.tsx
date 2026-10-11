@@ -24,6 +24,7 @@ import { ResearchOpenCodeConfiguration } from "./ResearchOpenCodeConfiguration";
 import { canPreview } from "./usePreview";
 import { dataflowStore, selectInspectedBlock, useDataflow } from "./store";
 import { SPLITTER_MODE_HELP, splitterBranches } from "./report/splitter-view";
+import { RunOutput } from "./RunOutput";
 
 /** Side panel for the selected block: name, ports, inner workplace, parameters, delete. */
 export function Inspector() {
@@ -210,6 +211,7 @@ function BlockInspector({ block, kind }: { block: WorkflowBlock; kind: PaletteBl
           )}
         </section>
         {canPreview(block) && <RawPreview block={block} />}
+        <RunOutput block={block} />
       </div>
     </Shell>
   );

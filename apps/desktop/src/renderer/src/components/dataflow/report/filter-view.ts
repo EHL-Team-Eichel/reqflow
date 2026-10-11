@@ -1,6 +1,8 @@
 import {
   FilterReview,
   FilterReviewState,
+  decisionLayer,
+  filterOriginals,
   type FilterReport,
   type WorkflowRun,
 } from "@reqflow/core";
@@ -22,13 +24,12 @@ export function safeFilterJson(value: unknown): string {
 }
 
 export function filterRows(report: FilterReport) {
-  const originals = new Map(
-    report.originalInput[report.primaryLayer].map((item) => [item.id, item]),
-  );
+  const originals = filterOriginals(report);
   const records = new Map(report.originalInput.records.map((item) => [item.id, item]));
   const sources = new Map(report.originalInput.sources.map((item) => [item.id, item]));
   return report.decisions.map((decision) => ({
     decision,
+    layer: decisionLayer(report, decision),
     original: originals.get(decision.itemId),
     search:
       `${safeFilterJson(decision)} ${safeFilterJson(originals.get(decision.itemId))} ${decision.quotes

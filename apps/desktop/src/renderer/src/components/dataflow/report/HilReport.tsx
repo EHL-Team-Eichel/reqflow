@@ -87,6 +87,7 @@ function ReportDialog({
   const [confirmed, setConfirmed] = useState(false);
   const busy = useStore(runStore, (s) => s.busy);
   const error = useStore(runStore, (s) => s.error);
+  const notice = useStore(runStore, (s) => s.notice);
   const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => cardRef.current?.focus(), []);
@@ -293,27 +294,27 @@ function ReportDialog({
             data-testid="hil-review-actions"
           >
             <div className="min-w-0 flex-1 text-sm">
-              {approvalsNeeded !== 1 ? (
-                <p role="alert" className="text-warn">
-                  This gate needs multiple reviewers. The current review UI supports one reviewer;
-                  this gate cannot be continued here.
+              {approvalsNeeded > 1 && (
+                <p className="mb-2 text-xs text-muted" data-testid="hil-multi-reviewer">
+                  This gate needs {approvalsNeeded} approvals from different reviewers. Each
+                  reviewer confirms once under their own name (set in Settings); the flow continues
+                  after the last approval.
                 </p>
-              ) : (
-                <label className="flex items-start gap-3 text-ink">
-                  <input
-                    type="checkbox"
-                    data-testid="hil-review-confirm"
-                    className="mt-1 accent-brand"
-                    checked={confirmed}
-                    disabled={!reviewReady || busy}
-                    onChange={(e) => setConfirmed(e.target.checked)}
-                  />
-                  <span>
-                    I have reviewed the saved data and authorize continuing this flow. This does not
-                    approve or reject any requirements.
-                  </span>
-                </label>
               )}
+              <label className="flex items-start gap-3 text-ink">
+                <input
+                  type="checkbox"
+                  data-testid="hil-review-confirm"
+                  className="mt-1 accent-brand"
+                  checked={confirmed}
+                  disabled={!reviewReady || busy}
+                  onChange={(e) => setConfirmed(e.target.checked)}
+                />
+                <span>
+                  I have reviewed the saved data and authorize continuing this flow. This does not
+                  approve or reject any requirements.
+                </span>
+              </label>
               {!reviewReady && (
                 <p className="mt-1 text-xs text-muted">
                   Open “Data at this point” and wait for the saved run data before continuing.
@@ -324,14 +325,24 @@ function ReportDialog({
                   {error}
                 </p>
               )}
+              {notice && (
+                <p role="status" className="mt-1 text-xs text-ink">
+                  {notice}
+                </p>
+              )}
             </div>
             <Button
               variant="primary"
               data-testid="hil-review-continue"
-              disabled={busy || !reviewReady || !confirmed || approvalsNeeded !== 1}
-              onClick={() => void runStore.getState().resume(run.id, block.id, confirmed)}
+              disabled={busy || !reviewReady || !confirmed}
+              onClick={() =>
+                void runStore
+                  .getState()
+                  .resume(run.id, block.id, confirmed)
+                  .then(() => setConfirmed(false))
+              }
             >
-              {busy ? "Continuing…" : "Continue flow"}
+              {busy ? "Continuing…" : approvalsNeeded > 1 ? "Record my approval" : "Continue flow"}
             </Button>
           </div>
         )}

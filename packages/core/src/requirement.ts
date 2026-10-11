@@ -99,3 +99,16 @@ export const Requirement = z.object({
   runId: z.string().startsWith("run_").optional(),
 });
 export type Requirement = z.infer<typeof Requirement>;
+
+/**
+ * AI output may only propose (see DecisionStatus). Why a block can't publish this requirement, or
+ * null when it can: new, "proposed", not claiming a human author, with a measurable target.
+ */
+export function aiProposalProblem(r: Requirement): string | null {
+  if (r.status !== "proposed")
+    return `${r.id}: a block may only propose requirements, not set them to "${r.status}"`;
+  if (r.version !== 1) return `${r.id}: a block may only add new requirements (version 1)`;
+  if (r.createdBy.type === "human") return `${r.id}: a block can't name a human as its author`;
+  if (r.targets.length === 0) return `${r.id}: needs at least one measurable target`;
+  return null;
+}

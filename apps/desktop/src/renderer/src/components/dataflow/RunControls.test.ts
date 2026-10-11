@@ -12,7 +12,8 @@ import {
 } from "@reqflow/core";
 import { fixtureScope, fixtureRun, fixtureWorkflow } from "@reqflow/core/fixtures";
 import { createRunStore } from "./run-store";
-import { runStore } from "./run-session";
+import { runStore, workflowStore } from "./run-session";
+import { createStore } from "zustand/vanilla";
 import { RunControls } from "./RunControls";
 import {
   boundedRawPreview,
@@ -42,7 +43,7 @@ vi.mock("./store", () => ({
     select({ name: "Feedback to requirements", root: fixtureRun.graph }),
   dataflowStore: { setState: vi.fn() },
 }));
-vi.mock("./run-session", () => ({ runStore: { current: null } }));
+vi.mock("./run-session", () => ({ runStore: { current: null }, workflowStore: { current: null } }));
 vi.stubGlobal("React", React);
 
 describe("shared run controls integration", () => {
@@ -98,6 +99,8 @@ describe("shared run controls integration", () => {
     store.setState({ run: paused, workflowId: paused.workflowId });
     // Every component reads this same instance, as Inspector/HilReport/templates do in the app.
     Object.assign(runStore, store, { getInitialState: store.getState });
+    const workflow = createStore(() => ({ scope: DEFAULT_SETTINGS.defaultScope, loading: false }));
+    Object.assign(workflowStore, workflow, { getInitialState: workflow.getState });
   });
 
   it("keeps Start/review controls, block counts/logs and both smoke selector families", () => {

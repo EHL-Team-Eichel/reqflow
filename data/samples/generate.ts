@@ -130,4 +130,52 @@ await writeXlsxFile([
   { sheet: "Verbatims", data: verbatims },
 ]).toFile(join(here, "customer_study.xlsx"));
 
-console.log("Wrote 4 synthetic sample files to", here);
+// 5. Customer study report workbook — report layout with section titles, group labels, and 0-100 / 0-1 figures.
+const reportCnEu = [
+  [null, "BMW Customer Study 2025 - China & Europe", null, null, null, null],
+  [null, "China", null, "EU", null, null],
+  ["Satisfaction Item", "BMW 5 Series G68", "BMW 7 Series G70", "BMW 1 Series F70", "BMW 5 Series G60", "BMW 7 Series G70"],
+  ["Comfort"],
+  ["Seating comfort front", 82, 85, 66, 80, 84],
+  ["Rear seat legroom", 88, 92, 54, 78, 86],
+  ["Ride smoothness", 79, 88, 77, 76, 80],
+  ["Infotainment & Digital"],
+  ["Ease of touchscreen menus", 75, 78, 82, 70, 74],
+  ["Voice assistant comprehension", 70, 72, 65, 68, 70],
+  ["Driver Assistance"],
+  ["Parking Assistant confidence", 80, 82, 62, 76, 80],
+  ["Highway lane centering", 78, 84, 75, 76, 80],
+  ["Driving Experience"],
+  ["Agility in city traffic", 72, 68, 88, 70, 66],
+  ["Steering precision", 84, 86, 85, 84, 88],
+  ["Interior Quality"],
+  ["Perceived material premiumness", 85, 90, 68, 82, 88],
+  ["Ambient lighting effect", 80, 85, 78, 80, 82],
+  ["Space & Practicality"],
+  ["Boot cargo usability", 76, 80, 60, 74, 80],
+  ["Cabin storage compartments", 70, 72, 68, 66, 70],
+  ["Usability & Controls"],
+  ["Climate control access", 72, 70, 58, 70, 72],
+  ["Physical button availability", 60, 62, 75, 62, 64],
+  ["Exterior Design"],
+  ["Front fascia appeal", 80, 82, 81, 79, 83],
+  ["Compact vehicle proportions", 70, 65, 86, 68, 64],
+];
+
+const reportUs = [
+  [null, "BMW Customer Study US 2025", null],
+  ["Evaluation Item", "BMW 5 Series G60", "BMW 7 Series G70"],
+  ["Comfort"],
+  ["Front seat comfort", 0.84, 0.88],
+  ["Ride quietness", 0.79, 0.85],
+  ["Infotainment"],
+  ["Audio clarity", 0.88, 0.94],
+  ["Display resolution", 0.90, 0.95],
+];
+
+await writeXlsxFile([
+  { sheet: "CN_EU_2025", data: reportCnEu },
+  { sheet: "US_2025", data: reportUs },
+]).toFile(join(here, "customer_study_report.xlsx"));
+
+console.log("Wrote 5 synthetic sample files to", here);

@@ -37,12 +37,14 @@ export const AuditAction = z.enum([
   "requirement.status_changed",
   "requirement.challenged",
   "requirement.challenge_answered",
+  "requirement.approval_recorded", // four-eyes rule: first of two approvals; stays in review
   "requirement.viewed", // access event
   "requirement.deleted", // removed by the PM (Car page → Reset); the id is never reused
   "workflow.saved",
   "run.started",
   "run.paused",
   "run.resumed",
+  "run.review_approved", // one reviewer confirmed a HIL gate (a gate may need several)
   "run.routing_reviewed",
   "run.completed",
   "run.failed",

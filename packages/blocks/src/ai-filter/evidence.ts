@@ -1,4 +1,4 @@
-import { DATA_KEYS, PipelineData, type DataKey } from "@reqflow/core";
+import { DATA_KEYS, PipelineData, filterGraph, type DataKey } from "@reqflow/core";
 
 export function evidenceIndex(input: PipelineData, warnings: Set<string>) {
   if (!PipelineData.safeParse(input).success) throw new Error("AI Filter input is invalid.");
@@ -20,33 +20,19 @@ export function evidenceIndex(input: PipelineData, warnings: Set<string>) {
         throw new Error("AI Filter available evidence has inconsistent source or excerpt.");
     }
   }
-  const primary: DataKey =
-    (["requirements", "themes", "findings", "records"] as const).find((key) => input[key].length) ??
-    "sources";
-  const themes = new Map(input.themes.map((item) => [item.id, item]));
-  const findings = new Map(input.findings.map((item) => [item.id, item]));
-  const requirements = new Map(input.requirements.map((item) => [item.id, item]));
-  const themesByFinding = new Map<string, Set<string>>();
-  for (const theme of input.themes) {
-    for (const id of theme.findingIds) {
-      const refs = themesByFinding.get(id) ?? new Set<string>();
-      refs.add(theme.id);
-      themesByFinding.set(id, refs);
-    }
-  }
+  const themes = new Map(input.themes.map((theme) => [theme.id, theme]));
   for (const finding of input.findings) {
     if (!finding.themeId) continue;
     const theme = themes.get(finding.themeId);
     if (theme && !theme.findingIds.includes(finding.id))
       throw new Error("AI Filter available theme and finding references are inconsistent.");
   }
-  function membership() {
-    return Object.fromEntries(DATA_KEYS.map((key) => [key, new Set<string>()])) as Record<
-      DataKey,
-      Set<string>
-    >;
-  }
-  function select(ids: ReturnType<typeof membership>): PipelineData {
+  const graph = filterGraph(input);
+  const units = graph.units();
+  const primary: DataKey = units[0]?.layer ?? "sources";
+  const missing = (key: DataKey) =>
+    warnings.add(`Unavailable referenced ${key}; original links preserved, no evidence invented.`);
+  function select(ids: ReturnType<typeof graph.membership>): PipelineData {
     return {
       ...input,
       ...Object.fromEntries(
@@ -54,56 +40,8 @@ export function evidenceIndex(input: PipelineData, warnings: Set<string>) {
       ),
     } as PipelineData;
   }
-  function closure(layer: DataKey, id: string) {
-    const ids = membership();
-    const pending: [DataKey, string][] = [];
-    function add(key: DataKey, ref: string) {
-      if (ids[key].has(ref)) return;
-      if (!maps[key].has(ref)) {
-        warnings.add(
-          `Unavailable referenced ${key}; original links preserved, no evidence invented.`,
-        );
-        return;
-      }
-      ids[key].add(ref);
-      pending.push([key, ref]);
-    }
-    add(layer, id);
-    for (let cursor = 0; cursor < pending.length; cursor++) {
-      const [key, ref] = pending[cursor]!;
-      switch (key) {
-        case "requirements": {
-          const item = requirements.get(ref)!;
-          for (const findingId of [...item.findingIds, ...item.conflictingFindingIds])
-            add("findings", findingId);
-          for (const sourceId of item.sourceIds) add("sources", sourceId);
-          break;
-        }
-        case "themes":
-          for (const findingId of themes.get(ref)!.findingIds) add("findings", findingId);
-          for (const finding of input.findings)
-            if (finding.themeId === ref) add("findings", finding.id);
-          break;
-        case "findings": {
-          const item = findings.get(ref)!;
-          if (item.themeId) add("themes", item.themeId);
-          for (const themeId of themesByFinding.get(ref) ?? []) add("themes", themeId);
-          for (const evidence of item.evidence) {
-            add("sources", evidence.sourceId);
-            if (evidence.recordId) add("records", evidence.recordId);
-          }
-          break;
-        }
-        case "records":
-          add("sources", records.get(ref)!.sourceId);
-          break;
-        case "sources":
-          break;
-      }
-    }
-    return ids;
-  }
+  const closure = (layer: DataKey, id: string) => graph.closure(layer, id, missing);
   // Validate/report missing links even for items later excluded, without resurrecting them.
   for (const key of DATA_KEYS) for (const item of input[key]) closure(key, item.id);
-  return { primary, membership, select, closure };
+  return { primary, units, membership: graph.membership, select, closure };
 }

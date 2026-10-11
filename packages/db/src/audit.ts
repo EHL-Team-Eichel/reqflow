@@ -73,15 +73,19 @@ export class SqliteAuditLogger implements AuditLogger {
       conditions.push("run_id = ?");
       params.push(filter.runId);
     }
-
-    let sql = `SELECT * FROM audit_events`;
-    if (conditions.length > 0) {
-      sql += ` WHERE ${conditions.join(" AND ")}`;
+    if (filter?.actorType) {
+      conditions.push("json_extract(actor, '$.type') = ?");
+      params.push(filter.actorType);
     }
-    sql += ` ORDER BY at ASC`;
 
+    const where = conditions.length > 0 ? ` WHERE ${conditions.join(" AND ")}` : "";
+    // Oldest first; equal timestamps keep insertion order (rowid), so the trail is deterministic.
+    let sql = `SELECT * FROM audit_events${where} ORDER BY at ASC, rowid ASC`;
     if (filter?.limit && filter.limit > 0) {
-      sql += ` LIMIT ?`;
+      // A limit keeps the NEWEST events, still returned oldest first.
+      sql = `SELECT * FROM (
+        SELECT rowid AS seq, * FROM audit_events${where} ORDER BY at DESC, rowid DESC LIMIT ?
+      ) ORDER BY at ASC, seq ASC`;
       params.push(filter.limit);
     }
 
@@ -99,7 +103,7 @@ export class SqliteAuditLogger implements AuditLogger {
       block_id: string | null;
     }>;
 
-    const events = rows.map((row) => {
+    return rows.map((row) => {
       const parsedActor = JSON.parse(row.actor);
       const parsedChanges = JSON.parse(row.changes);
       return AuditEvent.parse({
@@ -115,11 +119,5 @@ export class SqliteAuditLogger implements AuditLogger {
         blockId: row.block_id ?? undefined,
       });
     });
-
-    if (filter?.actorType) {
-      return events.filter((e) => e.actor.type === filter.actorType);
-    }
-
-    return events;
   }
 }

@@ -2,13 +2,19 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createBlockRegistry } from "@reqflow/blocks";
-import { DEFAULT_SETTINGS, defaultBlockParams, type LlmClient, type Settings } from "@reqflow/core";
+import {
+  DEFAULT_SETTINGS,
+  defaultBlockParams,
+  emptyPipelineData,
+  type LlmClient,
+  type Settings,
+} from "@reqflow/core";
 import { createFileStore } from "@reqflow/db";
 import type { BlockContext } from "@reqflow/engine";
 import { afterAll, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { ReqflowError } from "./dispatch";
-import { previewBlock } from "./preview";
+import { capPreview, previewBlock, PREVIEW_LIMIT } from "./preview";
 
 const dir = mkdtempSync(join(tmpdir(), "reqflow-preview-"));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
@@ -212,6 +218,76 @@ describe("blocks.preview", () => {
       expect((error as Error).message).toContain("HTTP 429");
       expect((error as Error).message).not.toContain("PRIVATE_PROVIDER_BODY");
       expect((error as Error).message).not.toContain("synthetic-key");
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it("capPreview leaves outputs under the limit untouched and omits truncated", () => {
+    const data = {
+      ...emptyPipelineData(),
+      records: Array.from({ length: 50 }, (_, i) => ({
+        id: `rec_${i}`,
+        sourceId: "src_1",
+        text: `Record ${i}`,
+      })),
+    };
+    const capped = capPreview({ out: data }, PREVIEW_LIMIT);
+    expect(capped.outputs.out!.records).toHaveLength(50);
+    expect(capped.truncated).toBeUndefined();
+    expect(capped.notes).toEqual([]);
+  });
+
+  it("capPreview truncates lists exceeding the limit and returns truncated metadata with notes", () => {
+    const records = Array.from({ length: 1500 }, (_, i) => ({
+      id: `rec_${i}`,
+      sourceId: "src_1",
+      text: `Record ${i}`,
+    }));
+    const data = { ...emptyPipelineData(), records };
+    const capped = capPreview({ out: data }, 1000);
+    expect(capped.outputs.out!.records).toHaveLength(1000);
+    expect(capped.truncated).toEqual({
+      out: {
+        records: { shown: 1000, total: 1500 },
+      },
+    });
+    expect(capped.notes).toEqual([
+      "Preview shows the first 1,000 of 1,500 records; a run uses all of them.",
+    ]);
+  });
+
+  it("previewBlock caps large block outputs and populates BlockPreview.truncated", async () => {
+    const rawImpl = registry.get("raw");
+    const fakeRecords = Array.from({ length: 1200 }, (_, i) => ({
+      id: `rec_${i}`,
+      sourceId: "src_test",
+      text: `Feedback ${i}`,
+    }));
+    const spy = vi.spyOn(rawImpl, "run").mockResolvedValue({
+      status: "ok",
+      outputs: {
+        out: {
+          ...emptyPipelineData(),
+          records: fakeRecords,
+        },
+      },
+    });
+    try {
+      const preview = await previewBlock(registry, files, {
+        kind: "raw",
+        params: defaultBlockParams("raw"),
+        scope,
+      });
+      expect(preview.outputs.out!.records).toHaveLength(1000);
+      expect(preview.truncated).toEqual({
+        out: {
+          records: { shown: 1000, total: 1200 },
+        },
+      });
+      expect(preview.logs).toContain(
+        "Preview shows the first 1,000 of 1,200 records; a run uses all of them.",
+      );
     } finally {
       spy.mockRestore();
     }

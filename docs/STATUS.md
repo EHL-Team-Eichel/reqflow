@@ -81,6 +81,30 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 **Log**
 
+- 2026-10-11: Gap items 7–13 on `ws8-scoring-integrity` (see WS8 log). Decisions: transitions
+  (`ALLOWED_DECISIONS`: decided requirements must be reopened), override only with approve plus a
+  `requirement.prioritized` event, four-eyes (`requirement.approval_recorded`, second approval by
+  another reviewer; a new name in Settings gets its own reviewer id), edits refuse no-ops and
+  unknown findings and move an approved requirement back to review, `car.add` refuses anything but
+  new proposals (`aiProposalProblem`), HIL gates count `run.review_approved` per reviewer before
+  resuming. Audit list filters by actor in SQL and a limit keeps the newest events. Exports carry
+  findings, excerpts, sources, score breakdown, flags and confidence; CSV is formula-safe; JSON is
+  now `{generatedAt, count, requirements}`. Raw: customer-study comparison findings (F70 vs the
+  same market's models, ≥ 10 points or 10 % on rating scales), records keep their stated market
+  (no Settings stamping), `marketFilter` (default "scope"; older flows migrate to "all"),
+  `columns` mapping, previews capped at 1,000 items (100k synthetic rows: 29.2 MB → 0.3 MB).
+  Add to Car: no zero-target requirements, no opening-words quote substitution, 5 Series in CN is
+  G68, proposals audited only after the car accepted them. New `demo-flow.test.ts` runs the BMW
+  template offline (web research left out) and a restart with a paused run; `smoke-review.ts`
+  covers review, audit, exports, saved flows, rescoring, a two-reviewer gate and the template
+  natively. **Fixed (human chose the filter fix):** the AI Filter classified only the most
+  advanced layer, so in the BMW template the 35 synthetic feedback comments were dropped silently
+  once equipment/study findings existed. Now `filterGraph(input).units()` (core) classifies every
+  primary item plus lower-layer items nothing above refers to; decisions carry `layer`; the engine
+  check, restore validation and report view use the same rule. Offline, the mock splitter still
+  routes everything to the lowest band (no demand scores without a real model), so the template's
+  PM gates only fill with a real AI setup. Renderer follow-ups: `run-store.ts` still blocks gates with approvals > 1; the
+  Car review UI should show the new errors, four-eyes state and `FactorScore.by`.
 - 2026-10-11: Human requested merging completed Analytics into main through PR #19 and launching locally. Integrated main through `85d3d36`, preserving PDF ingestion, splitter car-part depth, AI Filter decisions, provenance reports and the grey-line Car transition. Resolved product-table conflicts by keeping all block descriptions; kept main's equivalent Reset-ready wait in smoke and both Analytics-open and AI Filter-report buttons on block nodes. Latest combined code passes `npm run typecheck`, `npm run format:check` and `npm test -- --maxWorkers=2 --testTimeout=30000` (2,698 passed, 6 skipped). Native macOS smoke passed before the final main refreshes (82 screenshots); refreshed-code smoke remains incomplete: one run hung in later Settings checks and a fresh isolated run exited before writing its final report (78 screenshots), so neither is claimed as passing. Inspected Analytics overview, timeline, topics, source comparison, flow, quality and preserved grey-line Car interior. Synthetic-only checks; no BMW values, live providers or credentials used. The separate `reqflow/` checkout's uncommitted Car work is untouched. Launch uses merged main in this clean checkout; human authorized replacing the existing app instance. Windows/Linux remain unverified.
 - 2026-10-11: Synthetic 100-row F70 feedback fixture delivered as XLSX/CSV in `data/samples/f70-feedback-test.*`, with reproducible generator and `docs/f70-feedback-test.md`. Exact original sheet/header structure only; no BMW cell values used. Ten synthetic regression cases verify 97 ingested records, all six splitter modes, HIL pause/resume, seven proposed offline categories and actual classifier placements. `npm run typecheck` passes; synthetic-only suite passes (2,329 tests, 21 skipped) with two workers/15s timeout after parallel contention timed out two unrelated tests. Real BMW tests excluded; no live AI calls or UI changes. Concurrent PDF-ingestion work preserved. Guide distinguishes actual mock limitations from ten desired live-AI needs.
 - 2026-10-11: Publishable snapshot including the latest Car class/feature adaptation passes `npm run check` (2,307 tests, 5 skipped) and native macOS smoke (70 screenshots). Inspected final M5 baseline, catalog selection/restoration, compact details and light/dark views. All ready remote branches are included; only the four old experiment branches and human-excluded Analytics WIP stay out. No live providers, credentials or BMW files used in verification; Windows/Linux remain unverified.
@@ -182,37 +206,43 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 ## WS2 — Data Flow editor UI
 
-**Status:** review · **Owner:** OpenCode (HIL sampled PDF report) · **Branch:** `feature/hil-sample-pdf-report`
+**Status:** done (human-assigned remaining editor features) · **Owner:** OpenCode · **Branch:** `ws2-editor-completion` · **Merged:** PR #25
+**Assigned scope:** human requested latest main and completion of the still-unworked WS2 editor gaps. Start/templates/HIL/Filter/Analytics behavior stays intact. No other workstream tasks claimed.
 **Depends on:** WS1 for save/load and runs. Tasks 1–3 can start now.
 
 **Tasks**
 
-- [ ] Undo / redo (⌘Z / ⇧⌘Z) in `components/dataflow/store.ts`: history of `root` snapshots, with tests.
-- [ ] Copy / paste / duplicate blocks (⌘C / ⌘V / ⌘D): fresh ids for the block and everything in its
+- [x] Undo / redo (⌘Z / ⇧⌘Z) in `components/dataflow/store.ts`: history of `root` snapshots, with tests.
+- [x] Copy / paste / duplicate blocks (⌘C / ⌘V / ⌘D): fresh ids for the block and everything in its
       inner workplace, edges between copied blocks kept; tests.
 - [x] "New from template": load `api.templates.list()` → `BMW_DEFAULT_TEMPLATE` onto the workplace
       (confirm before replacing a non-empty flow).
-- [ ] Save, load and autosave with `api.workflows.*`; show unsaved changes; flow name in the header.
+- [x] Save, load and autosave with `api.workflows.*`; show unsaved changes; flow name in the header.
       Until WS1 lands, show the `not_implemented` state instead of failing silently.
-- [ ] Problems view: run `validateGraph` plus "input not connected" / "Raw block has no file" checks and
+- [x] Problems view: run `validateGraph` plus "input not connected" / "Raw block has no file" checks and
       mark the affected blocks.
-- [ ] Run button and live status on every block (`api.runs.start`, `api.runs.onUpdate`): status dot,
+- [x] Run button and live status on every block (`api.runs.start`, `api.runs.onUpdate`): status dot,
       counts, logs; a "waiting for review" banner linking to the Car tab. Mock with `fixtureRun` until WS1.
-- [ ] Output inspector: click a finished block → `api.runs.blockOutput()` per port.
+- [x] Output inspector: click a finished block → `api.runs.blockOutput()` per port.
 - [x] HIL report with real data for steps that need a run: Raw steps already show their real data
       (`blocks.preview`); for the others, replace the "no run yet" state in
       `components/dataflow/report/DataPanel.tsx` with the step's data from the latest run (`api.runs.blockOutput`; for the HIL itself merge what
       its incoming edges carried with `mergePipelineData`). The synthetic sample was removed on 2026-10-10.
-- [ ] Polish: "Tidy up" auto-layout, multi-select actions, minimap colours per block group.
+- [x] Polish: "Tidy up" auto-layout, multi-select actions, minimap colours per block group.
 - [x] Fix direct Raw → HIL report input preview (merged in PR #4 and verified).
 - [x] Save and execute the current flow so Add to Car publishes proposed requirements; expose status, block logs and cancellation (PR #8).
 - [x] Explicit Start button for the full workflow, including inner workplaces; prevent duplicate runs
       and preserve HIL pauses (PR #10, verified on merged main).
 - [x] Continue single-reviewer HIL gates after explicit review of saved run inputs; reset confirmation per run/gate and preserve Start controls (PR #12).
-- [ ] Merge sampled HIL PDF export and decision-brief report (implemented and verified on `feature/hil-sample-pdf-report`; not yet merged).
+- [x] Merge sampled HIL PDF export and decision-brief report (already included in current main; stale checkbox reconciled).
 
 **Log**
 
+- 2026-10-11: PR #25 merged after the human-authorized smoke readiness fix. Remaining assigned WS2 checklist is complete. Verify with root typechecks/formatting, `npm test -- --maxWorkers=2 --testTimeout=30000` (2,832 passed, 6 skipped), and fresh native smoke (90 screenshots); isolated WS2 UI probe also passes 7 light/dark/minimum-window/library screenshots. Only last workflow ID is stored in renderer localStorage; workflow/data persistence remains main-only. Clipboard is in-app, no model/API/key changes or automatic approval/resume. Windows/Linux and live-provider checks remain unverified. Stop here: any further work or verification requires a new explicit human assignment.
+- 2026-10-11: Human assigned remaining WS2 after checking latest main (`e9705c9`), open PRs and implementation handoffs. Shared clean checkout fast-forwarded; work isolated in `EHL-ws2-editor`. Scope: root-snapshot undo/redo, nested-safe copy/paste/duplicate, save/load/autosave and workflow identity, problems/marking, per-block run status/counts/logs and persisted per-port outputs, current-workplace layout and minimap polish. Use existing core/API contracts only; renderer has no Node/files/network. Preserve human HIL gates and frozen run snapshots. Verification is offline/synthetic; Gemini key is unavailable and no live requests are authorized. Other WS2 slices already merged are not rebuilt, and no unrelated follow-on work is authorized.
+- 2026-10-11: Remaining editor features implemented in WS2 renderer paths only: history/drag coalescing, nested clipboard/duplicates and shortcuts, save/load/autosave with scoped document identity and a Start write reservation, input/source problems and node markers, saved per-port/layer output/counts/logs, layout and group-colored minimap. Loaded scope is respected by Start and previews; active/paused run switching stays blocked. Delegation was unavailable (quota/stalled approved profiles); parent implemented and verified directly. Focused tests pass (58), root typechecks pass, native smoke passes 91 screenshots, and a separate isolated synthetic Electron probe passes actual controls/keyboard, save-only/no-run behavior, reload, saved US scope, frozen 3-record output and HIL safeguards (7 light/dark/minimum-window screenshots). Full-suite first run exposed only three old RunControls mocks lacking workflowStore; mocks updated and their 56-test subset now passes. Final full gate and integration review still pending; no successful live-provider or Windows/Linux claim.
+- 2026-10-11: Final latest-main integration: all typechecks and formatting pass; `npm test -- --maxWorkers=2 --testTimeout=30000` passes 162 files / 2,829 tests, 6 skipped. The default 5-second gate timed out four source-model Car tests; no Car changes made. Earlier native smoke passed 91 screens. Current fresh broad smoke completes 90 screens but fails only Car canvas-loading checks (fuel on one run; hydrogen/hybrid/electric on another). WS2-only native Electron probe re-run alone on the current build passes all actual controls, autosave/reload, loaded scope, saved 3-record output and HIL safety checks (7 light/dark/minimum-window/library screenshots, inspected). Current output previews cap rows, text and JSON without truncating stored originals. No core/main/engine/db/dependency changes; only WS2 renderer, PRODUCT and own handoff/documentation. Public branch is ready for review; ask the human before merging with the outstanding broader Car-smoke failures. No live requests/keys/BMW values used, and no other workstreams started.
+- 2026-10-11: Human explicitly expanded this slice: fix the smoke failure, then merge. Root cause was the shared smoke runner's fixed 900-ms wait after reload: imported source meshes load asynchronously, so viewer settings can be correct before a canvas exists. Added a bounded, tested scene-readiness poll in main smoke for selected model/powertrain and exactly one canvas; real rendering/load errors, missing/duplicate canvases and identity mismatch still fail. No production Car geometry/transition/picking behavior changed. Corrected full native smoke passes 90 screenshots (`out/smoke/ws2-ready-fixed`). Final typechecks/build/formatting pass and `npm test -- --maxWorkers=2 --testTimeout=30000` passes 163 files / 2,832 tests, 6 skipped. Default five-second Car test timeout remains a performance limitation, not hidden by code/config changes. WS2-only native probe and 7 UI screenshots also pass. Ready to merge PR #25 with Entire history preserved, then stop; no further work authorized.
 - 2026-10-11: Sampled PDF export implemented in isolated `EHL-hil-report` worktree. HIL → choose step → Format-check PDF: defaults first 3 per dataset, editable checkboxes, maximum 15 total, first 50 candidates shown; native PDF save via validated `exports.hilReport`. Preserves original selected record text/fields and finding excerpts; includes scope/provenance, counts/omissions, routed/nested lineage, priority/score/targets, evidence gaps/conflicts and optional report-only PM action notes. No requirement decisions, resume or reviewer signatures added. Human authorized core IPC/main/shared-icon integration. Research mapping and future persisted-review proposals: `docs/hil-report-design.md`. Verified `npm run typecheck && npm test` (280 passed, 25 skipped), desktop smoke (native sample + rich management PDFs, 35 screenshots), changed-file Prettier and `git diff --check`; inspected PDFs and light/dark/minimum viewport screenshots. No dependencies or real BMW data used. Changes remain uncommitted/unpushed for review; other WS2 tasks remain open.
 - 2026-10-11: Claimed the HIL sampled-PDF report slice in an isolated worktree from main. Human authorized the narrow core IPC/main-process changes needed for native PDF export. Preserve existing review/resume semantics, export only explicitly selected data points, and distinguish format validation from complete evidence review. Use synthetic data only for verification; leave concurrent Add-to-Car work untouched.
 - 2026-10-10: Blocks/Templates switch and full-workflow setups merged in PR #15. Integrated current Car refinements unchanged and reverified: `npm run check` (277 passed, 10 skipped), `npm run smoke` (29 screenshots), and native synthetic template loading/replacement plus both connected workflows, explicit PM review, Car publication, and light/dark/minimum-window screenshots. Requested slice complete; WS2 released. Use Templates → Use template, configure inputs, then Start; BMW's full setup remains an explicitly labelled blueprint until its Research/AI Filter prerequisites land.
@@ -291,6 +321,8 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - [x] Merge Car option provenance report: exact originating run/block, HIL-style lineage and saved step data, read-only build-workflow/inner-workplace visualizer (verified against current main; PR #23).
 
 **Log**
+
+- 2026-10-11: Review UI merged to main (Claude). OpenCode's uncommitted renderer work from the shared checkout — ranked/filterable requirement browser, rationale-required decisions and content edits, audit timeline and native exports — moved onto main in branch `ws3-review-ui`. Adapted to the PR #26 rules: decision options follow `ALLOWED_DECISIONS` per status, the last target can't be removed, and an edit sends an approved requirement back to review (standalone `car/review-smoke.cjs` updated). Multi-reviewer HIL gates now collect approvals from the Data Flow UI (`run-store.ts`, `HilReport.tsx`) instead of being refused. Verified: `npm run check` (3,025 tests), native smoke PASS (90 screenshots), review harness 59 checks / 0 errors; screenshots reviewed. Open: challenge still answers from the requirement ID and PM text only.
 
 - 2026-10-11: Optimized imported-model orbiting with an exact, indirect triangle spatial index for hover/badge raycasts. Source vertices, indices, normals, rendered geometry/materials and the assembled grey-line transition are unchanged; no LOD, decimation, pixel-ratio reduction or new dependency. Small/procedural/grouped meshes retain standard picking. Spatial leaves share source attributes, restore original triangle IDs/UVs/normals and honor live transforms, sides and near/far; dispose listeners and viewer teardown release the index. Seven regressions verify equivalence, reduced triangle scanning and cleanup. Root typecheck and all 2,790 tests pass (6 skipped); production build, formatting and 66 focused picking/fade/sketch tests pass. Native camera-motion benchmark with exterior markers: baseline median 50 ms/p95 416.7 ms, optimized median 16.7 ms/p95 17.6–33.3 ms (~20→60 FPS median on this machine, not a cross-device guarantee). Native probe passes 22 checks including real pointer orbit, all exterior review areas, light/dark, minimum size, grey-line interior/return and four powertrain reloads; exterior/interior screenshots reviewed. Initial full smoke was disrupted by a concurrent rebuild removing its renderer file. Clean final smoke completed 90 screenshots but failed fuel-canvas, catalog-switch and dark-marker assertions (also logged native GPU mailbox errors); not a smoke PASS. WS1/WS0 follow-up: investigate these full-run assertions and replace fixed reload/catalog delays with canvas/model readiness checks; isolated M4 readiness-based checks pass. Only CarViewer.tsx, model/acceleratedPicking.ts, its tests and this WS3 handoff changed; unrelated Entire edits excluded. Human requested push to main.
 
@@ -699,11 +731,11 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - [x] BMW's data in `data/raw/`: feedback, studies and sales read correctly (shapes in the log);
       tests on the real files run locally when they're present (`raw.test.ts`, "BMW …" suites).
 - [x] F70 option list (PDF): local PDF.js/Tesseract OCR plus configured-default-model structured extraction merged in PR #18 and verified.
-- [ ] Customer study findings: per question, how the F70 scores against the other models in the
+- [x] Customer study findings: per question, how the F70 scores against the other models in the
       same market (deterministic, like the take-rate findings), with the study rows as evidence.
-- [ ] If BMW's headers can't be matched automatically: add an optional column-mapping param
+- [x] If BMW's headers can't be matched automatically: add an optional column-mapping param
       (contract change via WS0).
-- [ ] Large exports (≈100k rows): measure preview time and IPC payload; page the preview if needed.
+- [x] Large exports (≈100k rows): measure preview time and IPC payload; page the preview if needed.
 - [ ] PostgreSQL / SQL Server sources, if the demo needs them (credentials in the keychain, never in params).
 
 **Log**
@@ -833,7 +865,7 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
       saved item decisions and originals, verified quotes and audited next-run restorations.
 - [x] AI Splitter: route each primary item to exactly one branch (`out-<i>`); priority preserves
       existing priorities or uses Settings-weighted factors; category / sentiment / custom use the LLM.
-- [ ] AI Splitter: replace provisional missing-factor judgement with WS8's scorer when available.
+- [x] AI Splitter: replace provisional missing-factor judgement with WS8's scorer when available.
 - [x] Add to Car: cluster and derive requirements (IDs via `formatRequirementId`, targets, evidence level
       A–D, Kano class, assumptions, uncertainties, conflicts), priority from the input port, hand them to `ctx.car.add`.
 - [x] Add to Car as an agent system (branch `ws7-add-to-car-agents`): inputs 1. Priority … n. Priority and
@@ -1010,19 +1042,38 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 ## WS8 — Prioritization
 
-**Status:** open · **Owner:** — · **Branch:** —
-**Depends on:** nothing; agree the function signature with WS7 in your log.
+**Status:** review (merged on `ws8-scoring-integrity`, not yet on main) · **Owner:** Claude Code (lead session) · **Branch:** `ws8-scoring-integrity`
+**Depends on:** nothing.
 
 **Tasks**
 
-- [ ] Deterministic factors in `packages/blocks/src/prioritization/`: customer impact, evidence
+- [x] Deterministic factors in `packages/blocks/src/prioritization/`: customer impact, evidence
       strength, competitive gap, trend momentum, each with a one-line note.
-- [ ] LLM-judged factors (brand fit, ease) behind `LlmClient`, one-line note each; mock in tests.
-- [ ] `priorityRationale` naming the top drivers; flag "high score, weak evidence".
-- [ ] Tests: reproducible scores on the fixtures; changing Settings weights changes the ranking as expected.
-- [ ] Export the function the AI Splitter's priority mode calls (`weightedTotal` + `priorityForScore`).
+- [x] LLM-judged factors (brand fit, ease) behind `LlmClient`, one-line note each; mock in tests.
+- [x] `priorityRationale` naming the top drivers; flag "high score, weak evidence".
+- [x] Tests: reproducible scores on the fixtures; changing Settings weights changes the ranking as expected.
+- [x] Export the function the AI Splitter's priority mode calls (`scoreItem`, `deterministicFactors`).
+- [x] Stored requirements are rescored (audited, system actor) when Settings weights or thresholds change.
 
 **Log**
+
+- 2026-10-11: Human asked for gap items 7–13 (prioritization, decision integrity, audit/export,
+  Add to Car fixes, Raw study/markets/mapping/preview, scope generality, smoke). Built on
+  `ws8-scoring-integrity` (from `fix/gemini-max-items`, which it needs for the splitter retry),
+  merged from three slice branches: `ws8-scorer` and `ws5-study-markets` (drafted by agy on Gemini
+  3.1 Pro, reviewed and corrected here) and `ws1-decision-integrity` (Claude subagent).
+  Scores are `ws8-weighted@1`: four factors from the evidence, brand fit and ease from the AI,
+  each factor records who judged it (`FactorScore.by`). The AI Splitter's priority mode and Add to
+  Car both use it; the critic now judges only brand fit and ease. Input rank still sets Add to
+  Car's priority (PRODUCT.md); the score and its top drivers are in the rationale.
+  Verify: `npx vitest run packages/blocks/src/prioritization packages/blocks/src/ai-splitter packages/blocks/src/add-to-car`.
+  Verified on the branch: `npm run typecheck`, full vitest (2,901 passed, 1 expected fail, 6
+  skipped), `npm run format:check`, native macOS smoke PASS (90 screenshots, incl. the new review,
+  two-reviewer gate and template checks). Two earlier smoke runs failed only on 3D car-canvas checks
+  with Chromium GPU shared-image errors while the disk was nearly full; the next run passed. Real
+  BMW files checked by counts only: study EU sheet 37 figures / 5 comparison findings (rating
+  scale, so relative), US sheet no F70; 2,128 feedback records all inside EU; sales sheets keep
+  their EU rows.
 
 ## WS9 — Analytics & timeline
 

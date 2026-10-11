@@ -212,4 +212,11 @@ describe("SqliteRequirementRepository version integrity and atomic transactions"
     expect(records).toHaveLength(0);
     expect(findings).toHaveLength(0);
   });
+
+  it("findingsByIds returns stored findings in the order asked for and leaves unknown ids out", async () => {
+    await repo.savePipelineData({ ...emptyPipelineData(), findings: fixtureFindings });
+    const [a, b] = [fixtureFindings[2]!, fixtureFindings[0]!];
+    expect(await repo.findingsByIds([a.id, "fnd_synthetic_missing", b.id, a.id])).toEqual([a, b]);
+    expect(await repo.findingsByIds([])).toEqual([]);
+  });
 });

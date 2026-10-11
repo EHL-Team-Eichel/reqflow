@@ -47,8 +47,15 @@ export const FactorScore = z.object({
   value: z.number().min(0).max(5),
   weight: z.number().min(0).max(10), // weight at scoring time (snapshot of Settings)
   note: z.string().min(1), // one-line justification, shown to the PM
+  by: z.string().min(1).optional(), // "deterministic" (a rule on the evidence) or the judging model id
 });
 export type FactorScore = z.infer<typeof FactorScore>;
+
+/** Things about a score a PM should notice. */
+export const ScoreFlag = z.enum([
+  "high_score_weak_evidence", // must/should-level score, but evidence level C or D
+]);
+export type ScoreFlag = z.infer<typeof ScoreFlag>;
 
 export const ScoreBreakdown = z.object({
   factors: z.record(ScoreFactor, FactorScore),
@@ -56,6 +63,7 @@ export const ScoreBreakdown = z.object({
   suggestedPriority: Priority, // what the score says; Requirement.priority may be overridden by the PM
   method: z.string().min(1), // versioned, e.g. "weighted-sum@1"
   scoredAt: z.iso.datetime(),
+  flags: z.array(ScoreFlag).optional(),
 });
 export type ScoreBreakdown = z.infer<typeof ScoreBreakdown>;
 
@@ -83,4 +91,69 @@ export function priorityForScore(total: number, t: PriorityThresholds): Priority
   if (total >= t.should) return "should";
   if (total >= t.could) return "could";
   return "wont";
+}
+
+/** Evidence levels (see requirement.ts) that rest on a single source or on assumptions. */
+const WEAK_EVIDENCE = new Set(["C", "D"]);
+
+/** A must/should-level score built on C/D evidence should catch the eye (PRODUCT.md). */
+export function scoreFlags(
+  total: number,
+  evidenceLevel: "A" | "B" | "C" | "D" | undefined,
+  t: PriorityThresholds,
+): ScoreFlag[] {
+  return evidenceLevel && WEAK_EVIDENCE.has(evidenceLevel) && total >= t.should
+    ? ["high_score_weak_evidence"]
+    : [];
+}
+
+/** Factors by contribution (weight × value), largest first; factors that add nothing are left out. */
+export function topDrivers(score: ScoreBreakdown, n = 2): ScoreFactor[] {
+  return ScoreFactor.options
+    .map((f, i) => ({ f, i, c: score.factors[f].weight * score.factors[f].value }))
+    .filter((x) => x.c > 0)
+    .sort((a, b) => b.c - a.c || a.i - b.i)
+    .slice(0, n)
+    .map((x) => x.f);
+}
+
+/** "Customer impact 5/5 (weight 3) and evidence strength 4/5 (weight 2)", for rationales. */
+export function describeDrivers(score: ScoreBreakdown, n = 2): string {
+  const parts = topDrivers(score, n).map((f) => {
+    const { value, weight } = score.factors[f];
+    return `${SCORE_FACTOR_LABELS[f].toLowerCase()} ${value}/5 (weight ${weight})`;
+  });
+  if (!parts.length) return "no factor adds to the score";
+  return parts.length === 1 ? parts[0]! : `${parts.slice(0, -1).join(", ")} and ${parts.at(-1)}`;
+}
+
+/**
+ * The same factor values under new Settings weights and thresholds: the stored values and notes
+ * stay, the weights snapshot, total, band and flags are recomputed.
+ */
+export function rescoreBreakdown(
+  score: ScoreBreakdown,
+  scoring: { weights: ScoreWeights; thresholds: PriorityThresholds },
+  evidenceLevel: "A" | "B" | "C" | "D" | undefined,
+  now: string,
+): ScoreBreakdown {
+  const weightOf = (f: ScoreFactor) => scoring.weights[f] ?? 0;
+  const values = Object.fromEntries(
+    ScoreFactor.options.map((f) => [f, score.factors[f].value]),
+  ) as Record<ScoreFactor, number>;
+  const weights = Object.fromEntries(ScoreFactor.options.map((f) => [f, weightOf(f)])) as Record<
+    ScoreFactor,
+    number
+  >;
+  const total = weightedTotal(values, weights);
+  return {
+    ...score,
+    factors: Object.fromEntries(
+      ScoreFactor.options.map((f) => [f, { ...score.factors[f], weight: weights[f] }]),
+    ) as ScoreBreakdown["factors"],
+    total,
+    suggestedPriority: priorityForScore(total, scoring.thresholds),
+    scoredAt: now,
+    flags: scoreFlags(total, evidenceLevel, scoring.thresholds),
+  };
 }

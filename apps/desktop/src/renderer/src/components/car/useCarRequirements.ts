@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import type { Requirement } from "@reqflow/core";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Requirement } from "@reqflow/core";
 import { api, ReqflowError } from "@/lib/api";
 import { groupByPart, type ClassifiedRequirement } from "./classify";
 
@@ -10,13 +10,18 @@ import { groupByPart, type ClassifiedRequirement } from "./classify";
 export function useCarRequirements() {
   const [loaded, setLoaded] = useState<Requirement[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const request = useRef(0);
 
   const reload = useCallback(async () => {
+    const current = ++request.current;
     try {
-      setLoaded(await api.requirements.list());
+      const requirements = Requirement.array().parse(await api.requirements.list());
+      if (current !== request.current) return;
+      setLoaded(requirements);
       setError(null);
     } catch (e) {
-      setLoaded([]);
+      if (current !== request.current) return;
+      setLoaded((previous) => previous ?? []);
       setError(
         e instanceof ReqflowError && e.code === "not_implemented"
           ? "The requirement store isn't available in this build yet."
@@ -29,7 +34,11 @@ export function useCarRequirements() {
 
   useEffect(() => {
     void reload();
-    return api.runs.onUpdate(() => void reload());
+    const unsubscribe = api.runs.onUpdate(() => void reload());
+    return () => {
+      ++request.current;
+      unsubscribe();
+    };
   }, [reload]);
 
   const requirements = useMemo(() => loaded ?? [], [loaded]);
@@ -42,6 +51,7 @@ export function useCarRequirements() {
     loading: loaded === null,
     error,
     total: requirements.length,
+    requirements,
     byPart: byPart as ReadonlyMap<string, ClassifiedRequirement[]>,
     counts: counts as ReadonlyMap<string, number>,
     reload,
