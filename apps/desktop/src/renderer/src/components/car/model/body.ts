@@ -83,9 +83,12 @@ export const beltLine = profile([
 
 /** Side view: the bottom line (front apron → sills → rear apron). */
 export const bottomLine = profile([
-  [2.2, 0.34],
-  [2.14, 0.26],
+  // A level apron keeps the central intake above a continuous lower bumper edge.
+  // Repeated heights also give the rounded nose a horizontal profile tangent.
+  [2.2, 0.205],
+  [2.14, 0.205],
   [1.96, 0.205],
+  [1.82, 0.205],
   [1.0, 0.165],
   [-1.0, 0.165],
   [-2.0, 0.22],

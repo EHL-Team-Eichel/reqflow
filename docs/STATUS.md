@@ -260,6 +260,7 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 **Status:** in progress (four-choice model switcher) · **Owner:** Codex (model switcher subtask) · **Branch:** `ws3-compact-requirements`
 **Animation slice:** review (implemented and verified) · **Owner:** OpenCode · **Branch:** `ws3-car-view-animation` (isolated worktree)
 **Windscreen slice:** review (implemented and verified) · **Owner:** OpenCode · **Branch:** `ws3-car-view-animation`
+**Front-apron slice:** review (implemented and verified) · **Owner:** OpenCode · **Branch:** `ws3-compact-requirements`
 **Depends on:** nothing to start: build on `@reqflow/core/fixtures` (5 requirements, findings, sources,
 audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 serves them.
 
@@ -285,6 +286,19 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - [ ] Subtle blue fill on the clicked car part, with light/dark selection regressions.
 
 **Log**
+
+- 2026-10-11: Front apron now stays at 0.205 m through the rounded nose instead of rising
+  0.135 m under the intake. Kept the complete central intake, both outer air curtains,
+  sill/rear apron, part ids and selection. Four regressions cover the level profile and
+  rendered grid, smooth join, full intake clearance and unchanged rear heights. Root
+  typecheck and 2,314 tests pass (5 skipped; bounded to four workers after an overloaded
+  unrestricted run timed out). MacOS smoke passes all 70 screenshots on the sequential
+  rerun; reviewed front-quarter, side and dark views. Commit only the apron/profile,
+  its new tests and these handoff entries; preserve concurrent bonnet/windscreen edits.
+
+- 2026-10-11: Claimed level front-apron refinement: remove the lower bumper's upward rise
+  beneath the air intake, preserve rounded nose corners and projected intake details, and
+  leave concurrent bonnet/windscreen and Entire-hook edits untouched. Verify and push.
 
 - 2026-10-10: Widened the front glass into a tapered M5-inspired outline, roughly 1.7 m across the base and 1.3 m at the roof, with bowed corners and slender, continuous A-pillars. Shifted the side-window front edge slightly forwards and constrained front-glazing edge relaxation to preserve station/ring order, preventing narrow-panel folds without changing the rear-edge smoothing. Kept all car parts, body proportions, interior and reversible flight. Added 7 regressions for width/taper, front coverage, rounded lower corners, pillar separation, symmetry, connected glazing and non-folded triangles. Verified `npm run typecheck && npm test` (266 passed, 25 skipped), `npm run smoke` (PASS, 29 screenshots), changed-file Prettier and `git diff --check`; reviewed front-quarter/top, light/dark and interior screenshots. The isolated native animation probe also passed outward/return, interrupted reversal, badge tracking, cabin selection and live reduced motion (8 screenshots). Source changes are limited to `model/body.ts`, its colocated tests and this WS3 handoff; ready for integration alongside the concurrent model refinements.
 
