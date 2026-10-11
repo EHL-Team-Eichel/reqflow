@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4M9VJPD8SK49ZKGNSAV8Z0M",
   "strategy": "manual-commit",
   "branch": "ws5-pdf-ingestion",
-  "checkpoints_count": 7,
+  "checkpoints_count": 10,
   "files_touched": [
     "PRODUCT.md",
     "apps/desktop/electron-builder.yml",
@@ -16,12 +16,16 @@
     "data/samples/README.md",
     "data/samples/raw-pdf-fixture.ts",
     "docs/ARCHITECTURE.md",
+    "docs/STATUS.md",
     "package-lock.json",
     "packages/blocks/package.json",
+    "packages/blocks/src/raw/pdf.test.ts",
+    "packages/blocks/src/raw/pdf.ts",
     "packages/blocks/src/raw/raw.test.ts",
     "packages/blocks/src/raw/raw.ts",
     "packages/blocks/src/raw/read.ts",
     "packages/blocks/src/raw/records.ts",
+    "packages/blocks/src/raw/structure.ts",
     "packages/core/src/blocks.ts"
   ],
   "sessions": [
@@ -73,14 +77,21 @@
       "compact_transcript": "/6/transcript.jsonl",
       "content_hash": "/6/content_hash.txt",
       "prompt": "/6/prompt.txt"
+    },
+    {
+      "metadata": "/7/metadata.json",
+      "transcript": "/7/full.jsonl",
+      "compact_transcript": "/7/transcript.jsonl",
+      "content_hash": "/7/content_hash.txt",
+      "prompt": ""
     }
   ],
   "token_usage": {
-    "input_tokens": 512541,
+    "input_tokens": 623549,
     "cache_creation_tokens": 2551913,
-    "cache_read_tokens": 300276562,
-    "output_tokens": 1411585,
-    "api_call_count": 990,
+    "cache_read_tokens": 308903281,
+    "output_tokens": 1430471,
+    "api_call_count": 1038,
     "subagent_tokens": {
       "input_tokens": 92,
       "cache_creation_tokens": 156839,
