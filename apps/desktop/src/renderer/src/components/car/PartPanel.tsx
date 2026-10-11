@@ -215,7 +215,7 @@ function PartDetail({
           )}
           {items.length > 0 && (
             <p className="mt-1 text-xs text-muted">
-              {items.length} requirement{items.length === 1 ? "" : "s"} · Click for details &
+              {items.length} requirement{items.length === 1 ? "" : "s"} · Click for workflow &
               sources
             </p>
           )}
