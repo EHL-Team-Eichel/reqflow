@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4MAMEK0C7JF5M3Y30FA1V40",
   "strategy": "manual-commit",
   "branch": "ws7-splitter-depth",
-  "checkpoints_count": 1,
+  "checkpoints_count": 2,
   "files_touched": null,
   "sessions": [
     {
@@ -12,13 +12,20 @@
       "compact_transcript": "/0/transcript.jsonl",
       "content_hash": "/0/content_hash.txt",
       "prompt": ""
+    },
+    {
+      "metadata": "/1/metadata.json",
+      "transcript": "/1/full.jsonl",
+      "compact_transcript": "/1/transcript.jsonl",
+      "content_hash": "/1/content_hash.txt",
+      "prompt": "/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 1796,
+    "input_tokens": 89916,
     "cache_creation_tokens": 2572844,
-    "cache_read_tokens": 298884968,
-    "output_tokens": 1352726,
-    "api_call_count": 899
+    "cache_read_tokens": 299272930,
+    "output_tokens": 1355750,
+    "api_call_count": 909
   }
 }
