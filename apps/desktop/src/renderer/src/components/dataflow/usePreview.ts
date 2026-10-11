@@ -8,7 +8,8 @@ import {
 } from "@reqflow/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ReqflowError } from "@/lib/api";
-import { useSettings } from "@/lib/settings";
+import { useStore } from "zustand";
+import { workflowStore } from "./run-session";
 
 export type PreviewState =
   | { status: "idle" }
@@ -31,7 +32,7 @@ const logsOf = (details: unknown): string[] =>
  * change (a stale preview would show the wrong file), and late answers from older requests are ignored.
  */
 export function useBlockPreview(block: WorkflowBlock | null) {
-  const scope = useSettings((s) => s.settings.defaultScope);
+  const scope = useStore(workflowStore, (s) => s.scope);
   const [state, setState] = useState<PreviewState>({ status: "idle" });
   const request = useRef(0);
 

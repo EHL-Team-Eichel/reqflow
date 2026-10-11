@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import { ReactFlowProvider, useReactFlow } from "@xyflow/react";
 import { WorkflowSidebar } from "@/components/dataflow/WorkflowSidebar";
 import { Breadcrumb } from "@/components/dataflow/Breadcrumb";
@@ -7,6 +7,11 @@ import { Workplace } from "@/components/dataflow/Workplace";
 import { Button } from "@/components/ui/Button";
 import { Panel } from "@/components/ui/Panel";
 import { RunControls } from "@/components/dataflow/RunControls";
+import { WorkflowControls } from "@/components/dataflow/WorkflowControls";
+import { EditorActions } from "@/components/dataflow/EditorActions";
+import { EditorShortcuts } from "@/components/dataflow/EditorShortcuts";
+import { ProblemsPanel } from "@/components/dataflow/ProblemsPanel";
+import { workflowProblems } from "@/components/dataflow/problems";
 
 function WorkplaceActions() {
   const path = useDataflow((s) => s.path);
@@ -70,10 +75,21 @@ function ReasoningDialogHost() {
 export function DataflowPage() {
   const canvasRef = useRef<HTMLDivElement>(null);
   const name = useDataflow((s) => s.name);
+  const root = useDataflow((s) => s.root);
+  const [problemsOpen, setProblemsOpen] = useState(false);
+  const problems = useMemo(() => workflowProblems(root), [root]);
 
   return (
     <ReactFlowProvider>
+      <EditorShortcuts />
       <div className="flex h-full flex-col gap-2">
+        <WorkflowControls>
+          <EditorActions
+            problemCount={problems.length}
+            problemsOpen={problemsOpen}
+            onProblems={() => setProblemsOpen((open) => !open)}
+          />
+        </WorkflowControls>
         <RunControls />
         <div className="flex min-h-0 flex-1 gap-2">
           <h1 className="sr-only">Data Flow</h1>
@@ -100,6 +116,7 @@ export function DataflowPage() {
       <HilReport />
       <AnalyticsHost />
       <ReasoningDialogHost />
+      <ProblemsPanel open={problemsOpen} onClose={() => setProblemsOpen(false)} />
     </ReactFlowProvider>
   );
 }

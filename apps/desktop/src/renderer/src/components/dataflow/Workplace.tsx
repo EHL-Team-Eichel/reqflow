@@ -18,6 +18,7 @@ import { NoticeToast } from "./NoticeToast";
 import { isBoundaryBlockKind, isPaletteBlockKind } from "@reqflow/core";
 import { useSettings } from "@/lib/settings";
 import { useResolvedTheme } from "@/lib/theme";
+import { minimapColor } from "./minimap";
 
 const nodeTypes = { block: BlockNode, boundary: BoundaryNode };
 
@@ -77,6 +78,8 @@ export function Workplace({ canvasRef }: { canvasRef: RefObject<HTMLDivElement |
         }}
         isValidConnection={(c) => dataflowStore.getState().checkConnection(c).ok}
         deleteKeyCode={["Backspace", "Delete"]}
+        selectionKeyCode="Shift"
+        multiSelectionKeyCode={["Meta", "Control", "Shift"]}
         onBeforeDelete={onBeforeDelete}
         snapToGrid={settings.app.snapToGrid}
         snapGrid={[16, 16]}
@@ -102,7 +105,15 @@ export function Workplace({ canvasRef }: { canvasRef: RefObject<HTMLDivElement |
       >
         <Background variant={BackgroundVariant.Dots} gap={16} size={1} />
         <Controls showInteractive={false} />
-        {settings.app.showMinimap && <MiniMap pannable zoomable />}
+        {settings.app.showMinimap && (
+          <MiniMap
+            pannable
+            zoomable
+            nodeColor={(node) => minimapColor((node.data as BlockFlowNode["data"]).block.kind)}
+            nodeStrokeColor="var(--color-line-strong)"
+            maskColor="var(--color-brand-soft)"
+          />
+        )}
       </ReactFlow>
 
       {showEmptyState && (
