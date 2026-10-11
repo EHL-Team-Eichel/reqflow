@@ -1,0 +1,15 @@
+{
+  "tool_use_id": "toolu_01RwACY9uu9AZiKLVmC9fv3H",
+  "agent_id": "a70430c4a1bb8dd3c",
+  "subagent_type": "antigravity:antigravity-delegate",
+  "task_description": "agy: audit settings, packaging, docs",
+  "token_usage": {
+    "input_tokens": 6,
+    "cache_creation_tokens": 36859,
+    "cache_read_tokens": 11374,
+    "output_tokens": 20,
+    "api_call_count": 3
+  },
+  "started_at": "2026-10-11T06:46:34.616051+02:00",
+  "completed_at": "2026-10-11T06:57:05.489623+02:00"
+}
