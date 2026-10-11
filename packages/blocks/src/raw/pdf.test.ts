@@ -229,14 +229,24 @@ describe("PDF safety regressions", () => {
     ).rejects.toThrow(/schema on page 1/);
   });
 
-  it("requires exact whitespace and field values, not merely a genuine unrelated quote", async () => {
-    await expect(
-      structurePdf(
-        [page],
-        llm({ items: [{ ...item, verbatimExcerpt: "standard Footnote" }] }),
-        options,
-      ),
-    ).rejects.toThrow(/invalid verbatim/);
+  it("accepts reformatted excerpts while preserving original page context and review flags", async () => {
+    const excerpt = "Heated seats standard Footnote: package only";
+    const result = await structurePdf(
+      [page],
+      llm({ items: [{ ...item, title: "Heated seats", verbatimExcerpt: excerpt }] }),
+      options,
+    );
+
+    expect(result.records[0]!.text).toBe(page.text);
+    expect(result.records[1]!.text).toBe(excerpt);
+    expect(result.records[1]!.fields).toMatchObject({
+      verified: false,
+      interpretationStatus: "ai_derived_needs_review",
+      aiInterpretation: { status: "needs_review" },
+    });
+  });
+
+  it("still requires cell values to occur within exact page evidence", async () => {
     await expect(
       structurePdf(
         [page],
@@ -423,7 +433,7 @@ describe("PDF Structuring, LLM Verification, and Pipeline Provenance", () => {
     expect(logSummary).toContain("model gpt-4.1-mini-test: 1 page(s), 3 record(s)");
   });
 
-  it("rejects hallucinated verbatim excerpt with page/item identifier only without leaking data", async () => {
+  it("still rejects invented titles without leaking model content", async () => {
     const pageText = "Valid text on page 1";
     const fakeLlm: LlmClient = {
       async generateObject<T>(_req: LlmObjectRequest<T>) {
@@ -453,7 +463,7 @@ describe("PDF Structuring, LLM Verification, and Pipeline Provenance", () => {
         scope: DEFAULT_SETTINGS.defaultScope,
         retrievedAt: new Date().toISOString(),
       }),
-    ).rejects.toThrow("Malformed AI extraction: invalid verbatim excerpt on page 1, item 0");
+    ).rejects.toThrow("Malformed AI extraction: unsupported title/section on page 1, item 0");
 
     // Verify error does NOT leak forged text or secret content
     try {
