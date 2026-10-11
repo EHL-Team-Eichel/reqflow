@@ -42,7 +42,9 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 - **Car:** 3D car with every requirement from Add to Car placed on a part (WS3); **Reset** removes
   all requirements (audited, ids never reused). Agent-generated requirements expose confidence and
   the recorded thought process. Exterior/interior transitions are reversible. No demo data: the car
-  is empty until a flow runs. Later Car model-switcher/compact-card branches are not integrated.
+  is empty until a flow runs. Compact cards open full evidence/requirement details; the 105-entry
+  schematic catalog and four powertrain choices are integrated. Catalog visualization choices do
+  not change requirement scope or decisions; powertrain selection persists through Settings.
 - **Settings:** App, Global parameters, AI & research, Collaboration, About. Changes are validated and
   apply live (theme, grid, minimap) and persist. Default AI supports Anthropic/OpenAI/Google/mock;
   agent roles can use separate API setups. Research APIs expose configuration, approval and tests.
@@ -66,7 +68,7 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 ## WS0 — Lead / integrator
 
-**Status:** in progress · **Owner:** OpenCode (remaining-branch integration) · **Branch:** `integrate/2026-10-11`
+**Status:** review (all eligible branches integrated and verified) · **Owner:** OpenCode (remaining-branch integration) · **Branch:** `integrate/2026-10-11`
 
 **Tasks**
 
@@ -75,9 +77,12 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 - [ ] Integration: run `BMW_DEFAULT_TEMPLATE` end to end with the `mock` LLM, then with Claude and the real data.
 - [ ] Demo script and rehearsal (PRODUCT.md → Demo scenario); keep PRODUCT.md and this file current.
 - [x] Complete the interrupted 2026-10-11 branch integration, preserving merge history and the human-authorized Car cutoff; verify with synthetic tests and native smoke.
+- [x] Apply corrected exclusions and integrate every remaining newer remote branch, keeping only `integrate-mastra-judge`, `quick-ai-results`, `ws1-blocks` and `ws1-engine` unmerged.
 
 **Log**
 
+- 2026-10-11: Final corrected integration verification: `npm run check` passed (2,298 tests, 5 skipped); `npm run smoke` passed on macOS with 70 screenshots. Inspected catalog selection/restoration, four powertrain views, compact details and light/dark screenshots. Ready to promote to main; no excluded experiment history included.
+- 2026-10-11: Corrected integration includes `ws3-compact-requirements`, `ws4-car-models`, `codex/car-model-refinements`, `ws3-compact-requirements-entire` and `ws3-exterior-session-log`, with their full merge histories. Only the four old engine/judging experiment branches listed in the task remain unmerged. Retained audited Reset, agent confidence/Why, Research and HIL PDFs, reversible flight, collapsed menu-driven markers and 105-model catalog. Settings `hydrogen`/`fuel` values map to catalog `h2`/`gasoline`, sharing one persisted choice across both Settings screens and Car. Tests and native smoke cover reload, four powertrains, scope/decision preservation, compact evidence details and catalog switching. Synthetic-only checks; no real data/credentials/provider calls. Windows/Linux remain unverified.
 - 2026-10-11: Human clarified exclusions: only `integrate-mastra-judge` and older Alexander experiments stay out. The earlier Car-animation cutoff was a misunderstanding and is superseded. Integrating all remaining newer branches: compact requirements/105-model catalog, Car refinements, saved car-model settings and their handoff branches. Preserve current agents, Research, HIL exports and human-only decisions; verify offline in the isolated worktree.
 - 2026-10-11: Integrated Add to Car agents, Mastra splitter, Research/AI providers (including its Research ancestor), sampled HIL PDF, and `ws3-car-view-animation`. Existing WS1/WS2/older splitter branch tips are already ancestors. Excluded later Alex branches: `codex/car-model-refinements`, `ws3-compact-requirements`, `ws3-compact-requirements-entire`, `ws3-exterior-session-log`, `ws4-car-models`. Superseded parallel engine/judging experiments remain excluded: `ws1-blocks`, `ws1-engine`, `quick-ai-results`, `integrate-mastra-judge`. Resolved shared executor, secrets, provider, report and IPC conflicts without dropping human routing correction or agent setups. Native smoke now clears the actual preceding scenario canvas and queues its synthetic document. `npm run check` and `npm run smoke` passed; 51 screenshots and sample PDFs inspected. No live provider calls, real credentials or BMW files used. Local merge history only; not pushed. Windows/Linux and real-provider evaluation remain unverified.
 - 2026-10-11: Continuing the unfinished integration worktree. Preserve merged Add to Car agents and Mastra splitter, finish Research/AI providers, then merge HIL PDF and Car changes through `ws3-car-view-animation` only. Later Alex Car branches are explicitly excluded; obsolete engine/judging experiments are not reintroduced over their replacements. Synthetic-only verification, no credentials or BMW data inspected.

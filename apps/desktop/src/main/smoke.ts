@@ -1422,6 +1422,47 @@ export async function runSmoke(
   check(await click('[data-testid="settings-section-model"]'), "settings: no model reset section");
   check(await click('[data-testid="model-electric"]'), "settings: cannot restore default model");
   await delay(700);
+  check(
+    await click('[data-testid="settings-section-model-switcher"]'),
+    "settings: open catalog switcher",
+  );
+  const catalogIds = await js<string[]>(
+    `[...document.querySelectorAll('[data-testid^="model-card-"]')].map(card => card.dataset.testid.slice('model-card-'.length))`,
+  );
+  check(catalogIds.length === 105, "settings: all 105 catalog models available");
+  for (const modelId of [catalogIds[1], catalogIds[0]]) {
+    if (!modelId) continue;
+    await go("/settings");
+    check(
+      await click('[data-testid="settings-section-model-switcher"]'),
+      "settings: reopen catalog switcher",
+    );
+    check(await click(`[data-testid="model-card-${modelId}"]`), "settings: select catalog model");
+    await go("/car");
+    await delay(1000);
+    check(
+      await js<boolean>(
+        `document.querySelector('[data-testid="car-viewer"]')?.dataset.modelId === ${JSON.stringify(modelId)}`,
+      ),
+      "car: selected catalog model reaches viewer",
+    );
+    check(
+      (await count('[data-testid="car-canvas"]')) === 1,
+      "car: catalog switch retains one canvas",
+    );
+    const stored = await invoke("settings", "get");
+    const requirements = await invoke("requirements", "list");
+    check(
+      JSON.stringify(stored.defaultScope) === JSON.stringify(modelSettings.value?.defaultScope),
+      "catalog: requirement scope unchanged",
+    );
+    check(
+      JSON.stringify(requirements) === JSON.stringify(modelRequirements.value),
+      "catalog: requirement decisions unchanged",
+    );
+    await shot(modelId === catalogIds[0] ? "car-catalog-restored" : "car-catalog-selected");
+  }
+  await go("/settings");
   check(await click('[data-testid="settings-section-app"]'), "settings: no app section");
   await delay(200);
   check(await click('[data-testid="theme-dark"]'), "settings: no dark theme option");

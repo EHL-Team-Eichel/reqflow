@@ -15,6 +15,25 @@ const render = (requirement = climate) =>
   );
 
 describe("compact requirement cards", () => {
+  it("keeps agent confidence and input rank distinct from part-placement confidence", () => {
+    const html = render({
+      ...climate,
+      inputRank: 2,
+      confidence: {
+        value: 0.62,
+        level: "medium",
+        method: "synthetic@1",
+        signals: [
+          { key: "support", label: "Evidence support", value: 0.62, weight: 1, by: "synthetic" },
+        ],
+      },
+    });
+    expect(html).toContain("part confidence");
+    expect(html).toContain("Agent confidence 62%");
+    expect(html).toContain("from 2. Priority");
+    expect(html).toContain('data-testid="car-requirement-part-confidence"');
+    expect(html).toContain('data-testid="car-requirement-confidence"');
+  });
   it("shows a clickable short requirement, hard facts, percentage, priority and status", () => {
     const html = render();
     expect(html).toContain('<button type="button"');
