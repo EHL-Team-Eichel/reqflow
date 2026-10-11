@@ -3,8 +3,13 @@
   "checkpoint_id": "01M4MANVQNK8R3VR36PGJWKCJC",
   "strategy": "manual-commit",
   "branch": "ws7-splitter-depth",
-  "checkpoints_count": 2,
-  "files_touched": null,
+  "checkpoints_count": 3,
+  "files_touched": [
+    "apps/desktop/src/main/smoke.ts",
+    "apps/desktop/src/renderer/src/components/car/partMenu.ts",
+    "apps/desktop/src/renderer/src/components/dataflow/Inspector.tsx",
+    "apps/desktop/src/renderer/src/components/dataflow/report/splitter-view.ts"
+  ],
   "sessions": [
     {
       "metadata": "/0/metadata.json",
@@ -18,6 +23,13 @@
       "transcript": "/1/full.jsonl",
       "compact_transcript": "/1/transcript.jsonl",
       "content_hash": "/1/content_hash.txt",
+      "prompt": ""
+    },
+    {
+      "metadata": "/2/metadata.json",
+      "transcript": "/2/full.jsonl",
+      "compact_transcript": "/2/transcript.jsonl",
+      "content_hash": "/2/content_hash.txt",
       "prompt": ""
     }
   ],
