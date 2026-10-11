@@ -296,6 +296,12 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
   rerun; reviewed front-quarter, side and dark views. Commit only the apron/profile,
   its new tests and these handoff entries; preserve concurrent bonnet/windscreen edits.
 
+- 2026-10-11: Final isolated front-apron commit `8f310d2` passes typecheck and all 2,311
+  tests (5 skipped), without the concurrent bonnet changes. Reviewed its front-quarter,
+  side and dark renders. Isolated smoke generates 70 screenshots with six Car-reset
+  failures; the unchanged parent `8cb210d` reproduces the same six failures. No reset,
+  renderer-selection, main-process or unrelated model changes are included in this slice.
+
 - 2026-10-11: Claimed level front-apron refinement: remove the lower bumper's upward rise
   beneath the air intake, preserve rounded nose corners and projected intake details, and
   leave concurrent bonnet/windscreen and Entire-hook edits untouched. Verify and push.
