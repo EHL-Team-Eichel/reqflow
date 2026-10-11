@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4MCS0EDKTR1DCDRTFCAER6R",
   "strategy": "manual-commit",
   "branch": "ws5-pdf-ingestion",
-  "checkpoints_count": 2,
+  "checkpoints_count": 3,
   "files_touched": [
     "data/samples/f70-feedback-test.csv",
     "data/samples/f70-feedback-test.fixture.ts",
@@ -27,13 +27,20 @@
       "compact_transcript": "/1/transcript.jsonl",
       "content_hash": "/1/content_hash.txt",
       "prompt": "/1/prompt.txt"
+    },
+    {
+      "metadata": "/2/metadata.json",
+      "transcript": "/2/full.jsonl",
+      "compact_transcript": "/2/transcript.jsonl",
+      "content_hash": "/2/content_hash.txt",
+      "prompt": "/2/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 18,
+    "input_tokens": 35104,
     "cache_creation_tokens": 7267,
-    "cache_read_tokens": 2813473,
-    "output_tokens": 4685,
-    "api_call_count": 9
+    "cache_read_tokens": 7669953,
+    "output_tokens": 7822,
+    "api_call_count": 24
   }
 }

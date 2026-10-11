@@ -1,0 +1,84 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4MCS0EDKTR1DCDRTFCAER6R",
+  "session_id": "ses_ed7d4edc8ffeyeDuO4pvaYf7jC",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-11T02:31:04.960457Z",
+  "branch": "ws5-pdf-ingestion",
+  "checkpoints_count": 1,
+  "save_step_count": 5,
+  "files_touched": [
+    "data/samples/f70-feedback-test.csv",
+    "data/samples/f70-feedback-test.fixture.ts",
+    "data/samples/f70-feedback-test.xlsx",
+    "data/samples/generate-f70-feedback-test.ts",
+    "docs/STATUS.md",
+    "docs/f70-feedback-test.md",
+    "packages/blocks/src/raw/f70-feedback-test.test.ts"
+  ],
+  "agent": "OpenCode",
+  "model": "gpt-6.1-sol",
+  "turn_id": "244d2e586eb5",
+  "checkpoint_transcript_start": 117,
+  "transcript_lines_at_start": 117,
+  "compact_transcript_start": 117,
+  "token_usage": {
+    "input_tokens": 35086,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 4856480,
+    "output_tokens": 3137,
+    "api_call_count": 15
+  },
+  "session_metrics": {
+    "turn_count": 10
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-11T02:31:04.843733Z",
+    "agent_lines": 674,
+    "agent_removed": 1,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 674,
+    "total_lines_changed": 675,
+    "agent_percentage": 100,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 674,
+      "agent_lines_removed": 1
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 674,
+      "agent_lines_removed": 1
+    },
+    {
+      "checkpoint_number": 4,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 5,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 674,
+      "agent_lines_removed": 1
+    }
+  ]
+}
