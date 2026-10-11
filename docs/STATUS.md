@@ -262,6 +262,7 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 **Animation slice:** review (implemented and verified) · **Owner:** OpenCode · **Branch:** `ws3-car-view-animation` (isolated worktree)
 **Grey-line transition slice:** done (implemented and verified) · **Owner:** OpenCode · **Branch:** `ws3-grey-line-transition` (isolated from latest main)
 **Windscreen slice:** review (implemented and verified) · **Owner:** OpenCode · **Branch:** `ws3-car-view-animation`
+**Option provenance slice:** done (main integration verified; PR #23) · **Owner:** OpenCode · **Branch:** `integrate/car-option-provenance`
 **Depends on:** nothing to start: build on `@reqflow/core/fixtures` (5 requirements, findings, sources,
 audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 serves them.
 
@@ -285,8 +286,13 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - [ ] Requirement detail / drill-down from a card on the car (the list tasks above).
 - [ ] PM override of the auto-classified part (needs a contract field + audit event, WS0).
 - [ ] Subtle blue fill on the clicked car part, with light/dark selection regressions.
+- [x] Merge Car option provenance report: exact originating run/block, HIL-style lineage and saved step data, read-only build-workflow/inner-workplace visualizer (verified against current main; PR #23).
 
 **Log**
+
+- 2026-10-11: Human requested merging option provenance to main and launching an example. Integrated in a clean worktree, isolating `6f1f036` with its Entire trailer from unrelated geometry and all concurrent unstaged work. Latest main `a86eec3` merged without source conflicts. Combined root typecheck, all 2,499 tests (6 skipped), native macOS smoke (80 screenshots), formatting and diff checks pass; reviewed the Car option report screenshot. PR #23 publishes with a merge commit, not squash. Prepared an ignored interactive Electron example for the post-merge launch: synthetic rear-seat feedback → inner-workplace HIL → Add to Car, mock AI, isolated database and outbound requests disabled. No private data, credentials, provider calls, backend contract edits or generated Entire-plugin changes included.
+- 2026-10-11: Claimed Car option provenance: open each compact option into a HIL-style report with the exact originating run/block, shared lineage steps/data tables and a read-only saved build-workflow visualizer. Preserve concurrent model/Entire work; scope is WS3 renderer/tests only, with no core, backend or editor-state changes.
+- 2026-10-11: Car option provenance implemented in `components/requirements/`, with only compact-card copy changed in `car/PartPanel.tsx`. Opening an option now shows the exact creation-audited Add to Car block and run version, current requirement/cited evidence, saved ranked inputs plus shared context, upstream HIL/splitter data, and a navigable historical workflow/inner-workplace canvas. Reuses HIL step nodes, layout basis, data tables and read-only splitter analysis; never replaces the editor draft, resumes a run or writes routing/requirement decisions. Missing/ambiguous/invalid origins and saved-output failures are explicit, retries supported, stale replies ignored. Native isolated synthetic probe passes after source/graph edits and a newer run: original evidence/labels retained, nested lineage/workplaces, light/dark, opening at 1024×640, Escape/focus return and unchanged requirements/workflow; explicit Reset passes once data is ready. Six `out/smoke/car-origin-*` screenshots reviewed. Root typecheck/build, 42 requirement tests, changed-file formatting and diff checks pass. Full suite initially passed 2,353 tests (5 skipped, two workers/30s timeout); latest rerun has six concurrent geometry assertion failures in `car/model/body.test.ts` and `sideWindow.test.ts`, untouched by this slice. Standard macOS smoke generated 70 screenshots but fails five existing Reset readiness assertions; no new report/renderer failures. WS1/WS0 follow-up: wait for loaded Car requirements before Reset and promote the historical-option/step-data/nested-workplace scenarios into shared smoke. No dependencies, core/backend/editor edits, provider calls or private BMW data. Human authorized committing/pushing only this slice, preserving concurrent model/converter/Entire changes.
 
 - 2026-10-10: Widened the front glass into a tapered M5-inspired outline, roughly 1.7 m across the base and 1.3 m at the roof, with bowed corners and slender, continuous A-pillars. Shifted the side-window front edge slightly forwards and constrained front-glazing edge relaxation to preserve station/ring order, preventing narrow-panel folds without changing the rear-edge smoothing. Kept all car parts, body proportions, interior and reversible flight. Added 7 regressions for width/taper, front coverage, rounded lower corners, pillar separation, symmetry, connected glazing and non-folded triangles. Verified `npm run typecheck && npm test` (266 passed, 25 skipped), `npm run smoke` (PASS, 29 screenshots), changed-file Prettier and `git diff --check`; reviewed front-quarter/top, light/dark and interior screenshots. The isolated native animation probe also passed outward/return, interrupted reversal, badge tracking, cabin selection and live reduced motion (8 screenshots). Source changes are limited to `model/body.ts`, its colocated tests and this WS3 handoff; ready for integration alongside the concurrent model refinements.
 - 2026-10-11: Human explicitly chose **Grey-line fade**, not pieces flying away. Restore the assembled faint-outline interior from `f95ba3d`, retaining the reversible 850 ms timeline/reduced-motion handling introduced by `5accfdf`. This supersedes the earlier flight preference. Scope: WS3 renderer/tests and this handoff only; latest main is the base and the shared checkout's uncommitted changes stay untouched. Preserve this preference in future merges; do not reintroduce exploded/disappearing exterior geometry without explicit human approval.
@@ -740,7 +746,7 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 ## WS7 — AI blocks: AI Filter, AI Splitter, Add to Car
 
-**Status:** in progress (Add to Car agents, Mastra raw splitter and transparent review done; AI Filter open) · **Owner:** Claude Code (Add to Car), OpenCode (AI Splitter) · **Branch:** `main` (both merged 2026-10-11)
+**Status:** done (human-assigned AI Filter feature only; other open WS7 tasks not claimed) · **Owner:** OpenCode (AI Filter, released); existing Add to Car/Splitter owners unchanged · **Branch:** `ai-filter-selection` · **PR:** #22
 **Depends on:** nothing for Add to Car and raw-data analysis; WS8 for the legacy requirement-factor scorer integration.
 
 **Tasks**
@@ -751,8 +757,8 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - [x] Verify the integrated slice and push `ws7-mastra-splitter` separately for team review.
 - [x] `packages/llm`: `createLlmClient(settings.llm, { apiKey })` with an `anthropic` provider (use the
       `claude-api` skill) and a deterministic `mock`; `generateObject` validates with Zod; tests use the mock.
-- [ ] AI Filter: keep items matching the criterion, extract findings with verbatim-excerpt
-      verification, log every excluded item with a reason.
+- [x] Human-assigned AI Filter: selection-only pass-through, configurable relevance criteria,
+      saved item decisions and originals, verified quotes and audited next-run restorations.
 - [x] AI Splitter: route each primary item to exactly one branch (`out-<i>`); priority preserves
       existing priorities or uses Settings-weighted factors; category / sentiment / custom use the LLM.
 - [ ] AI Splitter: replace provisional missing-factor judgement with WS8's scorer when available.
@@ -770,6 +776,26 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - [ ] End-to-end offline test: fixture records → AI Filter → AI Splitter → Add to Car with `mock`.
 
 **Log**
+
+- 2026-10-11: Human assigned only the selection-only AI Filter feature and authorized necessary
+  coordinated core/engine/DB/main/UI integration. Work isolated on `ai-filter-selection` in
+  `EHL-ai-filter`; existing `ws5-pdf-ingestion` checkout and concurrent changes untouched. Built
+  strict ID classification, unchanged originals/evidence closure, editable presets/criteria/fields,
+  saved kept/excluded/review report, verified quotes, and version-checked human restorations that
+  apply on an explicit later run only. Confidence is not calibrated; offline mock is labelled and
+  conservative. Reverified after integrating latest main (PDF ingestion, shared default AI,
+  approved grey-line fade and Splitter car-part depth): `VITEST_MAX_WORKERS=4 npm run check`
+  (2,474 passed, 6 skipped) and `npm run smoke` (PASS, 80 native screenshots); reviewed Filter
+  light/dark/minimum-window views. PR #22 is the completed feature handoff.
+  Synthetic Raw -> Filter -> HIL verifies all dispositions, unchanged objects, human audit,
+  unchanged historical outputs and override application only after explicit rerun. Initial default
+  test concurrency caused resource-contention timeouts; bounded workers passed the full suite.
+  No live API or confidential-data evaluation, vectors or Jev filtering claimed. No other open tasks
+  authorized. Classification audit records attempts; succeeded saved report/output proves publication.
+  Try: configure Raw -> AI Filter -> HIL, apply the Customer-facing preset, Start, then open the
+  Filter report. Restore an excluded item with a rationale; finish/cancel the current run and
+  explicitly Start a new run to apply it. Suggested live-model relevance evaluation is informational
+  only and needs a new human assignment; no follow-on tasks will be started automatically.
 
 - 2026-10-11: AI Splitter car-part depth (`ws7-splitter-depth`). Split by car parts now offers a
   depth: areas (Exterior, Interior, Technology & chassis) or the 13 part groups of the Car tab (Seats,

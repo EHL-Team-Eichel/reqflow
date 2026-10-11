@@ -38,6 +38,8 @@ describe("compact requirement cards", () => {
     const html = render();
     expect(html).toContain('<button type="button"');
     expect(html).toContain('aria-haspopup="dialog"');
+    expect(html).toContain("View workflow, details and sources");
+    expect(html).toContain("Workflow &amp; sources →");
     expect(html).toContain(climate.title);
     expect(html).toContain(climate.targets[0]!.target);
     expect(html).toContain(`${classifyRequirement(climate).confidencePercent}%`);

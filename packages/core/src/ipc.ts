@@ -19,6 +19,7 @@ import type { ProductScope } from "./scope";
 import type { Settings } from "./settings";
 import type { Source, SourceRecord } from "./source";
 import type { SplitterReview } from "./splitter-report";
+import type { FilterReview, FilterReviewState } from "./filter-report";
 import type { Workflow, WorkflowRun, WorkflowTemplate } from "./workflow";
 import type {
   ResearchProviderId,
@@ -138,6 +139,9 @@ export interface ReqflowApi {
     blockOutput(runId: string, blockId: string): Promise<Record<string, PipelineData>>;
     /** Human routing correction, before an editable HIL gate continues. */
     reviewSplitter(runId: string, blockId: string, review: SplitterReview): Promise<WorkflowRun>;
+    /** Pending human restorations; historical outputs are never changed. */
+    filterReviewState(runId: string, blockId: string): Promise<FilterReviewState>;
+    reviewFilter(runId: string, blockId: string, review: FilterReview): Promise<FilterReviewState>;
     resume(runId: string): Promise<WorkflowRun>;
     cancel(runId: string): Promise<WorkflowRun>;
     /** Pushed by main on every status/progress change. Returns an unsubscribe function. */
@@ -210,7 +214,17 @@ export const IPC_INVOKE_METHODS = {
   blocks: ["preview"],
   workflows: ["list", "get", "save", "remove"],
   files: ["import"],
-  runs: ["start", "get", "list", "blockOutput", "reviewSplitter", "resume", "cancel"],
+  runs: [
+    "start",
+    "get",
+    "list",
+    "blockOutput",
+    "reviewSplitter",
+    "filterReviewState",
+    "reviewFilter",
+    "resume",
+    "cancel",
+  ],
   requirements: ["list", "get", "edit", "decide", "reset"],
   audit: ["list"],
   research: ["agents", "providers", "configure", "test", "dataset"],
