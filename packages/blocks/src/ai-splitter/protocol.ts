@@ -1,4 +1,4 @@
-import type { LlmObjectRequest } from "@reqflow/core";
+import { CarPartDepth, type LlmObjectRequest } from "@reqflow/core";
 import type { BlockContext } from "@reqflow/engine";
 import { z } from "zod";
 
@@ -21,6 +21,8 @@ export const SplitterParams = z
         (labels) => new Set(labels.map((s) => s.toLowerCase())).size === labels.length,
         "Branch names must be unique",
       ),
+    /** Car parts only: areas or part groups; the outputs follow it, not `branches`. */
+    partDepth: CarPartDepth.default("areas"),
     instruction: z.string().max(5000),
     model: z.enum(["default", "fast"]),
   })

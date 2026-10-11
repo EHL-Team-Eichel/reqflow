@@ -11,7 +11,9 @@ import { z } from "zod";
  * ]}. IDs of discovered needs must start with needIdPrefix (e.g. "d0_").
  * consolidate@1 request: {contract, mode, instruction, needs:[{id,label,description}]}.
  * Every discovery ID appears exactly once in aliasIds, including singleton aliases.
- * plan@1 request: {contract, mode, instruction, branchCount, needs:[{id,label,description,aliasIds}]}.
+ * plan@1 request: {contract, mode, instruction, branchCount, fixedGroups?, needs:[{id,label,description,aliasIds}]}.
+ * car_parts sends fixedGroups:[{id,label,description}] (the chosen depth, "other" last); the plan
+ * must return exactly those ids.
  * car_parts/custom return exactly branchCount groups; empty groups are allowed. Every canonical
  * need belongs to exactly one group. Group order defines out-0, out-1, etc. Saved labels are not used.
  * customer_priority uses the canonical needs themselves as its fixed plan, without a plan LLM call.
@@ -55,6 +57,8 @@ export const Consolidate = z.strictObject({
   contract: z.literal("reqflow.ai-splitter.consolidate@1"),
   needs: z.array(Need.extend({ aliasIds: z.array(Id).min(1).max(10000) })).max(400),
 });
+/** Custom splits have 2–10 outputs; car parts by part group have 13 plus Other. */
+export const MAX_ANALYTICAL_OUTPUTS = 16;
 export const GroupPlan = z.strictObject({
   contract: z.literal("reqflow.ai-splitter.plan@1"),
   groups: z
@@ -68,7 +72,7 @@ export const GroupPlan = z.strictObject({
       }),
     )
     .min(2)
-    .max(10),
+    .max(MAX_ANALYTICAL_OUTPUTS),
 });
 export const SignalAssignments = z.strictObject({
   contract: z.literal("reqflow.ai-splitter.assign@1"),
@@ -120,6 +124,8 @@ Explain and cite the verbatim opinion for feedback. Sales, equipment, competitor
 Consolidation: merge synonymous needs across ALL batches. Preserve distinct needs and conflicting evidence.
 Map EVERY discovery ID exactly once through aliasIds; never invent alias IDs. Singleton aliases are required.
 Plan: create exactly branchCount global car-part/custom groups, including empty groups if necessary.
+When fixedGroups is supplied, return exactly those groups (same id, label, description), in that order,
+and only decide which needs belong to each; a need about no specific part of the car goes to "other".
 Each canonical need belongs to exactly one group. Customer-priority needs are not branch labels or comment-specific groups.
 Assignment: use only the fixed canonical needs and groups. Cover every item ID and every supplied needId exactly once.
 Signals can support, oppose, or be unclear. Cite only the assigned record's source/record IDs and an exact text substring.
