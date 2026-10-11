@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4MA5SH6ZASGJDKP5DMBAEMK",
   "strategy": "manual-commit",
   "branch": "ws5-pdf-ingestion",
-  "checkpoints_count": 5,
+  "checkpoints_count": 10,
   "files_touched": [
     "docs/STATUS.md"
   ],
@@ -28,13 +28,20 @@
       "compact_transcript": "/2/transcript.jsonl",
       "content_hash": "/2/content_hash.txt",
       "prompt": ""
+    },
+    {
+      "metadata": "/3/metadata.json",
+      "transcript": "/3/full.jsonl",
+      "compact_transcript": "/3/transcript.jsonl",
+      "content_hash": "/3/content_hash.txt",
+      "prompt": ""
     }
   ],
   "token_usage": {
-    "input_tokens": 95507,
+    "input_tokens": 116655,
     "cache_creation_tokens": 2560703,
-    "cache_read_tokens": 298424420,
-    "output_tokens": 1350858,
-    "api_call_count": 909
+    "cache_read_tokens": 299387015,
+    "output_tokens": 1357107,
+    "api_call_count": 922
   }
 }
