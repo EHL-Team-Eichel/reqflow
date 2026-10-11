@@ -15,7 +15,7 @@ export function RequirementCard({
     <button
       type="button"
       onClick={onOpen}
-      aria-label={`View details and sources for ${r.id}: ${r.title}`}
+      aria-label={`View workflow, details and sources for ${r.id}: ${r.title}`}
       aria-haspopup="dialog"
       data-testid="car-requirement"
       data-requirement-id={r.id}
@@ -74,7 +74,7 @@ export function RequirementCard({
         )}
         {a.confidence === "low" && <span className="text-warn">Check placement</span>}
         <span className="ml-auto text-brand" aria-hidden="true">
-          Details →
+          Workflow & sources →
         </span>
       </span>
     </button>
