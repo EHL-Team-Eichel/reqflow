@@ -10,7 +10,7 @@ import { api } from "@/lib/api";
 import { BlockPalette } from "./BlockPalette";
 import { BlockIcon } from "./BlockIcon";
 import { dataflowStore } from "./store";
-import { runStore } from "./run-session";
+import { runStore, workflowStore } from "./run-session";
 import { ANALYTICS_TEMPLATES, FEEDBACK_TEMPLATES, WorkflowTemplateSchema } from "./templates";
 
 const MODES = [
@@ -63,7 +63,12 @@ export function WorkflowSidebar({ canvasRef }: { canvasRef: RefObject<HTMLDivEle
       )
     )
       return;
-    if (!dataflowStore.getState().loadTemplate(template, () => runStore.getState().reset())) return;
+    if (
+      !dataflowStore
+        .getState()
+        .loadTemplate(template, () => workflowStore.getState().detachWorkflow())
+    )
+      return;
     // Fit after the replacement graph and its measured nodes have reached React Flow.
     requestAnimationFrame(() =>
       requestAnimationFrame(() => void fitView({ maxZoom: 0.9, padding: 0.25, duration: 200 })),

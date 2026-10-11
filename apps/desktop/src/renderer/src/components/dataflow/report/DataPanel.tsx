@@ -11,7 +11,8 @@ import { TextInput } from "@/components/ui/controls";
 import { Button } from "@/components/ui/Button";
 import { type PreviewState } from "../usePreview";
 import { api } from "@/lib/api";
-import { useSettings } from "@/lib/settings";
+import { useStore } from "zustand";
+import { workflowStore } from "../run-session";
 import { previewReportInputs, reportPreviewInputs } from "./preview";
 import { loadRunData } from "./run-data";
 import { ExportSamplePanel } from "./ExportSamplePanel";
@@ -118,7 +119,8 @@ function DataPanelBody({
   const [activeTab, setActiveTab] = useState<Tab | null>(null);
   const [reload, setReload] = useState(0);
 
-  const scope = useSettings((s) => s.settings.defaultScope);
+  const draftScope = useStore(workflowStore, (s) => s.scope);
+  const scope = run?.scope ?? draftScope;
   const inputs = useMemo(
     () => (run ? null : reportPreviewInputs(root, step)),
     [root, step, run?.id],

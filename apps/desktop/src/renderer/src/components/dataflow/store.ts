@@ -28,6 +28,9 @@ import type { EdgeChange, NodeChange } from "@xyflow/react";
 import { useStore } from "zustand";
 import { createStore } from "zustand/vanilla";
 import { instantiateTemplate } from "./templates";
+import { selectedClipboard, pasteClipboard } from "./clipboard";
+import { layoutWorkplace } from "./layout";
+import { WorkflowGraph as GraphSchema, validateGraph } from "@reqflow/core";
 
 /**
  * Editor state for the Data Flow page. The workflow is one tree of workplaces (`root`); `path`
@@ -56,6 +59,9 @@ export interface Crumb {
 export interface DataflowState {
   name: string;
   root: WorkflowGraph;
+  past: WorkflowGraph[];
+  future: WorkflowGraph[];
+  clipboard: WorkflowGraph | null;
   path: string[]; // ids of blocks whose inner workplaces are open, outermost first
   selectedBlockIds: string[];
   selectedEdgeIds: string[];
@@ -70,6 +76,14 @@ export interface DataflowState {
 
   /** Adds a block to the open workplace, selects it and returns its id. */
   addBlock(kind: PaletteBlockKind, position: XY): string;
+  undo(): boolean;
+  redo(): boolean;
+  copySelection(): boolean;
+  pasteSelection(position?: XY): boolean;
+  duplicateSelection(): boolean;
+  tidyUp(): boolean;
+  setName(name: string): void;
+  replaceWorkflow(graph: WorkflowGraph, name: string): void;
   loadTemplate(template: WorkflowTemplate, beforeReplace?: () => boolean): boolean;
   applyNodeChanges(changes: NodeChange[]): void;
   applyEdgeChanges(changes: EdgeChange[]): void;
@@ -152,14 +166,50 @@ function paramError(err: unknown, kind: WorkflowBlock["kind"]): string {
 
 export function createDataflowStore(initial: WorkflowGraph = emptyGraph()) {
   let noticeId = 0;
+  let dragStart: WorkflowGraph | null = null;
+  let pastes = 0;
+  const sameGraph = (a: WorkflowGraph, b: WorkflowGraph) =>
+    a === b || JSON.stringify(a) === JSON.stringify(b);
 
   return createStore<DataflowState>()((set, get) => {
+    const restored = (root: WorkflowGraph) => {
+      const path: string[] = [];
+      let graph = root;
+      for (const id of get().path) {
+        const block = graph.blocks.find((candidate) => candidate.id === id);
+        if (!block?.inner) break;
+        path.push(id);
+        graph = block.inner;
+      }
+      return {
+        root,
+        path,
+        selectedBlockIds: get().selectedBlockIds.filter((id) =>
+          graph.blocks.some((block) => block.id === id),
+        ),
+        selectedEdgeIds: get().selectedEdgeIds.filter((id) =>
+          graph.edges.some((edge) => edge.id === id),
+        ),
+        measured: {},
+        report: null,
+        reasoning: null,
+        analytics: null,
+      };
+    };
+
     /** Runs `update` on the open workplace; on error, shows it and leaves the state unchanged. */
-    const edit = (update: (graph: WorkflowGraph) => WorkflowGraph): boolean => {
+    const edit = (update: (graph: WorkflowGraph) => WorkflowGraph, history = true): boolean => {
       try {
         const current = selectWorkplace(get());
         const next = update(current);
-        if (next !== current) set({ root: updateGraphAt(get().root, get().path, () => next) });
+        if (!sameGraph(next, current)) {
+          const previous = get().root;
+          set({
+            root: updateGraphAt(previous, get().path, () => next),
+            future: [],
+            ...(history ? { past: [...get().past, previous].slice(-100) } : {}),
+          });
+        }
         return true;
       } catch (err) {
         get().notify("error", message(err));
@@ -170,6 +220,9 @@ export function createDataflowStore(initial: WorkflowGraph = emptyGraph()) {
     return {
       name: "Data Flow",
       root: withSplitterWorkplaces(initial),
+      past: [],
+      future: [],
+      clipboard: null,
       path: [],
       selectedBlockIds: [],
       selectedEdgeIds: [],
@@ -178,6 +231,111 @@ export function createDataflowStore(initial: WorkflowGraph = emptyGraph()) {
       report: null,
       reasoning: null,
       analytics: null,
+
+      undo() {
+        const root = get().past.at(-1);
+        if (!root) return false;
+        dragStart = null;
+        set({
+          ...restored(root),
+          past: get().past.slice(0, -1),
+          future: [get().root, ...get().future].slice(0, 100),
+        });
+        return true;
+      },
+
+      redo() {
+        const root = get().future[0];
+        if (!root) return false;
+        dragStart = null;
+        set({
+          ...restored(root),
+          past: [...get().past, get().root].slice(-100),
+          future: get().future.slice(1),
+        });
+        return true;
+      },
+
+      copySelection() {
+        const clipboard = selectedClipboard(selectWorkplace(get()), get().selectedBlockIds);
+        if (!clipboard) return false;
+        pastes = 0;
+        set({ clipboard });
+        return true;
+      },
+
+      pasteSelection(position) {
+        const clipboard = get().clipboard;
+        if (!clipboard?.blocks.length) return false;
+        const minX = Math.min(...clipboard.blocks.map((block) => block.position.x));
+        const minY = Math.min(...clipboard.blocks.map((block) => block.position.y));
+        const offset = position
+          ? { x: position.x - minX, y: position.y - minY }
+          : { x: 48 * (pastes + 1), y: 48 * (pastes + 1) };
+        try {
+          const pasted = pasteClipboard(clipboard, newBlockId, offset);
+          let names = get().root;
+          for (const block of pasted.blocks) {
+            block.label = nextBlockLabel(names, `${block.label.slice(0, 68)} copy`);
+            names = { ...names, blocks: [...names.blocks, block] };
+          }
+          if (
+            !edit((graph) => ({
+              blocks: [...graph.blocks, ...pasted.blocks],
+              edges: [...graph.edges, ...pasted.edges],
+            }))
+          )
+            return false;
+          pastes++;
+          set({ selectedBlockIds: pasted.blocks.map((block) => block.id), selectedEdgeIds: [] });
+          return true;
+        } catch (error) {
+          get().notify("error", message(error));
+          return false;
+        }
+      },
+
+      duplicateSelection() {
+        const clipboard = get().clipboard;
+        const previousPastes = pastes;
+        if (!get().copySelection()) return false;
+        const copied = get().pasteSelection();
+        set({ clipboard });
+        pastes = previousPastes;
+        return copied;
+      },
+
+      tidyUp() {
+        const issues = validateGraph(get().root);
+        if (issues.length) {
+          get().notify("error", issues[0]!.message);
+          return false;
+        }
+        const previous = get().root;
+        const ok = edit((graph) => layoutWorkplace(graph, get().measured));
+        return ok && get().root !== previous;
+      },
+
+      setName(name) {
+        set({ name });
+      },
+
+      replaceWorkflow(input, name) {
+        const root = withSplitterWorkplaces(GraphSchema.parse(input));
+        const issues = validateGraph(root);
+        if (issues.length) throw new Error(issues.map((issue) => issue.message).join("; "));
+        if (!name.trim()) throw new Error("Give the workflow a name before loading it.");
+        dragStart = null;
+        set({
+          ...restored(root),
+          name,
+          path: [],
+          selectedBlockIds: [],
+          selectedEdgeIds: [],
+          past: [],
+          future: [],
+        });
+      },
 
       loadTemplate(template, beforeReplace) {
         try {
@@ -196,7 +354,10 @@ export function createDataflowStore(initial: WorkflowGraph = emptyGraph()) {
             report: null,
             reasoning: null,
             analytics: null,
+            past: [],
+            future: [],
           });
+          dragStart = null;
           get().notify(
             "info",
             `Loaded "${template.name}". Configure the data sources, then press Start when ready.`,
@@ -219,6 +380,13 @@ export function createDataflowStore(initial: WorkflowGraph = emptyGraph()) {
       },
 
       applyNodeChanges(changes) {
+        const dragging = changes.some(
+          (change) => change.type === "position" && change.dragging === true,
+        );
+        const finished = changes.some(
+          (change) => change.type === "position" && change.dragging === false,
+        );
+        if (dragging && !dragStart) dragStart = get().root;
         let selected = new Set(get().selectedBlockIds);
         let measured = get().measured;
         const removed: string[] = [];
@@ -235,10 +403,15 @@ export function createDataflowStore(initial: WorkflowGraph = emptyGraph()) {
             } else if (c.type === "remove") removed.push(c.id);
           }
           return removed.length ? removeBlocks(g, removed) : g;
-        });
+        }, dragStart === null);
         if (!ok) return;
         for (const id of removed) selected.delete(id);
         set({ selectedBlockIds: [...selected], measured });
+        if (finished && dragStart) {
+          if (!sameGraph(dragStart, get().root))
+            set({ past: [...get().past, dragStart].slice(-100), future: [] });
+          dragStart = null;
+        }
       },
 
       applyEdgeChanges(changes) {
@@ -287,7 +460,7 @@ export function createDataflowStore(initial: WorkflowGraph = emptyGraph()) {
         if (!block) return `Block "${blockId}" is not on this workplace`;
         try {
           const result = setBlockParams(graph, blockId, params);
-          set({ root: updateGraphAt(get().root, get().path, () => result.graph) });
+          if (!edit(() => result.graph)) return "The parameters could not be applied.";
           const n = result.removedEdges.length;
           if (n > 0) {
             get().notify(
@@ -304,7 +477,7 @@ export function createDataflowStore(initial: WorkflowGraph = emptyGraph()) {
       renameBlock(blockId, label) {
         try {
           const graph = renameInGraph(selectWorkplace(get()), blockId, label);
-          set({ root: updateGraphAt(get().root, get().path, () => graph) });
+          if (!edit(() => graph)) return "The block could not be renamed.";
           return null;
         } catch (err) {
           return message(err);
