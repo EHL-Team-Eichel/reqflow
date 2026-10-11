@@ -1,4 +1,11 @@
-import { CATEGORY_LABELS, ScoreFactor, Source, SourceRecord } from "@reqflow/core";
+import {
+  CATEGORY_LABELS,
+  FILTER_CUSTOMER_CRITERION,
+  FILTER_PRESETS,
+  ScoreFactor,
+  Source,
+  SourceRecord,
+} from "@reqflow/core";
 import { z } from "zod";
 
 const Item = z.object({
@@ -465,6 +472,120 @@ function rawObject(raw: unknown, promptLength: number): unknown {
   }
 }
 
+const FilterPayload = z.object({
+  contract: z.literal("reqflow.ai-filter.selection@1"),
+  configuration: z.object({
+    criterion: z.string().trim().min(1),
+    include: z.string(),
+    exclude: z.string(),
+    examples: z.string(),
+    fields: z.array(z.string()),
+  }),
+  items: z
+    .array(
+      z.object({
+        id: z.string().min(1),
+        layer: z.enum(["records", "findings", "themes", "requirements"]),
+        item: z.record(z.string(), z.unknown()),
+        assessed: z.record(z.string(), z.unknown()),
+        missingFields: z.boolean(),
+        context: z.object({ records: z.array(SourceRecord) }),
+      }),
+    )
+    .min(1)
+    .max(20),
+});
+const FILTER_OUTSIDE =
+  /\b(pricing|price|cost|regulation|regulatory|homologation|tax|taxes|engineering spec|torque spec|emissions compliance)\b/i;
+const FILTER_CUSTOMER =
+  /\b(comfort|space|usability|equipment|features?|infotainment|digital services|variants?|packages?|acceleration|handling|braking|steering|ride|range|charging|quality|design|noise|visibility|safety|reliability)\b/i;
+const FILTER_PURE_OUTSIDE =
+  /^(?:(?:pricing|price|cost|regulation|regulatory|homologation|tax|taxes|engineering spec|torque spec|emissions compliance)|(?:and|or|is|are|too|very|high|low|expensive|unacceptable|only|purely)|[\s.,;:!?])+$/i;
+
+function filterObject(raw: unknown, promptLength: number): unknown {
+  const checked = FilterPayload.safeParse(raw);
+  if (!checked.success || promptLength > 48000)
+    throw new Error("Unsupported or oversized mock AI Filter selection contract.");
+  const payload = checked.data;
+  unique(
+    payload.items.map((item) => item.id),
+    "filter item IDs",
+  );
+  const configuration = payload.configuration;
+  const supported =
+    configuration.criterion === FILTER_CUSTOMER_CRITERION &&
+    ((!configuration.include.trim() &&
+      !configuration.exclude.trim() &&
+      !configuration.examples.trim()) ||
+      (configuration.include === FILTER_PRESETS["customer-facing"].include &&
+        configuration.exclude === FILTER_PRESETS["customer-facing"].exclude &&
+        configuration.examples === FILTER_PRESETS["customer-facing"].examples));
+  return {
+    contract: payload.contract,
+    decisions: payload.items.map((entry) => {
+      if (entry.item.id !== entry.id) throw new Error("Mock AI Filter item ID mismatch.");
+      const record =
+        entry.layer === "records"
+          ? entry.context.records.find((r) => r.id === entry.id)
+          : undefined;
+      if (entry.layer === "records" && !record)
+        throw new Error("Mock AI Filter record context is unavailable.");
+      const values = configuration.fields.length
+        ? Object.values(entry.assessed)
+        : [
+            entry.item.text,
+            entry.item.title,
+            entry.item.description,
+            entry.item.statement,
+            entry.item.label,
+            entry.item.summary,
+            entry.item.fields,
+            ...entry.context.records.map((record) => record.fields),
+          ];
+      const text = values
+        .map((v) => (typeof v === "string" ? v : v == null ? "" : JSON.stringify(v)))
+        .join(" ");
+      const relevant = FILTER_CUSTOMER.test(text) || TOPICS.some((topic) => topic.words.test(text));
+      const outside = FILTER_OUTSIDE.test(text);
+      const pureValue = (value: unknown) =>
+        value == null ||
+        (typeof value === "string" && (!value.trim() || FILTER_PURE_OUTSIDE.test(value.trim())));
+      const purelyOutside = configuration.fields.length
+        ? values.every(pureValue)
+        : record
+          ? FILTER_PURE_OUTSIDE.test(record.text.trim()) &&
+            Object.entries(record.fields ?? {}).every(
+              ([key, value]) =>
+                /^(id|feedback id|market|country|language)$/i.test(key) || pureValue(value),
+            )
+          : FILTER_PURE_OUTSIDE.test(text.trim());
+      const decision =
+        !supported || entry.missingFields
+          ? "review"
+          : relevant
+            ? "keep"
+            : outside && purelyOutside
+              ? "exclude"
+              : "review";
+      return {
+        id: entry.id,
+        decision,
+        confidence: decision === "review" ? 0 : 0.8,
+        reason: !supported
+          ? "[OFFLINE MOCK] Custom semantic criteria are not interpreted; human review required."
+          : entry.missingFields
+            ? "[OFFLINE MOCK] Selected fields unavailable; review required."
+            : relevant
+              ? "[OFFLINE MOCK] Customer-facing vocabulary matched; positive, negative and mixed-topic content retained intact. Keyword heuristic, not semantic AI assessment."
+              : outside
+                ? "[OFFLINE MOCK] Only explicit out-of-scope vocabulary matched. Keyword heuristic, not semantic AI assessment."
+                : "[OFFLINE MOCK] No supported vocabulary match; uncertainty requires review, not an ID-hash guess.",
+        quotes: record?.text.trim() ? [{ recordId: record.id, excerpt: excerpt(record.text) }] : [],
+      };
+    }),
+  };
+}
+
 /** Deliberately narrow offline protocol, not a generic schema synthesis engine. */
 export function mockObject(prompt: string): unknown {
   let raw: unknown;
@@ -475,6 +596,13 @@ export function mockObject(prompt: string): unknown {
       "Unsupported prompt for mock provider; expected explicit AI Splitter JSON contract.",
     );
   }
+  if (
+    raw &&
+    typeof raw === "object" &&
+    "contract" in raw &&
+    raw.contract === "reqflow.ai-filter.selection@1"
+  )
+    return filterObject(raw, prompt.length);
   if (
     raw &&
     typeof raw === "object" &&

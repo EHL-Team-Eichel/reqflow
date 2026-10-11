@@ -25,6 +25,8 @@ export const AuditAction = z.enum([
   "finding.extracted",
   "finding.merged",
   "finding.excluded", // scope filter dropped it (rationale = reason)
+  "filter.classified",
+  "filter.restored",
   "requirement.proposed",
   "requirement.edited",
   "requirement.scored",
@@ -52,6 +54,8 @@ export type AuditAction = z.infer<typeof AuditAction>;
 
 export const AuditEntityType = z.enum([
   "source",
+  "record",
+  "filter",
   "finding",
   "requirement",
   "workflow",

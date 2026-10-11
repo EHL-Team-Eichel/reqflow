@@ -729,7 +729,7 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 ## WS7 — AI blocks: AI Filter, AI Splitter, Add to Car
 
-**Status:** in progress (Add to Car agents, Mastra raw splitter and transparent review done; AI Filter open) · **Owner:** Claude Code (Add to Car), OpenCode (AI Splitter) · **Branch:** `main` (both merged 2026-10-11)
+**Status:** review (human-assigned AI Filter selection-only feature implemented and verified) · **Owner:** OpenCode (AI Filter); existing Add to Car/Splitter owners unchanged · **Branch:** `ai-filter-selection` (isolated worktree; existing blocks on `main`)
 **Depends on:** nothing for Add to Car and raw-data analysis; WS8 for the legacy requirement-factor scorer integration.
 
 **Tasks**
@@ -740,8 +740,8 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - [x] Verify the integrated slice and push `ws7-mastra-splitter` separately for team review.
 - [x] `packages/llm`: `createLlmClient(settings.llm, { apiKey })` with an `anthropic` provider (use the
       `claude-api` skill) and a deterministic `mock`; `generateObject` validates with Zod; tests use the mock.
-- [ ] AI Filter: keep items matching the criterion, extract findings with verbatim-excerpt
-      verification, log every excluded item with a reason.
+- [ ] Human-assigned AI Filter: selection-only pass-through, configurable relevance criteria,
+      saved item decisions and originals, verified quotes and audited next-run restorations.
 - [x] AI Splitter: route each primary item to exactly one branch (`out-<i>`); priority preserves
       existing priorities or uses Settings-weighted factors; category / sentiment / custom use the LLM.
 - [ ] AI Splitter: replace provisional missing-factor judgement with WS8's scorer when available.
@@ -759,6 +759,20 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - [ ] End-to-end offline test: fixture records → AI Filter → AI Splitter → Add to Car with `mock`.
 
 **Log**
+
+- 2026-10-11: Human assigned only the selection-only AI Filter feature and authorized necessary
+  coordinated core/engine/DB/main/UI integration. Work isolated on `ai-filter-selection` in
+  `EHL-ai-filter`; existing `ws5-pdf-ingestion` checkout and concurrent changes untouched. Built
+  strict ID classification, unchanged originals/evidence closure, editable presets/criteria/fields,
+  saved kept/excluded/review report, verified quotes, and version-checked human restorations that
+  apply on an explicit later run only. Confidence is not calibrated; offline mock is labelled and
+  conservative. Verified `VITEST_MAX_WORKERS=4 npm run check` (2,411 passed, 5 skipped) and
+  `npm run smoke` (PASS, 78 native screenshots); reviewed Filter light/dark/minimum-window views.
+  Synthetic Raw -> Filter -> HIL verifies all dispositions, unchanged objects, human audit,
+  unchanged historical outputs and override application only after explicit rerun. Initial default
+  test concurrency caused resource-contention timeouts; bounded workers passed the full suite.
+  No live API or confidential-data evaluation, vectors or Jev filtering claimed. No other open tasks
+  authorized. Classification audit records attempts; succeeded saved report/output proves publication.
 
 - 2026-10-11: **Add to Car rebuilt as an agent system** on `ws7-add-to-car-agents` (the rule-based
   derive/splitter/taxonomy are gone). Contracts: `Requirement.confidence` + `inputRank`,
