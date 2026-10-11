@@ -1,0 +1,5 @@
+what remaining ws tasks are on the github repo
+
+---
+
+so what is there actually still to do that doesnt appera in implementatino/integration logs

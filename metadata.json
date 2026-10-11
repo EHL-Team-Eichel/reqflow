@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4MKT0EKSBWSWF1MXEPT8DHZ",
   "strategy": "manual-commit",
   "branch": "fix/gemini-max-items",
-  "checkpoints_count": 7,
+  "checkpoints_count": 9,
   "files_touched": [
     "packages/blocks/src/ai-splitter/ai-splitter.test.ts",
     "packages/blocks/src/ai-splitter/priority.ts"
@@ -50,13 +50,20 @@
       "compact_transcript": "/5/transcript.jsonl",
       "content_hash": "/5/content_hash.txt",
       "prompt": ""
+    },
+    {
+      "metadata": "/6/metadata.json",
+      "transcript": "/6/full.jsonl",
+      "compact_transcript": "/6/transcript.jsonl",
+      "content_hash": "/6/content_hash.txt",
+      "prompt": "/6/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 14,
+    "input_tokens": 359582,
     "cache_creation_tokens": 7970,
-    "cache_read_tokens": 4138044,
-    "output_tokens": 5643,
-    "api_call_count": 7
+    "cache_read_tokens": 6587689,
+    "output_tokens": 8143,
+    "api_call_count": 15
   }
 }
