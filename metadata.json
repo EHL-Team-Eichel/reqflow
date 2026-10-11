@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4MCJWXBVJ1BJDD1KHSKFD4B",
   "strategy": "manual-commit",
   "branch": "ws5-pdf-provider-fix",
-  "checkpoints_count": 6,
+  "checkpoints_count": 7,
   "files_touched": [
     "docs/STATUS.md"
   ],
@@ -28,6 +28,13 @@
       "compact_transcript": "/2/transcript.jsonl",
       "content_hash": "/2/content_hash.txt",
       "prompt": "/2/prompt.txt"
+    },
+    {
+      "metadata": "/3/metadata.json",
+      "transcript": "/3/full.jsonl",
+      "compact_transcript": "/3/transcript.jsonl",
+      "content_hash": "/3/content_hash.txt",
+      "prompt": ""
     }
   ],
   "token_usage": {
