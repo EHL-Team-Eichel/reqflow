@@ -1,0 +1,37 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_m3_coupe_2008.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_m3_coupe_2008",
+    "name": "2008 BMW M3 Coupe",
+    "sketchfabUid": "dbd8f3e6465c4c249160fef007756bbd",
+    "year": 2008,
+    "series": "M3",
+    "chassisCode": "E92",
+    "bodyType": "coupe",
+    "defaultPowertrain": "gasoline",
+    "supportedPowertrains": ["gasoline"],
+    "dimensions": {
+      "length": 4.61,
+      "width": 2.006718508674944,
+      "height": 1.4173238225514184,
+      "wheelbase": 2.766,
+      "frontAxleX": 1.383,
+      "rearAxleX": -1.383,
+      "track": 1.685643547286953,
+      "tyreRadius": 0.32598447918682627,
+      "tyreWidth": 0.26087340612774274,
+      "groundClearance": 0.14
+    },
+    "specialParts": [],
+    "description": "Procedural concept derived from 2008 BMW M3 Coupe. Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/2008-bmw-m3-coupe-dbd8f3e6465c4c249160fef007756bbd",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+  },
+  "partIds": ["body", "side_windows"],
+  "exteriorPartIds": ["body", "side_windows"]
+}

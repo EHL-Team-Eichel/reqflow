@@ -1,0 +1,37 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_750li_xdrive_2020.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_750li_xdrive_2020",
+    "name": "2020 BMW 750Li xDrive",
+    "sketchfabUid": "0c3ebd90567a409894682becd3d92efe",
+    "year": 2020,
+    "series": "7 Series",
+    "chassisCode": "G12",
+    "bodyType": "sedan",
+    "defaultPowertrain": "gasoline",
+    "supportedPowertrains": ["gasoline"],
+    "dimensions": {
+      "length": 5.26,
+      "width": 2.1849883075960994,
+      "height": 1.5077691693043789,
+      "wheelbase": 3.1559999999999997,
+      "frontAxleX": 1.5779999999999998,
+      "rearAxleX": -1.5779999999999998,
+      "track": 1.8353901783807234,
+      "tyreRadius": 0.34678690894000713,
+      "tyreWidth": 0.28404847998749294,
+      "groundClearance": 0.14
+    },
+    "specialParts": [],
+    "description": "Procedural concept derived from 2020 BMW 750Li xDrive. Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/2020-bmw-750li-xdrive-0c3ebd90567a409894682becd3d92efe",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+  },
+  "partIds": ["body", "headlights", "mirrors", "side_windows", "taillights"],
+  "exteriorPartIds": ["body", "headlights", "mirrors", "side_windows", "taillights"]
+}

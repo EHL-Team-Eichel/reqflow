@@ -1,0 +1,62 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_x3_m40i_2024.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_x3_m40i_2024",
+    "name": "2024 BMW X3 M40i",
+    "sketchfabUid": "d35d04aac7f242d997af5d8d2d7fbeca",
+    "year": 2024,
+    "series": "X3",
+    "chassisCode": "G01",
+    "bodyType": "suv",
+    "defaultPowertrain": "gasoline",
+    "supportedPowertrains": ["gasoline"],
+    "dimensions": {
+      "length": 4.71,
+      "width": 2.1620145868881693,
+      "height": 1.6870103790930806,
+      "wheelbase": 2.8604196701523392,
+      "frontAxleX": 1.4893287728307796,
+      "rearAxleX": -1.3710908973215599,
+      "track": 1.5783156247680943,
+      "tyreRadius": 0.3633613601090056,
+      "tyreWidth": 0.25965082358252595,
+      "groundClearance": 0.14
+    },
+    "specialParts": [],
+    "description": "Procedural concept derived from 2024 BMW X3 M40i. Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/2024-bmw-x3-m40i-d35d04aac7f242d997af5d8d2d7fbeca",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+  },
+  "partIds": [
+    "body",
+    "dashboard",
+    "exhaust_system",
+    "front_bumper",
+    "front_doors",
+    "headlights",
+    "hood",
+    "mirrors",
+    "rear_bumper",
+    "side_windows",
+    "trunk_lid",
+    "wheels"
+  ],
+  "exteriorPartIds": [
+    "body",
+    "exhaust_system",
+    "front_bumper",
+    "front_doors",
+    "headlights",
+    "hood",
+    "mirrors",
+    "rear_bumper",
+    "side_windows",
+    "trunk_lid",
+    "wheels"
+  ]
+}

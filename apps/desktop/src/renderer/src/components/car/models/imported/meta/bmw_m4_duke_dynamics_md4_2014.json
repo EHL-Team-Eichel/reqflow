@@ -1,0 +1,68 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_m4_duke_dynamics_md4_2014.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_m4_duke_dynamics_md4_2014",
+    "name": "2014 BMW M4 Based MD4 by Duke Dynamics",
+    "sketchfabUid": "d8f91a3589b54389b8010a8e77c9e1af",
+    "year": 2014,
+    "series": "M4",
+    "chassisCode": "F82",
+    "bodyType": "coupe",
+    "defaultPowertrain": "gasoline",
+    "supportedPowertrains": ["gasoline"],
+    "dimensions": {
+      "length": 4.67,
+      "width": 2.0099054092993045,
+      "height": 1.3576383439400117,
+      "wheelbase": 2.802,
+      "frontAxleX": 1.401,
+      "rearAxleX": -1.401,
+      "track": 1.6883205438114157,
+      "tyreRadius": 0.31225681910620273,
+      "tyreWidth": 0.2612877032089096,
+      "groundClearance": 0.14
+    },
+    "specialParts": ["front_splitter"],
+    "description": "Procedural concept derived from 2014 BMW M4 Based MD4 by Duke Dynamics. Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/2014-bmw-m4-based-md4-by-duke-dynamics-d8f91a3589b54389b8010a8e77c9e1af",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by/4.0/"
+  },
+  "partIds": [
+    "body",
+    "exhaust_system",
+    "front_bumper",
+    "front_doors",
+    "front_splitter",
+    "headlights",
+    "hood",
+    "kidney_grille",
+    "mirrors",
+    "rear_bumper",
+    "roof",
+    "side_windows",
+    "steering_wheel",
+    "taillights",
+    "wheels"
+  ],
+  "exteriorPartIds": [
+    "body",
+    "exhaust_system",
+    "front_bumper",
+    "front_doors",
+    "front_splitter",
+    "headlights",
+    "hood",
+    "kidney_grille",
+    "mirrors",
+    "rear_bumper",
+    "roof",
+    "side_windows",
+    "taillights",
+    "wheels"
+  ]
+}

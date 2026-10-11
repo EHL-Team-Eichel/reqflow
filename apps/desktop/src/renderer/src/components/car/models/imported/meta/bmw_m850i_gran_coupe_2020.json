@@ -1,0 +1,45 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_m850i_gran_coupe_2020.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_m850i_gran_coupe_2020",
+    "name": "2020 BMW M850i Gran Coupe",
+    "sketchfabUid": "6d51b027dba044a4aa6c93d11228f03f",
+    "year": 2020,
+    "series": "8 Series",
+    "chassisCode": "G16",
+    "bodyType": "coupe",
+    "defaultPowertrain": "gasoline",
+    "supportedPowertrains": ["gasoline"],
+    "dimensions": {
+      "length": 5.08,
+      "width": 2.1972513838930237,
+      "height": 1.419456048810517,
+      "wheelbase": 3.048,
+      "frontAxleX": 1.524,
+      "rearAxleX": -1.524,
+      "track": 1.8456911624701398,
+      "tyreRadius": 0.32647489122641893,
+      "tyreWidth": 0.2856426799060931,
+      "groundClearance": 0.14
+    },
+    "specialParts": [],
+    "description": "Procedural concept derived from 2020 BMW M850i Gran Coupe. Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/2020-bmw-m850i-gran-coupe-6d51b027dba044a4aa6c93d11228f03f",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+  },
+  "partIds": [
+    "body",
+    "front_doors",
+    "front_seats",
+    "mirrors",
+    "side_windows",
+    "taillights",
+    "wheels"
+  ],
+  "exteriorPartIds": ["body", "front_doors", "mirrors", "side_windows", "taillights", "wheels"]
+}

@@ -1,0 +1,58 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_m4_gts_2016.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_m4_gts_2016",
+    "name": "2016 BMW M4 GTS",
+    "sketchfabUid": "180ad25824fd4311a9d5532c4027d88e",
+    "year": 2016,
+    "series": "M4",
+    "chassisCode": "F82",
+    "bodyType": "coupe",
+    "defaultPowertrain": "gasoline",
+    "supportedPowertrains": ["gasoline"],
+    "dimensions": {
+      "length": 4.69,
+      "width": 2.009406331371221,
+      "height": 1.379273995324774,
+      "wheelbase": 2.814,
+      "frontAxleX": 1.407,
+      "rearAxleX": -1.407,
+      "track": 1.6879013183518254,
+      "tyreRadius": 0.317233018924698,
+      "tyreWidth": 0.2612228230782587,
+      "groundClearance": 0.14
+    },
+    "specialParts": ["rear_diffuser"],
+    "description": "Procedural concept derived from 2016 BMW M4 GTS. Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/2016-bmw-m4-gts-180ad25824fd4311a9d5532c4027d88e",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+  },
+  "partIds": [
+    "body",
+    "front_doors",
+    "hood",
+    "mirrors",
+    "rear_diffuser",
+    "rear_spoiler",
+    "side_windows",
+    "steering_wheel",
+    "trunk_lid",
+    "wheels"
+  ],
+  "exteriorPartIds": [
+    "body",
+    "front_doors",
+    "hood",
+    "mirrors",
+    "rear_diffuser",
+    "rear_spoiler",
+    "side_windows",
+    "trunk_lid",
+    "wheels"
+  ]
+}

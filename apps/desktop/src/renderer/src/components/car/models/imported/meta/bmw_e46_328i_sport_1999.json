@@ -1,0 +1,37 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_e46_328i_sport_1999.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_e46_328i_sport_1999",
+    "name": "1999 BMW E46 328i Sport",
+    "sketchfabUid": "5fce3b693344450380b0112a4d21cfe5",
+    "year": 1999,
+    "series": "3 Series",
+    "chassisCode": "E46",
+    "bodyType": "sedan",
+    "defaultPowertrain": "gasoline",
+    "supportedPowertrains": ["gasoline"],
+    "dimensions": {
+      "length": 4.47,
+      "width": 1.8894205898845189,
+      "height": 1.4052022472124777,
+      "wheelbase": 2.682,
+      "frontAxleX": 1.341,
+      "rearAxleX": -1.341,
+      "track": 1.5871132955029958,
+      "tyreRadius": 0.32319651685886985,
+      "tyreWidth": 0.24562467668498747,
+      "groundClearance": 0.14
+    },
+    "specialParts": [],
+    "description": "Procedural concept derived from 1999 BMW E46 328i Sport. Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/1999-bmw-e46-328i-sport-5fce3b693344450380b0112a4d21cfe5",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+  },
+  "partIds": ["body", "headlights", "kidney_grille", "side_windows"],
+  "exteriorPartIds": ["body", "headlights", "kidney_grille", "side_windows"]
+}

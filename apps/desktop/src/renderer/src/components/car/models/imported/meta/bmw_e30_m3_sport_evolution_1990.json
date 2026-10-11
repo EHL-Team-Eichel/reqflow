@@ -1,0 +1,37 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_e30_m3_sport_evolution_1990.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_e30_m3_sport_evolution_1990",
+    "name": "1990 BMW E30 M3 Sport Evolution",
+    "sketchfabUid": "ab2574c2d1414062bedc6a5457443757",
+    "year": 1990,
+    "series": "M3",
+    "chassisCode": "E30",
+    "bodyType": "coupe",
+    "defaultPowertrain": "gasoline",
+    "supportedPowertrains": ["gasoline"],
+    "dimensions": {
+      "length": 4.35,
+      "width": 1.7685502019174868,
+      "height": 1.5064568034545271,
+      "wheelbase": 2.61,
+      "frontAxleX": 1.305,
+      "rearAxleX": -1.305,
+      "track": 1.4855821696106888,
+      "tyreRadius": 0.3464850647945413,
+      "tyreWidth": 0.2299115262492733,
+      "groundClearance": 0.14
+    },
+    "specialParts": [],
+    "description": "Procedural concept derived from 1990 BMW E30 M3 Sport Evolution. Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/1990-bmw-e30-m3-sport-evolution-ab2574c2d1414062bedc6a5457443757",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+  },
+  "partIds": ["body", "front_seats", "kidney_grille", "side_windows", "taillights", "wheels"],
+  "exteriorPartIds": ["body", "kidney_grille", "side_windows", "taillights", "wheels"]
+}

@@ -1,0 +1,66 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_duke_dynamics_e92_m3_2016.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_duke_dynamics_e92_m3_2016",
+    "name": "2016 Duke Dynamics BMW E92 M3 Widebody",
+    "sketchfabUid": "489eed8a15bd485b8c3331f22747fc12",
+    "year": 2016,
+    "series": "M3",
+    "chassisCode": "E92",
+    "bodyType": "coupe",
+    "defaultPowertrain": "gasoline",
+    "supportedPowertrains": ["gasoline"],
+    "dimensions": {
+      "length": 4.65,
+      "width": 1.9850450660919068,
+      "height": 1.437600942849413,
+      "wheelbase": 2.79,
+      "frontAxleX": 1.395,
+      "rearAxleX": -1.395,
+      "track": 1.6674378555172016,
+      "tyreRadius": 0.330648216855365,
+      "tyreWidth": 0.2580558585919479,
+      "groundClearance": 0.14
+    },
+    "specialParts": ["rear_spoiler"],
+    "description": "Procedural concept derived from 2016 Duke Dynamics BMW E92 M3 Widebody. Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/2016-duke-dynamics-bmw-e92-m3-widebody-489eed8a15bd485b8c3331f22747fc12",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+  },
+  "partIds": [
+    "body",
+    "exhaust_system",
+    "front_bumper",
+    "front_doors",
+    "headlights",
+    "hood",
+    "kidney_grille",
+    "mirrors",
+    "rear_bumper",
+    "rear_spoiler",
+    "side_windows",
+    "steering_wheel",
+    "taillights",
+    "wheels"
+  ],
+  "exteriorPartIds": [
+    "body",
+    "exhaust_system",
+    "front_bumper",
+    "front_doors",
+    "headlights",
+    "hood",
+    "kidney_grille",
+    "mirrors",
+    "rear_bumper",
+    "rear_spoiler",
+    "side_windows",
+    "taillights",
+    "wheels"
+  ]
+}

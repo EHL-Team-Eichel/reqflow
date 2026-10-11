@@ -1,0 +1,37 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_218i_gran_coupe_2021.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_218i_gran_coupe_2021",
+    "name": "2021 BMW 218i Gran Coupé 1.5",
+    "sketchfabUid": "c2e7d8cea31546b5a9f46d5d26c9471d",
+    "year": 2021,
+    "series": "2 Series",
+    "chassisCode": "F44",
+    "bodyType": "sedan",
+    "defaultPowertrain": "gasoline",
+    "supportedPowertrains": ["gasoline"],
+    "dimensions": {
+      "length": 4.53,
+      "width": 2.0871596164173947,
+      "height": 1.4223584761681405,
+      "wheelbase": 2.718,
+      "frontAxleX": 1.359,
+      "rearAxleX": -1.359,
+      "track": 1.7532140777906116,
+      "tyreRadius": 0.32714244951867233,
+      "tyreWidth": 0.27133075013426133,
+      "groundClearance": 0.14
+    },
+    "specialParts": [],
+    "description": "Procedural concept derived from 2021 BMW 218i Gran Coupé 1.5. Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/2021-bmw-218i-gran-coupe-15-c2e7d8cea31546b5a9f46d5d26c9471d",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+  },
+  "partIds": ["body", "mirrors", "side_windows", "taillights", "wheels"],
+  "exteriorPartIds": ["body", "mirrors", "side_windows", "taillights", "wheels"]
+}

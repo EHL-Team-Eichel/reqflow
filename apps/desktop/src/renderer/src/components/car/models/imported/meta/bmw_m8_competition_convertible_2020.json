@@ -1,0 +1,37 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_m8_competition_convertible_2020.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_m8_competition_convertible_2020",
+    "name": "2020 BMW M8 Competition Convertible",
+    "sketchfabUid": "f7c1401ee5724e969db890c207fb099f",
+    "year": 2020,
+    "series": "8 Series",
+    "chassisCode": "F91",
+    "bodyType": "coupe",
+    "defaultPowertrain": "gasoline",
+    "supportedPowertrains": ["gasoline"],
+    "dimensions": {
+      "length": 4.87,
+      "width": 2.149849347172059,
+      "height": 1.3659217077536023,
+      "wheelbase": 2.922,
+      "frontAxleX": 1.461,
+      "rearAxleX": -1.461,
+      "track": 1.8058734516245296,
+      "tyreRadius": 0.31416199278332857,
+      "tyreWidth": 0.2794804151323677,
+      "groundClearance": 0.14
+    },
+    "specialParts": ["convertible_roof"],
+    "description": "Procedural concept derived from 2020 BMW M8 Competition Convertible. Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/2020-bmw-m8-competition-convertible-f7c1401ee5724e969db890c207fb099f",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+  },
+  "partIds": ["body", "hood", "side_windows", "wheels"],
+  "exteriorPartIds": ["body", "hood", "side_windows", "wheels"]
+}

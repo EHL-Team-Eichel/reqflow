@@ -1,0 +1,37 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_x6_m_2010.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_x6_m_2010",
+    "name": "2010 BMW X6 M",
+    "sketchfabUid": "260361fd3ab34913851e279da4746674",
+    "year": 2010,
+    "series": "X6",
+    "chassisCode": "E71",
+    "bodyType": "suv",
+    "defaultPowertrain": "gasoline",
+    "supportedPowertrains": ["gasoline"],
+    "dimensions": {
+      "length": 4.88,
+      "width": 2.1700603896264306,
+      "height": 1.6951140822427802,
+      "wheelbase": 2.928,
+      "frontAxleX": 1.464,
+      "rearAxleX": -1.464,
+      "track": 1.8228507272862016,
+      "tyreRadius": 0.38987623891583945,
+      "tyreWidth": 0.28210785065143595,
+      "groundClearance": 0.14
+    },
+    "specialParts": [],
+    "description": "Procedural concept derived from 2010 BMW X6 M. Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/2010-bmw-x6-m-260361fd3ab34913851e279da4746674",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+  },
+  "partIds": ["body", "side_windows"],
+  "exteriorPartIds": ["body", "side_windows"]
+}

@@ -35,3 +35,6 @@ release/
 **/F70_G60_G68_G70_customer_studies.xlsx
 **/F70_OptionList.PDF
 **/sales_volumes.xlsx
+
+# Isolated local car conversion workspace
+/.local-work/car-source-converter/

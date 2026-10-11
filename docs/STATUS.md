@@ -264,6 +264,7 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 **Grey-line transition slice:** done (implemented and verified) · **Owner:** OpenCode · **Branch:** `ws3-grey-line-transition` (isolated from latest main)
 **Windscreen slice:** review (implemented and verified) · **Owner:** OpenCode · **Branch:** `ws3-car-view-animation`
 **Option provenance slice:** done (main integration verified; PR #23) · **Owner:** OpenCode · **Branch:** `integrate/car-option-provenance`
+**Default-preview slice:** review (M4 default and exterior points verified; full-smoke limit below) · **Owner:** OpenCode · **Branch:** `ws3-m4-default-preview` (isolated from latest main)
 **Depends on:** nothing to start: build on `@reqflow/core/fixtures` (5 requirements, findings, sources,
 audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 serves them.
 
@@ -290,6 +291,18 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - [x] Merge Car option provenance report: exact originating run/block, HIL-style lineage and saved step data, read-only build-workflow/inner-workplace visualizer (verified against current main; PR #23).
 
 **Log**
+
+- 2026-10-11: M4 default and exterior review points complete: added ten sedan-style exterior areas (lights, bumpers, windscreen/rear glass, roof, mirrors, handles and boot), plus corrected the existing grille anchor. Paired points project onto exact source surfaces, respect camera occlusion and open the existing requirement review. Retained all source triangles, source-assembly picking, cabin, grey-line fade, saved choices and scope; no invented coupe rear doors. Root typecheck and all 2,768 tests pass (6 skipped); formatting/diff checks and production build pass. Native probe passes 17 checks including all eleven area anchors, light/dark, 1024×640 and interior/return; six screenshots reviewed. Full smoke attempts were incomplete: standard run exited after 81 screenshots; a clean-output run timed out at 120 seconds after 89 screenshots without its final report. Neither is a smoke PASS. No core/main/IPC, dependencies, packed profiles, credentials, private data or unrelated shared edits included. Ready for the human-requested direct push to main.
+
+- 2026-10-11: Human expanded the default-preview slice to include sedan-style exterior subareas/points on this M4 before publication. Add surface-projected, paired review markers for lights, bumpers, glazing, roof, mirrors, handles and boot; retain exact imported geometry and existing source-assembly picking. No fictitious coupe rear doors, scope/decision changes or transition changes.
+
+- 2026-10-11: Default preview now selects the existing imported 2025 BMW M4 Competition (`bmw_m4_competition_2025`) and places it first in the catalog. Saved selections, requirement scope, basic-M5 conversion protection and grey-line transition are unchanged. Initial default-only root typecheck and 2,762 tests passed (6 skipped); isolated native preview probe passes fresh source-model startup, interior/exterior return and unchanged scope without renderer errors. Reviewed both `out/smoke/m4-default-preview/` screenshots. Production build passes. Initial full native smoke aborts during earlier workflow/filter scenarios after 35 screenshots without completing its report; not a smoke PASS. No core/main/IPC, geometry, dependency, private-data or credential changes; generated Entire-plugin edits excluded. Human requested direct push to main.
+
+- 2026-10-11: Claimed the human-requested 2025 BMW M4 Competition default preview and direct publication to main. Use the existing imported G82 geometry; preserve saved model choices, requirement scope, the basic M5 and grey-line interior transition. Isolated from unrelated shared-checkout changes.
+
+- 2026-10-11: Human requested standard-model interior visuals for imported cars and authorized Luna/max subagents and publication to main. All 75 imported cars now combine their unchanged exact-source exterior with the existing dimension-scaled standard cabin/chassis and selected exploratory powertrain. Removed source cabin occluders and duplicate G60 exterior lines; retained assembled source shell lines, grey-line fade, credits and the basic M5. Menus match rendered parts and separate exterior/interior badge anchors preserve selection. Roadsters and single-seat race cars also omit the cushions, headrests and belts associated with excluded seats. Verified root typecheck, 2,760 tests passed (6 skipped), formatting/diff checks, and a focused native probe (44 checks, 9 screenshots reviewed: standard/imported interiors, selection, light/dark, H2, rapid reversal, Z4/GT3 seating and basic-model restoration). Packed source geometry files are unchanged. The final isolated full native smoke passed all 91 screenshots with no reported errors, including native persistence/research checks; earlier attempts hit a ResizeObserver notification or exited before their report completed. No core/main/IPC changes, credentials, raw archives, private BMW data or unrelated shared-checkout changes included.
+
+- 2026-10-11: Human authorized publishing the isolated source-car converter to main. Integrated 75 exact-source BMW meshes, lazy metadata/geometry loading, supported-part menus, credits and offline glTF/GLB/OBJ/STL + atomic catalog conversion tools. Preserved the basic M5 and main's approved grey-line exterior fade; excluded unrelated local body/startup changes. Another 29 source downloads remain blocked by Sketchfab's daily quota. Verified on current main: root typecheck, 2,751 tests passed (6 skipped), root format check, production build, and a focused native source-car probe (22 checks; exterior/interior, rapid fade reversal, light/dark, 105 entries and basic-M5 restoration), with screenshots reviewed. All 75 profile files match the independently verified local assets (30,098,862 drawn triangle vertices, maximum error 0.135 micrometres). Standard native smoke was attempted twice but exited during unrelated Settings scenarios without completing its report (71/61 screenshots); full-app smoke is not claimed as passing. No credentials, raw archives, private BMW data or unrelated local work included.
 
 - 2026-10-11: Human requested merging option provenance to main and launching an example. Integrated in a clean worktree, isolating `6f1f036` with its Entire trailer from unrelated geometry and all concurrent unstaged work. Latest main `a86eec3` merged without source conflicts. Combined root typecheck, all 2,499 tests (6 skipped), native macOS smoke (80 screenshots), formatting and diff checks pass; reviewed the Car option report screenshot. PR #23 publishes with a merge commit, not squash. Prepared an ignored interactive Electron example for the post-merge launch: synthetic rear-seat feedback → inner-workplace HIL → Add to Car, mock AI, isolated database and outbound requests disabled. No private data, credentials, provider calls, backend contract edits or generated Entire-plugin changes included.
 - 2026-10-11: Claimed Car option provenance: open each compact option into a HIL-style report with the exact originating run/block, shared lineage steps/data tables and a read-only saved build-workflow visualizer. Preserve concurrent model/Entire work; scope is WS3 renderer/tests only, with no core, backend or editor-state changes.
@@ -627,7 +640,7 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 ## WS4 — Settings, app shell & packaging
 
-**Status:** review (Model setting complete) · **Owner:** OpenCode · **Branch:** `ws4-car-models`
+**Status:** done (duplicate Model removal slice only) · **Owner:** OpenCode · **Branch:** `ws4-remove-duplicate-model`
 **Depends on:** WS1 for tasks 1–2.
 
 **Tasks**
@@ -642,8 +655,13 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - [ ] Demo polish: keyboard-shortcut overview, consistent empty states, About screen with team names.
 - [ ] Persist Settings → Model with Hydrogen / Hybrid / Electric / Fuel; keep the existing shell and vary the selectable powertrain.
       Implemented and verified on `ws4-car-models`; merge pending.
+- [x] Remove the duplicate Settings → Model page, retaining Model switcher and its saved powertrain controls.
 
 **Log**
+
+- 2026-10-11: Removed only the duplicate Model navigation/page and its unused component; Model switcher and stored settings are unchanged. Added two page regressions and, with human approval, adapted native smoke to the retained powertrain radios and checked the duplicate entry is absent. Root typecheck, full tests (2,762 passed, 6 skipped; two workers/30s timeout), changed-file formatting and macOS smoke (90 screenshots) pass; reviewed light Model switcher and dark Settings. The initial combined test command hit its 120s shell limit; the longer retry passed. Synthetic-only verification; unrelated original-checkout and generated Entire edits excluded. Other WS4 tasks remain open.
+
+- 2026-10-11: Claimed the duplicate Model removal in an isolated worktree from main. Keep Model switcher, settings storage and Car behavior unchanged. Human authorized updating the native smoke selectors to use Model switcher; publish only this narrow slice to main.
 
 - 2026-10-10: Model slice complete: four saved choices, backward-compatible electric default,
   distinct selectable powertrains on the unchanged shell/cabin/chassis, model-aware menus and

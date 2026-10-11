@@ -8,7 +8,9 @@ import { markerPresentation } from "./markerMenu";
 import { trackIdleOrbit } from "./idleOrbit";
 import { buildCar, type CarPiece } from "./model/buildCar";
 import { buildVehicleModel } from "./models/builder";
-import { getVehicleModelById } from "./models/registry";
+import { getVehicleModelById, getSourceMeshInfoById, loadSourceMeshById } from "./models/registry";
+import type { SourceMeshProfile } from "./converter/profile";
+import { buildSourceVehicle } from "./converter/buildSourceVehicle";
 import type { PowertrainType } from "./models/types";
 import { G60 } from "./model/body";
 import { ExteriorFade, type CarView } from "./model/exteriorFade";
@@ -77,9 +79,38 @@ export function CarViewer(props: Props) {
   const [anchors, setAnchors] = useState<ReadonlyMap<string, THREE.Vector3>>(new Map());
   const [exteriorParts, setExteriorParts] = useState<ReadonlySet<string>>(new Set());
 
+  const [source, setSource] = useState<{ id: string; profile: SourceMeshProfile } | null>(null);
+  const [loadError, setLoadError] = useState<{ id: string; message: string } | null>(null);
+  const sourceInfo = props.modelId ? getSourceMeshInfoById(props.modelId) : undefined;
+  const sourceMesh = source?.id === props.modelId ? source?.profile : undefined;
+  const activeLoadError = loadError?.id === props.modelId ? loadError?.message : undefined;
+
+  useEffect(() => {
+    let cancelled = false;
+    setFailed(null);
+    setLoadError(null);
+    setAnchors(new Map());
+    setExteriorParts(new Set());
+    const id = props.modelId;
+    if (id && sourceInfo) {
+      loadSourceMeshById(id)
+        .then((profile) => {
+          if (!cancelled && profile) setSource({ id, profile });
+        })
+        .catch((error: unknown) => {
+          if (!cancelled) {
+            setLoadError({ id, message: error instanceof Error ? error.message : String(error) });
+          }
+        });
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [props.modelId, sourceInfo]);
+
   useEffect(() => {
     const host = hostRef.current;
-    if (!host) return;
+    if (!host || (sourceInfo && !sourceMesh)) return;
 
     let renderer: THREE.WebGLRenderer;
     try {
@@ -109,12 +140,17 @@ export function CarViewer(props: Props) {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
     const activeModel = props.modelId ? getVehicleModelById(props.modelId) : undefined;
-    const car = activeModel
-      ? buildVehicleModel(activeModel, props.powertrain)
-      : buildCar(props.powertrain);
+    const car = sourceMesh
+      ? buildSourceVehicle(sourceMesh, props.powertrain)
+      : activeModel
+        ? buildVehicleModel(activeModel, props.powertrain)
+        : buildCar(props.powertrain);
     scene.add(car.root);
     setAnchors(car.anchors);
-    const exteriorTargets = exteriorBadgeTargets(car.pieces, car.anchors);
+    const exteriorTargets = new Map(
+      exteriorBadgeTargets(car.pieces, car.exteriorAnchors ?? car.anchors),
+    );
+    for (const [id, points] of car.exteriorReviewAreas ?? []) exteriorTargets.set(id, points);
     const exteriorPartsForModel = new Set(exteriorTargets.keys());
     setExteriorParts(exteriorPartsForModel);
     const exteriorSurfaces = car.pieces
@@ -163,9 +199,14 @@ export function CarViewer(props: Props) {
       styles.set(piece, style);
       // The body already has explicit panel/character lines and a silhouette.
       // Drawing tessellation creases adds stray spikes around the wheel arches.
-      const threshold = piece.kind === "paint" || piece.kind === "glass" ? 180 : 40;
+      const threshold = piece.mesh.geometry.userData.sourceMesh
+        ? 35
+        : piece.kind === "paint" || piece.kind === "glass"
+          ? 180
+          : 40;
       const edgeGeometry = new THREE.EdgesGeometry(piece.mesh.geometry, threshold);
       const hasArches =
+        !piece.mesh.geometry.userData.sourceMesh &&
         piece.kind === "paint" &&
         ["body", "front_doors", "rear_doors"].includes(piece.partId ?? "");
       if (hasArches) {
@@ -433,6 +474,7 @@ export function CarViewer(props: Props) {
                 camera,
                 exteriorSurfaces,
                 badgeRaycaster,
+                car.exteriorReviewAreas?.has(partId),
               )
             : car.anchors.get(partId);
         if (!anchor) {
@@ -482,7 +524,7 @@ export function CarViewer(props: Props) {
       renderer.domElement.remove();
       apiRef.current = null;
     };
-  }, [props.modelId, props.powertrain]);
+  }, [props.modelId, props.powertrain, sourceMesh, sourceInfo]);
 
   // React to selection and counts without rebuilding the scene or restarting the fade.
   useEffect(() => {
@@ -497,11 +539,11 @@ export function CarViewer(props: Props) {
     apiRef.current?.moveTo(props.preset);
   }, [props.preset, props.presetNonce]);
 
-  if (failed) {
+  if (failed || activeLoadError) {
     return (
       <div className="grid h-full place-items-center p-8 text-center text-sm text-muted">
         <p>
-          The 3D car needs WebGL, which isn't available here ({failed}). Pick a part from the list
+          Could not display the 3D car ({failed || activeLoadError}). Pick a part from the list
           instead.
         </p>
       </div>
@@ -520,6 +562,11 @@ export function CarViewer(props: Props) {
       data-powertrain={props.powertrain}
       data-model-id={props.modelId}
     >
+      {sourceInfo && !sourceMesh && !activeLoadError && (
+        <div className="absolute inset-0 grid place-items-center text-sm text-muted" role="status">
+          Loading source model…
+        </div>
+      )}
       {markers.partIds.map((partId) => {
         const n = props.counts.get(partId) ?? 0;
         return (

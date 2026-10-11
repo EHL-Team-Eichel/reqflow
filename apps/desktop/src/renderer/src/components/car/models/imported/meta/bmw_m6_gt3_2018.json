@@ -1,0 +1,62 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_m6_gt3_2018.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_m6_gt3_2018",
+    "name": "2018 BMW M6 GT3",
+    "sketchfabUid": "783f76d476f8477ab3e63928bc70fc00",
+    "year": 2018,
+    "series": "M6",
+    "chassisCode": "F13",
+    "bodyType": "race",
+    "defaultPowertrain": "gasoline",
+    "supportedPowertrains": ["gasoline"],
+    "dimensions": {
+      "length": 4.94,
+      "width": 2.025724122531663,
+      "height": 1.3321887686753484,
+      "wheelbase": 2.964,
+      "frontAxleX": 1.482,
+      "rearAxleX": -1.482,
+      "track": 1.7016082629265967,
+      "tyreRadius": 0.3064034167953302,
+      "tyreWidth": 0.2633441359291162,
+      "groundClearance": 0.14
+    },
+    "specialParts": [],
+    "description": "Procedural concept derived from 2018 BMW M6 GT3. Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/2018-bmw-m6-gt3-783f76d476f8477ab3e63928bc70fc00",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+  },
+  "partIds": [
+    "body",
+    "exhaust_system",
+    "front_bumper",
+    "front_doors",
+    "headlights",
+    "hood",
+    "mirrors",
+    "rear_bumper",
+    "side_windows",
+    "steering_wheel",
+    "taillights",
+    "wheels"
+  ],
+  "exteriorPartIds": [
+    "body",
+    "exhaust_system",
+    "front_bumper",
+    "front_doors",
+    "headlights",
+    "hood",
+    "mirrors",
+    "rear_bumper",
+    "side_windows",
+    "taillights",
+    "wheels"
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_m2_cs_2026.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_m2_cs_2026",
+    "name": "2026 BMW M2 CS",
+    "sketchfabUid": "c1d48a2fad5146948f9297d38aaf0df9",
+    "year": 2026,
+    "series": "M2",
+    "chassisCode": "G87",
+    "bodyType": "coupe",
+    "defaultPowertrain": "gasoline",
+    "supportedPowertrains": ["gasoline"],
+    "dimensions": {
+      "length": 4.58,
+      "width": 2.0808735655916166,
+      "height": 1.40195869111116,
+      "wheelbase": 2.7479999999999998,
+      "frontAxleX": 1.3739999999999999,
+      "rearAxleX": -1.3739999999999999,
+      "track": 1.747933795096958,
+      "tyreRadius": 0.32245049895556677,
+      "tyreWidth": 0.2705135635269102,
+      "groundClearance": 0.14
+    },
+    "specialParts": [],
+    "description": "Procedural concept derived from 2026 BMW M2 CS. Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/2026-bmw-m2-cs-c1d48a2fad5146948f9297d38aaf0df9",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+  },
+  "partIds": [
+    "body",
+    "front_seats",
+    "headlights",
+    "kidney_grille",
+    "side_windows",
+    "taillights",
+    "wheels"
+  ],
+  "exteriorPartIds": ["body", "headlights", "kidney_grille", "side_windows", "taillights", "wheels"]
+}

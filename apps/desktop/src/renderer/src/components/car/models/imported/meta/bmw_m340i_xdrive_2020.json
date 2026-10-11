@@ -1,0 +1,45 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_m340i_xdrive_2020.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_m340i_xdrive_2020",
+    "name": "2020 BMW M340i XDrive",
+    "sketchfabUid": "69dbf0293c6f4959a90d5bd0d68e097f",
+    "year": 2020,
+    "series": "3 Series",
+    "chassisCode": "G20",
+    "bodyType": "sedan",
+    "defaultPowertrain": "gasoline",
+    "supportedPowertrains": ["gasoline"],
+    "dimensions": {
+      "length": 4.71,
+      "width": 2.079358726077764,
+      "height": 1.4251591929678427,
+      "wheelbase": 2.826,
+      "frontAxleX": 1.413,
+      "rearAxleX": -1.413,
+      "track": 1.7466613299053217,
+      "tyreRadius": 0.3277866143826038,
+      "tyreWidth": 0.27031663439010933,
+      "groundClearance": 0.14
+    },
+    "specialParts": [],
+    "description": "Procedural concept derived from 2020 BMW M340i XDrive. Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/2020-bmw-m340i-xdrive-69dbf0293c6f4959a90d5bd0d68e097f",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+  },
+  "partIds": [
+    "body",
+    "front_seats",
+    "headlights",
+    "mirrors",
+    "side_windows",
+    "taillights",
+    "wheels"
+  ],
+  "exteriorPartIds": ["body", "headlights", "mirrors", "side_windows", "taillights", "wheels"]
+}

@@ -1,0 +1,54 @@
+{
+  "format": "reqflow-model-index-v1",
+  "file": "bmw_x3_xdrive30i_2022.json",
+  "profileFormat": "reqflow-sketch-mesh-v1",
+  "model": {
+    "id": "bmw_x3_xdrive30i_2022",
+    "name": "2022 BMW X3 xDrive 30i",
+    "sketchfabUid": "b5c660d8e39340538a06561eaca69b5f",
+    "year": 2022,
+    "series": "X3",
+    "chassisCode": "G01",
+    "bodyType": "suv",
+    "defaultPowertrain": "gasoline",
+    "supportedPowertrains": ["gasoline"],
+    "dimensions": {
+      "length": 4.71,
+      "width": 2.1565105345932447,
+      "height": 1.684629279310824,
+      "wheelbase": 2.826,
+      "frontAxleX": 1.413,
+      "rearAxleX": -1.413,
+      "track": 1.8114688490583255,
+      "tyreRadius": 0.38746473424148953,
+      "tyreWidth": 0.28034636949712183,
+      "groundClearance": 0.14
+    },
+    "specialParts": [],
+    "description": "Procedural concept derived from 2022 BMW X3 xDrive 30i. Review the conversion report for measurement assumptions."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/2022-bmw-x3-xdrive-30i-b5c660d8e39340538a06561eaca69b5f",
+    "author": "Ddiaz Design",
+    "license": "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+  },
+  "partIds": [
+    "body",
+    "front_doors",
+    "front_seats",
+    "headlights",
+    "mirrors",
+    "side_windows",
+    "taillights",
+    "wheels"
+  ],
+  "exteriorPartIds": [
+    "body",
+    "front_doors",
+    "headlights",
+    "mirrors",
+    "side_windows",
+    "taillights",
+    "wheels"
+  ]
+}

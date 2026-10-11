@@ -1,0 +1,18 @@
+{
+  "id": "bmw_m2_converted",
+  "name": "BMW M2 — converted concept",
+  "year": 2023,
+  "series": "2 Series",
+  "chassisCode": "G87",
+  "bodyType": "coupe",
+  "powertrain": "gasoline",
+  "supportedPowertrains": ["gasoline", "hybrid", "electric", "h2"],
+  "author": "Ddiaz Design",
+  "license": "Fill in the license shown on the downloaded model's Sketchfab page",
+  "up": "y",
+  "forward": "-z",
+  "dimensions": { "length": 4.58, "groundClearance": 0.14 },
+  "specialParts": [],
+  "mappings": [],
+  "excludeMeshes": []
+}
