@@ -647,7 +647,7 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 ## WS5 — Raw block (BMW data ingestion)
 
-**Status:** review · **Owner:** OpenCode · **Branch:** `ws5-pdf-ingestion`
+**Status:** done (human-assigned PDF/XLSX slice) · **Owner:** OpenCode · **Branch:** `ws5-pdf-ingestion` · **Merged:** PR #18
 **Assigned scope:** verify feedback/study XLSX ingestion and add PDF OCR plus configured-model structured extraction; narrow file-selector/main wiring included. Existing Research JSON is unchanged. Other checklist items are not assigned.
 
 **Tasks**
@@ -663,7 +663,7 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - [x] Database source: read-only SQLite, one SELECT only; other databases fail with a clear message.
 - [x] BMW's data in `data/raw/`: feedback, studies and sales read correctly (shapes in the log);
       tests on the real files run locally when they're present (`raw.test.ts`, "BMW …" suites).
-- [ ] F70 option list (PDF): local PDF.js/Tesseract OCR plus configured-default-model structured extraction implemented and verified; ready to merge.
+- [x] F70 option list (PDF): local PDF.js/Tesseract OCR plus configured-default-model structured extraction merged in PR #18 and verified.
 - [ ] Customer study findings: per question, how the F70 scores against the other models in the
       same market (deterministic, like the take-rate findings), with the study rows as evidence.
 - [ ] If BMW's headers can't be matched automatically: add an optional column-mapping param
@@ -673,6 +673,7 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 **Log**
 
+- 2026-10-11: PR #18 merged into latest main with merge history and Entire checkpoints preserved. The concurrent default-AI client change was already on main; synchronization changed no tested code. Assigned slice complete; no additional WS5 items started. Other agents' untracked synthetic files remain untouched and excluded from this PR. Live-provider extraction, Windows/Linux and the broader packaged Car-reset smoke are explicit verification limits, not claimed successes.
 - 2026-10-11: Assigned slice implemented: PDF upload, spatial embedded-text parsing, bundled local English/German OCR, strict configured-default-model JSON extraction, original page evidence and structured item records with page/model/OCR metadata, explicit AI review status and audited ingestion. Rejects invented excerpts/cell values/title/availability, malformed schemas, duplicate fields and resource overflow; cancellation/cleanup tested. Existing XLSX feedback/study layouts and Research JSON preserved. Narrow shared Raw selector, lazy main preview wiring and unpacked OCR runtime included. Independent Codex review finding corrected with regressions; agy delegates hit quota after initial implementation, parent completed integration.
 - 2026-10-11: Verification: `VITEST_MAX_WORKERS=4 npm run check` passes (119 files, 2,340 tests, formatting/typechecks). Unbounded gate hit two Car test timeouts. Native smoke passed 71 screenshots; repeated default smoke retains Car-reset failures from persistent synthetic state, but final clean-state smoke (`npm exec --workspace @reqflow/desktop -- electron . --smoke=out/smoke/ws5-clean`) passes; PDF upload/preview screenshots inspected. Unsigned macOS package builds and its real ASAR PDF/OCR checks pass; full packaged smoke still fails unrelated Car-reset assertions (and one run had ResizeObserver). No Car changes made. Local BMW XLSX and option-list PDF parsing tested through boolean-only private suites; no live AI calls, keys or private excerpts logged. Windows/Linux and live-provider extraction remain unverified. To use: Raw -> File upload -> dataset -> PDF -> explicit Preview/Start with non-mock default AI in Settings. No additional tasks authorized; stop after this slice.
 - 2026-10-11: Human assigned Raw support for feedback and customer-study XLSX plus PDF extraction to structured pipeline JSON using the configured AI model. Started from latest main; Entire already tracks OpenCode. Verification uses synthetic data, no confidential content in logs or delegated prompts. Need the original PDF path for private-file verification; attachment text is not a local PDF input. No automatic follow-on tasks.
