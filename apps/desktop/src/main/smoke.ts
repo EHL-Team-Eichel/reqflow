@@ -22,6 +22,7 @@ import { ipcChannel, type AppInfo, type IpcResult, type ReqflowHandlers } from "
 import { fixturePipelineData, fixtureScope } from "@reqflow/core/fixtures";
 import type { LocalFileStore } from "@reqflow/db";
 import type { BrowserWindow, NativeImage } from "electron";
+import { waitForCarScene } from "./car-smoke-ready";
 import { NO_AGENT_SERVICES } from "@reqflow/engine";
 import { rawBlock } from "../../../../packages/blocks/src/raw/raw";
 import { readPdf } from "../../../../packages/blocks/src/raw/pdf";
@@ -127,6 +128,18 @@ export async function runSmoke(
   };
   const count = (selector: string) =>
     js<number>(`document.querySelectorAll(${JSON.stringify(selector)}).length`);
+  const carReady = (expected: { modelId?: string; powertrain?: string } = {}) =>
+    waitForCarScene(
+      () =>
+        js(`(() => {
+    const viewer = document.querySelector('[data-testid="car-viewer"]');
+    return { modelId: viewer?.dataset.modelId ?? null, powertrain: viewer?.dataset.powertrain ?? null,
+      canvasCount: document.querySelectorAll('[data-testid="car-canvas"]').length,
+      loading: Boolean(viewer?.querySelector('[role="status"]')),
+      failed: Boolean(viewer?.querySelector('[role="alert"]')) };
+  })()`),
+      expected,
+    );
   const text = (selector: string) =>
     js<string>(`document.querySelector(${JSON.stringify(selector)})?.textContent ?? ""`);
   /** Clicks the first match; false when nothing matches. */
@@ -1872,7 +1885,7 @@ export async function runSmoke(
     const loaded = new Promise<void>((resolve) => wc.once("did-finish-load", () => resolve()));
     wc.reload();
     await loaded;
-    await delay(900);
+    await carReady({ powertrain: sketchPowertrain });
     check(
       await js<boolean>(
         `document.querySelector('[data-testid="car-viewer"]')?.getAttribute("data-powertrain") === ${JSON.stringify(sketchPowertrain)}`,
@@ -1944,7 +1957,7 @@ export async function runSmoke(
     );
     check(await click(`[data-testid="model-card-${modelId}"]`), "settings: select catalog model");
     await go("/car");
-    await delay(1000);
+    await carReady({ modelId });
     check(
       await js<boolean>(
         `document.querySelector('[data-testid="car-viewer"]')?.dataset.modelId === ${JSON.stringify(modelId)}`,

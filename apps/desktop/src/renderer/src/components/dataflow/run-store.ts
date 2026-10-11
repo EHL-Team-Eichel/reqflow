@@ -5,6 +5,8 @@ import {
   type ReqflowApi,
   type WorkflowGraph,
   type WorkflowRun,
+  type Workflow,
+  type WorkflowSave,
 } from "@reqflow/core";
 import { createStore } from "zustand/vanilla";
 
@@ -39,7 +41,10 @@ const staleActiveUpdate = (current: WorkflowRun | null, next: WorkflowRun) =>
   current?.id === next.id && !active(current) && active(next);
 
 /** Kept outside the page so changing tabs does not lose the current run or saved workflow id. */
-export function createRunStore(api: RunApi) {
+export function createRunStore(
+  api: RunApi,
+  saveForRun?: (input: WorkflowSave) => Promise<{ workflow: Workflow; release(): void }>,
+) {
   return createStore<RunState>()((set, get) => ({
     workflowId: null,
     run: null,
@@ -53,6 +58,7 @@ export function createRunStore(api: RunApi) {
     async start(graph, scope, name = "Data Flow") {
       if (get().busy || active(get().run)) return;
       set({ busy: true, error: null });
+      let release: (() => void) | undefined;
       try {
         if (!graph.blocks.length)
           throw new Error("Add and connect blocks before running the flow.");
@@ -60,12 +66,15 @@ export function createRunStore(api: RunApi) {
         if (issues.length) throw new Error(issues.map((issue) => issue.message).join("; "));
         // Snapshot before awaiting IPC: edits made while saving belong to the next run.
         const snapshot = structuredClone(graph);
-        const saved = await api.workflows.save({
+        const input = {
           ...snapshot,
           scope: structuredClone(scope),
           name,
           ...(get().workflowId ? { id: get().workflowId! } : {}),
-        });
+        };
+        const reservation = saveForRun ? await saveForRun(input) : null;
+        release = reservation?.release;
+        const saved = reservation?.workflow ?? (await api.workflows.save(input));
         set({ workflowId: saved.id, run: null });
         const updates = new Map<string, WorkflowRun>();
         const unsubscribe = api.runs.onUpdate((run) => {
@@ -81,6 +90,7 @@ export function createRunStore(api: RunApi) {
       } catch (err) {
         set({ error: err instanceof Error ? err.message : String(err) });
       } finally {
+        release?.();
         set({ busy: false });
       }
     },

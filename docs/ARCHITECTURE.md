@@ -292,7 +292,18 @@ approval, rejection or deferral remains a separate human action on the Car page.
 - **`components/dataflow/store.ts`**: the editor store (zustand). It holds the workflow tree, the
   open workplace (`path`), the selection, React Flow sizes and a notice. Every edit goes through the
   core graph rules; errors become a visible notice, never a silent no-op. It lives for the whole app
-  session, so switching tabs keeps the flow. It isn't saved to disk yet (`workflows.*` is WS1).
+  session, so switching tabs keeps the flow. Root snapshots provide bounded undo/redo with coalesced
+  drags; the in-app clipboard remaps complete nested trees and canonical boundary/edge IDs.
+- **`components/dataflow/workflow-store.ts`**: document identity, scope, library and visible dirty/save
+  errors. Debounced autosaves use `api.workflows.*` and a serialized queue. Start reserves its saved
+  snapshot and holds later writes until main captures the run. Stale save/load responses cannot attach
+  to another document or discard newer edits. Only the last workflow ID lives in localStorage; full
+  workflows persist through main. Open restores the saved scope and latest run without execution or
+  automatic HIL resume. Templates/new documents detach prior identity; active/paused runs block switching.
+- **Editor inspection:** preflight problems use existing core graph rules plus input/source checks;
+  optional Car context/ranking and Analytics inputs remain optional. Node indicators and inspector
+  counts/logs refer to the frozen run graph. `runs.blockOutput` reads actual per-port data with stale-read
+  cancellation and bounded previews; it never reruns a source or calls an AI provider.
 - **`lib/settings.ts`**: the settings store. It loads `settings.get()` at startup, validates every
   change with the `Settings` schema and saves in the background. While main has no settings storage
   (`not_implemented`), it keeps the defaults and the Settings page says so.

@@ -1,9 +1,10 @@
-import { memo } from "react";
+import { memo, useMemo } from "react";
+import { useStore } from "zustand";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import type { BlockFlowNode } from "./flow";
 import { BlockIcon } from "./BlockIcon";
 import { GROUP_STYLE } from "./groups";
-import { dataflowStore } from "./store";
+import { dataflowStore, useDataflow } from "./store";
 import {
   isBoundaryBlockKind,
   isPaletteBlockKind,
@@ -11,14 +12,27 @@ import {
   type ParamSpec,
 } from "@reqflow/core";
 import { ChartIcon, ExpandIcon, PlusIcon, ReportIcon, ThoughtIcon } from "@/components/ui/icons";
-import { useSettings } from "@/lib/settings";
 import { cx } from "@/lib/cx";
 import { summarizeParams } from "./summary";
 import { filterBypassed } from "./filter-configuration";
+import { runStore, workflowStore } from "./run-session";
+import { BLOCK_STATUS_LABELS, blockDraftChanged, snapshotBlock } from "./run-view";
+import { workflowProblems } from "./problems";
 
 export const BlockNode = memo(function BlockNode({ data, selected }: NodeProps<BlockFlowNode>) {
   const { block, ports, spec } = data;
-  const scope = useSettings((s) => s.settings.defaultScope);
+  const scope = useStore(workflowStore, (s) => s.scope);
+  const root = useDataflow((s) => s.root);
+  const run = useStore(runStore, (s) => s.run);
+  const saved = snapshotBlock(run, block.id);
+  const blockRun = saved ? run?.blockRuns.find((entry) => entry.blockId === block.id) : undefined;
+  const problems = useMemo(
+    () =>
+      workflowProblems(root).filter(
+        (problem) => problem.blockId === block.id || problem.path.includes(block.id),
+      ),
+    [root, block.id],
+  );
 
   if (!spec || !isPaletteBlockKind(block.kind)) return null; // boundary blocks use BoundaryNode
 
@@ -40,9 +54,14 @@ export const BlockNode = memo(function BlockNode({ data, selected }: NodeProps<B
     <div
       data-testid={`block-${block.kind}`}
       data-block-id={block.id}
+      data-run-status={blockRun?.status}
       className={cx(
         "w-56 rounded-xl border bg-panel shadow-sm transition-shadow",
-        selected ? "border-brand ring-2 ring-brand/30" : "border-line",
+        selected
+          ? "border-brand ring-2 ring-brand/30"
+          : problems.length
+            ? "border-warn"
+            : "border-line",
       )}
     >
       <div className="flex items-start justify-between p-3 pb-2">
@@ -59,6 +78,14 @@ export const BlockNode = memo(function BlockNode({ data, selected }: NodeProps<B
             <span className="truncate text-sm font-medium text-ink" title={block.label}>
               {block.label}
             </span>
+            {!!problems.length && (
+              <span
+                title={problems.map((problem) => problem.message).join("\n")}
+                className="text-[10px] text-warn"
+              >
+                {problems.length} configuration problem{problems.length === 1 ? "" : "s"}
+              </span>
+            )}
             <span
               className="truncate text-xs text-muted"
               title={isRenamed ? spec.label : style.name}
@@ -139,6 +166,58 @@ export const BlockNode = memo(function BlockNode({ data, selected }: NodeProps<B
             <div className="text-warn">Built-in filtering bypassed</div>
           )}
           {summaryLabels.length > 0 && <div className="truncate">{summaryLabels.join(" · ")}</div>}
+        </div>
+      )}
+      {blockRun && (
+        <div
+          data-testid={`block-run-status-${block.id}`}
+          className="border-t border-line px-3 py-2 text-[10px]"
+        >
+          <div className="flex items-center gap-1.5">
+            <span
+              aria-hidden="true"
+              className={cx(
+                "size-1.5 rounded-full",
+                blockRun.status === "failed"
+                  ? "bg-danger"
+                  : blockRun.status === "waiting_for_review"
+                    ? "bg-group-human"
+                    : blockRun.status === "succeeded"
+                      ? "bg-brand"
+                      : "bg-muted",
+              )}
+            />
+            <span className={blockRun.status === "failed" ? "text-danger" : "text-muted"}>
+              {BLOCK_STATUS_LABELS[blockRun.status]}
+            </span>
+            {saved && blockDraftChanged(block, saved) && (
+              <span
+                className="text-warn"
+                title="The displayed status belongs to the saved run snapshot, not these edited parameters."
+              >
+                / draft changed
+              </span>
+            )}
+          </div>
+          {typeof blockRun.progress === "number" && blockRun.status === "running" && (
+            <progress
+              max={1}
+              value={blockRun.progress}
+              aria-label={`Progress of ${block.label}`}
+              className="mt-1 h-1 w-full accent-brand"
+            />
+          )}
+          <p className="truncate text-muted">
+            {Object.entries(blockRun.counts)
+              .filter(([, count]) => count > 0)
+              .map(([key, count]) => `${count} ${key}`)
+              .join(" / ")}
+          </p>
+          {blockRun.error && (
+            <p className="truncate text-danger" title={blockRun.error}>
+              {blockRun.error}
+            </p>
+          )}
         </div>
       )}
 
