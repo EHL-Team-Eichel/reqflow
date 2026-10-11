@@ -1,7 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import * as THREE from "three";
 import type { CarPiece, PieceKind, PieceLayer } from "./buildCar";
-import { applyState, createPieceStyle, readPalette, type SketchPalette } from "./sketch";
+import {
+  applyState,
+  createOutlineMaterial,
+  createPieceStyle,
+  GHOST_LINE_OPACITY,
+  GHOST_SKETCH_RATIO,
+  readPalette,
+  type SketchPalette,
+} from "./sketch";
 
 const palettes: Record<string, SketchPalette> = {
   light: {
@@ -79,7 +87,7 @@ describe.each(Object.entries(palettes))("car selection in %s mode", (_theme, pal
     expect(style.fill.color.equals(palette.background.clone().lerp(palette.ink, 0.045))).toBe(true);
   });
 
-  it("keeps departing exterior parts see-through and unpickable", () => {
+  it("fades exterior fills in place, retaining faint grey lines and allowing cabin picks", () => {
     const { piece, style } = setup(palette);
     expect(applyState(piece, style, "selected", 0.15, palette)).toBe(false);
     expect(style.fill.color.equals(palette.selection)).toBe(true);
@@ -89,10 +97,64 @@ describe.each(Object.entries(palettes))("car selection in %s mode", (_theme, pal
 
     applyState(piece, style, "idle", 0, palette);
     expect(style.fill.opacity).toBe(0);
+    expect(style.lines.opacity).toBe(0.14);
+    expect(style.lines.color.equals(palette.ink)).toBe(true);
+    expect(piece.mesh.visible).toBe(true);
     applyState(piece, style, "idle", 1, palette);
     expect(style.fill.color.equals(palette.background)).toBe(true);
     expect(style.fill.transparent).toBe(false);
     expect(style.fill.depthWrite).toBe(true);
+  });
+
+  it.each(["idle", "hover", "hasRequirements", "selected"] as const)(
+    "keeps ghosted %s exterior lines grey, visible and non-interactive",
+    (state) => {
+      const { piece, style } = setup(palette);
+      expect(applyState(piece, style, state, 0, palette)).toBe(false);
+      expect(style.fill.opacity).toBe(0);
+      expect(style.fill.depthWrite).toBe(false);
+      expect(style.lines.opacity).toBe(GHOST_LINE_OPACITY);
+      expect(style.lines.color.equals(palette.ink)).toBe(true);
+    },
+  );
+
+  it.each(["paint", "glass", "tyre", "rim", "metal", "dark"] as const)(
+    "retains the assembled %s outline instead of hiding the exterior piece",
+    (kind) => {
+      const { piece, style } = setup(palette, kind);
+      expect(applyState(piece, style, "idle", 0, palette)).toBe(false);
+      expect(style.fill.opacity).toBe(0);
+      expect(style.lines.opacity).toBe(0.14);
+      expect(piece.mesh.visible).toBe(true);
+    },
+  );
+
+  it("interpolates line opacity continuously and avoids recompiling each fade frame", () => {
+    const { piece, style } = setup(palette);
+    applyState(piece, style, "idle", 0.5, palette);
+    expect(style.fill.opacity).toBe(0.5);
+    expect(style.lines.opacity).toBeCloseTo((0.75 + 0.14) / 2);
+    const version = style.fill.version;
+    applyState(piece, style, "idle", 0.25, palette);
+    expect(style.fill.version).toBe(version);
+    expect(style.lines.opacity).toBeGreaterThan(0.14);
+    expect(style.lines.opacity).toBeLessThan((0.75 + 0.14) / 2);
+  });
+
+  it("never fades or disables the assembled cabin when the exterior is ghosted", () => {
+    const { piece, style } = setup(palette, "seat", "interior");
+    expect(applyState(piece, style, "idle", 1, palette)).toBe(true);
+    expect(style.fill.opacity).toBe(1);
+    expect(style.lines.opacity).toBe(0.55);
+  });
+
+  it("removes wheel-well shielding without adding ghost liner edges", () => {
+    const { piece, style } = setup(palette, "liner");
+    piece.partId = null;
+    expect(applyState(piece, style, "idle", 0, palette)).toBe(false);
+    expect(style.fill.opacity).toBe(0);
+    expect(style.fill.depthWrite).toBe(false);
+    expect(style.lines.opacity).toBe(0);
   });
 
   it("only shows the fill of a see-through volume while selected", () => {
@@ -104,6 +166,23 @@ describe.each(Object.entries(palettes))("car selection in %s mode", (_theme, pal
 
     applyState(piece, style, "idle", 1, palette);
     expect(style.fill.opacity).toBe(0);
+  });
+});
+
+describe("grey-line sketch silhouettes", () => {
+  it("preserves the original faint character-line endpoint", () => {
+    expect(0.35 * GHOST_SKETCH_RATIO).toBeCloseTo(0.08);
+  });
+
+  it("allows exterior silhouettes to fade without hiding or fading cabin outlines", () => {
+    const exterior = createOutlineMaterial(palettes.light!.ink, 1.4);
+    const interior = createOutlineMaterial(palettes.light!.ink, 1.4);
+    disposables.push(exterior, interior);
+    expect(exterior.transparent).toBe(true);
+    expect(exterior.depthWrite).toBe(false);
+    exterior.uniforms.opacity!.value = 0.5;
+    expect(interior.uniforms.opacity!.value).toBe(1);
+    expect(exterior.fragmentShader).toContain("vec4(color, opacity)");
   });
 });
 

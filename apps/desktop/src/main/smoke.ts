@@ -22,6 +22,10 @@ import { ipcChannel, type AppInfo, type IpcResult, type ReqflowHandlers } from "
 import { fixturePipelineData, fixtureScope } from "@reqflow/core/fixtures";
 import type { LocalFileStore } from "@reqflow/db";
 import type { BrowserWindow, NativeImage } from "electron";
+import { NO_AGENT_SERVICES } from "@reqflow/engine";
+import { rawBlock } from "../../../../packages/blocks/src/raw/raw";
+import { readPdf } from "../../../../packages/blocks/src/raw/pdf";
+import { scannedPdf, textPdf } from "../../../../data/samples/raw-pdf-fixture";
 import {
   SYNTHETIC_FEEDBACK,
   verifySmokeResearchDataset,
@@ -262,6 +266,78 @@ export async function runSmoke(
     }
   }
 
+  // Real bundled PDF/OCR runtime; synthetic AI adapter, never a live provider or private document.
+  const syntheticPdfPath = join(outDir, "synthetic-raw-equipment.pdf");
+  const syntheticText =
+    "Synthetic equipment: Heated seats are standard. Parking camera is optional.";
+  writeFileSync(syntheticPdfPath, textPdf([{ lines: [syntheticText] }]));
+  const pdfInfo = await deps.files.importFile(syntheticPdfPath);
+  const pdfResult = await rawBlock.run(
+    {},
+    {
+      ...defaultBlockParams("raw"),
+      dataset: "equipment_data",
+      file: { fileId: pdfInfo.id, name: pdfInfo.name },
+    },
+    {
+      runId: "preview",
+      blockId: "smoke-pdf",
+      scope: DEFAULT_SETTINGS.defaultScope,
+      settings: { ...DEFAULT_SETTINGS, llm: { ...DEFAULT_SETTINGS.llm, provider: "openai" } },
+      llm: {
+        async generateObject(request) {
+          return {
+            object: request.schema.parse({
+              items: [
+                {
+                  title: "Synthetic equipment",
+                  itemType: "note",
+                  verbatimExcerpt: syntheticText,
+                  cells: [],
+                },
+              ],
+            }),
+            model: "synthetic-smoke-adapter",
+          };
+        },
+        async generateText() {
+          throw new Error("Unused synthetic text adapter");
+        },
+      },
+      agents: NO_AGENT_SERVICES,
+      files: deps.files,
+      web: null,
+      audit: {
+        async record(event) {
+          return {
+            ...event,
+            id: "aud_smokepdf",
+            at: new Date().toISOString(),
+            changes: event.changes ?? [],
+          };
+        },
+      },
+      car: {
+        async add() {
+          throw new Error("Raw must not publish requirements");
+        },
+      },
+      log: () => {},
+      progress: () => {},
+      signal: new AbortController().signal,
+      resumed: false,
+    },
+  );
+  check(
+    pdfResult.status === "ok" && pdfResult.outputs.out?.records.length === 2,
+    "raw PDF: structured item and original page retained",
+  );
+  const scan = await readPdf("synthetic-scan.pdf", await scannedPdf("BMW TEST OCR"));
+  check(
+    scan.pages[0]?.method === "ocr" && scan.pages[0].text.includes("BMW TEST OCR"),
+    "raw PDF: real local bilingual OCR works in bundled runtime",
+  );
+
   // Optional private BMW-file smoke is deliberately disabled: native smoke reads synthetic samples only.
   console.log("smoke: optional private BMW-file preview skipped (synthetic fixtures only)");
 
@@ -483,6 +559,31 @@ export async function runSmoke(
   const counts = await text('[data-testid="preview-counts"]');
   check(/3 records/.test(counts), `raw: preview should read 3 records, got "${counts}"`);
   await shot("raw-preview");
+
+  await setSelect('[data-testid="inspector"] select', "excel");
+  await delay(200);
+  deps.queuePick(syntheticPdfPath);
+  const pickedPdf = await js<boolean>(`(() => {
+    const button = [...document.querySelectorAll('[data-testid="inspector"] button')].find(el => el.textContent.trim() === "Choose file…");
+    if (!button) return false; button.click(); return true;
+  })()`);
+  check(pickedPdf, "raw PDF: native file upload action exists");
+  await delay(400);
+  check(
+    (await text('[data-testid="inspector"]')).includes("synthetic-raw-equipment.pdf"),
+    "raw PDF: uploaded PDF displayed",
+  );
+  check(await click('[data-testid="preview-load"]'), "raw PDF: explicit preview action exists");
+  await delay(400);
+  check(
+    (await text('[data-testid="inspector"]')).includes("offline mock"),
+    "raw PDF: mock refuses to invent structured evidence",
+  );
+  await shot("raw-pdf-upload");
+  await setSelect('[data-testid="inspector"] select', "database");
+  await delay(200);
+  check(await click('[data-testid="preview-load"]'), "raw: restore SQLite preview after PDF check");
+  await delay(500);
 
   // The built splitter, real Raw reader, workflow executor and LLM settings over packaged IPC.
   let splitGraph: WorkflowGraph = {

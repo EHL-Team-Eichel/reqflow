@@ -5,7 +5,8 @@ import type { CarPiece, PieceKind } from "./buildCar";
  * The sketch look: a pen drawing, not a rendering. Every surface is filled with the page colour
  * (so it hides the lines behind it) and drawn with ink: silhouettes, panel lines and creases.
  * Only the selected part gets a soft blue fill. Glass masks the cabin in exterior view; the interior
- * view reveals all cabin parts after the exterior pieces fly away. Unselected volumes have no fill.
+ * view fades exterior fills in place, leaving faint grey lines around the assembled cabin.
+ * This human-selected look must not be replaced with fly-away geometry. Unselected volumes have no fill.
  * Colours come from the app's CSS tokens, so it follows light and dark mode.
  */
 
@@ -46,6 +47,10 @@ export const OUTLINED: ReadonlySet<PieceKind> = new Set([
 
 export type PartState = "idle" | "hasRequirements" | "hover" | "selected";
 
+/** Restored from the original ghosted interior (f95ba3d); keep the exterior outline visible. */
+export const GHOST_LINE_OPACITY = 0.14;
+export const GHOST_SKETCH_RATIO = 0.08 / 0.35;
+
 export interface PieceStyle {
   fill: THREE.MeshBasicMaterial;
   lines: THREE.LineBasicMaterial;
@@ -68,7 +73,7 @@ export function createPieceStyle(piece: CarPiece, p: SketchPalette): PieceStyle 
   return { fill, lines };
 }
 
-/** Applies part highlighting and flight opacity. Returns whether it can be clicked. */
+/** Fade exterior fills in place, retaining grey lines. Ghost surfaces cannot intercept cabin picks. */
 export function applyState(
   piece: CarPiece,
   style: PieceStyle,
@@ -89,7 +94,10 @@ export function applyState(
   let lineOpacity = piece.layer === "interior" ? 0.55 : 0.75;
   if (active) lineOpacity = 1;
   opacity *= visibility;
-  lineOpacity *= visibility;
+  lineOpacity =
+    piece.layer === "exterior"
+      ? THREE.MathUtils.lerp(GHOST_LINE_OPACITY, lineOpacity, visibility)
+      : lineOpacity * visibility;
   style.fill.color.copy(color);
   style.fill.opacity = opacity;
   const transparent = opacity < 1;
@@ -99,6 +107,10 @@ export function applyState(
   }
   style.fill.depthWrite = opacity >= 1;
   style.lines.color.copy(active ? p.brand : p.ink);
+  if (piece.layer === "exterior") {
+    if (visibility === 0) style.lines.color.copy(p.ink);
+    else style.lines.color.lerp(p.ink, 1 - visibility);
+  }
   style.lines.opacity = piece.kind === "liner" ? 0 : lineOpacity;
   return visibility === 1 && piece.mesh.visible && piece.partId !== null;
 }
@@ -107,8 +119,11 @@ export function applyState(
 export function createOutlineMaterial(color: THREE.Color, widthPx: number): THREE.ShaderMaterial {
   return new THREE.ShaderMaterial({
     side: THREE.BackSide,
+    transparent: true,
+    depthWrite: false,
     uniforms: {
       color: { value: color.clone() },
+      opacity: { value: 1 },
       width: { value: widthPx },
       resolution: { value: new THREE.Vector2(1, 1) },
     },
@@ -126,7 +141,8 @@ export function createOutlineMaterial(color: THREE.Color, widthPx: number): THRE
     `,
     fragmentShader: /* glsl */ `
       uniform vec3 color;
-      void main() { gl_FragColor = vec4(color, 1.0); }
+      uniform float opacity;
+      void main() { gl_FragColor = vec4(color, opacity); }
     `,
   });
 }

@@ -15,7 +15,8 @@ asar: true
 asarUnpack:
   - out/main/research-xlsx-worker.js
   - out/main/chunks/**
-npmRebuild: false # no native modules: everything is bundled and SQLite is built into Electron's Node
+  - out/main/node_modules/**
+npmRebuild: false # prebuilt native (@napi-rs/canvas) and wasm binaries run unpacked from asar; SQLite is built into Electron
 win:
   target: [nsis]
   artifactName: ${productName}-${version}-win-${arch}.${ext}

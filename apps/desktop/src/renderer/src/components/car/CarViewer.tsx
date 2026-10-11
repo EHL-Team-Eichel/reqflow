@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import type { CarPowertrain } from "@reqflow/core";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { cx } from "@/lib/cx";
@@ -12,7 +11,7 @@ import { buildVehicleModel } from "./models/builder";
 import { getVehicleModelById } from "./models/registry";
 import type { PowertrainType } from "./models/types";
 import { G60 } from "./model/body";
-import { ExteriorFlight, type CarView } from "./model/exteriorFlight";
+import { ExteriorFade, type CarView } from "./model/exteriorFade";
 import {
   exteriorBadgeTargets,
   isPieceVisible,
@@ -22,6 +21,7 @@ import {
   applyState,
   createOutlineMaterial,
   createPieceStyle,
+  GHOST_SKETCH_RATIO,
   OUTLINED,
   readPalette,
   type PartState,
@@ -29,7 +29,7 @@ import {
   type SketchPalette,
 } from "./model/sketch";
 
-export type { CarView } from "./model/exteriorFlight";
+export type { CarView } from "./model/exteriorFade";
 export type CameraPreset = "front" | "side" | "rear" | "top";
 
 const PRESETS: Record<
@@ -147,10 +147,11 @@ export function CarViewer(props: Props) {
       return target.addScaledVector(direction, distance * 1.12);
     };
 
-    const viewFlight = new ExteriorFlight(car, propsRef.current.view);
+    const viewFade = new ExteriorFade(propsRef.current.view);
 
     let palette: SketchPalette = readPalette();
     const outline = createOutlineMaterial(palette.ink, 1.4);
+    const exteriorOutline = createOutlineMaterial(palette.ink, 1.4);
     const styles = new Map<CarPiece, PieceStyle>();
     const outlines = new Map<CarPiece, THREE.Mesh>();
     const pickable: THREE.Mesh[] = [];
@@ -195,7 +196,10 @@ export function CarViewer(props: Props) {
         OUTLINED.has(piece.kind) &&
         (!piece.mesh.geometry.userData.openSurface || (piece.kind === "paint" && !hasArches))
       ) {
-        const hull = new THREE.Mesh(piece.mesh.geometry, outline);
+        const hull = new THREE.Mesh(
+          piece.mesh.geometry,
+          piece.layer === "exterior" ? exteriorOutline : outline,
+        );
         hull.raycast = () => {};
         piece.mesh.add(hull);
         outlines.set(piece, hull);
@@ -224,18 +228,21 @@ export function CarViewer(props: Props) {
       }
       scene.background = palette.background;
       outline.uniforms.color!.value.copy(palette.ink);
+      exteriorOutline.uniforms.color!.value.copy(palette.ink);
+      exteriorOutline.uniforms.opacity!.value = viewFade.silhouetteVisibility;
       for (const { material, opacity } of sketchStyles) {
         material.color.copy(palette.ink);
-        material.opacity = opacity * (1 - THREE.MathUtils.smoothstep(viewFlight.progress, 0, 0.25));
+        material.opacity =
+          opacity * THREE.MathUtils.lerp(GHOST_SKETCH_RATIO, 1, viewFade.visibility);
       }
-      host.dataset.viewProgress = viewFlight.progress.toFixed(3);
-      host.dataset.viewAnimating = String(viewFlight.active);
+      host.dataset.viewTransition = "grey-line-fade";
+      host.dataset.viewProgress = viewFade.progress.toFixed(3);
+      host.dataset.viewAnimating = String(viewFade.active);
       pickable.length = 0;
       for (const piece of car.pieces) {
-        const visibility = viewFlight.pieces.get(piece)?.opacity ?? 1;
+        const visibility = piece.layer === "exterior" ? viewFade.visibility : 1;
         piece.mesh.visible =
-          visibility > 0 &&
-          (piece.layer !== "interior" || viewFlight.progress > 0 || isPieceVisible(piece, view));
+          piece.layer !== "interior" || viewFade.progress > 0 || isPieceVisible(piece, view);
         const state: PartState =
           piece.partId && piece.partId === selected
             ? "selected"
@@ -246,12 +253,12 @@ export function CarViewer(props: Props) {
                 : "idle";
         const canPick = applyState(piece, styles.get(piece)!, state, visibility, palette);
         const hull = outlines.get(piece);
-        if (hull) hull.visible = visibility === 1;
+        if (hull) hull.visible = piece.layer === "interior" || viewFade.silhouetteVisibility > 0;
         // Non-interactive surfaces (wheel-well shields) must still block clicks behind them.
         if (
           piece.mesh.visible &&
           visibility === 1 &&
-          (piece.layer === "interior" || viewFlight.progress === 0) &&
+          (piece.layer === "interior" || viewFade.progress === 0) &&
           (canPick || piece.partId === null)
         )
           pickable.push(piece.mesh);
@@ -261,7 +268,7 @@ export function CarViewer(props: Props) {
     };
 
     const setView = (view: CarView) => {
-      viewFlight.setView(view, performance.now(), reducedMotion.matches);
+      viewFade.setView(view, performance.now(), reducedMotion.matches);
       needsPick = true;
       restyle();
     };
@@ -363,6 +370,8 @@ export function CarViewer(props: Props) {
       const size = renderer.getDrawingBufferSize(new THREE.Vector2());
       outline.uniforms.resolution!.value.copy(size);
       outline.uniforms.width!.value = 1.4 * renderer.getPixelRatio();
+      exteriorOutline.uniforms.resolution!.value.copy(size);
+      exteriorOutline.uniforms.width!.value = 1.4 * renderer.getPixelRatio();
       dirty = true;
     };
     const ro = new ResizeObserver(resize);
@@ -376,7 +385,7 @@ export function CarViewer(props: Props) {
     let lastFrame = performance.now();
     const loop = () => {
       frame = requestAnimationFrame(loop);
-      if (viewFlight.update(performance.now())) {
+      if (viewFade.update(performance.now())) {
         restyle();
         needsPick = true;
       }
@@ -430,16 +439,16 @@ export function CarViewer(props: Props) {
           badge.style.visibility = "hidden";
           continue;
         }
-        const partFlight = viewFlight.badges.get(partId);
-        v.copy(anchor);
-        if (partFlight) v.addScaledVector(partFlight.offset, partFlight.amount);
-        v.project(camera);
-        const opacity = partFlight?.opacity ?? 1;
+        v.copy(anchor).project(camera);
+        const opacity = exteriorPartsForModel.has(partId) ? viewFade.visibility : 1;
         const visible =
           opacity > 0 && v.z > -1 && v.z < 1 && Math.abs(v.x) < 1.05 && Math.abs(v.y) < 1.05;
         badge.style.visibility = visible ? "visible" : "hidden";
         badge.style.opacity = String(opacity);
-        badge.style.pointerEvents = partFlight?.amount && viewFlight.progress > 0 ? "none" : "auto";
+        badge.style.pointerEvents =
+          opacity === 1 && (!exteriorPartsForModel.has(partId) || viewFade.progress === 0)
+            ? "auto"
+            : "none";
         badge.style.transform = `translate(${((v.x + 1) / 2) * w}px, ${((1 - v.y) / 2) * h}px) translate(-50%, -50%)`;
       }
     };
@@ -467,6 +476,7 @@ export function CarViewer(props: Props) {
         s.lines.dispose();
       }
       outline.dispose();
+      exteriorOutline.dispose();
       for (const { material } of sketchStyles) material.dispose();
       renderer.dispose();
       renderer.domElement.remove();
@@ -474,7 +484,7 @@ export function CarViewer(props: Props) {
     };
   }, [props.modelId, props.powertrain]);
 
-  // React to selection and counts without rebuilding the scene or restarting a flight.
+  // React to selection and counts without rebuilding the scene or restarting the fade.
   useEffect(() => {
     apiRef.current?.restyle();
   }, [props.counts, props.selected, props.markerParts]);
