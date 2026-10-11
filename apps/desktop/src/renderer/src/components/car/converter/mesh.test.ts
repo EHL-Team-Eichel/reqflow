@@ -115,12 +115,15 @@ describe("source geometry preservation", () => {
     vi.spyOn(registry, "getSourceMeshInfoById").mockReturnValue(
       createConvertedProfileIndex(profile, "fixture.json"),
     );
-    expect([...availablePartIds("electric", profile.model)].sort()).toEqual(["body", "windshield"]);
-    expect(
-      powertrainSubclasses("h2", profile.model)
-        .flatMap((group) => group.partIds)
-        .sort(),
-    ).toEqual(["body", "windshield"]);
+    const electricParts = availablePartIds("electric", profile.model);
+    expect(electricParts.has("body")).toBe(true);
+    expect(electricParts.has("windshield")).toBe(true);
+    expect(electricParts.has("dashboard")).toBe(true);
+    expect(electricParts.has("battery_pack")).toBe(true);
+    const h2Parts = powertrainSubclasses("h2", profile.model).flatMap((group) => group.partIds);
+    expect(h2Parts).toContain("fuel_cell");
+    expect(h2Parts).toContain("steering_wheel");
+    expect(h2Parts).not.toContain("combustion_engine");
     const glass = built.pieces[0]!;
     const box = new THREE.Box3().setFromObject(glass.mesh);
     expect(box.min.x).toBeCloseTo(2);

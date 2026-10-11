@@ -46,9 +46,19 @@ export function buildVehicleModel(
   // 1. Remove non-existent features from the baseline blueprint
   const excluded = modelExcludedPartIds(model);
   if (excluded.size > 0) {
+    const seatParts: Record<string, string> = {
+      driver: "driver_seat",
+      front_passenger: "passenger_seat",
+      rear_left: "rear_left_seat",
+      rear_center: "rear_center_seat",
+      rear_right: "rear_right_seat",
+    };
+    let removedSeatComponents = false;
     for (let i = pieces.length - 1; i >= 0; i--) {
       const piece = pieces[i]!;
-      if (piece.partId && excluded.has(piece.partId)) {
+      const seatPart = seatParts[piece.mesh.userData.seatPosition as string];
+      if ((piece.partId && excluded.has(piece.partId)) || (seatPart && excluded.has(seatPart))) {
+        if (seatPart) removedSeatComponents = true;
         root.remove(piece.mesh);
         piece.mesh.geometry.dispose();
         if (Array.isArray(piece.mesh.material)) {
@@ -61,6 +71,15 @@ export function buildVehicleModel(
     }
     for (const id of excluded) {
       anchors.delete(id);
+    }
+    if (removedSeatComponents) {
+      for (const id of ["headrests", "seat_belts"]) {
+        const bounds = new THREE.Box3();
+        for (const piece of pieces.filter((piece) => piece.partId === id))
+          bounds.union(new THREE.Box3().setFromObject(piece.mesh));
+        if (bounds.isEmpty()) anchors.delete(id);
+        else anchors.set(id, bounds.getCenter(new THREE.Vector3()));
+      }
     }
   }
 

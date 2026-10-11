@@ -1,6 +1,6 @@
 import { Agent } from "@mastra/core/agent";
 import { noopLogger } from "@mastra/core/logger";
-import { LiveLlmProvider, ResearchAgentId, ResearchScope } from "@reqflow/core";
+import { AI_RETRIES, LiveLlmProvider, ResearchAgentId, ResearchScope } from "@reqflow/core";
 import { z } from "zod";
 import { RESEARCH_AGENTS, buildQueries, buildQueryRoot } from "./agents";
 
@@ -74,7 +74,7 @@ const executionLimits = (options: z.output<typeof ModelOptions>) => ({
   modelSettings: {
     ...(supportsTemperature(options) ? { temperature: 0 } : {}),
     maxOutputTokens: 768,
-    maxRetries: 0,
+    maxRetries: AI_RETRIES,
   },
 });
 
@@ -112,7 +112,7 @@ export function createMastraResearchAgents(
           apiKey: validated.apiKey,
         },
         tools: {},
-        maxRetries: 0,
+        maxRetries: AI_RETRIES,
         maxProcessorRetries: 0,
         errorProcessorDefaults: false,
         defaultOptions: executionLimits(validated),

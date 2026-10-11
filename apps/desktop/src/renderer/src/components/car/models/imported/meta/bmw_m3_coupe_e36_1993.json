@@ -40,5 +40,14 @@
     "side_windows",
     "taillights",
     "wheels"
+  ],
+  "exteriorPartIds": [
+    "body",
+    "headlights",
+    "kidney_grille",
+    "mirrors",
+    "side_windows",
+    "taillights",
+    "wheels"
   ]
 }

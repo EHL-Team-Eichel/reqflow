@@ -427,6 +427,33 @@ describe("raw AI Splitter analytical protocol", () => {
     },
   );
 
+  it.each(["discover@1", "assign@1", "plan@1"])(
+    "asks once more when one %s answer fails validation, and never keeps the bad answer",
+    async (contract) => {
+      let slipped = false;
+      const llm = peer((r, p) => {
+        if (slipped || !p.contract.endsWith(contract)) return;
+        slipped = true;
+        if (contract === "discover@1") r.items[0].id = "invented";
+        if (contract === "assign@1") r.items[0].signals[0].evidence.excerpt = "invented quotation";
+        if (contract === "plan@1") r.groups[0].id = "invented";
+      });
+      const ctx = context(llm);
+      const { report } = result(
+        await aiSplitterBlock.run(
+          { in: data([record("a", topics("seat")), record("b", topics("screen"))]) },
+          { ...params, splitBy: "car_parts", partDepth: "areas" },
+          ctx,
+        ),
+      );
+      expect(slipped).toBe(true);
+      expect(report.signals.every((s) => s.evidence.excerpt !== "invented quotation")).toBe(true);
+      expect(vi.mocked(ctx.log).mock.calls.flat().join(" ")).toMatch(
+        /failed validation.*asking once more/,
+      );
+    },
+  );
+
   it.each([
     "unknown alias",
     "missing alias",

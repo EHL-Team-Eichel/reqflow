@@ -20,6 +20,8 @@ export function isPowertrain(value: unknown): value is PowertrainType {
 }
 
 const STORAGE_KEY = "reqflow.vehicle_switcher_state";
+const PREVIEW_DEFAULT_VERSION = 1;
+const LEGACY_DEFAULT_MODEL_ID = "bmw_m5_sedan_g90_2025";
 
 function loadSaved(): { modelId: string; powertrain: PowertrainType } {
   try {
@@ -27,10 +29,19 @@ function loadSaved(): { modelId: string; powertrain: PowertrainType } {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && typeof parsed.modelId === "string" && getVehicleModelById(parsed.modelId)) {
-        return {
-          modelId: parsed.modelId,
+        // Older installs persisted the former default. Upgrade it once, but preserve other
+        // saved models and any explicit sedan selection made after this migration.
+        const modelId =
+          parsed.modelId === LEGACY_DEFAULT_MODEL_ID &&
+          parsed.previewDefaultVersion !== PREVIEW_DEFAULT_VERSION
+            ? DEFAULT_MODEL_ID
+            : parsed.modelId;
+        const saved: { modelId: string; powertrain: PowertrainType } = {
+          modelId,
           powertrain: isPowertrain(parsed.powertrain) ? parsed.powertrain : "electric",
         };
+        if (modelId !== parsed.modelId) persist(saved.modelId, saved.powertrain);
+        return saved;
       }
     }
   } catch {
@@ -44,7 +55,10 @@ function loadSaved(): { modelId: string; powertrain: PowertrainType } {
 
 function persist(modelId: string, powertrain: PowertrainType) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ modelId, powertrain }));
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ modelId, powertrain, previewDefaultVersion: PREVIEW_DEFAULT_VERSION }),
+    );
   } catch {
     // Ignore storage quota errors
   }

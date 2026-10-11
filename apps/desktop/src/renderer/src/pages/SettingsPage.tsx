@@ -3,7 +3,6 @@ import { Panel } from "@/components/ui/Panel";
 import { SettingsNav, type NavItem } from "@/components/settings/SettingsNav";
 import { PersistenceBanner } from "@/components/settings/PersistenceBanner";
 import { AppSection } from "@/components/settings/sections/AppSection";
-import { ModelSection } from "@/components/settings/sections/ModelSection";
 import { ParametersSection } from "@/components/settings/sections/ParametersSection";
 import { ModelSwitcherSection } from "@/components/settings/sections/ModelSwitcherSection";
 import { AiSection } from "@/components/settings/sections/AiSection";
@@ -19,12 +18,6 @@ const NAV_ITEMS: readonly NavItem[] = [
     label: "App",
     hint: "Theme, behaviour",
     icon: <AppIcon className="size-5" />,
-  },
-  {
-    id: "model",
-    label: "Model",
-    hint: "Car powertrain",
-    icon: <CarIcon className="size-5" />,
   },
   {
     id: "parameters",
@@ -77,9 +70,6 @@ export function SettingsPage() {
       break;
     case "model-switcher":
       content = <ModelSwitcherSection />;
-      break;
-    case "model":
-      content = <ModelSection />;
       break;
     case "ai":
       content = <AiSection />;

@@ -32,5 +32,6 @@
     "author": "Ddiaz Design",
     "license": "http://creativecommons.org/licenses/by-nc-sa/4.0/"
   },
-  "partIds": ["body", "headlights", "side_windows"]
+  "partIds": ["body", "headlights", "side_windows"],
+  "exteriorPartIds": ["body", "headlights", "side_windows"]
 }

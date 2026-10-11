@@ -23,9 +23,21 @@ const getProceduralModel = (id: string) => BUILT_IN_VEHICLE_MODELS.find((model) 
 afterEach(() => vi.restoreAllMocks());
 
 describe("Procedural vehicle features and class recognition", () => {
-  it("defaults to the 2025 BMW M5 Sedan as the standard benchmark model", () => {
-    expect(DEFAULT_MODEL_ID).toBe("bmw_m5_sedan_g90_2025");
-    expect(VEHICLE_MODELS[0]!.id).toBe("bmw_m5_sedan_g90_2025");
+  it("defaults to the imported 2025 BMW M4 Competition preview", () => {
+    expect(DEFAULT_MODEL_ID).toBe("bmw_m4_competition_2025");
+    const m4 = getVehicleModelById(DEFAULT_MODEL_ID)!;
+    expect(VEHICLE_MODELS[0]).toBe(m4);
+    expect(m4.name).toBe("2025 BMW M4 Competition");
+    expect(m4.year).toBe(2025);
+    expect(m4.series).toBe("M4");
+    expect(m4.chassisCode).toBe("G82");
+    expect(m4.bodyType).toBe("coupe");
+    expect(registry.getSourceMeshInfoById(DEFAULT_MODEL_ID)?.profileFormat).toBe(
+      "reqflow-sketch-mesh-v1",
+    );
+  });
+
+  it("keeps the basic 2025 BMW M5 Sedan available with its executive appointments", () => {
     const m5 = getVehicleModelById("bmw_m5_sedan_g90_2025");
     expect(m5).toBeDefined();
     expect(m5!.series).toBe("M5");
@@ -60,7 +72,7 @@ describe("Procedural vehicle features and class recognition", () => {
     expect(excluded.has("rear_doors")).toBe(true);
     expect(excluded.has("rear_seats")).toBe(false);
 
-    // This test covers procedural menus; imported menus follow the actual source pieces.
+    // This test covers procedural menus; imported menus combine source exterior parts with the standard interior.
     vi.spyOn(registry, "getSourceMeshInfoById").mockReturnValue(undefined);
     const available = availablePartIds("gasoline", m2);
     expect(available.has("rear_doors")).toBe(false);
@@ -97,6 +109,9 @@ describe("Procedural vehicle features and class recognition", () => {
     expect(pieces.includes("rear_right_seat")).toBe(false);
     expect(pieces.includes("rear_air_vents")).toBe(false);
     expect(car.anchors.has("rear_seats")).toBe(false);
+    expect(car.pieces.filter((piece) => piece.partId === "headrests")).toHaveLength(2);
+    expect(car.pieces.filter((piece) => piece.partId === "seat_belts")).toHaveLength(2);
+    expect(car.pieces.filter((piece) => piece.partId === "front_seats")).toHaveLength(2);
   });
 
   it("strips passenger seat and luxury comfort items from dedicated GT3/GT4/DTM/GTR race cars", () => {
@@ -121,6 +136,10 @@ describe("Procedural vehicle features and class recognition", () => {
     expect(pieces.includes("armrest")).toBe(false);
     expect(pieces.includes("glovebox")).toBe(false);
     expect(pieces.includes("wireless_charger")).toBe(false);
+
+    expect(car.pieces.filter((piece) => piece.partId === "headrests")).toHaveLength(1);
+    expect(car.pieces.filter((piece) => piece.partId === "seat_belts")).toHaveLength(1);
+    expect(car.pieces.filter((piece) => piece.partId === "front_seats")).toHaveLength(1);
 
     // Single lightweight driver seat and racing roll cage remain
     expect(pieces.includes("driver_seat")).toBe(true);

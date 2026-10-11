@@ -46,5 +46,19 @@
     "steering_wheel",
     "taillights",
     "wheels"
+  ],
+  "exteriorPartIds": [
+    "body",
+    "exhaust_system",
+    "front_bumper",
+    "front_doors",
+    "headlights",
+    "hood",
+    "kidney_grille",
+    "mirrors",
+    "rear_bumper",
+    "side_windows",
+    "taillights",
+    "wheels"
   ]
 }

@@ -77,9 +77,13 @@ describe("standalone Mastra recorded transport", () => {
     },
   );
 
-  it.each([401, 429, 500])(
-    "rejects real HTTP %s without retries, response logging, body or key disclosure",
-    async (status) => {
+  it.each([
+    [401, 1],
+    [429, 2],
+    [500, 2],
+  ])(
+    "rejects real HTTP %s after %s attempt(s), without response logging, body or key disclosure",
+    async (status, attempts) => {
       const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
       const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
       const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(
@@ -91,11 +95,13 @@ describe("standalone Mastra recorded transport", () => {
           { status, headers: { "content-type": "application/json" } },
         ),
       );
-      const client = createMastraLlmClient(settings, { apiKey: "synthetic-key" });
+      // One retry keeps the real back-off short; the default (AI_RETRIES) is checked in mastra.test.ts.
+      const client = createMastraLlmClient(settings, { apiKey: "synthetic-key", retries: 1 });
       await expect(client.generateText({ prompt: "Synthetic" })).rejects.toThrow(
         `Mastra Anthropic request failed (HTTP ${status})`,
       );
-      expect(fetch).toHaveBeenCalledTimes(1);
+      // A wrong key fails at once; a rate limit or server error is tried again.
+      expect(fetch).toHaveBeenCalledTimes(attempts);
       expect(consoleError).not.toHaveBeenCalled();
       expect(consoleWarn).not.toHaveBeenCalled();
     },

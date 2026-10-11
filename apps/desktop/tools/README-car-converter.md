@@ -10,8 +10,10 @@ No Blender or new npm dependencies are needed. Use Node 22.13+ and the repositor
 installed dependencies.
 
 Materials and texture assets are replaced by the sketch look. Texture-only detail
-is not converted into geometry. Interiors and drivetrain geometry come from the
-source; powertrain choices do not generate replacements for this imported mesh.
+is not converted into geometry. The app displays the standard Reqflow schematic cabin and chassis inside the original
+exterior, adjusted to the car's proportions and body class. Source interiors remain
+in the conversion profile but are replaced in the viewer. Powertrain choices change
+only the standard schematic components; the imported exterior stays unchanged.
 Named meshes/materials map to selectable parts. A combined body stays combined:
 explicit mappings or an export with separate panels are needed for panel selection.
 
@@ -41,8 +43,8 @@ explicit mappings or an export with separate panels are needed for panel selecti
    **Settings → Model Switcher**, then view it on the Car tab. JSON profiles in `models/imported/` are bundled
    at build time. This is a developer conversion tool, not a runtime file-upload UI.
    The CLI writes a small metadata index in `models/imported/meta/`; keep it beside
-   the geometry profile. The catalog reads the index immediately and loads geometry
-   only when selected, keeping large source meshes out of the startup bundle.
+   the geometry profile. The catalog reads the index immediately, combining its exterior part IDs with the
+   standard interior's supported parts, and loads geometry only when selected, keeping large source meshes out of the startup bundle.
    A profile with an existing catalog ID replaces that definition; two imported
    files with the same ID produce a clear error. Remove the profile JSON and its
    corresponding `meta/` JSON, then restart to undo.

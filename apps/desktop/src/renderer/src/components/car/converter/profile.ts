@@ -198,6 +198,9 @@ export const ConvertedProfileIndexSchema = z.object({
   partIds: z.array(
     z.string().refine((value) => partIds.includes(value), "Unknown Reqflow part id"),
   ),
+  exteriorPartIds: z
+    .array(z.string().refine((value) => partIds.includes(value), "Unknown Reqflow part id"))
+    .default([]),
 });
 export type ConvertedProfileIndex = z.infer<typeof ConvertedProfileIndexSchema>;
 export function createConvertedProfileIndex(
@@ -215,6 +218,17 @@ export function createConvertedProfileIndex(
         ? [
             ...new Set(
               profile.pieces.map((piece) => piece.partId).filter((id): id is string => id !== null),
+            ),
+          ].sort()
+        : [],
+    exteriorPartIds:
+      profile.format === "reqflow-sketch-mesh-v1"
+        ? [
+            ...new Set(
+              profile.pieces
+                .filter((piece) => piece.layer === "exterior")
+                .map((piece) => piece.partId)
+                .filter((id): id is string => id !== null),
             ),
           ].sort()
         : [],

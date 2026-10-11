@@ -32,5 +32,14 @@
     "author": "Ddiaz Design",
     "license": "http://creativecommons.org/licenses/by-nc-sa/4.0/"
   },
-  "partIds": ["body", "front_bumper", "hood", "rear_bumper", "side_windows", "trunk_lid", "wheels"]
+  "partIds": ["body", "front_bumper", "hood", "rear_bumper", "side_windows", "trunk_lid", "wheels"],
+  "exteriorPartIds": [
+    "body",
+    "front_bumper",
+    "hood",
+    "rear_bumper",
+    "side_windows",
+    "trunk_lid",
+    "wheels"
+  ]
 }

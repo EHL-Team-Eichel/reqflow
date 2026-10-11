@@ -267,6 +267,7 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 **Grey-line transition slice:** done (implemented and verified) · **Owner:** OpenCode · **Branch:** `ws3-grey-line-transition` (isolated from latest main)
 **Windscreen slice:** review (implemented and verified) · **Owner:** OpenCode · **Branch:** `ws3-car-view-animation`
 **Option provenance slice:** done (main integration verified; PR #23) · **Owner:** OpenCode · **Branch:** `integrate/car-option-provenance`
+**Default-preview slice:** review (orbit optimization verified; full-smoke failures below) · **Owner:** OpenCode · **Branch:** `ws3-m4-default-preview` (isolated from latest main)
 **Depends on:** nothing to start: build on `@reqflow/core/fixtures` (5 requirements, findings, sources,
 audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 serves them.
 
@@ -293,6 +294,20 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - [x] Merge Car option provenance report: exact originating run/block, HIL-style lineage and saved step data, read-only build-workflow/inner-workplace visualizer (verified against current main; PR #23).
 
 **Log**
+
+- 2026-10-11: Optimized imported-model orbiting with an exact, indirect triangle spatial index for hover/badge raycasts. Source vertices, indices, normals, rendered geometry/materials and the assembled grey-line transition are unchanged; no LOD, decimation, pixel-ratio reduction or new dependency. Small/procedural/grouped meshes retain standard picking. Spatial leaves share source attributes, restore original triangle IDs/UVs/normals and honor live transforms, sides and near/far; dispose listeners and viewer teardown release the index. Seven regressions verify equivalence, reduced triangle scanning and cleanup. Root typecheck and all 2,790 tests pass (6 skipped); production build, formatting and 66 focused picking/fade/sketch tests pass. Native camera-motion benchmark with exterior markers: baseline median 50 ms/p95 416.7 ms, optimized median 16.7 ms/p95 17.6–33.3 ms (~20→60 FPS median on this machine, not a cross-device guarantee). Native probe passes 22 checks including real pointer orbit, all exterior review areas, light/dark, minimum size, grey-line interior/return and four powertrain reloads; exterior/interior screenshots reviewed. Initial full smoke was disrupted by a concurrent rebuild removing its renderer file. Clean final smoke completed 90 screenshots but failed fuel-canvas, catalog-switch and dark-marker assertions (also logged native GPU mailbox errors); not a smoke PASS. WS1/WS0 follow-up: investigate these full-run assertions and replace fixed reload/catalog delays with canvas/model readiness checks; isolated M4 readiness-based checks pass. Only CarViewer.tsx, model/acceleratedPicking.ts, its tests and this WS3 handoff changed; unrelated Entire edits excluded. Human requested push to main.
+
+- 2026-10-11: Fixed existing installs restoring the former M5 default instead of the M4: migrate unversioned saved M5 selections once, persist the migration version, retain other saved models and preserve explicit later M5 choices. Powertrain and requirement scope are unchanged. Root typecheck and all 2,783 tests pass (6 skipped); production build and 70 focused store/fade/sketch tests pass. Native Electron probe seeds the legacy sedan before reload and verifies M4 startup/persistence, eleven exterior areas, light/dark, minimum size, assembled grey-line transition and all four powertrain reloads (21 checks). Exterior/interior screenshots reviewed. Full smoke completed 90 screenshots but failed four canvas checks immediately after reload: its fixed 900 ms delay precedes source-model readiness; later selection screenshots render correctly and readiness-based native checks pass. Not a full smoke PASS. WS1/WS0 follow-up: wait for car-canvas readiness at smoke.ts:1855–1862 instead of a fixed delay. Only vehicleStore.ts, its tests and this WS3 handoff changed; unrelated Entire edits excluded. Human requested rapid publication to main.
+
+- 2026-10-11: M4 default and exterior review points complete: added ten sedan-style exterior areas (lights, bumpers, windscreen/rear glass, roof, mirrors, handles and boot), plus corrected the existing grille anchor. Paired points project onto exact source surfaces, respect camera occlusion and open the existing requirement review. Retained all source triangles, source-assembly picking, cabin, grey-line fade, saved choices and scope; no invented coupe rear doors. Root typecheck and all 2,768 tests pass (6 skipped); formatting/diff checks and production build pass. Native probe passes 17 checks including all eleven area anchors, light/dark, 1024×640 and interior/return; six screenshots reviewed. Full smoke attempts were incomplete: standard run exited after 81 screenshots; a clean-output run timed out at 120 seconds after 89 screenshots without its final report. Neither is a smoke PASS. No core/main/IPC, dependencies, packed profiles, credentials, private data or unrelated shared edits included. Ready for the human-requested direct push to main.
+
+- 2026-10-11: Human expanded the default-preview slice to include sedan-style exterior subareas/points on this M4 before publication. Add surface-projected, paired review markers for lights, bumpers, glazing, roof, mirrors, handles and boot; retain exact imported geometry and existing source-assembly picking. No fictitious coupe rear doors, scope/decision changes or transition changes.
+
+- 2026-10-11: Default preview now selects the existing imported 2025 BMW M4 Competition (`bmw_m4_competition_2025`) and places it first in the catalog. Saved selections, requirement scope, basic-M5 conversion protection and grey-line transition are unchanged. Initial default-only root typecheck and 2,762 tests passed (6 skipped); isolated native preview probe passes fresh source-model startup, interior/exterior return and unchanged scope without renderer errors. Reviewed both `out/smoke/m4-default-preview/` screenshots. Production build passes. Initial full native smoke aborts during earlier workflow/filter scenarios after 35 screenshots without completing its report; not a smoke PASS. No core/main/IPC, geometry, dependency, private-data or credential changes; generated Entire-plugin edits excluded. Human requested direct push to main.
+
+- 2026-10-11: Claimed the human-requested 2025 BMW M4 Competition default preview and direct publication to main. Use the existing imported G82 geometry; preserve saved model choices, requirement scope, the basic M5 and grey-line interior transition. Isolated from unrelated shared-checkout changes.
+
+- 2026-10-11: Human requested standard-model interior visuals for imported cars and authorized Luna/max subagents and publication to main. All 75 imported cars now combine their unchanged exact-source exterior with the existing dimension-scaled standard cabin/chassis and selected exploratory powertrain. Removed source cabin occluders and duplicate G60 exterior lines; retained assembled source shell lines, grey-line fade, credits and the basic M5. Menus match rendered parts and separate exterior/interior badge anchors preserve selection. Roadsters and single-seat race cars also omit the cushions, headrests and belts associated with excluded seats. Verified root typecheck, 2,760 tests passed (6 skipped), formatting/diff checks, and a focused native probe (44 checks, 9 screenshots reviewed: standard/imported interiors, selection, light/dark, H2, rapid reversal, Z4/GT3 seating and basic-model restoration). Packed source geometry files are unchanged. The final isolated full native smoke passed all 91 screenshots with no reported errors, including native persistence/research checks; earlier attempts hit a ResizeObserver notification or exited before their report completed. No core/main/IPC changes, credentials, raw archives, private BMW data or unrelated shared-checkout changes included.
 
 - 2026-10-11: Human authorized publishing the isolated source-car converter to main. Integrated 75 exact-source BMW meshes, lazy metadata/geometry loading, supported-part menus, credits and offline glTF/GLB/OBJ/STL + atomic catalog conversion tools. Preserved the basic M5 and main's approved grey-line exterior fade; excluded unrelated local body/startup changes. Another 29 source downloads remain blocked by Sketchfab's daily quota. Verified on current main: root typecheck, 2,751 tests passed (6 skipped), root format check, production build, and a focused native source-car probe (22 checks; exterior/interior, rapid fade reversal, light/dark, 105 entries and basic-M5 restoration), with screenshots reviewed. All 75 profile files match the independently verified local assets (30,098,862 drawn triangle vertices, maximum error 0.135 micrometres). Standard native smoke was attempted twice but exited during unrelated Settings scenarios without completing its report (71/61 screenshots); full-app smoke is not claimed as passing. No credentials, raw archives, private BMW data or unrelated local work included.
 
@@ -632,7 +647,7 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 ## WS4 — Settings, app shell & packaging
 
-**Status:** review (Model setting complete) · **Owner:** OpenCode · **Branch:** `ws4-car-models`
+**Status:** done (duplicate Model removal slice only) · **Owner:** OpenCode · **Branch:** `ws4-remove-duplicate-model`
 **Depends on:** WS1 for tasks 1–2.
 
 **Tasks**
@@ -647,8 +662,13 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - [ ] Demo polish: keyboard-shortcut overview, consistent empty states, About screen with team names.
 - [ ] Persist Settings → Model with Hydrogen / Hybrid / Electric / Fuel; keep the existing shell and vary the selectable powertrain.
       Implemented and verified on `ws4-car-models`; merge pending.
+- [x] Remove the duplicate Settings → Model page, retaining Model switcher and its saved powertrain controls.
 
 **Log**
+
+- 2026-10-11: Removed only the duplicate Model navigation/page and its unused component; Model switcher and stored settings are unchanged. Added two page regressions and, with human approval, adapted native smoke to the retained powertrain radios and checked the duplicate entry is absent. Root typecheck, full tests (2,762 passed, 6 skipped; two workers/30s timeout), changed-file formatting and macOS smoke (90 screenshots) pass; reviewed light Model switcher and dark Settings. The initial combined test command hit its 120s shell limit; the longer retry passed. Synthetic-only verification; unrelated original-checkout and generated Entire edits excluded. Other WS4 tasks remain open.
+
+- 2026-10-11: Claimed the duplicate Model removal in an isolated worktree from main. Keep Model switcher, settings storage and Car behavior unchanged. Human authorized updating the native smoke selectors to use Model switcher; publish only this narrow slice to main.
 
 - 2026-10-10: Model slice complete: four saved choices, backward-compatible electric default,
   distinct selectable powertrains on the unchanged shell/cabin/chassis, model-aware menus and
@@ -784,6 +804,34 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 **Log**
 
+- 2026-10-11: **AI calls retry 10 times** (`AI_RETRIES` in `core/services.ts`) before an error
+  reaches the user: setup clients (`llm/http.ts`), the default-AI REST client, the Mastra client
+  and the Research query planner. Only failures that can heal are retried — network errors,
+  timeouts, unreadable answers, HTTP 408/409/425/429/5xx/529 — with back-off 1 s, 2 s, 4 s … capped
+  at 30 s (or the provider's Retry-After, up to 60 s); a wrong key (401/403), bad request (400) or
+  unknown model (404) still fails at once. Worst case about 3 minutes before an error.
+- 2026-10-11: **End-to-end test with a real Gemini key** (`gemini-3.8-flash` / `gemini-3.5-flash-lite`)
+  on `data/samples` through the running app (IPC + editor UI over the DevTools port; only the
+  native open/save dialogs were answered with sample paths). Everything except Research passed:
+  Raw (7 sample files, SQLite, text + scanned PDF), AI Filter (4/4 price/dealer rows excluded,
+  90/90 in scope kept, restore → next run), every Splitter mode (car parts by area 89/94 and by part
+  group 89/94 right against the sample's topic manifest), inner-workplace override, HIL routing
+  correction, Add to Car (8 requirements, confidence 52–93 %, 83/83 verbatim quotes, Why?),
+  decisions/challenge/edit/audit/exports, Analytics, Custom, templates, cancel, settings, editor
+  template run with HIL PDF export. Bugs found and fixed on `fix/gemini-max-items`:
+  - Gemini rejected every schema with `maxItems` (HTTP 400): PDF import and all Splitter modes
+    failed. `maxItems` is now a local constraint for Gemini.
+  - Gemini's thinking counts against `maxOutputTokens`: a plan call thought 7,864 of 8,192 tokens
+    and was cut off. Gemini/OpenAI caps are now answer + 16,384 thinking headroom (≤ 65,536), and a
+    cut-off answer says so.
+  - One invalid model answer (unknown ID, quote from the wrong record) failed a whole Splitter run;
+    each Splitter call now asks once more, a second invalid answer still fails. Saved 3 of the
+    test runs.
+  - Priority scoring ("Prioritized feedback" template) failed every run: the note check only
+    searched record text, but the model quotes field values ("dealer survey"). Field values and
+    source metadata now count; a note that still can't be verified counts as an assumption
+    (logged) instead of failing the run. 0 of 582 notes downgraded after the fix. **For WS7
+    (Jonas):** this relaxes the earlier hard failure on unverifiable notes — please review.
 - 2026-10-11: Human assigned only the selection-only AI Filter feature and authorized necessary
   coordinated core/engine/DB/main/UI integration. Work isolated on `ai-filter-selection` in
   `EHL-ai-filter`; existing `ws5-pdf-ingestion` checkout and concurrent changes untouched. Built

@@ -92,25 +92,42 @@ export const aiSplitterBlock = defineBlock({
       for (const [batchIndex, batch] of groups.entries()) {
         ctx.signal.throwIfAborted();
         ctx.log(`Routing batch ${batchIndex + 1}/${groups.length}: ${batch.length} primary items.`);
-        const { object, model } = await generate(ctx, {
-          system: ROUTING_SYSTEM,
-          prompt: JSON.stringify(payload(batch)),
-          schema: Assignments,
-          tier: params.model,
-        });
-        const assignments = validateIds(
-          object.assignments,
-          batch.map((item) => item.id),
-        );
-        for (const entry of batch) {
-          const assignment = assignments.get(entry.id)!;
-          if (assignment.branchIndex >= params.branches.length) {
-            throw new Error(
-              `AI Splitter assignment ${entry.id} uses unknown branchIndex ${assignment.branchIndex}`,
-            );
+        // A single invalid answer (unknown ID or branch) is asked once more, then fails the run.
+        const route = async () => {
+          const { object, model } = await generate(ctx, {
+            system: ROUTING_SYSTEM,
+            prompt: JSON.stringify(payload(batch)),
+            schema: Assignments,
+            tier: params.model,
+          });
+          const assignments = validateIds(
+            object.assignments,
+            batch.map((item) => item.id),
+          );
+          for (const entry of batch) {
+            const assignment = assignments.get(entry.id)!;
+            if (assignment.branchIndex >= params.branches.length) {
+              throw new Error(
+                `AI Splitter assignment ${entry.id} uses unknown branchIndex ${assignment.branchIndex}`,
+              );
+            }
           }
+          return { assignments, model };
+        };
+        let answer;
+        try {
+          answer = await route();
+        } catch (error) {
+          ctx.signal.throwIfAborted();
+          ctx.log(
+            `Routing batch ${batchIndex + 1}: the answer failed validation (${error instanceof Error ? error.message : String(error)}); asking once more.`,
+          );
+          answer = await route();
+        }
+        for (const entry of batch) {
+          const assignment = answer.assignments.get(entry.id)!;
           routes.set(entry.id, assignment.branchIndex);
-          ctx.log(`Routed 1 primary item to out-${assignment.branchIndex}, model ${model}.`);
+          ctx.log(`Routed 1 primary item to out-${assignment.branchIndex}, model ${answer.model}.`);
         }
         ctx.progress(
           routes.size / items.length,

@@ -45,7 +45,6 @@ export function CarPage() {
   const { selectedModelId, powertrain, setPowertrain } = useVehicleStore();
   const active = useMemo(() => getActiveVehicle(), [selectedModelId, powertrain]);
   const sourceMesh = getSourceMeshInfoById(selectedModelId);
-  const displayPowertrain = sourceMesh?.model.defaultPowertrain ?? powertrain;
   const availableParts = availablePartIds(powertrain, active.model);
   const subclasses = powertrainSubclasses(powertrain, active.model);
   const [view, setView] = useState<CarView>("exterior");
@@ -91,7 +90,7 @@ export function CarPage() {
             {scope.derivative ? ` ${scope.derivative}` : ""}
             <span className="text-sm font-normal text-muted">
               {scope.market} · {scope.horizonYears}-year horizon ·{" "}
-              {POWERTRAINS.find((option) => option.value === displayPowertrain)?.label}
+              {POWERTRAINS.find((option) => option.value === powertrain)?.label}
             </span>
           </span>
         }
@@ -120,11 +119,7 @@ export function CarPage() {
         testId="car-page"
       >
         <div className="relative h-full">
-          <PowertrainSwitcher
-            value={displayPowertrain}
-            onChange={setPowertrain}
-            disabled={!!sourceMesh}
-          />
+          <PowertrainSwitcher value={powertrain} onChange={setPowertrain} />
           <CarViewer
             modelId={selectedModelId}
             powertrain={powertrain}
@@ -139,7 +134,7 @@ export function CarPage() {
           <p className="pointer-events-none absolute bottom-3 left-4 text-xs text-muted">
             Sketch: {active.model.name} ·{" "}
             {sourceMesh
-              ? "Original vehicle geometry"
+              ? `Original exterior · standard schematic interior · ${POWERTRAINS.find((option) => option.value === powertrain)?.description}`
               : `${POWERTRAINS.find((option) => option.value === powertrain)?.description} · schematic sketch`}{" "}
             · drag to turn, scroll to zoom, click any part
             {sourceMesh && (

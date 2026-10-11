@@ -60,6 +60,10 @@ export interface CarModel {
   sketchLines: THREE.BufferGeometry[];
   /** Where each part's badge sits (world space). */
   anchors: Map<string, THREE.Vector3>;
+  /** Optional exterior-only badge locations when the cabin uses a different schematic layout. */
+  exteriorAnchors?: Map<string, THREE.Vector3>;
+  /** Named review points on a source exterior whose original meshes are broader assemblies. */
+  exteriorReviewAreas?: ReadonlyMap<string, readonly THREE.Vector3[]>;
 }
 
 const SIDES = [-1, 1] as const; // left (−z, driver in LHD), right (+z)
@@ -355,25 +359,27 @@ export function buildCar(model: PowertrainType | CarPowertrain = "electric"): Ca
     [0, 0.38],
     [0.45, 0.44],
   ] as const) {
-    box("rear_seats", "seat", "interior", [0.5, 0.13, w], [-1.02, 0.5, z], {
+    const cushion = box("rear_seats", "seat", "interior", [0.5, 0.13, w], [-1.02, 0.5, z], {
       radius: 0.05,
       rotZ: 0.05,
     });
+    cushion.userData.seatPosition = z < 0 ? "rear_left" : z > 0 ? "rear_right" : "rear_center";
     const seatId = z < 0 ? "rear_left_seat" : z > 0 ? "rear_right_seat" : "rear_center_seat";
     seatBack(seatId, -1.33, 0.8, z, w, 0.54, 0.3);
   }
   // Belt straps sit on the backrests; each remains visible from the cabin view.
-  for (const [x, y, z, lean] of [
-    [-0.34, 0.83, -0.58, 0.24],
-    [-0.34, 0.83, 0.58, 0.24],
-    [-1.24, 0.81, -0.61, 0.3],
-    [-1.24, 0.81, 0.09, 0.3],
-    [-1.24, 0.81, 0.61, 0.3],
+  for (const [x, y, z, lean, seatPosition] of [
+    [-0.34, 0.83, -0.58, 0.24, "driver"],
+    [-0.34, 0.83, 0.58, 0.24, "front_passenger"],
+    [-1.24, 0.81, -0.61, 0.3, "rear_left"],
+    [-1.24, 0.81, 0.09, 0.3, "rear_center"],
+    [-1.24, 0.81, 0.61, 0.3, "rear_right"],
   ] as const) {
-    box("seat_belts", "trim", "interior", [0.018, 0.48, 0.035], [x, y, z], {
+    const belt = box("seat_belts", "trim", "interior", [0.018, 0.48, 0.035], [x, y, z], {
       radius: 0.006,
       rotZ: lean,
     });
+    belt.userData.seatPosition = seatPosition;
   }
 
   function seatBack(
@@ -387,7 +393,7 @@ export function buildCar(model: PowertrainType | CarPowertrain = "electric"): Ca
   ) {
     box(partId, "seat", "interior", [0.13, h, w], [x, y, z], { radius: 0.05, rotZ: lean });
     const d = h / 2 + 0.13;
-    box(
+    const headrest = box(
       "headrests",
       "seat",
       "interior",
@@ -395,6 +401,12 @@ export function buildCar(model: PowertrainType | CarPowertrain = "electric"): Ca
       [x - Math.sin(lean) * d, y + Math.cos(lean) * d, z],
       { radius: 0.04, rotZ: lean },
     );
+    headrest.userData.seatPosition =
+      partId === "driver_seat"
+        ? "driver"
+        : partId === "passenger_seat"
+          ? "front_passenger"
+          : partId.replace("_seat", "");
   }
 
   // Steering wheel in front of the driver, tilted towards them.

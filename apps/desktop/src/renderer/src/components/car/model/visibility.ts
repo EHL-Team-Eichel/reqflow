@@ -38,6 +38,7 @@ export function visibleExteriorBadgePoint(
   camera: THREE.Camera,
   surfaces: THREE.Mesh[],
   raycaster: THREE.Raycaster,
+  reviewArea = false,
 ): THREE.Vector3 | null {
   const projected = new THREE.Vector3();
   const pointer = new THREE.Vector2();
@@ -53,7 +54,11 @@ export function visibleExteriorBadgePoint(
     pointer.set(projected.x, projected.y);
     raycaster.setFromCamera(pointer, camera);
     const hit = raycaster.intersectObjects(surfaces, false)[0];
-    if (hit?.object.userData.partId === partId) return hit.point;
+    if (
+      hit &&
+      (reviewArea ? hit.point.distanceTo(target) < 0.08 : hit.object.userData.partId === partId)
+    )
+      return hit.point;
   }
   return null;
 }

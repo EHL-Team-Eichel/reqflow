@@ -552,15 +552,25 @@ describe("AI Splitter", () => {
     'Evidence: src_invented | "synthetic" | unsupported judgement',
     'Evidence: rec_0 | "invented quote" | unsupported judgement',
     "Measured sales rose by 200%",
-  ])("rejects unsupported evidence and unlabeled factor notes: %s", async (note) => {
+  ])("never counts unsupported evidence or unlabeled notes as evidence: %s", async (note) => {
     const factors = Object.fromEntries(ScoreFactor.options.map((f) => [f, { value: 2, note }]));
-    await expect(
-      aiSplitterBlock.run(
-        { in: records(["synthetic"]) },
-        defaults,
-        context(fakeLlm({ scores: [{ id: "rec_0", factors }] })).ctx,
-      ),
-    ).rejects.toThrow(/note|evidence|excerpt/i);
+    const c = context(fakeLlm({ scores: [{ id: "rec_0", factors }] }));
+    const out = outputs(await aiSplitterBlock.run({ in: records(["synthetic"]) }, defaults, c.ctx));
+    // Routed on the provisional value, with every factor logged as an unverified assumption.
+    expect(Object.values(out).flatMap((d) => d.records)).toHaveLength(1);
+    const logs = c.log.mock.calls.flat().join(" ");
+    expect(logs.match(/counted as an unverified assumption, not evidence/g)).toHaveLength(6);
+    expect(logs).not.toContain("invented quote");
+  });
+
+  it("accepts a verbatim quote of a record's field value as evidence", async () => {
+    const input = records(["The seats hurt."]);
+    input.records[0]!.fields = { channel: "dealer survey" };
+    const note = 'Evidence: rec_0 | "dealer survey" | one dealer comment, no volume';
+    const factors = Object.fromEntries(ScoreFactor.options.map((f) => [f, { value: 2, note }]));
+    const c = context(fakeLlm({ scores: [{ id: "rec_0", factors }] }));
+    await aiSplitterBlock.run({ in: input }, defaults, c.ctx);
+    expect(c.log.mock.calls.flat().join(" ")).not.toMatch(/unverified assumption/);
   });
 
   it("accepts only verifiable Evidence notes for provisional factors", async () => {

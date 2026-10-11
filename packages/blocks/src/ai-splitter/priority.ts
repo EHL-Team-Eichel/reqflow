@@ -18,22 +18,23 @@ import {
   type SplitterParams,
 } from "./protocol";
 
-/** Evidence claims need an available ID and verbatim quotation; unmeasured judgement is an assumption. */
-function validateNote(note: string, entry: PromptItem, factor: ScoreFactor): void {
-  if (/^(Assumption:|MOCK assumption:)/i.test(note)) return;
+/**
+ * Evidence claims need an available ID and verbatim quotation; unmeasured judgement is an
+ * assumption. Returns why a note can't count as evidence, or null when it can.
+ */
+function noteProblem(note: string, entry: PromptItem, factor: ScoreFactor): string | null {
+  if (/^(Assumption:|MOCK assumption:)/i.test(note)) return null;
   const match = /^Evidence:\s*(src_\S+|rec_\S+)\s*\|\s*("(?:[^"\\]|\\.)*")\s*\|\s*\S.+$/i.exec(
     note,
   );
   if (!match)
-    throw new Error(
-      `Provisional ${entry.id} factor ${factor} note must identify Assumption: or Evidence: ID | "verbatim excerpt" | judgement`,
-    );
+    return `Provisional ${entry.id} factor ${factor} note must identify Assumption: or Evidence: ID | "verbatim excerpt" | judgement`;
   const id = match[1]!;
   let excerpt: string;
   try {
     excerpt = JSON.parse(match[2]!) as string;
   } catch {
-    throw new Error(`Provisional ${entry.id} factor ${factor} evidence quote must be JSON-quoted`);
+    return `Provisional ${entry.id} factor ${factor} evidence quote must be JSON-quoted`;
   }
   const records = [
     ...entry.context.records,
@@ -43,21 +44,31 @@ function validateNote(note: string, entry: PromptItem, factor: ScoreFactor): voi
     ...entry.context.findings,
     ...(entry.layer === "findings" ? [entry.item as PipelineData["findings"][number]] : []),
   ];
+  // Verbatim means copied from what the model was given: a record's text or one of its field
+  // values (e.g. the channel "dealer survey" behind evidence strength), or its source's metadata.
   const texts = [
     ...records
       .filter((record) => record.id === id || record.sourceId === id)
-      .map((record) => record.text),
+      .flatMap((record) => [
+        record.text,
+        ...Object.values(record.fields ?? {}).flatMap((v) =>
+          v === null || v === undefined || typeof v === "object" ? [] : [String(v)],
+        ),
+      ]),
+    ...entry.context.sources
+      .filter((source) => source.id === id)
+      .flatMap((source) =>
+        [source.title, source.publisher, source.uri].filter((v): v is string => !!v),
+      ),
     ...findings.flatMap((finding) =>
       finding.evidence
         .filter((ref) => ref.sourceId === id || ref.recordId === id)
         .map((ref) => ref.excerpt),
     ),
   ];
-  if (!excerpt.trim() || !texts.some((text) => text.includes(excerpt))) {
-    throw new Error(
-      `Provisional ${entry.id} factor ${factor} cites unknown evidence or a non-verbatim excerpt`,
-    );
-  }
+  if (!excerpt.trim() || !texts.some((text) => text.includes(excerpt)))
+    return `Provisional ${entry.id} factor ${factor} cites unknown evidence or a non-verbatim excerpt`;
+  return null;
 }
 
 /** Named bands only. Contiguous upper bands may coarsen omitted lower bands, always with a log. */
@@ -152,20 +163,39 @@ export async function routePriority(
     ctx.log(
       `Provisional scoring batch ${index + 1}/${groups.length}: ${batch.length} primary items.`,
     );
-    const { object, model } = await generate(ctx, {
-      system: SCORING_SYSTEM,
-      prompt: JSON.stringify(payload(batch)),
-      schema: Scores,
-      tier: params.model,
-    });
-    const scores = validateIds(
-      object.scores,
-      batch.map((item) => item.id),
-    );
+    // A single invalid answer (unknown ID, non-verbatim evidence) is asked once more, then fails.
+    const scoreBatch = async () => {
+      const { object, model } = await generate(ctx, {
+        system: SCORING_SYSTEM,
+        prompt: JSON.stringify(payload(batch)),
+        schema: Scores,
+        tier: params.model,
+      });
+      const scores = validateIds(
+        object.scores,
+        batch.map((item) => item.id),
+      );
+      return { scores, model };
+    };
+    let answer;
+    try {
+      answer = await scoreBatch();
+    } catch (error) {
+      ctx.signal.throwIfAborted();
+      ctx.log(
+        `Provisional scoring batch ${index + 1}: the answer failed validation (${error instanceof Error ? error.message : String(error)}); asking once more.`,
+      );
+      answer = await scoreBatch();
+    }
+    const { scores, model } = answer;
     for (const entry of batch) {
       const score = scores.get(entry.id)!;
+      // A note that can't be verified is never kept as evidence: its factor counts as an
+      // assumption (routing scores are provisional judgement anyway), and the log says so.
+      // Requiring 6 verbatim quotes per item made one imperfect quote fail whole runs.
       for (const factor of ScoreFactor.options) {
-        validateNote(score.factors[factor].note, entry, factor);
+        const problem = noteProblem(score.factors[factor].note, entry, factor);
+        if (problem) ctx.log(`${problem}; counted as an unverified assumption, not evidence.`);
       }
       const values = Object.fromEntries(
         ScoreFactor.options.map((factor) => [factor, score.factors[factor].value]),

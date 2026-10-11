@@ -1,4 +1,5 @@
 import {
+  AI_RETRIES,
   Settings,
   type LlmClient,
   type LlmTextRequest,
@@ -11,12 +12,25 @@ import { mockObject } from "./mock";
 import { openaiSchema } from "./openai-schema";
 import type { JsonSchema } from "./json-schema";
 import { createMastraProvider, type MastraLlmClientOptions } from "./mastra";
+import { isRetryableStatus, retryDelay, sleep } from "./http";
 
 export interface LlmClientOptions {
   /** Supplied by the main process secret store, never read from the environment. */
   apiKey?: string;
   /** Injectable transport for recorded, offline HTTP tests. */
   fetch?: typeof globalThis.fetch;
+  /** Injectable pause between retries, so tests don't wait for real back-off. */
+  sleep?: (ms: number, signal?: AbortSignal) => Promise<void>;
+}
+
+/** A failed call that can heal (network, timeout, rate limit, server error): worth another try. */
+class RetryableCallError extends Error {
+  constructor(
+    message: string,
+    readonly retryAfter: string | null = null,
+  ) {
+    super(message);
+  }
 }
 
 const Request = z.object({
@@ -117,7 +131,26 @@ async function cancellable<T>(work: () => Promise<T>, signal?: AbortSignal): Pro
   }
 }
 
-/** Minimal REST clients. No retries, secret discovery, SDK, or live calls at construction. */
+/** The answer the caller asked for (default 8,192 tokens). */
+const DEFAULT_ANSWER_TOKENS = 8192;
+/** Gemini 3.x and OpenAI reasoning models count their thinking against the output cap. */
+const THINKING_HEADROOM = 16_384;
+const MAX_OUTPUT_TOKENS = 65_536;
+
+/**
+ * Output cap for providers whose thinking shares the answer's budget. With a bare 8,192 a Gemini
+ * call that thought for 7,864 tokens had 313 left and was cut off (MAX_TOKENS), failing a whole
+ * AI Splitter run. The cap is a ceiling only; billing follows the tokens actually used.
+ */
+export function thinkingOutputCap(maxTokens?: number): number {
+  const answer = maxTokens && maxTokens > 0 ? Math.floor(maxTokens) : DEFAULT_ANSWER_TOKENS;
+  return Math.min(MAX_OUTPUT_TOKENS, answer + THINKING_HEADROOM);
+}
+
+/**
+ * Minimal REST clients. No secret discovery, SDK, or live calls at construction. A failed call is
+ * retried up to AI_RETRIES times when it can heal (network, timeout, rate limit, server error).
+ */
 export function createLlmClient(
   settings: AppSettings["llm"],
   options: LlmClientOptions = {},
@@ -153,7 +186,27 @@ export function createLlmClient(
   if (!apiKey) throw new Error(`${label} API key is required; supply it from the secret store.`);
   const fetch = options.fetch ?? globalThis.fetch;
 
+  const pause = options.sleep ?? sleep;
   async function post(
+    url: string,
+    headers: Record<string, string>,
+    body: unknown,
+    signal?: AbortSignal,
+  ) {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await attemptPost(url, headers, body, signal);
+      } catch (error) {
+        signal?.throwIfAborted();
+        if (!(error instanceof RetryableCallError) || attempt >= AI_RETRIES) {
+          throw error instanceof RetryableCallError ? new Error(error.message) : error;
+        }
+        await pause(retryDelay(attempt, error.retryAfter), signal);
+      }
+    }
+  }
+
+  async function attemptPost(
     url: string,
     headers: Record<string, string>,
     body: unknown,
@@ -170,16 +223,21 @@ export function createLlmClient(
         });
       } catch {
         signal?.throwIfAborted();
-        throw new Error(`${label} transport failed`);
+        throw new RetryableCallError(`${label} transport failed`);
       }
       signal?.throwIfAborted();
       // Error bodies and transport exceptions can contain credentials or request text. Never echo them.
-      if (!response.ok) throw new Error(`${label} request failed (HTTP ${response.status})`);
+      if (!response.ok) {
+        const message = `${label} request failed (HTTP ${response.status})`;
+        if (isRetryableStatus(response.status))
+          throw new RetryableCallError(message, response.headers?.get?.("retry-after") ?? null);
+        throw new Error(message);
+      }
       try {
         return (await response.json()) as unknown;
       } catch {
         signal?.throwIfAborted();
-        throw new Error(`${label} response is not valid JSON`);
+        throw new RetryableCallError(`${label} response is not valid JSON`);
       }
     }, signal);
   }
@@ -187,6 +245,7 @@ export function createLlmClient(
   async function message(request: LlmTextRequest, schema?: JsonSchema) {
     request.signal?.throwIfAborted();
     const checked = validate(Request, request, `${label} request is invalid`);
+    const outputCap = thinkingOutputCap(request.maxTokens);
     const model = (checked.tier === "fast" ? config.fastModel : config.model).trim();
     if (!model) throw new Error(`${label} model is invalid`);
     if (provider === "openai") {
@@ -194,7 +253,7 @@ export function createLlmClient(
         model,
         store: false,
         input: checked.prompt,
-        max_output_tokens: 8192,
+        max_output_tokens: outputCap,
         // Reasoning model families reject temperature. Unknown custom IDs remain usable as supplied.
         ...(/^(?:ft:)?(?:gpt-[56](?:[.:-]|$)|o[134](?:[.:-]|$))/i.test(model)
           ? {}
@@ -232,7 +291,7 @@ export function createLlmClient(
           : {}),
         generationConfig: {
           candidateCount: 1,
-          maxOutputTokens: 8192,
+          maxOutputTokens: outputCap,
           temperature: config.temperature,
           ...(schema ? { responseMimeType: "application/json", responseJsonSchema: schema } : {}),
         },
@@ -243,6 +302,10 @@ export function createLlmClient(
         body,
         request.signal,
       );
+      const finish = (raw as { candidates?: { finishReason?: unknown }[] })?.candidates?.[0]
+        ?.finishReason;
+      if (finish === "MAX_TOKENS")
+        throw new Error(`${label} answer was cut off at the output limit (MAX_TOKENS)`);
       const result = validate(GoogleResponse, raw, `${label} response is invalid or incomplete`);
       const text = result.candidates[0]!.content.parts.filter((part) => !part.thought)
         .map((part) => part.text)

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { AI_RETRIES } from "@reqflow/core";
 import { z } from "zod";
 import { anthropicClient } from "./anthropic";
 import { Limiter, LlmHttpError, postJson } from "./http";
@@ -374,7 +375,7 @@ describe("jev client", () => {
 });
 
 import { DEFAULT_SETTINGS, LLM_MODEL_DEFAULTS, type LiveLlmProvider } from "@reqflow/core";
-import { createLlmClient } from "./index";
+import { createLlmClient, thinkingOutputCap } from "./index";
 
 describe("default LLM providers", () => {
   const schema = z.strictObject({ value: z.string() });
@@ -455,7 +456,7 @@ describe("default LLM providers", () => {
           store: false,
           input: "test",
           instructions: "system",
-          max_output_tokens: 8192,
+          max_output_tokens: 24576,
           temperature: 0.2,
           text: {
             format: {
@@ -497,7 +498,7 @@ describe("default LLM providers", () => {
         model: "custom-model/free-text",
         store: false,
         input: "test",
-        max_output_tokens: 8192,
+        max_output_tokens: 24576,
         temperature: 0.2,
       });
     });
@@ -827,7 +828,7 @@ describe("default LLM providers", () => {
           systemInstruction: { parts: [{ text: "system" }] },
           generationConfig: {
             candidateCount: 1,
-            maxOutputTokens: 8192,
+            maxOutputTokens: 24576,
             temperature: 0.2,
             responseMimeType: "application/json",
             responseJsonSchema: {
@@ -853,10 +854,29 @@ describe("default LLM providers", () => {
         );
         expect(body(fetch)).toEqual({
           contents: [{ role: "user", parts: [{ text: "test" }] }],
-          generationConfig: { candidateCount: 1, maxOutputTokens: 8192, temperature: 0.2 },
+          generationConfig: { candidateCount: 1, maxOutputTokens: 24576, temperature: 0.2 },
         });
       },
     );
+
+    it("gives thinking room on top of the requested answer and names a cut-off answer", async () => {
+      const fetch = transport(payload("google", "text"));
+      await createLlmClient(settings("google", "gemini-x"), { apiKey: key, fetch }).generateText({
+        prompt: "test",
+        maxTokens: 16000,
+      });
+      expect(body(fetch).generationConfig.maxOutputTokens).toBe(16000 + 16384);
+      expect(thinkingOutputCap(60_000)).toBe(65_536);
+      const cut = transport({
+        modelVersion: "version",
+        candidates: [{ finishReason: "MAX_TOKENS", content: { parts: [{ text: "{" }] } }],
+      });
+      await expect(
+        createLlmClient(settings("google", "gemini-x"), { apiKey: key, fetch: cut }).generateText({
+          prompt: "test",
+        }),
+      ).rejects.toThrow(/cut off at the output limit \(MAX_TOKENS\)/);
+    });
 
     it("excludes thought parts and joins only plain answer parts", async () => {
       const value = {
@@ -949,7 +969,9 @@ describe("default LLM providers", () => {
           apiKey: key,
           fetch: transport({ ...payload("google"), ...extra }),
         }).generateText({ prompt: privateText }),
-      ).rejects.toThrow(/^Google response is invalid or incomplete$/);
+      ).rejects.toThrow(
+        /^Google (response is invalid or incomplete|answer was cut off at the output limit \(MAX_TOKENS\))$/,
+      );
     });
 
     it("retains optional/nullable values without OpenAI null stripping", async () => {
@@ -1037,13 +1059,14 @@ describe("default LLM providers", () => {
       expect(fetch).not.toHaveBeenCalled();
     });
 
-    it("sanitizes HTTP errors and never reads their body or retries", async () => {
+    it("retries a rate limit 10 times, never reads the error body, then fails cleanly", async () => {
       const json = vi.fn().mockRejectedValue(new Error(privateText));
       const fetch = vi
         .fn<typeof globalThis.fetch>()
         .mockResolvedValue({ ok: false, status: 429, json } as unknown as Response);
+      const sleep = vi.fn(async () => {});
       await expect(
-        createLlmClient(settings(provider), { apiKey: key, fetch }).generateText({
+        createLlmClient(settings(provider), { apiKey: key, fetch, sleep }).generateText({
           prompt: privateText,
         }),
       ).rejects.toThrow(
@@ -1052,7 +1075,38 @@ describe("default LLM providers", () => {
         ),
       );
       expect(json).not.toHaveBeenCalled();
+      expect(fetch).toHaveBeenCalledTimes(1 + AI_RETRIES);
+      expect(sleep).toHaveBeenCalledTimes(AI_RETRIES);
+    });
+
+    it("fails a wrong key at once, without retrying", async () => {
+      const fetch = vi
+        .fn<typeof globalThis.fetch>()
+        .mockResolvedValue({ ok: false, status: 401 } as unknown as Response);
+      await expect(
+        createLlmClient(settings(provider), {
+          apiKey: key,
+          fetch,
+          sleep: async () => {},
+        }).generateText({ prompt: "test" }),
+      ).rejects.toThrow(/HTTP 401/);
       expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it("succeeds when a retry gets through", async () => {
+      const ok = transport(payload(provider, "text"));
+      const fetch = vi
+        .fn<typeof globalThis.fetch>()
+        .mockResolvedValueOnce({ ok: false, status: 503 } as unknown as Response)
+        .mockRejectedValueOnce(new Error("socket hang up"))
+        .mockImplementation(ok);
+      const res = await createLlmClient(settings(provider), {
+        apiKey: key,
+        fetch,
+        sleep: async () => {},
+      }).generateText({ prompt: "test" });
+      expect(res.text).toBe("text");
+      expect(fetch).toHaveBeenCalledTimes(3);
     });
 
     it("sanitizes arbitrary transport and body errors", async () => {
@@ -1063,7 +1117,11 @@ describe("default LLM providers", () => {
           json: () => Promise.reject(new Error(`${key} ${privateText}`)),
         } as unknown as Response),
       ]) {
-        const error = await createLlmClient(settings(provider), { apiKey: key, fetch })
+        const error = await createLlmClient(settings(provider), {
+          apiKey: key,
+          fetch,
+          sleep: async () => {},
+        })
           .generateText({ prompt: privateText })
           .catch((error: unknown) => error);
         expect(error).toBeInstanceOf(Error);

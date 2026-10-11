@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import * as THREE from "three";
 import { OBJExporter } from "three/addons/exporters/OBJExporter.js";
-import { BUILT_IN_VEHICLE_MODELS, DEFAULT_MODEL_ID } from "../models/registry";
+import { BUILT_IN_VEHICLE_MODELS } from "../models/registry";
 import {
   ConvertedProfileSchema,
   createConvertedProfileIndex,
@@ -17,6 +17,8 @@ import {
 const execute = promisify(execFile);
 const cli = resolve(import.meta.dirname, "../../../../../../tools/convert-car-catalog.mjs");
 const folders: string[] = [];
+// The protected procedural model is independent of the default preview selection.
+const BASIC_MODEL_ID = "bmw_m5_sedan_g90_2025";
 async function run(...args: string[]) {
   return execute(process.execPath, ["--experimental-strip-types", cli, ...args], {
     maxBuffer: 4_000_000,
@@ -47,7 +49,7 @@ async function fixture() {
   const old = convertSketchScene(mesh, manifest.models[0]!.config);
   const oldText = JSON.stringify(old);
   await writeFile(join(output, "old-version.json"), oldText);
-  const basicText = JSON.stringify({ ...old, model: { ...old.model, id: DEFAULT_MODEL_ID } });
+  const basicText = JSON.stringify({ ...old, model: { ...old.model, id: BASIC_MODEL_ID } });
   await writeFile(join(output, "basic.json"), basicText);
   const customText = JSON.stringify({ ...old, model: { ...old.model, id: "custom_car" } });
   await writeFile(join(output, "custom.json"), customText);
@@ -81,14 +83,14 @@ describe("whole catalog source replacement", () => {
   });
   it("plans every non-basic ID without changing models and finds UID-named files", async () => {
     const f = await fixture();
-    expect(f.manifest.basicModelId).toBe(DEFAULT_MODEL_ID);
+    expect(f.manifest.basicModelId).toBe(BASIC_MODEL_ID);
     expect(f.manifest.models.map((entry) => entry.config.id).sort()).toEqual(
-      BUILT_IN_VEHICLE_MODELS.filter((model) => model.id !== DEFAULT_MODEL_ID)
+      BUILT_IN_VEHICLE_MODELS.filter((model) => model.id !== BASIC_MODEL_ID)
         .map((model) => model.id)
         .sort(),
     );
     expect(f.manifest.models).toHaveLength(104);
-    const matched = BUILT_IN_VEHICLE_MODELS.find((model) => model.id !== DEFAULT_MODEL_ID)!;
+    const matched = BUILT_IN_VEHICLE_MODELS.find((model) => model.id !== BASIC_MODEL_ID)!;
     await writeFile(
       join(f.folder, `${matched.sketchfabUid}.obj`),
       await readFile(join(f.folder, "synthetic.obj")),
@@ -162,7 +164,7 @@ describe("whole catalog source replacement", () => {
   it("rejects manifests that try to replace the basic model or repeat another ID", async () => {
     const f = await fixture();
     const originalId = f.manifest.models[0]!.config.id;
-    f.manifest.models[0]!.config.id = DEFAULT_MODEL_ID;
+    f.manifest.models[0]!.config.id = BASIC_MODEL_ID;
     await writeFile(f.manifestPath, JSON.stringify(f.manifest));
     await expect(run("--apply", f.manifestPath, "--output", f.output)).rejects.toThrow(
       "Basic M5 must not be replaced",

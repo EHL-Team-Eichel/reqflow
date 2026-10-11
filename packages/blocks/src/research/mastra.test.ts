@@ -1,3 +1,4 @@
+import { AI_RETRIES } from "@reqflow/core";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { Agent, type AgentExecutionOptions } from "@mastra/core/agent";
@@ -90,7 +91,7 @@ describe("createMastraResearchAgents", () => {
         activeTools: [],
         maxProcessorRetries: 0,
         tracingOptions: { hideInput: true, hideOutput: true },
-        modelSettings: { maxRetries: 0, maxOutputTokens: 768, temperature: 0 },
+        modelSettings: { maxRetries: AI_RETRIES, maxOutputTokens: 768, temperature: 0 },
       });
     }
     expect(fetch).not.toHaveBeenCalled();
@@ -139,7 +140,7 @@ describe("createMastraResearchAgents", () => {
           ).toBe(true);
           expect(await agent.getDefaultOptions()).toMatchObject({
             maxSteps: 1,
-            modelSettings: { temperature: 0, maxOutputTokens: 768, maxRetries: 0 },
+            modelSettings: { temperature: 0, maxOutputTokens: 768, maxRetries: AI_RETRIES },
           });
         }
       }
@@ -238,7 +239,7 @@ describe("createMastraQueryPlanner", () => {
         maxProcessorRetries: 0,
         savePerStep: false,
         structuredOutput: { errorStrategy: "strict" },
-        modelSettings: { temperature: 0, maxOutputTokens: 768, maxRetries: 0 },
+        modelSettings: { temperature: 0, maxOutputTokens: 768, maxRetries: AI_RETRIES },
         tracingOptions: { hideInput: true, hideOutput: true },
       });
       expect(execution?.structuredOutput).not.toHaveProperty("model");
@@ -271,7 +272,7 @@ describe("createMastraQueryPlanner", () => {
       expect(generate.mock.calls[0]?.[1]?.modelSettings).not.toHaveProperty("temperature");
       expect(generate.mock.calls[0]?.[1]?.modelSettings).toMatchObject({
         maxOutputTokens: 768,
-        maxRetries: 0,
+        maxRetries: AI_RETRIES,
       });
       expect(generate).toHaveBeenCalledTimes(1);
     },
@@ -385,7 +386,7 @@ describe("createMastraQueryPlanner", () => {
         activeTools: [],
         maxProcessorRetries: 0,
         structuredOutput: { errorStrategy: "strict" },
-        modelSettings: { maxOutputTokens: 768, maxRetries: 0, temperature: 0 },
+        modelSettings: { maxOutputTokens: 768, maxRetries: AI_RETRIES, temperature: 0 },
         tracingOptions: { hideInput: true, hideOutput: true },
       });
       expect(execution).not.toHaveProperty("memory");

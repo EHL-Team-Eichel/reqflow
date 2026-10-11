@@ -1,4 +1,4 @@
-import { DEFAULT_SETTINGS } from "@reqflow/core";
+import { AI_RETRIES, DEFAULT_SETTINGS } from "@reqflow/core";
 import { createLlmClient } from "@reqflow/llm";
 import { describe, expect, it, vi } from "vitest";
 import { structurePdf } from "./structure";
@@ -26,14 +26,15 @@ describe("PDF extraction through Google transport", () => {
       );
       const llm = createLlmClient(
         { ...DEFAULT_SETTINGS.llm, provider: "google" },
-        { apiKey: "synthetic-key", fetch },
+        { apiKey: "synthetic-key", fetch, sleep: async () => {} },
       );
       const error = await structurePdf([page], llm, options).catch((failure: unknown) => failure);
       expect(error).toBeInstanceOf(Error);
       expect((error as Error).message).toContain(`HTTP ${status}`);
       expect((error as Error).message).not.toContain("PRIVATE_PROVIDER_BODY");
       expect((error as Error).message).not.toContain("synthetic-key");
-      expect(fetch).toHaveBeenCalledOnce();
+      // Rate limits and server errors are retried AI_RETRIES times; the rest fail at once.
+      expect(fetch).toHaveBeenCalledTimes([429, 503].includes(status) ? 1 + AI_RETRIES : 1);
     },
   );
 
