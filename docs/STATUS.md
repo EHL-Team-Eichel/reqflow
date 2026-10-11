@@ -81,6 +81,7 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 **Log**
 
+- 2026-10-11: OpenCode is creating a synthetic 100-row F70 feedback workbook and block-by-block test guide. Inspected only the supplied workbook's sheet/header/counts; no BMW cell values used. New fixture paths only; preserve concurrent PDF-ingestion work.
 - 2026-10-11: Publishable snapshot including the latest Car class/feature adaptation passes `npm run check` (2,307 tests, 5 skipped) and native macOS smoke (70 screenshots). Inspected final M5 baseline, catalog selection/restoration, compact details and light/dark views. All ready remote branches are included; only the four old experiment branches and human-excluded Analytics WIP stay out. No live providers, credentials or BMW files used in verification; Windows/Linux remain unverified.
 - 2026-10-11: Final remote refresh found Car follow-up `db64757` (class-aware features and M5 baseline) and newly published `analytics-and-timeline`. Car follow-up is included. Analytics is not buildable: five engine modules are missing and its chart tabs are placeholders. Human explicitly chose to publish ready branches and leave Analytics to its author. Ready integration is isolated at `integrate/ready-2026-10-11`; the attempted Analytics merge remains on `integrate/2026-10-11`, not on main. Final exclusions are the four old engine/judging experiments plus Analytics WIP.
 - 2026-10-11: Final corrected integration verification: `npm run check` passed (2,298 tests, 5 skipped); `npm run smoke` passed on macOS with 70 screenshots. Inspected catalog selection/restoration, four powertrain views, compact details and light/dark screenshots. Ready to promote to main; no excluded experiment history included.
@@ -646,8 +647,8 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 ## WS5 — Raw block (BMW data ingestion)
 
-**Status:** review · **Owner:** Claude Code (lead session) · **Branch:** `main`
-**Depends on:** nothing left; next real step needs BMW's files.
+**Status:** review · **Owner:** OpenCode · **Branch:** `ws5-pdf-ingestion`
+**Assigned scope:** verify feedback/study XLSX ingestion and add PDF OCR plus configured-model structured extraction; narrow file-selector/main wiring included. Existing Research JSON is unchanged. Other checklist items are not assigned.
 
 **Tasks**
 
@@ -662,8 +663,7 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - [x] Database source: read-only SQLite, one SELECT only; other databases fail with a clear message.
 - [x] BMW's data in `data/raw/`: feedback, studies and sales read correctly (shapes in the log);
       tests on the real files run locally when they're present (`raw.test.ts`, "BMW …" suites).
-- [ ] F70 option list (PDF): needs a PDF table reader (e.g. pdfjs) in the Raw block, or BMW's
-      list as Excel. Refused with a clear message until then.
+- [ ] F70 option list (PDF): local PDF.js/Tesseract OCR plus configured-default-model structured extraction implemented and verified; ready to merge.
 - [ ] Customer study findings: per question, how the F70 scores against the other models in the
       same market (deterministic, like the take-rate findings), with the study rows as evidence.
 - [ ] If BMW's headers can't be matched automatically: add an optional column-mapping param
@@ -673,6 +673,9 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 **Log**
 
+- 2026-10-11: Assigned slice implemented: PDF upload, spatial embedded-text parsing, bundled local English/German OCR, strict configured-default-model JSON extraction, original page evidence and structured item records with page/model/OCR metadata, explicit AI review status and audited ingestion. Rejects invented excerpts/cell values/title/availability, malformed schemas, duplicate fields and resource overflow; cancellation/cleanup tested. Existing XLSX feedback/study layouts and Research JSON preserved. Narrow shared Raw selector, lazy main preview wiring and unpacked OCR runtime included. Independent Codex review finding corrected with regressions; agy delegates hit quota after initial implementation, parent completed integration.
+- 2026-10-11: Verification: `VITEST_MAX_WORKERS=4 npm run check` passes (119 files, 2,340 tests, formatting/typechecks). Unbounded gate hit two Car test timeouts. Native smoke passed 71 screenshots; repeated default smoke retains Car-reset failures from persistent synthetic state, but final clean-state smoke (`npm exec --workspace @reqflow/desktop -- electron . --smoke=out/smoke/ws5-clean`) passes; PDF upload/preview screenshots inspected. Unsigned macOS package builds and its real ASAR PDF/OCR checks pass; full packaged smoke still fails unrelated Car-reset assertions (and one run had ResizeObserver). No Car changes made. Local BMW XLSX and option-list PDF parsing tested through boolean-only private suites; no live AI calls, keys or private excerpts logged. Windows/Linux and live-provider extraction remain unverified. To use: Raw -> File upload -> dataset -> PDF -> explicit Preview/Start with non-mock default AI in Settings. No additional tasks authorized; stop after this slice.
+- 2026-10-11: Human assigned Raw support for feedback and customer-study XLSX plus PDF extraction to structured pipeline JSON using the configured AI model. Started from latest main; Entire already tracks OpenCode. Verification uses synthetic data, no confidential content in logs or delegated prompts. Need the original PDF path for private-file verification; attachment text is not a local PDF input. No automatic follow-on tasks.
 - 2026-10-10 night: Raw block built and verified: `npx vitest run packages/blocks` (23 tests on the
   samples, incl. SQLite) and `npm run smoke` (imports the samples, previews them over IPC, drives a
   SQLite Raw block through the UI and opens its data in the HIL report). Column synonyms are

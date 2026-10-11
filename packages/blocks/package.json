@@ -10,12 +10,17 @@
     "typecheck": "tsc --noEmit -p ."
   },
   "dependencies": {
+    "@mastra/core": "^1.75.0",
+    "@napi-rs/canvas": "^1.0.11",
     "@reqflow/core": "*",
     "@reqflow/engine": "*",
-    "read-excel-file": "9.3.10",
-    "zod": "^4.6.5",
-    "@mastra/core": "^1.75.0",
+    "@tesseract.js-data/deu": "^1.0.0",
+    "@tesseract.js-data/eng": "^1.0.0",
     "exceljs": "^4.4.0",
-    "jszip": "^3.10.2"
+    "jszip": "^3.10.2",
+    "pdfjs-dist": "^6.4.299",
+    "read-excel-file": "9.3.10",
+    "tesseract.js": "^7.0.0",
+    "zod": "^4.6.5"
   }
 }
