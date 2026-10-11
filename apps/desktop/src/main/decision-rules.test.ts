@@ -300,6 +300,27 @@ describe("requirements.decide: four-eyes rule", () => {
     expect(events[1]!.rationale).toContain("Second approval after Synthetic PM A");
   });
 
+  it("a second person who only enters their name in Settings counts as another reviewer", async () => {
+    const req = synthetic(1, "proposed");
+    await seed([req]);
+    const rename = async (name: string) => {
+      const settings = await handlers.settings.get();
+      return handlers.settings.save({
+        ...settings,
+        review: { reviewer: { ...settings.review.reviewer, name } },
+        collaboration: { ...settings.collaboration, requireSecondApproval: true },
+      });
+    };
+    const a = await rename("Synthetic Änne Kühn");
+    expect(a.review.reviewer.userId).toBe("user-synthetic-anne-kuhn");
+    await handlers.requirements.decide(req.id, approve("Synthetic first look"));
+    const b = await rename("Synthetic Second PM");
+    expect(b.review.reviewer.userId).toBe("user-synthetic-second-pm");
+    expect(
+      await handlers.requirements.decide(req.id, approve("Synthetic second look")),
+    ).toMatchObject({ status: "approved" });
+  });
+
   it("keeps an in-review requirement's status on the first approval (only approvals change)", async () => {
     const req = synthetic(1, "in_review");
     await seed([req]);

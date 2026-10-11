@@ -131,6 +131,18 @@ const FOUR_EYES_ACTIONS = new Set<AuditAction>([
   "requirement.challenge_answered",
 ]);
 
+/** "Dr. Anna Müller" → "user-dr-anna-muller"; undefined when the name has no letters or digits. */
+export function reviewerIdFor(name: string): string | undefined {
+  const slug = name
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
+  return slug ? `user-${slug}` : undefined;
+}
+
 const RunIdSchema = z.string().startsWith("run_");
 const WorkflowIdSchema = z.string().startsWith("wf_");
 const NonEmptySchema = z.string().min(1);
@@ -1083,6 +1095,15 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
       get: async () => loadSettings(dataDir),
       save: async (settingsInput) => {
         const validated = Settings.parse(settingsInput);
+        // The Settings page edits only the reviewer's name. A new name under the old id is someone
+        // else, so it gets its own id: the four-eyes rule and HIL approvals tell reviewers apart by id.
+        const previousReviewer = loadSettings(dataDir).review.reviewer;
+        const reviewer = validated.review.reviewer;
+        if (
+          reviewer.name.trim() !== previousReviewer.name.trim() &&
+          reviewer.userId === previousReviewer.userId
+        )
+          reviewer.userId = reviewerIdFor(reviewer.name) ?? reviewer.userId;
         const scoringChanged = (s: Settings) =>
           JSON.stringify(s.scoring) !== JSON.stringify(validated.scoring);
         // Read the requirements before the old settings: from there on nothing yields until the
