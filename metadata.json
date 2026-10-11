@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4M9VJPD8SK49ZKGNSAV8Z0M",
   "strategy": "manual-commit",
   "branch": "ws5-pdf-ingestion",
-  "checkpoints_count": 10,
+  "checkpoints_count": 14,
   "files_touched": [
     "PRODUCT.md",
     "apps/desktop/electron-builder.yml",
@@ -84,14 +84,21 @@
       "compact_transcript": "/7/transcript.jsonl",
       "content_hash": "/7/content_hash.txt",
       "prompt": ""
+    },
+    {
+      "metadata": "/8/metadata.json",
+      "transcript": "/8/full.jsonl",
+      "compact_transcript": "/8/transcript.jsonl",
+      "content_hash": "/8/content_hash.txt",
+      "prompt": "/8/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 623549,
+    "input_tokens": 792969,
     "cache_creation_tokens": 2551913,
-    "cache_read_tokens": 308903281,
-    "output_tokens": 1430471,
-    "api_call_count": 1038,
+    "cache_read_tokens": 310033688,
+    "output_tokens": 1437807,
+    "api_call_count": 1051,
     "subagent_tokens": {
       "input_tokens": 92,
       "cache_creation_tokens": 156839,
