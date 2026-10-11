@@ -148,7 +148,7 @@ native rendering, workers and WASM. PDF limits fail explicitly: 30 MB, 100 pages
 previews do not require credentials. JSON import validates core schemas
 and references but preserves the original objects, extensions, provenance and envelope metadata;
 it rejects duplicate identities and dangling evidence rather than dropping them. Later blocks enrich the same
-envelope: AI Filter keeps matching items (and extracts evidence-linked findings), AI Splitter routes
+envelope: AI Filter selects original matching items unchanged (extraction happens downstream), AI Splitter routes
 items to one branch each, HIL passes on what the reviewer approved, and Add to Car's agents turn what
 arrives on its priority inputs into requirements (the input it arrives on sets the ranking; context
 inputs are background only, see "Add to Car agents"). Several edges into one input are combined

@@ -4,7 +4,8 @@ import { XIcon } from "@/components/ui/icons";
 import { Button } from "@/components/ui/Button";
 import type { ClassifiedRequirement } from "../car/classify";
 import { loadRequirementDetail, type DetailState } from "./detail-loader";
-import { RequirementDetails } from "./RequirementDetails";
+import { MStripe } from "@/components/ui/MStripe";
+import { RequirementOriginReport } from "./RequirementOriginReport";
 
 /** Native modal traps focus, handles Escape, and restores focus to the compact requirement card. */
 export function RequirementDialog({
@@ -55,13 +56,14 @@ export function RequirementDialog({
         )
           onClose();
       }}
-      className="fixed inset-0 m-auto h-[min(90vh,52rem)] max-h-[90vh] w-[min(54rem,calc(100vw-3rem))] max-w-none overflow-hidden rounded-xl border border-line bg-panel p-0 text-ink shadow-2xl backdrop:bg-black/50"
+      className="fixed inset-0 m-auto h-[calc(100vh-3rem)] max-h-[calc(100vh-3rem)] w-[min(1400px,calc(100vw-3rem))] max-w-none overflow-hidden rounded-xl border border-line bg-panel p-0 text-ink shadow-2xl backdrop:bg-black/50"
     >
       <div className="flex h-full flex-col">
+        <MStripe />
         <header className="flex shrink-0 items-start gap-4 border-b border-line p-5">
           <div className="min-w-0 flex-1">
             <p className="font-mono text-xs text-muted">
-              {r.id} · Version {r.version}
+              Requirement report · {r.id} · Version {r.version}
             </p>
             <h2 id="requirement-detail-title" className="mt-1 text-lg font-semibold">
               {r.title}
@@ -77,21 +79,21 @@ export function RequirementDialog({
             <XIcon className="size-5" />
           </button>
         </header>
-        <div className="min-h-0 flex-1 overflow-y-auto p-5" aria-busy={state.status === "loading"}>
+        <div className="min-h-0 flex-1" aria-busy={state.status === "loading"}>
           {state.status === "loading" && (
-            <p role="status" className="text-sm text-muted">
+            <p role="status" className="p-5 text-sm text-muted">
               Loading full requirement and sources…
             </p>
           )}
           {state.status === "error" && (
-            <div role="alert" className="space-y-3 text-sm">
+            <div role="alert" className="space-y-3 p-5 text-sm">
               <p className="text-warn">{state.message}</p>
               <Button variant="secondary" onClick={() => setAttempt((n) => n + 1)}>
                 Retry
               </Button>
             </div>
           )}
-          {state.status === "ready" && <RequirementDetails detail={state.detail} />}
+          {state.status === "ready" && <RequirementOriginReport detail={state.detail} />}
         </div>
       </div>
     </dialog>

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { CAR_PART_DEPTH_LABELS, CarPartDepth, carPartOutputs } from "./car-parts";
 import { RESEARCH_AGENT_IDS } from "./research";
+import { FILTER_CUSTOMER_CRITERION } from "./filter-report";
 
 /**
  * The building blocks of a data flow: what the palette offers, which ports each block has, and the
@@ -424,7 +425,8 @@ export const BLOCK_SPECS: { readonly [K in PaletteBlockKind]: BlockSpec & { kind
   ai_filter: {
     kind: "ai_filter",
     label: "AI Filter",
-    description: "Keeps only the items that match a criterion you describe in plain language.",
+    description:
+      "Selects relevant original items unchanged, with a reviewable reason for each decision.",
     group: "ai",
     hasInnerWorkplace: true,
     params: [
@@ -432,8 +434,22 @@ export const BLOCK_SPECS: { readonly [K in PaletteBlockKind]: BlockSpec & { kind
         key: "criterion",
         label: "Keep items that…",
         type: "textarea",
-        default: "",
+        default: FILTER_CUSTOMER_CRITERION,
         placeholder: "…are customer-facing, not regulation, engineering specs or pricing.",
+      },
+      { key: "include", label: "Include criteria", type: "textarea", default: "" },
+      { key: "exclude", label: "Exclude criteria", type: "textarea", default: "" },
+      {
+        key: "examples",
+        label: "Labelled examples (guidance, not evidence)",
+        type: "textarea",
+        default: "",
+      },
+      {
+        key: "fields",
+        label: "Fields to assess (comma-separated; blank = all)",
+        type: "text",
+        default: "",
       },
       { key: "model", label: "Model", type: "select", default: "fast", options: MODEL_OPTIONS },
       {
@@ -742,6 +758,7 @@ export function defaultBlockParams(kind: PaletteBlockKind): BlockParams {
  * and context inputs were added. The AI Splitter gained `partDepth`. Anything else is returned unchanged, so validation still reports it.
  */
 export function migrateBlockParams(kind: BlockKind, params: BlockParams): BlockParams {
+  if (kind === "ai_filter") return { ...defaultBlockParams("ai_filter"), ...params };
   // The AI Splitter gained a car-part depth; older flows split by AI-chosen groups get areas.
   if (kind === "ai_splitter" && !("partDepth" in params)) return { ...params, partDepth: "areas" };
   if (kind !== "add_to_car" || !("rankings" in params)) return params;

@@ -14,6 +14,7 @@ import { ChartIcon, ExpandIcon, PlusIcon, ReportIcon, ThoughtIcon } from "@/comp
 import { useSettings } from "@/lib/settings";
 import { cx } from "@/lib/cx";
 import { summarizeParams } from "./summary";
+import { filterBypassed } from "./filter-configuration";
 
 export const BlockNode = memo(function BlockNode({ data, selected }: NodeProps<BlockFlowNode>) {
   const { block, ports, spec } = data;
@@ -99,12 +100,12 @@ export const BlockNode = memo(function BlockNode({ data, selected }: NodeProps<B
             </button>
           )}
 
-          {(block.kind === "hil" || block.kind === "ai_splitter") && (
+          {(block.kind === "hil" || block.kind === "ai_splitter" || block.kind === "ai_filter") && (
             <button
               type="button"
               data-testid="block-report"
               className="nodrag shrink-0 rounded-md p-1 text-muted hover:bg-panel-2 hover:text-ink"
-              aria-label={`Open the ${block.kind === "ai_splitter" ? "scores and routing" : "review"} report of ${block.label}`}
+              aria-label={`Open the ${block.kind === "ai_filter" ? "filtering" : block.kind === "ai_splitter" ? "scores and routing" : "review"} report of ${block.label}`}
               onClick={(e) => {
                 e.stopPropagation();
                 dataflowStore.getState().openReport(block.id);
@@ -134,6 +135,9 @@ export const BlockNode = memo(function BlockNode({ data, selected }: NodeProps<B
       {(spec.hasInnerWorkplace || summaryLabels.length > 0) && (
         <div className="px-3 pb-2 text-xs text-muted">
           {spec.hasInnerWorkplace && <div>{innerCountText}</div>}
+          {block.kind === "ai_filter" && filterBypassed(block) && (
+            <div className="text-warn">Built-in filtering bypassed</div>
+          )}
           {summaryLabels.length > 0 && <div className="truncate">{summaryLabels.join(" · ")}</div>}
         </div>
       )}

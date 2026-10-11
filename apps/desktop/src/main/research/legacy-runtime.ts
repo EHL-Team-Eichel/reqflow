@@ -50,7 +50,7 @@ import { ResearchStore, validRun } from "./storage";
 
 type ResearchHandlers = Pick<ReqflowHandlers, "workflows" | "research" | "files" | "audit"> & {
   settings: Omit<ReqflowHandlers["settings"], "testSetup">;
-  runs: Omit<ReqflowHandlers["runs"], "reviewSplitter">;
+  runs: Omit<ReqflowHandlers["runs"], "reviewSplitter" | "reviewFilter" | "filterReviewState">;
   exports: Pick<ReqflowHandlers["exports"], "research">;
 };
 export interface RuntimeDeps {
