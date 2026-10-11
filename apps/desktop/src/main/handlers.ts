@@ -13,21 +13,26 @@ import {
   createBlockRegistry,
 } from "@reqflow/blocks";
 import {
+  aiProposalProblem,
   AuditAction,
   AuditEntityType,
   type AuditFilter,
   type AuditEventInput,
   DECISION_TO_STATUS,
+  decisionProblem,
   DecisionStatus,
   emptyPipelineData,
   EvidenceLevel,
   type FieldChange,
+  parseBlockParams,
   Priority,
+  rescoreBreakdown,
   RequirementCategory,
   RequirementDecision,
   RequirementEdit,
-  type Requirement,
+  Requirement,
   type RequirementFilter,
+  ScoreFactor,
   Settings,
   LLM_SECRET_NAMES,
   SecretName,
@@ -65,6 +70,7 @@ import {
   FilterOverrideStateError,
   SqliteRunRepository,
   type LocalFileStore,
+  type RequirementExport,
 } from "@reqflow/db";
 import { BlockRegistry, WorkflowExecutor } from "@reqflow/engine";
 import { createLlmClient, createMastraLlmClient } from "@reqflow/llm";
@@ -111,6 +117,19 @@ const ExportRequirementsSchema = z.object({
   runId: z.string().optional(),
   format: z.enum(["json", "csv", "md"]),
 });
+
+/**
+ * Four-eyes rule: the latest of these events on a requirement decides whether an approval is the
+ * first or the second. Any content or status change after a first approval resets the count.
+ */
+const FOUR_EYES_ACTIONS = new Set<AuditAction>([
+  "requirement.approval_recorded",
+  "requirement.status_changed",
+  "requirement.edited",
+  "requirement.prioritized",
+  "requirement.challenged",
+  "requirement.challenge_answered",
+]);
 
 const RunIdSchema = z.string().startsWith("run_");
 const WorkflowIdSchema = z.string().startsWith("wf_");
@@ -248,6 +267,75 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
     requirementMutation(() =>
       reqRepo.saveVersionWithAudit(req, expectedVersion, events.map(requirementAudit)),
     );
+  /**
+   * New versions of the requirements whose score changes under new Settings weights or
+   * thresholds. Factor values and notes stay; priority and status are left to the input rank and
+   * the PM. Throws RangeError when the weights can't score anything (all zero).
+   */
+  const rescoredVersions = (
+    requirements: Requirement[],
+    scoring: Settings["scoring"],
+    changedBy: string,
+  ) => {
+    const now = new Date().toISOString();
+    return requirements.flatMap((req) => {
+      const before = req.score;
+      if (!before) return [];
+      const after = rescoreBreakdown(before, scoring, req.evidenceLevel, now);
+      const changed =
+        after.total !== before.total ||
+        after.suggestedPriority !== before.suggestedPriority ||
+        JSON.stringify(after.flags ?? []) !== JSON.stringify(before.flags ?? []) ||
+        ScoreFactor.options.some((f) => after.factors[f].weight !== before.factors[f].weight);
+      if (!changed) return [];
+      const event: AuditEventInput = {
+        actor: { type: "system", component: "settings.rescore" },
+        action: "requirement.scored",
+        entityType: "requirement",
+        entityId: req.id,
+        runId: req.runId,
+        rationale: `Scoring settings changed by ${changedBy}: ${before.total} → ${after.total} (${after.suggestedPriority}).`,
+        changes: [{ path: "score", before, after }],
+      };
+      return [{ next: { ...req, score: after, version: req.version + 1, updatedAt: now }, event }];
+    });
+  };
+  /** A run's paused HIL gates: approvals each needs, and who approved it so far in this run. */
+  const pausedGates = async (run: WorkflowRun) => {
+    const blocks = new Map([...walkBlocks(run.graph)].map(({ block }) => [block.id, block]));
+    // An inner workplace's container waits too; only the HIL blocks themselves are gates.
+    const gates = run.blockRuns.flatMap((state) => {
+      const block = blocks.get(state.blockId);
+      return state.status === "waiting_for_review" && block?.kind === "hil" ? [block] : [];
+    });
+    if (!gates.length)
+      throw new ReqflowError(
+        "invalid_state",
+        `Run ${run.id} is waiting for review, but no paused HIL gate was found to approve.`,
+      );
+    const approvals = await auditLogger.list({
+      entityType: "run",
+      entityId: run.id,
+      action: "run.review_approved",
+    });
+    return gates.map((block) => {
+      let needed: number;
+      try {
+        needed = Number(parseBlockParams("hil", block.params).approvals);
+      } catch {
+        throw new ReqflowError(
+          "invalid_state",
+          `HIL gate "${block.label}" has invalid settings, so it can't be approved.`,
+        );
+      }
+      const approvers = new Set(
+        approvals.flatMap((e) =>
+          e.blockId === block.id && e.actor.type === "human" ? [e.actor.userId] : [],
+        ),
+      );
+      return { block, needed, approvers };
+    });
+  };
   const datasets = new ResearchDatasetRepository(db);
   const filterRepo = new FilterOverrideRepository(db);
   const research = createResearchService({
@@ -317,6 +405,18 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
       research: research.collector,
       car: {
         async add(requirements, evidence) {
+          // AI output may only propose. One requirement claiming more fails the block; none is saved.
+          const problems = requirements.flatMap((r) => {
+            const valid = Requirement.safeParse(r);
+            const problem = valid.success
+              ? aiProposalProblem(valid.data)
+              : `${r.id}: is not a valid requirement (${valid.error.issues[0]?.message})`;
+            return problem ? [problem] : [];
+          });
+          if (problems.length)
+            throw new Error(
+              `Add to Car may only propose new requirements, so nothing was saved: ${problems.join("; ")}`,
+            );
           await reqRepo.savePipelineData({
             ...emptyPipelineData(),
             ...evidence,
@@ -583,7 +683,38 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
             `Cannot resume run ${rId}: status is "${run.status}", expected "waiting_for_review"`,
           );
         }
-        await restore(rId);
+        // Each call is one reviewer's approval of every paused gate they haven't approved yet.
+        // A gate needing several approvals keeps the run paused until enough reviewers gave theirs.
+        const { reviewer } = loadSettings(dataDir).review;
+        const open = (await pausedGates(run)).filter((g) => g.approvers.size < g.needed);
+        const mine = open.filter((g) => !g.approvers.has(reviewer.userId));
+        if (open.length && !mine.length)
+          throw new ReqflowError(
+            "invalid_state",
+            `${reviewer.name} already approved this gate; it needs ${open[0]!.needed} approvals from different reviewers.`,
+          );
+        // No open gate left means a previous final approval was recorded but its resume failed.
+        const complete =
+          mine.length === open.length && mine.every((g) => g.approvers.size + 1 >= g.needed);
+        // Restore first, so a run that can't resume doesn't collect the deciding approval.
+        if (complete) await restore(rId);
+        for (const { block, needed, approvers } of mine) {
+          await auditLogger.record({
+            actor: { type: "human", ...reviewer },
+            action: "run.review_approved",
+            entityType: "run",
+            entityId: rId,
+            runId: rId,
+            blockId: block.id,
+            rationale: `Approved "${block.label}" (${approvers.size + 1} of ${needed}).`,
+            changes: [{ path: "approvals", before: approvers.size, after: approvers.size + 1 }],
+          });
+        }
+        if (!complete) {
+          // The run itself is unchanged; the push lets the UI refresh the gate's approvals.
+          deps.pushRunUpdate?.(structuredClone(run));
+          return run;
+        }
         await executor.resume(rId);
         return runRepo.get(rId);
       },
@@ -682,15 +813,52 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
         const settings = loadSettings(dataDir);
 
         const changes: FieldChange[] = [];
-        const updatedFields: Record<string, unknown> = {};
+        const updatedFields: Partial<Requirement> = {};
 
         for (const [key, val] of Object.entries(validEdit)) {
-          if (key === "rationale") continue;
+          if (key === "rationale" || val === undefined) continue;
           const currentVal = (current as Record<string, unknown>)[key];
           if (JSON.stringify(currentVal) !== JSON.stringify(val)) {
             changes.push({ path: key, before: currentVal, after: val });
-            updatedFields[key] = val;
+            (updatedFields as Record<string, unknown>)[key] = val;
           }
+        }
+        if (!changes.length) throw new ReqflowError("invalid_input", "The edit changes nothing.");
+
+        // Linked findings must exist; the sources follow the supporting findings' evidence.
+        const linked = [
+          ...(updatedFields.findingIds ?? []),
+          ...(updatedFields.conflictingFindingIds ?? []),
+        ];
+        if (linked.length) {
+          const found = new Map((await reqRepo.findingsByIds(linked)).map((f) => [f.id, f]));
+          const missing = [...new Set(linked.filter((fid) => !found.has(fid)))];
+          if (missing.length)
+            throw new ReqflowError(
+              "invalid_input",
+              `These findings don't exist, so they can't be linked: ${missing.join(", ")}.`,
+            );
+          if (updatedFields.findingIds) {
+            const sourceIds = [
+              ...new Set(
+                updatedFields.findingIds.flatMap((fid) =>
+                  found.get(fid)!.evidence.map((e) => e.sourceId),
+                ),
+              ),
+            ];
+            if (JSON.stringify(sourceIds) !== JSON.stringify(current.sourceIds)) {
+              changes.push({ path: "sourceIds", before: current.sourceIds, after: sourceIds });
+              updatedFields.sourceIds = sourceIds;
+            }
+          }
+        }
+
+        let rationale = validEdit.rationale;
+        if (current.status === "approved") {
+          // The approval covered the earlier content; the changed requirement needs a new decision.
+          changes.push({ path: "status", before: current.status, after: "in_review" });
+          updatedFields.status = "in_review";
+          rationale += " (Edited after approval, so it is back in review.)";
         }
 
         const newVersion = {
@@ -712,7 +880,7 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
             entityType: "requirement",
             entityId: reqId,
             runId: current.runId,
-            rationale: validEdit.rationale,
+            rationale,
             changes,
           },
         ]);
@@ -727,6 +895,8 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
           throw new ReqflowError("not_found", `Requirement not found: ${reqId}`);
         }
         const current = detail.requirement;
+        const problem = decisionProblem(current.status, decision.decision);
+        if (problem) throw new ReqflowError("invalid_state", problem);
         const settings = loadSettings(dataDir);
 
         if (decision.decision === "challenge") {
@@ -793,39 +963,91 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
           ]);
         }
 
-        const targetStatus = DECISION_TO_STATUS[decision.decision];
-        const newPriority = decision.priority ?? current.priority;
-        const changes: FieldChange[] = [
-          { path: "status", before: current.status, after: targetStatus },
-        ];
-
-        if (decision.priority && decision.priority !== current.priority) {
-          changes.push({ path: "priority", before: current.priority, after: decision.priority });
-        }
-
-        const updatedReq = {
+        const { reviewer } = settings.review;
+        const event = (
+          action: AuditAction,
+          rationale: string,
+          changes: FieldChange[],
+        ): AuditEventInput => ({
+          actor: {
+            type: "human",
+            userId: reviewer.userId,
+            name: reviewer.name,
+            role: reviewer.role,
+          },
+          action,
+          entityType: "requirement",
+          entityId: reqId,
+          runId: current.runId,
+          rationale,
+          changes,
+        });
+        const updatedReq: Requirement = {
           ...current,
-          status: targetStatus,
-          priority: newPriority,
           version: current.version + 1,
           updatedAt: new Date().toISOString(),
         };
+        // A PM priority override (approve only) is its own audited change, before the decision.
+        const events: AuditEventInput[] = [];
+        const override =
+          decision.priority !== undefined && decision.priority !== current.priority
+            ? decision.priority
+            : undefined;
+        if (override) {
+          updatedReq.priority = override;
+          updatedReq.priorityRationale = `PM override: ${current.priority ?? "none"} → ${override}. ${decision.rationale}`;
+          events.push(
+            event("requirement.prioritized", decision.rationale, [
+              { path: "priority", before: current.priority ?? null, after: override },
+              {
+                path: "priorityRationale",
+                before: current.priorityRationale ?? null,
+                after: updatedReq.priorityRationale,
+              },
+            ]),
+          );
+        }
 
+        let rationale = decision.rationale;
+        if (decision.decision === "approve" && settings.collaboration.requireSecondApproval) {
+          const history = await auditLogger.list({ entityType: "requirement", entityId: reqId });
+          const last = history.filter((e) => FOUR_EYES_ACTIONS.has(e.action)).at(-1);
+          const first =
+            last?.action === "requirement.approval_recorded" && last.actor.type === "human"
+              ? last.actor
+              : undefined;
+          if (first?.userId === reviewer.userId)
+            throw new ReqflowError(
+              "invalid_state",
+              `Four-eyes rule: ${first.name} already approved; a different reviewer must give the second approval (Settings → Collaboration → your name).`,
+            );
+          // An override changes what the first reviewer approved, so it starts the count again.
+          if (!first || override) {
+            updatedReq.status = "in_review";
+            const changes: FieldChange[] =
+              current.status === "in_review"
+                ? []
+                : [{ path: "status", before: current.status, after: "in_review" }];
+            changes.push({ path: "approvals", before: [], after: [reviewer.userId] });
+            return commitRequirement(updatedReq, current.version, [
+              ...events,
+              event(
+                "requirement.approval_recorded",
+                `${decision.rationale} (First approval under the four-eyes rule; a different reviewer must approve too.)`,
+                changes,
+              ),
+            ]);
+          }
+          rationale = `${decision.rationale} (Second approval after ${first.name}; four-eyes rule.)`;
+        }
+
+        const targetStatus = DECISION_TO_STATUS[decision.decision];
+        updatedReq.status = targetStatus;
         return commitRequirement(updatedReq, current.version, [
-          {
-            actor: {
-              type: "human",
-              userId: settings.review.reviewer.userId,
-              name: settings.review.reviewer.name,
-              role: settings.review.reviewer.role,
-            },
-            action: "requirement.status_changed",
-            entityType: "requirement",
-            entityId: reqId,
-            runId: current.runId,
-            rationale: decision.rationale,
-            changes,
-          },
+          ...events,
+          event("requirement.status_changed", rationale, [
+            { path: "status", before: current.status, after: targetStatus },
+          ]),
         ]);
       },
       reset: async () => {
@@ -860,11 +1082,54 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
     settings: {
       get: async () => loadSettings(dataDir),
       save: async (settingsInput) => {
-        const oldSettings = loadSettings(dataDir);
         const validated = Settings.parse(settingsInput);
+        const scoringChanged = (s: Settings) =>
+          JSON.stringify(s.scoring) !== JSON.stringify(validated.scoring);
+        // Read the requirements before the old settings: from there on nothing yields until the
+        // settings file and the rescored requirement versions are both written, or neither is.
+        const requirements = scoringChanged(loadSettings(dataDir)) ? await reqRepo.list() : [];
+        const oldSettings = loadSettings(dataDir);
         // Dedicated configure owns access flags; a stale autosave cannot undo revocation.
         validated.research.apis = structuredClone(oldSettings.research.apis);
+        let rescored: ReturnType<typeof rescoredVersions> = [];
+        if (scoringChanged(oldSettings)) {
+          try {
+            rescored = rescoredVersions(
+              requirements,
+              validated.scoring,
+              validated.review.reviewer.name,
+            );
+          } catch (error) {
+            throw new ReqflowError(
+              "invalid_input",
+              `Settings were not saved: ${error instanceof Error ? error.message : "the new scoring can't score requirements"}.`,
+            );
+          }
+        }
         const saved = saveSettings(dataDir, validated);
+        if (rescored.length) {
+          // All requirements are rescored together, or the previous settings come back.
+          db.exec("SAVEPOINT settings_rescore");
+          try {
+            for (const { next, event } of rescored)
+              commitRequirement(next, next.version - 1, [event]);
+            db.exec("RELEASE settings_rescore");
+          } catch {
+            db.exec("ROLLBACK TO settings_rescore; RELEASE settings_rescore");
+            try {
+              saveSettings(dataDir, oldSettings);
+            } catch {
+              throw new ReqflowError(
+                "storage_error",
+                "Requirements could not be rescored, and the previous settings could not be restored.",
+              );
+            }
+            throw new ReqflowError(
+              "storage_error",
+              "Settings were not saved: requirements could not be rescored.",
+            );
+          }
+        }
         research.settingsChanged(oldSettings, saved);
         const changes: FieldChange[] = [];
 
@@ -951,17 +1216,34 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
         const opts = ExportRequirementsSchema.parse(optsInput);
         const reqs = await reqRepo.list(opts.runId ? { runId: opts.runId } : undefined);
         const currentSettings = loadSettings(dataDir);
+        // Each requirement with its findings, sources and records, so the file stands on its own.
+        const items: RequirementExport[] = [];
+        for (const req of reqs) {
+          try {
+            items.push(await reqRepo.get(req.id));
+          } catch (error) {
+            if (error instanceof Error && error.message.startsWith("Requirement not found"))
+              throw new ReqflowError(
+                "conflict",
+                `Requirement ${req.id} was removed during the export; export again.`,
+              );
+            throw new ReqflowError(
+              "storage_error",
+              `Requirement ${req.id} could not be read for the export.`,
+            );
+          }
+        }
 
         let content: string;
         if (opts.format === "csv") {
-          content = formatRequirementsCsv(reqs);
+          content = formatRequirementsCsv(items);
         } else if (opts.format === "md") {
           content = formatRequirementsMarkdown(
-            reqs,
+            items,
             `BMW ${currentSettings.defaultScope.vehicleLine} Requirements`,
           );
         } else {
-          content = formatRequirementsJson(reqs);
+          content = formatRequirementsJson(items);
         }
 
         const saveFn = deps.saveDialog ?? showElectronSaveDialog;
@@ -991,7 +1273,7 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
           entityType: "export",
           entityId: basename(res.filePath),
           runId: opts.runId,
-          rationale: `Exported ${reqs.length} requirements as ${opts.format}`,
+          rationale: `Exported ${items.length} requirements as ${opts.format}`,
         });
 
         return { path: res.filePath };

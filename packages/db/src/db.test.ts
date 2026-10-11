@@ -94,13 +94,13 @@ describe("SQLite persistence (@reqflow/db)", () => {
   it("formats requirements to JSON, CSV, and Markdown", async () => {
     seedFixtures(db);
     const reqRepo = new SqliteRequirementRepository(db);
-    const reqs = await reqRepo.list();
+    const reqs = await Promise.all((await reqRepo.list()).map((r) => reqRepo.get(r.id)));
 
     const json = formatRequirementsJson(reqs);
     expect(json).toContain("REQ-F70-EU-");
 
     const csv = formatRequirementsCsv(reqs);
-    expect(csv).toContain("ID,Title,Category");
+    expect(csv).toContain("ID,Version,Title,Description");
     expect(csv).toContain("REQ-F70-EU-");
 
     const md = formatRequirementsMarkdown(reqs);

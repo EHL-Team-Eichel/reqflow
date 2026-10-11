@@ -130,6 +130,20 @@ export class SqliteRequirementRepository {
     };
   }
 
+  /** The stored findings with these ids, in the order asked for; unknown ids are left out. */
+  async findingsByIds(ids: readonly string[]): Promise<Finding[]> {
+    const unique = [...new Set(ids)];
+    if (!unique.length) return [];
+    const placeholders = unique.map(() => "?").join(", ");
+    const rows = this.db
+      .prepare(`SELECT json FROM findings WHERE id IN (${placeholders})`)
+      .all(...unique) as Array<{ json: string }>;
+    const byId = new Map(
+      rows.map((r) => Finding.parse(JSON.parse(r.json))).map((f) => [f.id, f] as const),
+    );
+    return unique.flatMap((id) => byId.get(id) ?? []);
+  }
+
   /**
    * Deletes every requirement with all its versions and returns the latest version of each.
    * Only what was listed is deleted, so a requirement added meanwhile is never removed unseen.
