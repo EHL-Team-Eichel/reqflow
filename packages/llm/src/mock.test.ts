@@ -386,7 +386,8 @@ describe("analytical mock protocol", () => {
       );
       expect(result.status).toBe("ok");
       if (result.status !== "ok") throw new Error("Expected completed mock splitter");
-      expect(Object.keys(result.outputs)).toHaveLength(5);
+      // Car parts follow the default depth (3 areas + Other), not the saved branch list.
+      expect(Object.keys(result.outputs)).toHaveLength(splitBy === "car_parts" ? 4 : 5);
       expect(
         Object.values(result.outputs)
           .flatMap((d) => d.records)

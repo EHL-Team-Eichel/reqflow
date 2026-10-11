@@ -737,7 +737,7 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 ## WS7 — AI blocks: AI Filter, AI Splitter, Add to Car
 
-**Status:** review (human-assigned AI Filter selection-only feature implemented and verified) · **Owner:** OpenCode (AI Filter); existing Add to Car/Splitter owners unchanged · **Branch:** `ai-filter-selection` (isolated worktree; existing blocks on `main`)
+**Status:** done (human-assigned AI Filter feature only; other open WS7 tasks not claimed) · **Owner:** OpenCode (AI Filter, released); existing Add to Car/Splitter owners unchanged · **Branch:** `ai-filter-selection` · **PR:** #22
 **Depends on:** nothing for Add to Car and raw-data analysis; WS8 for the legacy requirement-factor scorer integration.
 
 **Tasks**
@@ -748,7 +748,7 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - [x] Verify the integrated slice and push `ws7-mastra-splitter` separately for team review.
 - [x] `packages/llm`: `createLlmClient(settings.llm, { apiKey })` with an `anthropic` provider (use the
       `claude-api` skill) and a deterministic `mock`; `generateObject` validates with Zod; tests use the mock.
-- [ ] Human-assigned AI Filter: selection-only pass-through, configurable relevance criteria,
+- [x] Human-assigned AI Filter: selection-only pass-through, configurable relevance criteria,
       saved item decisions and originals, verified quotes and audited next-run restorations.
 - [x] AI Splitter: route each primary item to exactly one branch (`out-<i>`); priority preserves
       existing priorities or uses Settings-weighted factors; category / sentiment / custom use the LLM.
@@ -774,15 +774,28 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
   strict ID classification, unchanged originals/evidence closure, editable presets/criteria/fields,
   saved kept/excluded/review report, verified quotes, and version-checked human restorations that
   apply on an explicit later run only. Confidence is not calibrated; offline mock is labelled and
-  conservative. Reverified after integrating latest main (PDF ingestion, shared default AI and
-  approved grey-line fade): `VITEST_MAX_WORKERS=4 npm run check` (2,467 passed, 6 skipped) and
-  `npm run smoke` (PASS, 79 native screenshots); reviewed Filter light/dark/minimum-window views.
+  conservative. Reverified after integrating latest main (PDF ingestion, shared default AI,
+  approved grey-line fade and Splitter car-part depth): `VITEST_MAX_WORKERS=4 npm run check`
+  (2,474 passed, 6 skipped) and `npm run smoke` (PASS, 80 native screenshots); reviewed Filter
+  light/dark/minimum-window views. PR #22 is the completed feature handoff.
   Synthetic Raw -> Filter -> HIL verifies all dispositions, unchanged objects, human audit,
   unchanged historical outputs and override application only after explicit rerun. Initial default
   test concurrency caused resource-contention timeouts; bounded workers passed the full suite.
   No live API or confidential-data evaluation, vectors or Jev filtering claimed. No other open tasks
   authorized. Classification audit records attempts; succeeded saved report/output proves publication.
+  Try: configure Raw -> AI Filter -> HIL, apply the Customer-facing preset, Start, then open the
+  Filter report. Restore an excluded item with a rationale; finish/cancel the current run and
+  explicitly Start a new run to apply it. Suggested live-model relevance evaluation is informational
+  only and needs a new human assignment; no follow-on tasks will be started automatically.
 
+- 2026-10-11: AI Splitter car-part depth (`ws7-splitter-depth`). Split by car parts now offers a
+  depth: areas (Exterior, Interior, Technology & chassis) or the 13 part groups of the Car tab (Seats,
+  Cockpit & controls, …), each plus Other; the outputs follow the depth automatically instead of the
+  branch list (which used to name them "Part group 1…" while the AI invented different groups).
+  Groups live in `core/car-parts.ts`, shared with the Car tab's part menu; older flows migrate to
+  areas. Smoke: the Car reset step now waits for the requirements to load instead of 600 ms (it
+  raced). Verified: `npm run check` (2,316 tests), `npm run smoke` (71 screenshots, incl.
+  `splitter-car-part-groups`).
 - 2026-10-11: Add to Car verified on merged main (`8cb210d`): `npm run check` (2,314 tests), smoke
   (70 screenshots; editor run → HIL → thought process, Car → Why?), offline `eval:f70` on BMW's F70
   files (2,128 findings, 100 % verbatim excerpts, 10 requirements). Fix: the agents' default AI is

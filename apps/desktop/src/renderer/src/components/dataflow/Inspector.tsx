@@ -3,6 +3,7 @@ import {
   blockPorts,
   isBoundaryBlockKind,
   isParamVisible,
+  splitterOutputLabels,
   type PaletteBlockKind,
   type WorkflowBlock,
 } from "@reqflow/core";
@@ -189,7 +190,7 @@ function BlockInspector({ block, kind }: { block: WorkflowBlock; kind: PaletteBl
                   (p) =>
                     kind !== "ai_filter" &&
                     p !== researchQuestion &&
-                    (block.kind !== "ai_splitter" || p.key !== "splitBy"),
+                    (block.kind !== "ai_splitter" || !["splitBy", "partDepth"].includes(p.key)),
                 )
                 .map((p) => (
                   <ParamField
@@ -220,12 +221,13 @@ function SplitterControls({ block }: { block: WorkflowBlock }) {
   const mode = String(block.params.splitBy);
   const branches = block.params.branches as string[];
   const modeSpec = BLOCK_SPECS.ai_splitter.params.find((param) => param.key === "splitBy");
+  const depthSpec = BLOCK_SPECS.ai_splitter.params.find((param) => param.key === "partDepth");
   const help = SPLITTER_MODE_HELP[mode as keyof typeof SPLITTER_MODE_HELP];
   const update = (nextMode: string, count: number) => {
     try {
-      const generated = splitterBranches(nextMode, count);
-      const regenerate =
-        nextMode === "customer_priority" || nextMode === "car_parts" || nextMode === "custom";
+      const generated = splitterBranches(nextMode === "car_parts" ? "custom" : nextMode, count);
+      // Car-part outputs come from the chosen depth; the branch list is kept for other modes.
+      const regenerate = nextMode === "customer_priority" || nextMode === "custom";
       setError(
         dataflowStore.getState().setParams(block.id, {
           ...block.params,
@@ -253,23 +255,41 @@ function SplitterControls({ block }: { block: WorkflowBlock }) {
           )
         }
       </Field>
-      <Field
-        label="Output count (2–10)"
-        error={error}
-        help="One output per branch. Changing the count regenerates preset labels; removed outputs lose their connections. The saved run is unchanged."
-      >
-        {(id) => (
-          <NumberInput
-            id={id}
-            value={branches.length}
-            min={2}
-            max={10}
-            step={1}
-            unit="outputs"
-            onChange={(count) => update(mode, count)}
-          />
-        )}
-      </Field>
+      {mode === "car_parts" && depthSpec && (
+        <div data-testid="splitter-depth">
+          <ParamField block={block} spec={depthSpec} />
+        </div>
+      )}
+      {mode === "car_parts" ? (
+        <Field
+          label="Outputs"
+          help="Set by the depth: one output per area or part group, plus Other for feedback about no specific part."
+        >
+          {() => (
+            <p className="text-sm text-ink" data-testid="splitter-part-outputs">
+              {splitterOutputLabels(block.params).join(" · ")}
+            </p>
+          )}
+        </Field>
+      ) : (
+        <Field
+          label="Output count (2–10)"
+          error={error}
+          help="One output per branch. Changing the count regenerates preset labels; removed outputs lose their connections. The saved run is unchanged."
+        >
+          {(id) => (
+            <NumberInput
+              id={id}
+              value={branches.length}
+              min={2}
+              max={10}
+              step={1}
+              unit="outputs"
+              onChange={(count) => update(mode, count)}
+            />
+          )}
+        </Field>
+      )}
     </div>
   );
 }
