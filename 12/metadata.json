@@ -1,0 +1,415 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4MVMF4JD9EYTXDDREX8BX4F",
+  "session_id": "ses_ed9584bc6ffeZtRFHM33qPtUGj",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-11T06:51:16.226464Z",
+  "branch": "ws6-ai-providers",
+  "checkpoints_count": 43,
+  "save_step_count": 33,
+  "files_touched": [
+    "apps/desktop/src/main/index.ts",
+    "apps/desktop/src/main/preview.test.ts",
+    "apps/desktop/src/main/preview.ts",
+    "apps/desktop/src/main/research/integration.test.ts",
+    "apps/desktop/src/main/research/runtime.test.ts",
+    "apps/desktop/src/main/research/runtime.ts",
+    "apps/desktop/src/main/research/smoke-fixture.ts",
+    "apps/desktop/src/main/smoke.ts",
+    "apps/desktop/src/renderer/src/components/dataflow/Inspector.tsx",
+    "apps/desktop/src/renderer/src/components/dataflow/ParamField.tsx",
+    "apps/desktop/src/renderer/src/components/dataflow/RawPreview.tsx",
+    "apps/desktop/src/renderer/src/components/dataflow/ResearchConfiguration.tsx",
+    "apps/desktop/src/renderer/src/components/dataflow/WorkflowSidebar.tsx",
+    "apps/desktop/src/renderer/src/components/dataflow/report/DataPanel.tsx",
+    "apps/desktop/src/renderer/src/components/dataflow/report/preview.ts",
+    "apps/desktop/src/renderer/src/components/dataflow/source-preview.test.ts",
+    "apps/desktop/src/renderer/src/components/dataflow/source-preview.ts",
+    "apps/desktop/src/renderer/src/components/dataflow/usePreview.ts",
+    "apps/desktop/src/renderer/src/components/requirements/RequirementDetails.tsx",
+    "docs/STATUS.md",
+    "docs/research/README.md",
+    "docs/research/exports.md",
+    "packages/blocks/src/index.ts",
+    "packages/blocks/src/research-opencode/cli.ts",
+    "packages/blocks/src/research-opencode/index.test.ts",
+    "packages/blocks/src/research-opencode/index.ts",
+    "packages/blocks/src/research-opencode/ingest.ts",
+    "packages/blocks/src/research-opencode/prompts.ts",
+    "packages/blocks/src/research/agents.ts",
+    "packages/blocks/src/research/assessment.test.ts",
+    "packages/blocks/src/research/assessment.ts",
+    "packages/blocks/src/research/autonomous.test.ts",
+    "packages/blocks/src/research/autonomous.ts",
+    "packages/blocks/src/research/export.test.ts",
+    "packages/blocks/src/research/export.ts",
+    "packages/blocks/src/research/http.ts",
+    "packages/blocks/src/research/index.test.ts",
+    "packages/blocks/src/research/index.ts",
+    "packages/blocks/src/research/provider.ts",
+    "packages/blocks/src/research/providers/firecrawl.ts",
+    "packages/blocks/src/research/raw.test.ts",
+    "packages/blocks/src/research/raw.ts",
+    "packages/blocks/src/research/runtime.test.ts",
+    "packages/blocks/src/research/runtime.ts",
+    "packages/blocks/src/research/summarizer.test.ts",
+    "packages/blocks/src/research/summarizer.ts",
+    "packages/blocks/src/research/tabular.test.ts",
+    "packages/blocks/src/research/tabular.ts",
+    "packages/core/src/blocks.ts",
+    "packages/core/src/graph.test.ts",
+    "packages/llm/src/default-client.ts",
+    "packages/llm/src/google-error.test.ts",
+    "packages/llm/src/google-error.ts",
+    "packages/llm/src/mock.ts",
+    "packages/llm/src/providers.test.ts"
+  ],
+  "agent": "OpenCode",
+  "model": "gemini-3.8-flash",
+  "turn_id": "8f82b4877322",
+  "checkpoint_transcript_start": 163,
+  "transcript_lines_at_start": 163,
+  "compact_transcript_start": 163,
+  "token_usage": {
+    "input_tokens": 2835443,
+    "cache_creation_tokens": 3765809,
+    "cache_read_tokens": 98776524,
+    "output_tokens": 267430,
+    "api_call_count": 930
+  },
+  "session_metrics": {
+    "turn_count": 52
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-11T06:51:15.620883Z",
+    "agent_lines": 11910,
+    "agent_removed": 857,
+    "human_added": 3575,
+    "human_modified": 422,
+    "human_removed": 0,
+    "total_committed": 15907,
+    "total_lines_changed": 16764,
+    "agent_percentage": 76.1572417084228,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 392,
+      "user_lines_removed": 79,
+      "agent_lines_added": 31349,
+      "agent_lines_removed": 3823,
+      "user_added_per_file": {
+        "apps/desktop/src/main/research/integration.test.ts": 378,
+        "apps/desktop/src/main/research/legacy-runtime.ts": 4,
+        "apps/desktop/src/main/secrets.ts": 10
+      },
+      "user_removed_per_file": {
+        "apps/desktop/src/main/research/integration.test.ts": 73,
+        "apps/desktop/src/main/research/legacy-runtime.ts": 1,
+        "apps/desktop/src/main/secrets.ts": 5
+      }
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 4,
+      "user_lines_added": 190,
+      "user_lines_removed": 1,
+      "agent_lines_added": 32289,
+      "agent_lines_removed": 3918,
+      "user_added_per_file": {
+        "apps/desktop/src/main/preview.test.ts": 17,
+        "apps/desktop/src/main/preview.ts": 6,
+        "apps/desktop/src/main/research/migration.test.ts": 112,
+        "opencode.json": 55
+      },
+      "user_removed_per_file": {
+        "apps/desktop/src/main/preview.test.ts": 1
+      }
+    },
+    {
+      "checkpoint_number": 5,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 6,
+      "user_lines_added": 354,
+      "user_lines_removed": 82,
+      "agent_lines_added": 32811,
+      "agent_lines_removed": 3921,
+      "user_added_per_file": {
+        "apps/desktop/src/main/handlers.ts": 37,
+        "apps/desktop/src/main/requirement-integrity.test.ts": 94,
+        "apps/desktop/src/main/research/smoke-fixture.ts": 4,
+        "apps/desktop/src/main/smoke.ts": 34,
+        "docs/AGENT_ROUTING.md": 4,
+        "opencode.json": 79,
+        "packages/db/src/requirements.ts": 102
+      },
+      "user_removed_per_file": {
+        "apps/desktop/src/main/handlers.ts": 35,
+        "apps/desktop/src/main/research/smoke-fixture.ts": 2,
+        "apps/desktop/src/main/smoke.ts": 21,
+        "docs/AGENT_ROUTING.md": 4,
+        "packages/db/src/requirements.ts": 20
+      }
+    },
+    {
+      "checkpoint_number": 7,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 8,
+      "user_lines_added": 903,
+      "user_lines_removed": 53,
+      "agent_lines_added": 3127,
+      "agent_lines_removed": 400,
+      "user_added_per_file": {
+        "docs/STATUS.md": 402,
+        "packages/blocks/src/research/export.test.ts": 6,
+        "packages/blocks/src/research/export.ts": 84,
+        "packages/blocks/src/research/index.test.ts": 7,
+        "packages/blocks/src/research/index.ts": 10,
+        "packages/blocks/src/research/tabular.test.ts": 218,
+        "packages/blocks/src/research/tabular.ts": 176
+      },
+      "user_removed_per_file": {
+        "docs/STATUS.md": 21,
+        "packages/blocks/src/research/export.test.ts": 3,
+        "packages/blocks/src/research/export.ts": 26,
+        "packages/blocks/src/research/index.test.ts": 2,
+        "packages/blocks/src/research/index.ts": 1
+      }
+    },
+    {
+      "checkpoint_number": 9,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 3771,
+      "agent_lines_removed": 62
+    },
+    {
+      "checkpoint_number": 10,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 3771,
+      "agent_lines_removed": 62
+    },
+    {
+      "checkpoint_number": 11,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 3771,
+      "agent_lines_removed": 62
+    },
+    {
+      "checkpoint_number": 12,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 3771,
+      "agent_lines_removed": 62
+    },
+    {
+      "checkpoint_number": 13,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 3771,
+      "agent_lines_removed": 62
+    },
+    {
+      "checkpoint_number": 14,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 4102,
+      "agent_lines_removed": 82
+    },
+    {
+      "checkpoint_number": 15,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 4102,
+      "agent_lines_removed": 82
+    },
+    {
+      "checkpoint_number": 16,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 4102,
+      "agent_lines_removed": 82
+    },
+    {
+      "checkpoint_number": 17,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 18,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 4312,
+      "agent_lines_removed": 82
+    },
+    {
+      "checkpoint_number": 19,
+      "user_lines_added": 29,
+      "user_lines_removed": 1,
+      "agent_lines_added": 4313,
+      "agent_lines_removed": 82,
+      "user_added_per_file": {
+        "docs/STATUS.md": 3,
+        "packages/blocks/src/research/tabular.test.ts": 26
+      },
+      "user_removed_per_file": {
+        "docs/STATUS.md": 1
+      }
+    },
+    {
+      "checkpoint_number": 20,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 4422,
+      "agent_lines_removed": 82
+    },
+    {
+      "checkpoint_number": 21,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 4724,
+      "agent_lines_removed": 98
+    },
+    {
+      "checkpoint_number": 22,
+      "user_lines_added": 637,
+      "user_lines_removed": 114,
+      "agent_lines_added": 6190,
+      "agent_lines_removed": 134,
+      "user_added_per_file": {
+        "packages/blocks/src/research/assessment.test.ts": 389,
+        "packages/blocks/src/research/assessment.ts": 132,
+        "packages/blocks/src/research/summarizer.ts": 85,
+        "packages/blocks/src/research/tabular.ts": 31
+      },
+      "user_removed_per_file": {
+        "packages/blocks/src/research/assessment.test.ts": 50,
+        "packages/blocks/src/research/assessment.ts": 42,
+        "packages/blocks/src/research/summarizer.ts": 13,
+        "packages/blocks/src/research/tabular.ts": 9
+      }
+    },
+    {
+      "checkpoint_number": 23,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 24,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 8200,
+      "agent_lines_removed": 467
+    },
+    {
+      "checkpoint_number": 25,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 26,
+      "user_lines_added": 4,
+      "user_lines_removed": 2,
+      "agent_lines_added": 8202,
+      "agent_lines_removed": 469,
+      "user_added_per_file": {
+        "docs/STATUS.md": 4
+      },
+      "user_removed_per_file": {
+        "docs/STATUS.md": 2
+      }
+    },
+    {
+      "checkpoint_number": 27,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 8204,
+      "agent_lines_removed": 469
+    },
+    {
+      "checkpoint_number": 28,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 8204,
+      "agent_lines_removed": 469
+    },
+    {
+      "checkpoint_number": 29,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 8204,
+      "agent_lines_removed": 469
+    },
+    {
+      "checkpoint_number": 30,
+      "user_lines_added": 1294,
+      "user_lines_removed": 155,
+      "agent_lines_added": 8204,
+      "agent_lines_removed": 469,
+      "user_added_per_file": {
+        "packages/blocks/src/research/autonomous.test.ts": 430,
+        "packages/blocks/src/research/autonomous.ts": 514,
+        "packages/blocks/src/research/raw.test.ts": 26,
+        "packages/blocks/src/research/raw.ts": 18,
+        "packages/blocks/src/research/runtime.ts": 306
+      },
+      "user_removed_per_file": {
+        "packages/blocks/src/research/raw.ts": 4,
+        "packages/blocks/src/research/runtime.ts": 151
+      }
+    },
+    {
+      "checkpoint_number": 31,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 9446,
+      "agent_lines_removed": 572
+    },
+    {
+      "checkpoint_number": 32,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 9483,
+      "agent_lines_removed": 571
+    },
+    {
+      "checkpoint_number": 33,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 9483,
+      "agent_lines_removed": 571
+    },
+    {
+      "checkpoint_number": 34,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 11592,
+      "agent_lines_removed": 582
+    }
+  ]
+}

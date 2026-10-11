@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4MVMF4JD9EYTXDDREX8BX4F",
   "strategy": "manual-commit",
   "branch": "ws6-ai-providers",
-  "checkpoints_count": 24,
+  "checkpoints_count": 67,
   "files_touched": [
     "apps/desktop/src/main/index.ts",
     "apps/desktop/src/main/preview.test.ts",
@@ -39,6 +39,8 @@
     "packages/blocks/src/research/agents.ts",
     "packages/blocks/src/research/assessment.test.ts",
     "packages/blocks/src/research/assessment.ts",
+    "packages/blocks/src/research/autonomous.test.ts",
+    "packages/blocks/src/research/autonomous.ts",
     "packages/blocks/src/research/export.test.ts",
     "packages/blocks/src/research/export.ts",
     "packages/blocks/src/research/http.ts",
@@ -146,13 +148,20 @@
       "compact_transcript": "/11/transcript.jsonl",
       "content_hash": "/11/content_hash.txt",
       "prompt": "/11/prompt.txt"
+    },
+    {
+      "metadata": "/12/metadata.json",
+      "transcript": "/12/full.jsonl",
+      "compact_transcript": "/12/transcript.jsonl",
+      "content_hash": "/12/content_hash.txt",
+      "prompt": "/12/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 3466251,
-    "cache_creation_tokens": 1598540,
-    "cache_read_tokens": 81455256,
-    "output_tokens": 193426,
-    "api_call_count": 981
+    "input_tokens": 6301694,
+    "cache_creation_tokens": 5364349,
+    "cache_read_tokens": 180231780,
+    "output_tokens": 460856,
+    "api_call_count": 1911
   }
 }
