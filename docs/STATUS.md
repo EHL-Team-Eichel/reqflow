@@ -68,7 +68,7 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 ## WS0 — Lead / integrator
 
-**Status:** review (all eligible branches integrated and verified) · **Owner:** OpenCode (remaining-branch integration) · **Branch:** `integrate/2026-10-11`
+**Status:** review (ready branches verified; Analytics WIP excluded by human) · **Owner:** OpenCode (remaining-branch integration) · **Branch:** `integrate/ready-2026-10-11`
 
 **Tasks**
 
@@ -81,6 +81,8 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 **Log**
 
+- 2026-10-11: Publishable snapshot including the latest Car class/feature adaptation passes `npm run check` (2,307 tests, 5 skipped) and native macOS smoke (70 screenshots). Inspected final M5 baseline, catalog selection/restoration, compact details and light/dark views. All ready remote branches are included; only the four old experiment branches and human-excluded Analytics WIP stay out. No live providers, credentials or BMW files used in verification; Windows/Linux remain unverified.
+- 2026-10-11: Final remote refresh found Car follow-up `db64757` (class-aware features and M5 baseline) and newly published `analytics-and-timeline`. Car follow-up is included. Analytics is not buildable: five engine modules are missing and its chart tabs are placeholders. Human explicitly chose to publish ready branches and leave Analytics to its author. Ready integration is isolated at `integrate/ready-2026-10-11`; the attempted Analytics merge remains on `integrate/2026-10-11`, not on main. Final exclusions are the four old engine/judging experiments plus Analytics WIP.
 - 2026-10-11: Final corrected integration verification: `npm run check` passed (2,298 tests, 5 skipped); `npm run smoke` passed on macOS with 70 screenshots. Inspected catalog selection/restoration, four powertrain views, compact details and light/dark screenshots. Ready to promote to main; no excluded experiment history included.
 - 2026-10-11: Corrected integration includes `ws3-compact-requirements`, `ws4-car-models`, `codex/car-model-refinements`, `ws3-compact-requirements-entire` and `ws3-exterior-session-log`, with their full merge histories. Only the four old engine/judging experiment branches listed in the task remain unmerged. Retained audited Reset, agent confidence/Why, Research and HIL PDFs, reversible flight, collapsed menu-driven markers and 105-model catalog. Settings `hydrogen`/`fuel` values map to catalog `h2`/`gasoline`, sharing one persisted choice across both Settings screens and Car. Tests and native smoke cover reload, four powertrains, scope/decision preservation, compact evidence details and catalog switching. Synthetic-only checks; no real data/credentials/provider calls. Windows/Linux remain unverified.
 - 2026-10-11: Human clarified exclusions: only `integrate-mastra-judge` and older Alexander experiments stay out. The earlier Car-animation cutoff was a misunderstanding and is superseded. Integrating all remaining newer branches: compact requirements/105-model catalog, Car refinements, saved car-model settings and their handoff branches. Preserve current agents, Research, HIL exports and human-only decisions; verify offline in the isolated worktree.
