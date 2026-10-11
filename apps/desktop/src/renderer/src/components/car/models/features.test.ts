@@ -23,9 +23,21 @@ const getProceduralModel = (id: string) => BUILT_IN_VEHICLE_MODELS.find((model) 
 afterEach(() => vi.restoreAllMocks());
 
 describe("Procedural vehicle features and class recognition", () => {
-  it("defaults to the 2025 BMW M5 Sedan as the standard benchmark model", () => {
-    expect(DEFAULT_MODEL_ID).toBe("bmw_m5_sedan_g90_2025");
-    expect(VEHICLE_MODELS[0]!.id).toBe("bmw_m5_sedan_g90_2025");
+  it("defaults to the imported 2025 BMW M4 Competition preview", () => {
+    expect(DEFAULT_MODEL_ID).toBe("bmw_m4_competition_2025");
+    const m4 = getVehicleModelById(DEFAULT_MODEL_ID)!;
+    expect(VEHICLE_MODELS[0]).toBe(m4);
+    expect(m4.name).toBe("2025 BMW M4 Competition");
+    expect(m4.year).toBe(2025);
+    expect(m4.series).toBe("M4");
+    expect(m4.chassisCode).toBe("G82");
+    expect(m4.bodyType).toBe("coupe");
+    expect(registry.getSourceMeshInfoById(DEFAULT_MODEL_ID)?.profileFormat).toBe(
+      "reqflow-sketch-mesh-v1",
+    );
+  });
+
+  it("keeps the basic 2025 BMW M5 Sedan available with its executive appointments", () => {
     const m5 = getVehicleModelById("bmw_m5_sedan_g90_2025");
     expect(m5).toBeDefined();
     expect(m5!.series).toBe("M5");

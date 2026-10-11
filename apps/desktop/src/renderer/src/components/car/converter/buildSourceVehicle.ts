@@ -4,6 +4,7 @@ import { buildVehicleModel } from "../models/builder";
 import type { PowertrainType, VehicleModel } from "../models/types";
 import { buildSourceMesh } from "./buildSourceMesh";
 import type { SourceMeshProfile } from "./profile";
+import { sourceReviewAreaTargets } from "./sourceReviewAreas";
 
 /**
  * Builds an imported car from its exact source exterior and Reqflow's standard cabin and
@@ -50,6 +51,14 @@ export function buildSourceVehicle(
     const anchors = new Map(
       [...exteriorAnchors].map(([id, anchor]) => [id, anchor.clone()] as const),
     );
+    const exteriorReviewAreas = sourceReviewAreaTargets(
+      profile.model,
+      sourceExterior.map((piece) => piece.mesh),
+    );
+    for (const [id, points] of exteriorReviewAreas) {
+      exteriorAnchors.set(id, points[0]!.clone());
+      anchors.set(id, points[0]!.clone());
+    }
     const standardInteriorIds = new Set(
       standardInterior.flatMap((piece) => (piece.partId ? [piece.partId] : [])),
     );
@@ -71,7 +80,14 @@ export function buildSourceVehicle(
     disposeLines(source.sketchLines);
     disposeLines(standard.sketchLines);
 
-    return { root: source.root, pieces, sketchLines: [], anchors, exteriorAnchors };
+    return {
+      root: source.root,
+      pieces,
+      sketchLines: [],
+      anchors,
+      exteriorAnchors,
+      exteriorReviewAreas,
+    };
   } catch (error) {
     if (standard) disposeCarModels([source, standard]);
     else disposeCarModels([source]);

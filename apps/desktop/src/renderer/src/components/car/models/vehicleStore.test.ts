@@ -35,6 +35,13 @@ beforeEach(() => {
 });
 
 describe("vehicle sketch state", () => {
+  it("uses the M4 Competition for a fresh preview without changing requirement scope", async () => {
+    const { useVehicleStore, getActiveVehicle } = await import("./vehicleStore");
+    expect(useVehicleStore.getState().selectedModelId).toBe("bmw_m4_competition_2025");
+    expect(getActiveVehicle().model.name).toBe("2025 BMW M4 Competition");
+    expect(settingsStore.getState().settings.defaultScope).toEqual(DEFAULT_SETTINGS.defaultScope);
+  });
+
   it("starts electric and persists all four choices without changing requirement scope", async () => {
     const { useVehicleStore, getActiveVehicle } = await import("./vehicleStore");
     expect(getActiveVehicle().powertrain).toBe("electric");
@@ -72,6 +79,7 @@ describe("vehicle sketch state", () => {
       JSON.stringify({ modelId: VEHICLE_MODELS[1]!.id, powertrain: "hybrid" }),
     );
     const { useVehicleStore, getActiveVehicle } = await import("./vehicleStore");
+    expect(getActiveVehicle().model.id).toBe(VEHICLE_MODELS[1]!.id);
     expect(getActiveVehicle().powertrain).toBe("hybrid");
     expect(() => useVehicleStore.getState().setPowertrain("diesel" as "electric")).toThrow(
       "Unknown powertrain",

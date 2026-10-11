@@ -147,7 +147,10 @@ export function CarViewer(props: Props) {
         : buildCar(props.powertrain);
     scene.add(car.root);
     setAnchors(car.anchors);
-    const exteriorTargets = exteriorBadgeTargets(car.pieces, car.exteriorAnchors ?? car.anchors);
+    const exteriorTargets = new Map(
+      exteriorBadgeTargets(car.pieces, car.exteriorAnchors ?? car.anchors),
+    );
+    for (const [id, points] of car.exteriorReviewAreas ?? []) exteriorTargets.set(id, points);
     const exteriorPartsForModel = new Set(exteriorTargets.keys());
     setExteriorParts(exteriorPartsForModel);
     const exteriorSurfaces = car.pieces
@@ -471,6 +474,7 @@ export function CarViewer(props: Props) {
                 camera,
                 exteriorSurfaces,
                 badgeRaycaster,
+                car.exteriorReviewAreas?.has(partId),
               )
             : car.anchors.get(partId);
         if (!anchor) {

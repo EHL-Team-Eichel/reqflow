@@ -19,7 +19,7 @@ import { BATCH_9_MODELS } from "./batch9";
 import { BATCH_10_MODELS } from "./batch10";
 import { BATCH_11_MODELS } from "./batch11";
 
-export const DEFAULT_MODEL_ID = "bmw_m5_sedan_g90_2025";
+export const DEFAULT_MODEL_ID = "bmw_m4_competition_2025";
 
 const ALL_BATCH_MODELS: VehicleModel[] = [
   ...BATCH_1_MODELS,
@@ -35,7 +35,7 @@ const ALL_BATCH_MODELS: VehicleModel[] = [
   ...BATCH_11_MODELS,
 ];
 
-// Place the standard 2025 BMW M5 Sedan at index 0 as the application benchmark model
+// Place the standard 2025 BMW M4 Competition at index 0 as the application preview model.
 const standardModel = ALL_BATCH_MODELS.find((m) => m.id === DEFAULT_MODEL_ID)!;
 export const BUILT_IN_VEHICLE_MODELS: VehicleModel[] = [
   standardModel,

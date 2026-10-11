@@ -62,6 +62,8 @@ export interface CarModel {
   anchors: Map<string, THREE.Vector3>;
   /** Optional exterior-only badge locations when the cabin uses a different schematic layout. */
   exteriorAnchors?: Map<string, THREE.Vector3>;
+  /** Named review points on a source exterior whose original meshes are broader assemblies. */
+  exteriorReviewAreas?: ReadonlyMap<string, readonly THREE.Vector3[]>;
 }
 
 const SIDES = [-1, 1] as const; // left (−z, driver in LHD), right (+z)

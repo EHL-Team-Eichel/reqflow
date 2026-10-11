@@ -4,6 +4,7 @@ import type { PowertrainType, VehicleModel } from "../models/types";
 import { modelExcludedPartIds } from "../models/features";
 import { getSourceMeshInfoById } from "../models/registry";
 import { standardInteriorPartIds } from "../converter/buildSourceVehicle";
+import { sourceReviewAreaIds } from "../converter/sourceReviewAreas";
 
 /** Schematic layouts, independent of the configured requirement scope/vehicle derivative. */
 export const POWERTRAINS = [
@@ -58,7 +59,11 @@ export function availablePartIds(
 ): ReadonlySet<string> {
   const source = model ? getSourceMeshInfoById(model.id) : undefined;
   if (source && model)
-    return new Set([...source.exteriorPartIds, ...standardInteriorPartIds(model, powertrain)]);
+    return new Set([
+      ...source.exteriorPartIds,
+      ...sourceReviewAreaIds(model),
+      ...standardInteriorPartIds(model, powertrain),
+    ]);
   const excluded = modelExcludedPartIds(model);
   return new Set([
     ...CAR_PARTS.filter((p) => !VARIABLE_PARTS.includes(p.id) && !excluded.has(p.id)).map(

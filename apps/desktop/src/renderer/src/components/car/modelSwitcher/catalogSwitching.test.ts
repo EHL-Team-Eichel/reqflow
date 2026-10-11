@@ -9,15 +9,18 @@ import * as THREE from "three";
 
 describe("existing catalog switching integration", () => {
   it.each(VEHICLE_MODELS)(
-    "matches $id to its parts/menu without duplicate powertrains",
+    "matches $id to its parts/review areas/menu without duplicate powertrains",
     async (model) => {
       const source = await loadSourceMeshById(model.id);
       const car = source
         ? buildSourceVehicle(source, model.defaultPowertrain)
         : buildVehicleModel(model, model.defaultPowertrain);
-      const modelled = new Set(
-        car.pieces.map((p) => p.partId).filter((id): id is string => id !== null),
-      );
+      const modelled = new Set([
+        ...car.pieces.map((p) => p.partId).filter((id): id is string => id !== null),
+        ...(car.exteriorReviewAreas?.keys() ?? []),
+      ]);
+      for (const points of car.exteriorReviewAreas?.values() ?? [])
+        expect(points.length).toBeGreaterThan(0);
       const available = availablePartIds(model.defaultPowertrain, model);
       expect([...modelled].sort(), model.id).toEqual([...available].sort());
       const menus = powertrainSubclasses(model.defaultPowertrain, model);
