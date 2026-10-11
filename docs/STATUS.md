@@ -81,6 +81,27 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 **Log**
 
+- 2026-10-11: Gap items 7–13 on `ws8-scoring-integrity` (see WS8 log). Decisions: transitions
+  (`ALLOWED_DECISIONS`: decided requirements must be reopened), override only with approve plus a
+  `requirement.prioritized` event, four-eyes (`requirement.approval_recorded`, second approval by
+  another reviewer; a new name in Settings gets its own reviewer id), edits refuse no-ops and
+  unknown findings and move an approved requirement back to review, `car.add` refuses anything but
+  new proposals (`aiProposalProblem`), HIL gates count `run.review_approved` per reviewer before
+  resuming. Audit list filters by actor in SQL and a limit keeps the newest events. Exports carry
+  findings, excerpts, sources, score breakdown, flags and confidence; CSV is formula-safe; JSON is
+  now `{generatedAt, count, requirements}`. Raw: customer-study comparison findings (F70 vs the
+  same market's models, ≥ 10 points or 10 % on rating scales), records keep their stated market
+  (no Settings stamping), `marketFilter` (default "scope"; older flows migrate to "all"),
+  `columns` mapping, previews capped at 1,000 items (100k synthetic rows: 29.2 MB → 0.3 MB).
+  Add to Car: no zero-target requirements, no opening-words quote substitution, 5 Series in CN is
+  G68, proposals audited only after the car accepted them. New `demo-flow.test.ts` runs the BMW
+  template offline (web research left out) and a restart with a paused run; `smoke-review.ts`
+  covers review, audit, exports, saved flows, rescoring, a two-reviewer gate and the template
+  natively. **Found:** the AI Filter classifies only the most advanced layer, so in the BMW
+  template the 35 synthetic feedback comments are dropped silently once equipment/study findings
+  exist, and the PM gates never pause (`it.fails` in `demo-flow.test.ts`). Needs a decision (filter
+  vs template). Renderer follow-ups: `run-store.ts` still blocks gates with approvals > 1; the
+  Car review UI should show the new errors, four-eyes state and `FactorScore.by`.
 - 2026-10-11: Human requested merging completed Analytics into main through PR #19 and launching locally. Integrated main through `85d3d36`, preserving PDF ingestion, splitter car-part depth, AI Filter decisions, provenance reports and the grey-line Car transition. Resolved product-table conflicts by keeping all block descriptions; kept main's equivalent Reset-ready wait in smoke and both Analytics-open and AI Filter-report buttons on block nodes. Latest combined code passes `npm run typecheck`, `npm run format:check` and `npm test -- --maxWorkers=2 --testTimeout=30000` (2,698 passed, 6 skipped). Native macOS smoke passed before the final main refreshes (82 screenshots); refreshed-code smoke remains incomplete: one run hung in later Settings checks and a fresh isolated run exited before writing its final report (78 screenshots), so neither is claimed as passing. Inspected Analytics overview, timeline, topics, source comparison, flow, quality and preserved grey-line Car interior. Synthetic-only checks; no BMW values, live providers or credentials used. The separate `reqflow/` checkout's uncommitted Car work is untouched. Launch uses merged main in this clean checkout; human authorized replacing the existing app instance. Windows/Linux remain unverified.
 - 2026-10-11: Synthetic 100-row F70 feedback fixture delivered as XLSX/CSV in `data/samples/f70-feedback-test.*`, with reproducible generator and `docs/f70-feedback-test.md`. Exact original sheet/header structure only; no BMW cell values used. Ten synthetic regression cases verify 97 ingested records, all six splitter modes, HIL pause/resume, seven proposed offline categories and actual classifier placements. `npm run typecheck` passes; synthetic-only suite passes (2,329 tests, 21 skipped) with two workers/15s timeout after parallel contention timed out two unrelated tests. Real BMW tests excluded; no live AI calls or UI changes. Concurrent PDF-ingestion work preserved. Guide distinguishes actual mock limitations from ten desired live-AI needs.
 - 2026-10-11: Publishable snapshot including the latest Car class/feature adaptation passes `npm run check` (2,307 tests, 5 skipped) and native macOS smoke (70 screenshots). Inspected final M5 baseline, catalog selection/restoration, compact details and light/dark views. All ready remote branches are included; only the four old experiment branches and human-excluded Analytics WIP stay out. No live providers, credentials or BMW files used in verification; Windows/Linux remain unverified.
@@ -694,11 +715,11 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - [x] BMW's data in `data/raw/`: feedback, studies and sales read correctly (shapes in the log);
       tests on the real files run locally when they're present (`raw.test.ts`, "BMW …" suites).
 - [x] F70 option list (PDF): local PDF.js/Tesseract OCR plus configured-default-model structured extraction merged in PR #18 and verified.
-- [ ] Customer study findings: per question, how the F70 scores against the other models in the
+- [x] Customer study findings: per question, how the F70 scores against the other models in the
       same market (deterministic, like the take-rate findings), with the study rows as evidence.
-- [ ] If BMW's headers can't be matched automatically: add an optional column-mapping param
+- [x] If BMW's headers can't be matched automatically: add an optional column-mapping param
       (contract change via WS0).
-- [ ] Large exports (≈100k rows): measure preview time and IPC payload; page the preview if needed.
+- [x] Large exports (≈100k rows): measure preview time and IPC payload; page the preview if needed.
 - [ ] PostgreSQL / SQL Server sources, if the demo needs them (credentials in the keychain, never in params).
 
 **Log**
@@ -781,7 +802,7 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
       saved item decisions and originals, verified quotes and audited next-run restorations.
 - [x] AI Splitter: route each primary item to exactly one branch (`out-<i>`); priority preserves
       existing priorities or uses Settings-weighted factors; category / sentiment / custom use the LLM.
-- [ ] AI Splitter: replace provisional missing-factor judgement with WS8's scorer when available.
+- [x] AI Splitter: replace provisional missing-factor judgement with WS8's scorer when available.
 - [x] Add to Car: cluster and derive requirements (IDs via `formatRequirementId`, targets, evidence level
       A–D, Kano class, assumptions, uncertainties, conflicts), priority from the input port, hand them to `ctx.car.add`.
 - [x] Add to Car as an agent system (branch `ws7-add-to-car-agents`): inputs 1. Priority … n. Priority and
@@ -958,19 +979,31 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 ## WS8 — Prioritization
 
-**Status:** open · **Owner:** — · **Branch:** —
-**Depends on:** nothing; agree the function signature with WS7 in your log.
+**Status:** review (merged on `ws8-scoring-integrity`, not yet on main) · **Owner:** Claude Code (lead session) · **Branch:** `ws8-scoring-integrity`
+**Depends on:** nothing.
 
 **Tasks**
 
-- [ ] Deterministic factors in `packages/blocks/src/prioritization/`: customer impact, evidence
+- [x] Deterministic factors in `packages/blocks/src/prioritization/`: customer impact, evidence
       strength, competitive gap, trend momentum, each with a one-line note.
-- [ ] LLM-judged factors (brand fit, ease) behind `LlmClient`, one-line note each; mock in tests.
-- [ ] `priorityRationale` naming the top drivers; flag "high score, weak evidence".
-- [ ] Tests: reproducible scores on the fixtures; changing Settings weights changes the ranking as expected.
-- [ ] Export the function the AI Splitter's priority mode calls (`weightedTotal` + `priorityForScore`).
+- [x] LLM-judged factors (brand fit, ease) behind `LlmClient`, one-line note each; mock in tests.
+- [x] `priorityRationale` naming the top drivers; flag "high score, weak evidence".
+- [x] Tests: reproducible scores on the fixtures; changing Settings weights changes the ranking as expected.
+- [x] Export the function the AI Splitter's priority mode calls (`scoreItem`, `deterministicFactors`).
+- [x] Stored requirements are rescored (audited, system actor) when Settings weights or thresholds change.
 
 **Log**
+
+- 2026-10-11: Human asked for gap items 7–13 (prioritization, decision integrity, audit/export,
+  Add to Car fixes, Raw study/markets/mapping/preview, scope generality, smoke). Built on
+  `ws8-scoring-integrity` (from `fix/gemini-max-items`, which it needs for the splitter retry),
+  merged from three slice branches: `ws8-scorer` and `ws5-study-markets` (drafted by agy on Gemini
+  3.1 Pro, reviewed and corrected here) and `ws1-decision-integrity` (Claude subagent).
+  Scores are `ws8-weighted@1`: four factors from the evidence, brand fit and ease from the AI,
+  each factor records who judged it (`FactorScore.by`). The AI Splitter's priority mode and Add to
+  Car both use it; the critic now judges only brand fit and ease. Input rank still sets Add to
+  Car's priority (PRODUCT.md); the score and its top drivers are in the rationale.
+  Verify: `npx vitest run packages/blocks/src/prioritization packages/blocks/src/ai-splitter packages/blocks/src/add-to-car`.
 
 ## WS9 — Analytics & timeline
 
