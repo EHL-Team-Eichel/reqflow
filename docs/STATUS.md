@@ -779,6 +779,28 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 **Log**
 
+- 2026-10-11: **End-to-end test with a real Gemini key** (`gemini-3.8-flash` / `gemini-3.5-flash-lite`)
+  on `data/samples` through the running app (IPC + editor UI over the DevTools port; only the
+  native open/save dialogs were answered with sample paths). Everything except Research passed:
+  Raw (7 sample files, SQLite, text + scanned PDF), AI Filter (4/4 price/dealer rows excluded,
+  90/90 in scope kept, restore → next run), every Splitter mode (car parts by area 89/94 and by part
+  group 89/94 right against the sample's topic manifest), inner-workplace override, HIL routing
+  correction, Add to Car (8 requirements, confidence 52–93 %, 83/83 verbatim quotes, Why?),
+  decisions/challenge/edit/audit/exports, Analytics, Custom, templates, cancel, settings, editor
+  template run with HIL PDF export. Bugs found and fixed on `fix/gemini-max-items`:
+  - Gemini rejected every schema with `maxItems` (HTTP 400): PDF import and all Splitter modes
+    failed. `maxItems` is now a local constraint for Gemini.
+  - Gemini's thinking counts against `maxOutputTokens`: a plan call thought 7,864 of 8,192 tokens
+    and was cut off. Gemini/OpenAI caps are now answer + 16,384 thinking headroom (≤ 65,536), and a
+    cut-off answer says so.
+  - One invalid model answer (unknown ID, quote from the wrong record) failed a whole Splitter run;
+    each Splitter call now asks once more, a second invalid answer still fails. Saved 3 of the
+    test runs.
+  - Priority scoring ("Prioritized feedback" template) failed every run: the note check only
+    searched record text, but the model quotes field values ("dealer survey"). Field values and
+    source metadata now count; a note that still can't be verified counts as an assumption
+    (logged) instead of failing the run. 0 of 582 notes downgraded after the fix. **For WS7
+    (Jonas):** this relaxes the earlier hard failure on unverifiable notes — please review.
 - 2026-10-11: Human assigned only the selection-only AI Filter feature and authorized necessary
   coordinated core/engine/DB/main/UI integration. Work isolated on `ai-filter-selection` in
   `EHL-ai-filter`; existing `ws5-pdf-ingestion` checkout and concurrent changes untouched. Built
