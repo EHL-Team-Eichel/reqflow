@@ -5,6 +5,8 @@
  * panels are retained. Length, width and cabin height stay in the sketch's scale.
  * End caps are rounded rather than tracing the STL's underside and spoiler tips.
  */
+export const WINDSCREEN_BASE_X = 0.8;
+
 export const BMW_REFERENCE = {
   // Axle centres measured on the detached tyres, mapped to the body endpoints.
   frontAxleX: 1.371,
@@ -17,7 +19,8 @@ export const BMW_REFERENCE = {
     [1.65, 0.976],
     [1.42, 1.01],
     [1.05, 1.042],
-    [0.82, 1.004],
+    // The bonnet rises all the way to the glass, rather than cresting ahead of a cowl dip.
+    [WINDSCREEN_BASE_X, 1.075],
     [0.55, 1.146],
     [0.25, 1.349],
     [0, 1.476],

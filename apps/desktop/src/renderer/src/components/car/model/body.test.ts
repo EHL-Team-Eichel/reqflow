@@ -1,7 +1,10 @@
 import { afterAll, describe, expect, it } from "vitest";
 import * as THREE from "three";
-import { bodyPanel, buildBodyGrid, quadAt, RING, STATIONS } from "./body";
+import { A_PILLAR_WIDTH, bodyPanel, buildBodyGrid, quadAt, RING, STATIONS, topLine } from "./body";
 import { buildCar } from "./buildCar";
+import { WINDSCREEN_BASE_X } from "./reference";
+
+const vertexKey = (p: THREE.Vector3) => [p.x, p.y, p.z].map((n) => Math.round(n * 10000)).join(",");
 
 describe("M5-inspired windscreen", () => {
   const car = buildCar();
@@ -10,6 +13,12 @@ describe("M5-inspired windscreen", () => {
   const position = glass.getAttribute("position");
   const vertices = Array.from({ length: position.count }, (_, i) =>
     new THREE.Vector3().fromBufferAttribute(position, i),
+  );
+  const hoodPosition = car.pieces
+    .find((p) => p.partId === "hood" && p.kind === "paint")!
+    .mesh.geometry.getAttribute("position");
+  const hoodVertices = Array.from({ length: hoodPosition.count }, (_, i) =>
+    new THREE.Vector3().fromBufferAttribute(hoodPosition, i),
   );
   const grid = buildBodyGrid();
   const panels = Array.from({ length: (STATIONS - 1) * RING }, (_, k) =>
@@ -29,19 +38,18 @@ describe("M5-inspired windscreen", () => {
     const base = new THREE.Box3().setFromPoints(vertices.filter((p) => p.x > 0.65));
     const topWidth = top.getSize(new THREE.Vector3()).z;
     const baseWidth = base.getSize(new THREE.Vector3()).z;
-    expect(topWidth).toBeGreaterThan(1.25);
-    expect(topWidth).toBeLessThan(1.4);
-    expect(baseWidth).toBeGreaterThan(1.6);
-    expect(baseWidth).toBeLessThan(1.75);
+    expect(topWidth).toBeGreaterThan(1.38);
+    expect(topWidth).toBeLessThan(1.45);
+    expect(baseWidth).toBeGreaterThan(1.7);
+    expect(baseWidth).toBeLessThan(1.78);
     expect(baseWidth - topWidth).toBeGreaterThan(0.3);
   });
 
   it("covers the full front slope without swallowing the bonnet or roof", () => {
     const bounds = new THREE.Box3().setFromPoints(vertices);
-    expect(bounds.min.x).toBeLessThan(-0.05);
-    expect(bounds.max.x).toBeGreaterThan(0.79);
-    expect(bounds.min.x).toBeGreaterThan(-0.1);
-    expect(bounds.max.x).toBeLessThan(0.85);
+    expect(bounds.min.x).toBeLessThan(-0.09);
+    expect(bounds.max.x).toBeCloseTo(WINDSCREEN_BASE_X, 4);
+    expect(bounds.min.x).toBeGreaterThan(-0.13);
     expect(bounds.max.y).toBeGreaterThan(1.44);
     expect(bounds.min.y).toBeLessThan(1.01);
   });
@@ -52,7 +60,8 @@ describe("M5-inspired windscreen", () => {
     expect(center - corners).toBeGreaterThan(0.035);
   });
 
-  it("leaves slender, continuous A-pillars on both sides", () => {
+  it("widens both continuous A-pillar frames by 50%", () => {
+    expect(A_PILLAR_WIDTH).toBeCloseTo(0.02 * 1.5, 6);
     for (const side of [-1, 1]) {
       for (const height of [1.08, 1.2, 1.32]) {
         const sideWindow: number[] = [];
@@ -69,8 +78,8 @@ describe("M5-inspired windscreen", () => {
         expect(sideWindow.length).toBeGreaterThan(0);
         expect(windscreen.length).toBeGreaterThan(0);
         const gap = Math.min(...windscreen) - Math.max(...sideWindow);
-        expect(gap).toBeGreaterThan(0.06);
-        expect(gap).toBeLessThan(0.16);
+        expect(gap).toBeGreaterThan(0.055);
+        expect(gap).toBeLessThan(0.125);
       }
     }
   });
@@ -90,11 +99,55 @@ describe("M5-inspired windscreen", () => {
     }
   });
 
+  it("has a larger glass area after slimming the pillars", () => {
+    const index = glass.getIndex()!;
+    let area = 0;
+    for (let k = 0; k < index.count; k += 3) {
+      const a = vertices[index.getX(k)]!;
+      const b = vertices[index.getX(k + 1)]!.clone().sub(a);
+      const c = vertices[index.getX(k + 2)]!.clone().sub(a);
+      area += b.cross(c).length() / 2;
+    }
+    // The previous outline measured 1.4994 m². Preserve a real area gain, not just new bounds.
+    expect(area).toBeGreaterThan(1.4994 * 1.04);
+  });
+
+  it("puts the bonnet high point on its rearward join with the windscreen", () => {
+    const highest = hoodVertices.reduce((a, b) => (a.y > b.y ? a : b));
+    expect(highest.x).toBeGreaterThan(WINDSCREEN_BASE_X - 0.075);
+    expect(highest.x).toBeLessThanOrEqual(WINDSCREEN_BASE_X + 0.001);
+    expect(highest.y).toBeGreaterThan(1.07);
+    expect(new Set(vertices.map(vertexKey)).has(vertexKey(highest))).toBe(true);
+
+    const hoodBase = hoodVertices
+      .filter((p) => Math.abs(p.z) < 0.001)
+      .sort((a, b) => a.x - b.x)[0]!;
+    const glassBase = vertices.filter((p) => Math.abs(p.z) < 0.001).sort((a, b) => b.x - a.x)[0]!;
+    expect(hoodBase.x).toBeCloseTo(WINDSCREEN_BASE_X, 4);
+    expect(hoodBase.distanceTo(glassBase)).toBeLessThan(1e-6);
+  });
+
+  it("rises continuously from bonnet to windscreen without a cowl dent", () => {
+    for (let x = 1.65; x > 0.25; x -= 0.005) {
+      expect(topLine(x - 0.005)).toBeGreaterThan(topLine(x));
+    }
+    const centerline = [...hoodVertices, ...vertices]
+      .filter((p) => Math.abs(p.z) < 0.001 && p.x >= 0.25 && p.x <= 1.65)
+      .sort((a, b) => b.x - a.x);
+    expect(centerline.length).toBeGreaterThan(35);
+    for (let i = 1; i < centerline.length; i++) {
+      expect(centerline[i]!.y).toBeGreaterThanOrEqual(centerline[i - 1]!.y - 1e-6);
+    }
+    expect(grid.stationX).toContain(WINDSCREEN_BASE_X);
+    for (let i = 1; i < grid.stationX.length; i++) {
+      expect(grid.stationX[i]).toBeGreaterThan(grid.stationX[i - 1]!);
+    }
+  });
+
   it("keeps the smoothed glazing symmetric", () => {
-    const key = (p: THREE.Vector3) => [p.x, p.y, p.z].map((n) => Math.round(n * 10000)).join(",");
-    const points = new Set(vertices.map(key));
+    const points = new Set(vertices.map(vertexKey));
     for (const vertex of vertices) {
-      expect(points.has(key(new THREE.Vector3(vertex.x, vertex.y, -vertex.z)))).toBe(true);
+      expect(points.has(vertexKey(new THREE.Vector3(vertex.x, vertex.y, -vertex.z)))).toBe(true);
     }
   });
 
