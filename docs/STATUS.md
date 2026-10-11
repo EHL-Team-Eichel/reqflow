@@ -220,6 +220,27 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 **Log**
 
+- 2026-10-11: Refined BMW 3D models and classification architecture across all 105 Sketchfab vehicles.
+  Configured 2025 BMW M5 Sedan (`bmw_m5_sedan_g90_2025`) as the standard running benchmark model (index 0).
+  Implemented functional class recognition and procedural feature removal/addition:
+  - 2-Door Coupés (69 models): removed non-existent rear doors (`rear_doors`), added seamless rear quarter
+    flank styling, lower sill extensions, M double-bubble carbon roof ridge and Hofmeister kink quarter windows.
+  - 2-Seaters (Z4, M1, CSL/GTS track specials): removed non-existent rear seats (`rear_seats`, individual seats,
+    `rear_air_vents`), added rear cabin bulkhead and luggage parcel shelf.
+  - Dedicated Single-Seater Race Cars (GT3, GT4, DTM, GTR): stripped lightweight motorsport cockpit removing
+    passenger seat, cup holders, armrest, glovebox and wireless charger; added racing switchboard console,
+    cockpit fire suppression, full FIA roll cage, GT wing, front splitter with struts, dive plane canards,
+    hood extractor louvers, widebody blister flares and multi-strake race diffuser.
+  - SUVs / SAVs (15 models): elevated ground clearance (+0.07m), rugged dark lower wheel arch cladding and rocker armor,
+    underbody skid plates, longitudinal roof rails and SAV upright tailgate roof spoiler.
+  - Tourings / Wagons (5 models): extended continuous estate roofline canopy, upright D-pillar estate cargo glazing,
+    roof rails, luggage cargo floor and tailgate roof spoiler.
+  - Convertibles (5 models): acoustic folding soft-top canopy (`convertible_roof`), dual rollover safety hoops and rear deck tonneau cover.
+  - Proportional dimensional scaling based on length, width, height, track and ground clearance relative to G60 baseline,
+    with badge anchors transformed into world space.
+  - Integrated with `availablePartIds` and `powertrainSubclasses` ensuring catalog and interactive 3D geometry consistency;
+    51 test files and 578 tests passing across all workspaces.
+
 - 2026-10-11: Model-switcher requested slice complete. Isolated commit `b64563e` passes
   root typecheck and `npm test -- --maxWorkers=4` (488 passed, 25 skipped); the unconstrained
   parallel run hit CPU-contention timeouts. Production build and the synthetic Electron
@@ -286,7 +307,6 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - 2026-10-11: Claimed pedal/brake-pad addition: model the driver accelerator and brake
   pedal, fit paired friction pads around each disc, expose each in the existing parts menus,
   preserve concurrent model-switcher work, verify and push the focused slice.
-
 
 - 2026-10-11: Claimed powertrain switching: Electric, Hybrid, H2 and Gasoline; reuse the
   transferred part/type scaffolding, preserve BMW body/windows and requirement review,

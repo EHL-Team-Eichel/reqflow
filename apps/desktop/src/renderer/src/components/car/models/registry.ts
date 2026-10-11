@@ -11,7 +11,9 @@ import { BATCH_9_MODELS } from "./batch9";
 import { BATCH_10_MODELS } from "./batch10";
 import { BATCH_11_MODELS } from "./batch11";
 
-export const VEHICLE_MODELS: VehicleModel[] = [
+export const DEFAULT_MODEL_ID = "bmw_m5_sedan_g90_2025";
+
+const ALL_BATCH_MODELS: VehicleModel[] = [
   ...BATCH_1_MODELS,
   ...BATCH_2_MODELS,
   ...BATCH_3_MODELS,
@@ -23,6 +25,13 @@ export const VEHICLE_MODELS: VehicleModel[] = [
   ...BATCH_9_MODELS,
   ...BATCH_10_MODELS,
   ...BATCH_11_MODELS,
+];
+
+// Place the standard 2025 BMW M5 Sedan at index 0 as the application benchmark model
+const standardModel = ALL_BATCH_MODELS.find((m) => m.id === DEFAULT_MODEL_ID)!;
+export const VEHICLE_MODELS: VehicleModel[] = [
+  standardModel,
+  ...ALL_BATCH_MODELS.filter((m) => m.id !== DEFAULT_MODEL_ID),
 ];
 
 const MODELS_MAP = new Map<string, VehicleModel>(VEHICLE_MODELS.map((m) => [m.id, m]));

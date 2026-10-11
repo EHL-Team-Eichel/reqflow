@@ -24,7 +24,8 @@ export const BATCH_9_MODELS: VehicleModel[] = [
       groundClearance: 0.13,
     },
     specialParts: ["rear_spoiler", "exhaust_system", "fuel_system"],
-    description: "Compact rear-wheel-drive E82 coupé with naturally aspirated 3.0L N52 inline-six, classic proportions and hydraulic power steering.",
+    description:
+      "Compact rear-wheel-drive E82 coupé with naturally aspirated 3.0L N52 inline-six, classic proportions and hydraulic power steering.",
   },
   {
     id: "bmw_m5_competition_f90_lci_2021",
@@ -49,7 +50,8 @@ export const BATCH_9_MODELS: VehicleModel[] = [
       groundClearance: 0.125,
     },
     specialParts: ["rear_spoiler", "rear_diffuser", "exhaust_system", "fuel_system"],
-    description: "Facelift LCI F90 M5 Competition featuring L-shaped light tubes, track-tuned dampers from the M8 Gran Coupé and 625 hp twin-turbo V8.",
+    description:
+      "Facelift LCI F90 M5 Competition featuring L-shaped light tubes, track-tuned dampers from the M8 Gran Coupé and 625 hp twin-turbo V8.",
   },
   {
     id: "bmw_adro_g82_m4_widebody_2022",
@@ -82,7 +84,8 @@ export const BATCH_9_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "ADRO aerodynamic redesign with restructured lower-profile front kidney bumper, wide flared arches and swan-neck carbon wing.",
+    description:
+      "ADRO aerodynamic redesign with restructured lower-profile front kidney bumper, wide flared arches and swan-neck carbon wing.",
   },
   {
     id: "bmw_m4_competition_g82_2021",
@@ -107,7 +110,8 @@ export const BATCH_9_MODELS: VehicleModel[] = [
       groundClearance: 0.12,
     },
     specialParts: ["rear_spoiler", "rear_diffuser", "exhaust_system", "fuel_system"],
-    description: "G82 generation high-performance coupé powered by the S58 twin-turbo inline-six, carbon roof and vertical frameless kidney grilles.",
+    description:
+      "G82 generation high-performance coupé powered by the S58 twin-turbo inline-six, carbon roof and vertical frameless kidney grilles.",
   },
   {
     id: "bmw_zacoe_g82_m4_2021",
@@ -140,7 +144,8 @@ export const BATCH_9_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "ZACOE Performance carbon aerodynamic program featuring distinctive multi-tier front splitter, side skirts, rear diffuser and swan-neck carbon wing.",
+    description:
+      "ZACOE Performance carbon aerodynamic program featuring distinctive multi-tier front splitter, side skirts, rear diffuser and swan-neck carbon wing.",
   },
   {
     id: "bmw_x6_f16_2015",
@@ -165,7 +170,8 @@ export const BATCH_9_MODELS: VehicleModel[] = [
       groundClearance: 0.21,
     },
     specialParts: ["rear_spoiler", "rear_diffuser", "exhaust_system", "fuel_system"],
-    description: "Second-generation F16 Sports Activity Coupé with athletic sloping rear roof, Air Breathers behind front arches and bi-xenon headlights.",
+    description:
+      "Second-generation F16 Sports Activity Coupé with athletic sloping rear roof, Air Breathers behind front arches and bi-xenon headlights.",
   },
   {
     id: "bmw_x5_f15_2015",
@@ -190,7 +196,8 @@ export const BATCH_9_MODELS: VehicleModel[] = [
       groundClearance: 0.21,
     },
     specialParts: ["roof_rails", "skid_plates", "exhaust_system", "fuel_system"],
-    description: "Third-generation F15 SAV with Aero Blades on the D-pillars, two-piece split clamshell tailgate and standard xDrive all-wheel drive.",
+    description:
+      "Third-generation F15 SAV with Aero Blades on the D-pillars, two-piece split clamshell tailgate and standard xDrive all-wheel drive.",
   },
   {
     id: "bmw_x6_m_f86_2016",
@@ -215,7 +222,8 @@ export const BATCH_9_MODELS: VehicleModel[] = [
       groundClearance: 0.2,
     },
     specialParts: ["rear_spoiler", "rear_diffuser", "hood_vents", "exhaust_system", "fuel_system"],
-    description: "High-performance F86 M SAC with 575 hp 4.4L S63 twin-turbo V8, flared bodywork, M gills and quad sport exhaust pipes.",
+    description:
+      "High-performance F86 M SAC with 575 hp 4.4L S63 twin-turbo V8, flared bodywork, M gills and quad sport exhaust pipes.",
   },
   {
     id: "bmw_x5_m_f85_2016",
@@ -240,7 +248,8 @@ export const BATCH_9_MODELS: VehicleModel[] = [
       groundClearance: 0.2,
     },
     specialParts: ["roof_rails", "rear_diffuser", "hood_vents", "exhaust_system", "fuel_system"],
-    description: "F85 M performance flagship SAV combining family versatility with 575 hp twin-scroll V8 muscle and M compound brakes.",
+    description:
+      "F85 M performance flagship SAV combining family versatility with 575 hp twin-scroll V8 muscle and M compound brakes.",
   },
   {
     id: "bmw_z4_m40i_g29_2019",
@@ -271,6 +280,7 @@ export const BATCH_9_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "G29 generation roadster with compact acoustic soft-top, mesh kidney grille, 50:50 weight distribution and 382 hp B58 straight-six.",
+    description:
+      "G29 generation roadster with compact acoustic soft-top, mesh kidney grille, 50:50 weight distribution and 382 hp B58 straight-six.",
   },
 ];

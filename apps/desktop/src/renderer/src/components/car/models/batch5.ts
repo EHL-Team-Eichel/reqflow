@@ -24,7 +24,8 @@ export const BATCH_5_MODELS: VehicleModel[] = [
       groundClearance: 0.12,
     },
     specialParts: ["rear_spoiler", "rear_diffuser", "exhaust_system", "fuel_system"],
-    description: "G22 generation premium sports coupé featuring vertical kidney grille, flowing roofline and frameless doors.",
+    description:
+      "G22 generation premium sports coupé featuring vertical kidney grille, flowing roofline and frameless doors.",
   },
   {
     id: "bmw_m440i_gran_coupe_2022",
@@ -49,7 +50,8 @@ export const BATCH_5_MODELS: VehicleModel[] = [
       groundClearance: 0.13,
     },
     specialParts: ["rear_spoiler", "rear_diffuser", "exhaust_system", "fuel_system"],
-    description: "Four-door M Performance Gran Coupé blending dramatic coupé silhouette with five-door hatchback versatility and B58 twin-power turbo.",
+    description:
+      "Four-door M Performance Gran Coupé blending dramatic coupé silhouette with five-door hatchback versatility and B58 twin-power turbo.",
   },
   {
     id: "bmw_x5_xdrive30d_2019",
@@ -74,7 +76,8 @@ export const BATCH_5_MODELS: VehicleModel[] = [
       groundClearance: 0.21,
     },
     specialParts: ["roof_rails", "skid_plates", "exhaust_system", "fuel_system"],
-    description: "Fourth-generation G05 luxury Sports Activity Vehicle with split tailgate, xOffroad package and refined inline-6 diesel power.",
+    description:
+      "Fourth-generation G05 luxury Sports Activity Vehicle with split tailgate, xOffroad package and refined inline-6 diesel power.",
   },
   {
     id: "bmw_m3_e46_2005",
@@ -99,7 +102,8 @@ export const BATCH_5_MODELS: VehicleModel[] = [
       groundClearance: 0.11,
     },
     specialParts: ["rear_spoiler", "rear_diffuser", "hood_vents", "exhaust_system", "fuel_system"],
-    description: "Iconic naturally aspirated S54 high-revving sports coupé with power dome bonnet, chrome side gills and quad exhaust pipes.",
+    description:
+      "Iconic naturally aspirated S54 high-revving sports coupé with power dome bonnet, chrome side gills and quad exhaust pipes.",
   },
   {
     id: "bmw_x6_m_2010",
@@ -124,7 +128,8 @@ export const BATCH_5_MODELS: VehicleModel[] = [
       groundClearance: 0.2,
     },
     specialParts: ["rear_spoiler", "rear_diffuser", "hood_vents", "exhaust_system", "fuel_system"],
-    description: "First-ever BMW M xDrive SUV featuring high-performance S63 twin-turbo V8, flared wheel arches and quad tailpipes.",
+    description:
+      "First-ever BMW M xDrive SUV featuring high-performance S63 twin-turbo V8, flared wheel arches and quad tailpipes.",
   },
   {
     id: "bmw_duke_dynamics_e92_m3_2016",
@@ -157,7 +162,8 @@ export const BATCH_5_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "Aggressive widebody aerodynamic conversion for E92 V8 M3 with wide vented carbon arches, GT carbon wing and deep rear diffuser.",
+    description:
+      "Aggressive widebody aerodynamic conversion for E92 V8 M3 with wide vented carbon arches, GT carbon wing and deep rear diffuser.",
   },
   {
     id: "bmw_dtm_fiberwerkz_e46_m3_2018",
@@ -191,7 +197,8 @@ export const BATCH_5_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "Race-bred composite DTM widebody kit with extreme flared arches, track splitter and high-downforce competition wing.",
+    description:
+      "Race-bred composite DTM widebody kit with extreme flared arches, track splitter and high-downforce competition wing.",
   },
   {
     id: "bmw_m3_csl_e46_2003",
@@ -222,7 +229,8 @@ export const BATCH_5_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "Coupé Sport Leichtbau lightweight legend with carbon fiber roof, asymmetric circular front intake and integrated ducktail bootlid.",
+    description:
+      "Coupé Sport Leichtbau lightweight legend with carbon fiber roof, asymmetric circular front intake and integrated ducktail bootlid.",
   },
   {
     id: "bmw_pandem_e46_m3_duckbill_2015",
@@ -254,7 +262,8 @@ export const BATCH_5_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "Rocket Bunny / Pandem Tra-Kyoto bolted overfender conversion with signature upturned ducktail spoiler and slammed track stance.",
+    description:
+      "Rocket Bunny / Pandem Tra-Kyoto bolted overfender conversion with signature upturned ducktail spoiler and slammed track stance.",
   },
   {
     id: "bmw_m2_motoring_e46_m3_2014",
@@ -288,6 +297,7 @@ export const BATCH_5_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "SEMA show car build by M2 Motoring with bespoke wide arches, track aero, carbon fiber accents and full interior safety cage.",
+    description:
+      "SEMA show car build by M2 Motoring with bespoke wide arches, track aero, carbon fiber accents and full interior safety cage.",
   },
 ];

@@ -31,7 +31,8 @@ export const BATCH_3_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "Fifth-generation M3 sports sedan powered by the twin-turbo S55 inline-6 with carbon fiber roof.",
+    description:
+      "Fifth-generation M3 sports sedan powered by the twin-turbo S55 inline-6 with carbon fiber roof.",
   },
   {
     id: "bmw_m4_competition_2025",
@@ -63,7 +64,8 @@ export const BATCH_3_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "High-performance sports coupé with frameless vertical kidney grille, 530 hp S58 engine and carbon structure.",
+    description:
+      "High-performance sports coupé with frameless vertical kidney grille, 530 hp S58 engine and carbon structure.",
   },
   {
     id: "bmw_x3_m40i_2024",
@@ -88,7 +90,8 @@ export const BATCH_3_MODELS: VehicleModel[] = [
       groundClearance: 0.2,
     },
     specialParts: ["roof_rails", "skid_plates", "rear_diffuser", "exhaust_system", "fuel_system"],
-    description: "Dynamic M Performance Sports Activity Vehicle with B58 3.0L turbo inline-6, M differential and roof rails.",
+    description:
+      "Dynamic M Performance Sports Activity Vehicle with B58 3.0L turbo inline-6, M differential and roof rails.",
   },
   {
     id: "bmw_e46_328i_sport_1999",
@@ -113,7 +116,8 @@ export const BATCH_3_MODELS: VehicleModel[] = [
       groundClearance: 0.13,
     },
     specialParts: ["exhaust_system", "fuel_system"],
-    description: "Iconic Fourth-generation 3 Series sport sedan with M52TU inline-6 and classic BMW cockpit ergonomics.",
+    description:
+      "Iconic Fourth-generation 3 Series sport sedan with M52TU inline-6 and classic BMW cockpit ergonomics.",
   },
   {
     id: "bmw_pandem_e30_v15_2017",
@@ -145,7 +149,8 @@ export const BATCH_3_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "Rocket Bunny Pandem bolt-on overfenders, front aero lip spoiler and vintage DTM-inspired racing stance.",
+    description:
+      "Rocket Bunny Pandem bolt-on overfenders, front aero lip spoiler and vintage DTM-inspired racing stance.",
   },
   {
     id: "bmw_dtm_fiberwerkz_e30_m3_2010",
@@ -178,7 +183,8 @@ export const BATCH_3_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "Full DTM touring-car widebody recreation with box flares, front aerodynamic splitter and tall GT wing.",
+    description:
+      "Full DTM touring-car widebody recreation with box flares, front aerodynamic splitter and tall GT wing.",
   },
   {
     id: "bmw_m3_evolution_ii_e30_1988",
@@ -203,7 +209,8 @@ export const BATCH_3_MODELS: VehicleModel[] = [
       groundClearance: 0.13,
     },
     specialParts: ["rear_spoiler", "front_splitter", "exhaust_system", "fuel_system"],
-    description: "Rare 1-of-500 homologation special with 220 hp S14 four-cylinder, deeper front spoiler and rear wing flap.",
+    description:
+      "Rare 1-of-500 homologation special with 220 hp S14 four-cylinder, deeper front spoiler and rear wing flap.",
   },
   {
     id: "bmw_330i_m_sport_2019",
@@ -228,7 +235,8 @@ export const BATCH_3_MODELS: VehicleModel[] = [
       groundClearance: 0.14,
     },
     specialParts: ["rear_diffuser", "exhaust_system", "fuel_system"],
-    description: "Seventh-generation 3 Series sedan with M Aerodynamics package, M sport suspension and variable sport steering.",
+    description:
+      "Seventh-generation 3 Series sedan with M Aerodynamics package, M sport suspension and variable sport steering.",
   },
   {
     id: "bmw_m4_duke_dynamics_md4_2014",
@@ -261,7 +269,8 @@ export const BATCH_3_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "Duke Dynamics MD4 carbon widebody conversion adding 100mm track width, vented hood and large carbon GT wing.",
+    description:
+      "Duke Dynamics MD4 carbon widebody conversion adding 100mm track width, vented hood and large carbon GT wing.",
   },
   {
     id: "bmw_varis_widebody_f82_m4_2015",
@@ -295,6 +304,7 @@ export const BATCH_3_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "Varis Japan carbon fiber aerodynamic program with time-attack front diffuser, dual bumper canards and swan neck GT wing.",
+    description:
+      "Varis Japan carbon fiber aerodynamic program with time-attack front diffuser, dual bumper canards and swan neck GT wing.",
   },
 ];

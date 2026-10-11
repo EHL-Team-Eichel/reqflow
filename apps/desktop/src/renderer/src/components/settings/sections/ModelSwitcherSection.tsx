@@ -2,14 +2,8 @@ import { useState, useMemo } from "react";
 import { cx } from "@/lib/cx";
 import { Button } from "@/components/ui/Button";
 import { Segmented } from "../Segmented";
-import {
-  useVehicleStore,
-  getActiveVehicle,
-} from "@/components/car/models/vehicleStore";
-import {
-  VEHICLE_MODELS,
-  searchVehicleModels,
-} from "@/components/car/models/registry";
+import { useVehicleStore, getActiveVehicle } from "@/components/car/models/vehicleStore";
+import { VEHICLE_MODELS, searchVehicleModels } from "@/components/car/models/registry";
 import type { PowertrainType } from "@/components/car/models/types";
 
 const POWERTRAIN_OPTIONS: { value: PowertrainType; label: string }[] = [
@@ -36,8 +30,7 @@ const POWERTRAIN_DESCRIPTIONS: Record<PowertrainType, string> = {
     "TwinPower Turbo internal combustion engine coupled with electric motor, high-voltage hybrid battery, transmission and exhaust system.",
   electric:
     "Dual front and rear electric drive units, high-capacity underfloor battery pack, power electronics inverter and charge port.",
-  h2:
-    "Fuel cell power system, dual 700-bar carbon-composite hydrogen cylinders, buffer battery, rear electric motor and zero-emission water vapor exhaust.",
+  h2: "Fuel cell power system, dual 700-bar carbon-composite hydrogen cylinders, buffer battery, rear electric motor and zero-emission water vapor exhaust.",
 };
 
 const PART_LABELS: Record<string, string> = {
@@ -156,8 +149,8 @@ export function ModelSwitcherSection() {
         <div className="mb-2">
           <label className="text-sm font-semibold text-ink">Powertrain Configuration</label>
           <p className="text-xs text-muted">
-            Select the drive technology. In the 3D car viewer, the engine bay, underfloor and exhaust
-            architecture adjust dynamically to your choice.
+            Select the drive technology. In the 3D car viewer, the engine bay, underfloor and
+            exhaust architecture adjust dynamically to your choice.
           </p>
         </div>
         <div className="mt-3">
@@ -256,7 +249,10 @@ export function ModelSwitcherSection() {
               <div className="mt-4 flex items-center justify-between border-t border-line/40 pt-3">
                 <div className="flex flex-wrap gap-1">
                   {item.specialParts.slice(0, 3).map((sp) => (
-                    <span key={sp} className="rounded bg-panel-2 px-1.5 py-0.5 text-[10px] text-muted">
+                    <span
+                      key={sp}
+                      className="rounded bg-panel-2 px-1.5 py-0.5 text-[10px] text-muted"
+                    >
                       {PART_LABELS[sp] || sp}
                     </span>
                   ))}

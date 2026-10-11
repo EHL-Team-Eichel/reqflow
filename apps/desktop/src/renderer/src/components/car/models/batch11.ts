@@ -34,7 +34,8 @@ export const BATCH_11_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "FIA GT3 competition race car featuring full carbon body panels, swan-neck carbon wing, race cockpit steering wheel co-developed with FANATEC and fast-fuel refuelling.",
+    description:
+      "FIA GT3 competition race car featuring full carbon body panels, swan-neck carbon wing, race cockpit steering wheel co-developed with FANATEC and fast-fuel refuelling.",
   },
   {
     id: "bmw_m4_csl_2022",
@@ -67,7 +68,8 @@ export const BATCH_11_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "Lightweight track special celebrating 50 years of BMW M with integrated carbon ducktail boot lid, yellow Laserlight headlights and M Carbon full bucket seats.",
+    description:
+      "Lightweight track special celebrating 50 years of BMW M with integrated carbon ducktail boot lid, yellow Laserlight headlights and M Carbon full bucket seats.",
   },
   {
     id: "bmw_m4_coupe_competition_g82_2021_spec",
@@ -92,7 +94,8 @@ export const BATCH_11_MODELS: VehicleModel[] = [
       groundClearance: 0.12,
     },
     specialParts: ["rear_spoiler", "rear_diffuser", "exhaust_system", "fuel_system"],
-    description: "G82 M4 Competition in Isle of Man Green metallic featuring forged M light-alloy wheels, carbon bucket seats and staggered 19/20-inch setup.",
+    description:
+      "G82 M4 Competition in Isle of Man Green metallic featuring forged M light-alloy wheels, carbon bucket seats and staggered 19/20-inch setup.",
   },
   {
     id: "bmw_m4_g82_m_performance_2021",
@@ -124,7 +127,8 @@ export const BATCH_11_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "M Performance accessories showcase featuring carbon front canards, center-mounted triangular titanium quad exhaust and large carbon wing.",
+    description:
+      "M Performance accessories showcase featuring carbon front canards, center-mounted triangular titanium quad exhaust and large carbon wing.",
   },
   {
     id: "bmw_m5_cs_2022",
@@ -156,6 +160,7 @@ export const BATCH_11_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "Lightweight flagship super-sedan with 635 hp twin-turbo V8, Gold Bronze kidney grille surround, carbon vented bonnet, yellow motorsport DRLs and 4 individual carbon bucket seats.",
+    description:
+      "Lightweight flagship super-sedan with 635 hp twin-turbo V8, Gold Bronze kidney grille surround, carbon vented bonnet, yellow motorsport DRLs and 4 individual carbon bucket seats.",
   },
 ];

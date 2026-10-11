@@ -31,7 +31,8 @@ export const BATCH_6_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "Vorsteiner 5th-anniversary limited carbon fiber widebody aerodynamic package featuring extended front fenders and rear quarter panels.",
+    description:
+      "Vorsteiner 5th-anniversary limited carbon fiber widebody aerodynamic package featuring extended front fenders and rear quarter panels.",
   },
   {
     id: "bmw_m2_special_edition_asphalt8_2018",
@@ -55,14 +56,9 @@ export const BATCH_6_MODELS: VehicleModel[] = [
       tyreWidth: 0.265,
       groundClearance: 0.11,
     },
-    specialParts: [
-      "gt_wing",
-      "front_splitter",
-      "rear_diffuser",
-      "exhaust_system",
-      "fuel_system",
-    ],
-    description: "Asphalt 8 arcade-inspired racing edition with M Performance carbon wing, aggressive splitter and competition livery.",
+    specialParts: ["gt_wing", "front_splitter", "rear_diffuser", "exhaust_system", "fuel_system"],
+    description:
+      "Asphalt 8 arcade-inspired racing edition with M Performance carbon wing, aggressive splitter and competition livery.",
   },
   {
     id: "bmw_m3_coupe_2008",
@@ -87,7 +83,8 @@ export const BATCH_6_MODELS: VehicleModel[] = [
       groundClearance: 0.12,
     },
     specialParts: ["rear_spoiler", "rear_diffuser", "hood_vents", "exhaust_system", "fuel_system"],
-    description: "First production M3 powered by the naturally aspirated 4.0L S65 V8 engine with lightweight carbon-fiber composite roof.",
+    description:
+      "First production M3 powered by the naturally aspirated 4.0L S65 V8 engine with lightweight carbon-fiber composite roof.",
   },
   {
     id: "bmw_m3_e92_2010",
@@ -112,7 +109,8 @@ export const BATCH_6_MODELS: VehicleModel[] = [
       groundClearance: 0.12,
     },
     specialParts: ["rear_spoiler", "rear_diffuser", "hood_vents", "exhaust_system", "fuel_system"],
-    description: "Refined LCI version of the E92 M3 featuring updated LED taillights, Competition Package (ZCP) suspension and 8,400 rpm redline.",
+    description:
+      "Refined LCI version of the E92 M3 featuring updated LED taillights, Competition Package (ZCP) suspension and 8,400 rpm redline.",
   },
   {
     id: "bmw_custom_z4_m_coupe_2006",
@@ -137,7 +135,8 @@ export const BATCH_6_MODELS: VehicleModel[] = [
       groundClearance: 0.11,
     },
     specialParts: ["gt_wing", "front_splitter", "rear_diffuser", "exhaust_system", "fuel_system"],
-    description: "Custom tuned E86 clown-shoe fastback coupé with low-slung stance, carbon rear wing and high-output S54 engine.",
+    description:
+      "Custom tuned E86 clown-shoe fastback coupé with low-slung stance, carbon rear wing and high-output S54 engine.",
   },
   {
     id: "bmw_m6_gt3_2018",
@@ -172,7 +171,8 @@ export const BATCH_6_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "FIA GT3 homologated factory endurance race car powered by the 4.4L M TwinPower Turbo V8, giant swan-neck wing and full racing cockpit.",
+    description:
+      "FIA GT3 homologated factory endurance race car powered by the 4.4L M TwinPower Turbo V8, giant swan-neck wing and full racing cockpit.",
   },
   {
     id: "bmw_m4_convertible_f83_2018",
@@ -203,7 +203,8 @@ export const BATCH_6_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "Three-piece folding metal hardtop M cabriolet offering open-air S55 twin-turbo driving with reinforced rollover protection.",
+    description:
+      "Three-piece folding metal hardtop M cabriolet offering open-air S55 twin-turbo driving with reinforced rollover protection.",
   },
   {
     id: "bmw_m3_e92_lb_works_ver2_2013",
@@ -236,7 +237,8 @@ export const BATCH_6_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "Version 2 Liberty Walk widebody for E92 M3 with aggressive smooth ducktail rear spoiler and massive bolted overfenders.",
+    description:
+      "Version 2 Liberty Walk widebody for E92 M3 with aggressive smooth ducktail rear spoiler and massive bolted overfenders.",
   },
   {
     id: "bmw_pandem_e92_m3_gt_wing_2017",
@@ -269,7 +271,8 @@ export const BATCH_6_MODELS: VehicleModel[] = [
       "exhaust_system",
       "fuel_system",
     ],
-    description: "Rocket Bunny Pandem widebody aero kit with chassis-mounted high-downforce GT racing wing and deep lower front splitter.",
+    description:
+      "Rocket Bunny Pandem widebody aero kit with chassis-mounted high-downforce GT racing wing and deep lower front splitter.",
   },
   {
     id: "bmw_m4_coupe_f82_lci_2018",
@@ -294,6 +297,7 @@ export const BATCH_6_MODELS: VehicleModel[] = [
       groundClearance: 0.12,
     },
     specialParts: ["rear_spoiler", "rear_diffuser", "exhaust_system", "fuel_system"],
-    description: "Life Cycle Impulse F82 M4 featuring hexagonal adaptive full-LED headlights, OLED rear lights and carbon-fiber roof.",
+    description:
+      "Life Cycle Impulse F82 M4 featuring hexagonal adaptive full-LED headlights, OLED rear lights and carbon-fiber roof.",
   },
 ];
