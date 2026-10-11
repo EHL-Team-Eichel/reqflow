@@ -260,6 +260,7 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 **Status:** in progress (four-choice model switcher) · **Owner:** Codex (model switcher subtask) · **Branch:** `ws3-compact-requirements`
 **Animation slice:** review (implemented and verified) · **Owner:** OpenCode · **Branch:** `ws3-car-view-animation` (isolated worktree)
 **Windscreen slice:** review (implemented and verified) · **Owner:** OpenCode · **Branch:** `ws3-car-view-animation`
+**Bonnet / A-pillar refinement:** review (implemented and verified) · **Owner:** OpenCode · **Branch:** `ws3-compact-requirements`
 **Front-apron slice:** review (implemented and verified) · **Owner:** OpenCode · **Branch:** `ws3-compact-requirements`
 **Depends on:** nothing to start: build on `@reqflow/core/fixtures` (5 requirements, findings, sources,
 audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 serves them.
@@ -286,6 +287,14 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - [ ] Subtle blue fill on the clicked car part, with light/dark selection regressions.
 
 **Log**
+
+- 2026-10-11: A-pillars widened by 50% as requested: the shared painted frame margin is now 30 mm instead of 20 mm, symmetrically on both sides. Preserved the rearward bonnet high point, continuous glass join and enlarged windscreen. Verified only these three geometry/test files in an isolated snapshot of `c413ccd`: root typecheck, 2,314 tests (5 skipped; two workers after the overloaded 120-second run timed out), full formatting and ten focused geometry regressions pass. The native probe passes seven front/side/top, selection, light/dark and interior/return captures (`out/smoke/pillars-wider-*`, reviewed). Full macOS smoke produces 70 screenshots with exactly the six pre-existing Car-reset failures already reproduced on the base commits; no new smoke failures. Human authorized commit/push on `ws3-compact-requirements`; include only the geometry, tests and these handoff hunks, leaving converter, provenance and Entire work untouched. Synthetic data only.
+
+- 2026-10-11: Human requested both A-pillars 50% wider and a push. Increase the painted frame margin from 20 to 30 mm, retaining the new bonnet peak, smooth join and enlarged windscreen. Verify and publish only this geometry/test/handoff slice; leave concurrent converter, provenance and Entire changes untouched.
+
+- 2026-10-11: Bonnet/windscreen refinement complete: the bonnet rises continuously to the shared bowed glass edge, with its highest vertex on that join about 28 cm behind the old crest. Pinned the centre join at x = 0.8, removed the recessed cowl strip, and narrowed both A-pillars while retaining a continuous roof return around the upper glass corners. Glass area grows from 1.4994 to 1.5735 m² (~5%); lower-corner relaxation keeps near-upright triangles facing outwards. Ten windscreen regressions cover the new peak/join, no dip, increased area, slimmer supports, symmetry, connectivity and non-folded triangles. Verified root typecheck, 2,310 tests (5 skipped), full formatting and macOS smoke (PASS, 70 screenshots). Isolated synthetic native probe passed front/side/top, selection, light/dark and interior/return (seven `bonnet-refinement-*` screenshots reviewed). Changes are limited to WS3 geometry/tests and this handoff; catalog, interior, review and animations preserved. No credentials or private BMW files used; generated Entire plugin/backup changes left untouched.
+
+- 2026-10-11: Claimed the requested bonnet/windscreen refinement: move the bonnet high point rearward to the glass base, remove the cowl dip, and narrow both A-pillars to enlarge the windscreen. Scope: shared procedural car geometry, colocated regressions and this WS3 handoff; preserve catalog, interior, selection and animations.
 
 - 2026-10-11: Front apron now stays at 0.205 m through the rounded nose instead of rising
   0.135 m under the intake. Kept the complete central intake, both outer air curtains,
