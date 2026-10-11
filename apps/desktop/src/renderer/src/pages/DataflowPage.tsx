@@ -30,6 +30,7 @@ function WorkplaceActions() {
 }
 
 import { HilReport } from "@/components/dataflow/report/HilReport";
+import { AnalyticsHost } from "@/components/analytics/AnalyticsView";
 import { ReasoningDialog } from "@/components/reasoning/ReasoningDialog";
 import { walkBlocks } from "@reqflow/core";
 import { runStore } from "@/components/dataflow/run-session";
@@ -97,6 +98,7 @@ export function DataflowPage() {
         </div>
       </div>
       <HilReport />
+      <AnalyticsHost />
       <ReasoningDialogHost />
     </ReactFlowProvider>
   );

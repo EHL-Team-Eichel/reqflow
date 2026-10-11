@@ -92,6 +92,8 @@ export function Workplace({ canvasRef }: { canvasRef: RefObject<HTMLDivElement |
             const blockNode = node as BlockFlowNode;
             if (blockNode.data.block.kind === "hil") {
               dataflowStore.getState().openReport(node.id);
+            } else if (blockNode.data.block.kind === "analytics") {
+              dataflowStore.getState().openAnalytics(node.id);
             } else if (blockNode.data.spec?.hasInnerWorkplace) {
               dataflowStore.getState().openInner(node.id);
             }
