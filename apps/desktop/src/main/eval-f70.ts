@@ -4,6 +4,7 @@ import readXlsxFile from "read-excel-file/node";
 import {
   defaultBlockParams,
   emptyPipelineData,
+  LLM_SECRET_NAMES,
   mergePipelineData,
   type PipelineData,
   type ReasoningTrace,
@@ -13,8 +14,7 @@ import {
 } from "@reqflow/core";
 import { createBlockRegistry } from "@reqflow/blocks";
 import type { BlockContext, CarEvidence } from "@reqflow/engine";
-import { createLlmClient } from "@reqflow/llm";
-import { createAgentServices, testSetup, type AgentDeps } from "./agents";
+import { createAgentServices, directDefaultLlm, testSetup, type AgentDeps } from "./agents";
 import { SecretsStore } from "./secrets";
 import { loadSettings } from "./settings-storage";
 
@@ -111,14 +111,14 @@ export async function runEvalF70(
   const secrets = new SecretsStore(o.dataDir);
   const deps: AgentDeps = {
     defaultLlm: async (s) => {
-      const apiKey =
-        s.llm.provider === "anthropic"
-          ? ((await secrets.getSecret("anthropic_api_key")) ?? undefined)
-          : undefined;
-      if (s.llm.provider === "anthropic" && !apiKey) {
-        throw new Error("The default AI (Anthropic) has no API key. Add it in Settings → AI.");
+      if (s.llm.provider === "mock") return directDefaultLlm(s, undefined);
+      const apiKey = (await secrets.getSecret(LLM_SECRET_NAMES[s.llm.provider])) ?? undefined;
+      if (!apiKey) {
+        throw new Error(
+          `The default AI (${s.llm.provider}) has no API key. Add it in Settings → AI.`,
+        );
       }
-      return createLlmClient(s.llm, { apiKey });
+      return directDefaultLlm(s, apiKey);
     },
     getKey: (id) => secrets.getSecret(`setup:${id}`),
   };

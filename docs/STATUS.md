@@ -761,6 +761,11 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 **Log**
 
+- 2026-10-11: Add to Car verified on merged main (`8cb210d`): `npm run check` (2,314 tests), smoke
+  (70 screenshots; editor run → HIL → thought process, Car → Why?), offline `eval:f70` on BMW's F70
+  files (2,128 findings, 100 % verbatim excerpts, 10 requirements). Fix: the agents' default AI is
+  built by one helper (`directDefaultLlm`) for the app and the eval, so a Gemini or OpenAI default
+  AI works in `eval:f70` too. A real-model run still needs a valid key in Settings → AI.
 - 2026-10-11: **Add to Car rebuilt as an agent system** on `ws7-add-to-car-agents` (the rule-based
   derive/splitter/taxonomy are gone). Contracts: `Requirement.confidence` + `inputRank`,
   `ReasoningTrace` (`core/reasoning.ts`), `Settings.agents` (API setups + role assignment),
