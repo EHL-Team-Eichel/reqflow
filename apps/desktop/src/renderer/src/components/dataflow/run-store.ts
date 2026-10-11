@@ -16,6 +16,8 @@ interface RunState {
   run: WorkflowRun | null;
   busy: boolean;
   error: string | null;
+  /** Informational message, e.g. a recorded approval on a gate that needs more reviewers. */
+  notice: string | null;
   start(graph: WorkflowGraph, scope: ProductScope, name?: string): Promise<void>;
   cancel(): Promise<void>;
   resume(runId: string, blockId: string, confirmed: boolean): Promise<void>;
@@ -50,14 +52,15 @@ export function createRunStore(
     run: null,
     busy: false,
     error: null,
+    notice: null,
     reset() {
       if (get().busy || active(get().run)) return false;
-      set({ workflowId: null, run: null, error: null });
+      set({ workflowId: null, run: null, error: null, notice: null });
       return true;
     },
     async start(graph, scope, name = "Data Flow") {
       if (get().busy || active(get().run)) return;
-      set({ busy: true, error: null });
+      set({ busy: true, error: null, notice: null });
       let release: (() => void) | undefined;
       try {
         if (!graph.blocks.length)
@@ -114,14 +117,7 @@ export function createRunStore(
         set({ error: "Review and confirm the current paused HIL step before continuing." });
         return;
       }
-      if (gate.block.params.approvals !== 1) {
-        set({
-          error:
-            "This gate requires multiple reviewers. Multiple review confirmations are not supported yet.",
-        });
-        return;
-      }
-      set({ busy: true, error: null });
+      set({ busy: true, error: null, notice: null });
       const updates = new Map<string, WorkflowRun>();
       const unsubscribe = api.runs.onUpdate((next) => {
         if (next.id !== runId || staleActiveUpdate(get().run, next)) return;
@@ -133,6 +129,14 @@ export function createRunStore(
         const resumed = await api.runs.resume(runId);
         const latest = updates.get(runId) ?? resumed;
         if (get().run?.id === runId && !staleActiveUpdate(get().run, latest)) set({ run: latest });
+        // The backend records one approval per reviewer; the gate stays paused until enough
+        // different reviewers have approved it.
+        if (pausedHil(latest)?.block.id === blockId) {
+          const needed = Number(gate.block.params.approvals);
+          set({
+            notice: `Your approval of "${gate.block.label}" is recorded. It needs ${needed} approvals from different reviewers: the next reviewer enters their name in Settings and confirms again.`,
+          });
+        }
       } catch (err) {
         set({ error: err instanceof Error ? err.message : String(err) });
       } finally {

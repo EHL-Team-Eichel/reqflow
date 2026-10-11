@@ -26,6 +26,7 @@ export function RunControls() {
   const run = useStore(runStore, (s) => s.run);
   const busy = useStore(runStore, (s) => s.busy);
   const error = useStore(runStore, (s) => s.error);
+  const notice = useStore(runStore, (s) => s.notice);
   const active = run && ["queued", "running", "waiting_for_review"].includes(run.status);
   const gate = pausedHil(run);
   const start = startControl(run?.status ?? null, busy, root.blocks.length);
@@ -91,6 +92,11 @@ export function RunControls() {
           {error && (
             <p role="alert" className="text-danger">
               {error}
+            </p>
+          )}
+          {notice && (
+            <p role="status" data-testid="flow-run-notice" className="text-xs text-ink">
+              {notice}
             </p>
           )}
           {run ? (

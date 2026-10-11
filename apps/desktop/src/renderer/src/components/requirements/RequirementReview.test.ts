@@ -1,6 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ALLOWED_DECISIONS, DecisionKind } from "@reqflow/core";
 import { fixtureRequirements } from "@reqflow/core/fixtures";
 import { RequirementReview } from "./RequirementReview";
 
@@ -15,16 +16,21 @@ vi.mock("@/lib/api", () => ({ api: { requirements: mocks } }));
 describe("human review markup", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("renders all explicit decisions, neutral selection, rationale and edit toggle", () => {
-    const html = renderToStaticMarkup(
-      createElement(RequirementReview, {
-        requirement: fixtureRequirements[0]!,
-        onSaved: mocks.onSaved,
-      }),
-    );
-    for (const action of ["approve", "reject", "defer", "challenge", "reopen"]) {
-      expect(html).toContain(`value="${action}"`);
+  it("renders the decisions allowed from the status, neutral selection, rationale and edit toggle", () => {
+    const render = (requirement: (typeof fixtureRequirements)[number]) =>
+      renderToStaticMarkup(
+        createElement(RequirementReview, { requirement, onSaved: mocks.onSaved }),
+      );
+    const proposed = fixtureRequirements[0]!;
+    for (const [status, actions] of Object.entries(ALLOWED_DECISIONS)) {
+      const options = render({ ...proposed, status: status as typeof proposed.status });
+      for (const action of DecisionKind.options) {
+        expect(options.includes(`value="${action}"`), `${status}: ${action}`).toBe(
+          (actions as readonly string[]).includes(action),
+        );
+      }
     }
+    const html = render({ ...proposed, status: "proposed" });
     expect(html).toContain('<option value="" selected="">Choose an action</option>');
     expect(html).toContain("Edit content");
     expect(html).toContain('aria-expanded="false"');
