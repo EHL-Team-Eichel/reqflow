@@ -90,6 +90,44 @@ function cropTargets(meshes: THREE.Mesh[], view: View, bounds: THREE.Box2): THRE
   return new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }));
 }
 
+/** Smooth design strokes projected onto the actual panels, stopping at wheel openings. */
+export function projectSketchLine(
+  targets: THREE.Mesh[],
+  controls: readonly (readonly [number, number])[],
+  view: View,
+): THREE.BufferGeometry {
+  const curve = new THREE.CatmullRomCurve3(
+    controls.map(([a, b]) => new THREE.Vector3(a, b, 0)),
+    false,
+    "centripetal",
+  );
+  const plane = curve.getPoints(120);
+  const bounds = new THREE.Box2();
+  for (const p of plane) bounds.expandByPoint(new THREE.Vector2(p.x, p.y));
+  bounds.expandByScalar(0.01);
+  const target = cropTargets(targets, view, bounds);
+  const raycaster = new THREE.Raycaster();
+  const positions: number[] = [];
+  let previous: THREE.Vector3 | null = null;
+  for (const p of plane) {
+    const { origin, dir } = ray(view, p.x, p.y);
+    raycaster.set(origin, dir);
+    const hit = raycaster.intersectObject(target, false)[0];
+    // A ray through a wheel opening can reach the far side. Do not draw that
+    // hidden surface as a stroke across the near wheel.
+    const oppositeSide =
+      hit && ((view === "left" && hit.point.z >= 0) || (view === "right" && hit.point.z <= 0));
+    const point = hit && !oppositeSide ? hit.point.clone().addScaledVector(dir, -0.003) : null;
+    if (previous && point) positions.push(...previous.toArray(), ...point.toArray());
+    previous = point;
+  }
+  target.geometry.dispose();
+  (target.material as THREE.Material).dispose();
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  return geometry;
+}
+
 /**
  * Projects `shape` onto `targets`. Grid points that miss the body are dropped with their
  * triangles. Returns null when nothing landed.

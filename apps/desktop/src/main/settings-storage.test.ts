@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { DEFAULT_SETTINGS } from "@reqflow/core";
+import { CarPowertrain, DEFAULT_SETTINGS } from "@reqflow/core";
 import {
   getSettingsFilePath,
   loadSettings,
@@ -51,5 +51,15 @@ describe("settings-storage", () => {
 
     const reloaded = loadSettings(tempDir);
     expect(reloaded.app.theme).toBe("dark");
+  });
+
+  it.each(CarPowertrain.options)("persists the %s model across reloads", (powertrain) => {
+    saveSettings(tempDir, { ...DEFAULT_SETTINGS, model: { powertrain } });
+    expect(loadSettings(tempDir).model.powertrain).toBe(powertrain);
+  });
+
+  it("keeps older settings and adds the electric default", () => {
+    const { model: _model, ...older } = DEFAULT_SETTINGS;
+    expect(mergeWithDefaultSettings(older).model.powertrain).toBe("electric");
   });
 });

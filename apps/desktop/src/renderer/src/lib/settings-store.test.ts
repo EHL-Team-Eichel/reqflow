@@ -256,4 +256,20 @@ describe("settings store", () => {
     await vi.advanceTimersByTimeAsync(400);
     expect(save).toHaveBeenCalledExactlyOnceWith(current);
   });
+  it("saves and resets the model without changing vehicle scope or other settings", async () => {
+    const save = vi.fn(async (s: Settings) => s);
+    const store = createSettingsStore(client({ get: async () => DEFAULT_SETTINGS, save }));
+    await store.getState().load();
+    expect(store.getState().update("model", { powertrain: "hydrogen" })).toBeNull();
+    await vi.runAllTimersAsync();
+    expect(save.mock.calls[0]![0]).toEqual({
+      ...DEFAULT_SETTINGS,
+      model: { powertrain: "hydrogen" },
+    });
+    expect(store.getState().update("model", { powertrain: "unknown" as never })).not.toBeNull();
+    expect(store.getState().settings.model.powertrain).toBe("hydrogen");
+    store.getState().resetSection("model");
+    await vi.runAllTimersAsync();
+    expect(store.getState().settings).toEqual(DEFAULT_SETTINGS);
+  });
 });

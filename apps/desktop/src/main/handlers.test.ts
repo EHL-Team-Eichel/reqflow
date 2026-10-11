@@ -210,6 +210,22 @@ describe("handlers (All IPC methods against SQLite and stores)", () => {
     expect(await handlers.workflows.list()).toHaveLength(0);
   });
 
+  it("persists model choices and audits them without changing any requirement", async () => {
+    const { handlers } = setup();
+    const before = await handlers.requirements.list();
+    const settings = await handlers.settings.get();
+    await handlers.settings.save({ ...settings, model: { powertrain: "hydrogen" } });
+    expect((await handlers.settings.get()).model.powertrain).toBe("hydrogen");
+    const events = await handlers.audit.list();
+    const event = events.find((e) => e.action === "settings.changed");
+    expect(event?.changes).toContainEqual({
+      path: "model",
+      before: { powertrain: "electric" },
+      after: { powertrain: "hydrogen" },
+    });
+    expect(await handlers.requirements.list()).toEqual(before);
+  });
+
   it("runs the real ten-output splitter through IPC handlers with the configured offline LLM", async () => {
     const registry = new BlockRegistry([
       ...allBlockImplementations.filter((b) => b.kind !== "raw"),
