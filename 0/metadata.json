@@ -1,0 +1,36 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4M7AZ24SGCRS717YM7Y10YA",
+  "session_id": "40d2eb91-dde3-4e39-8ba4-6686a20b47a7",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-11T00:55:54.53481Z",
+  "branch": "ws5-pdf-ingestion",
+  "checkpoints_count": 1,
+  "save_step_count": 1,
+  "files_touched": [],
+  "agent": "Claude Code",
+  "model": "claude-opus-5-5",
+  "turn_id": "75bd6c6821ca",
+  "checkpoint_transcript_start": 12252,
+  "transcript_lines_at_start": 12252,
+  "compact_transcript_start": 1975,
+  "token_usage": {
+    "input_tokens": 16,
+    "cache_creation_tokens": 111578,
+    "cache_read_tokens": 1069069,
+    "output_tokens": 4633,
+    "api_call_count": 8
+  },
+  "session_metrics": {
+    "turn_count": 30
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}
