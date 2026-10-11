@@ -1,0 +1,1 @@
+"Read out/agents/inspection.md as the ONLY assigned coding task. Implement its exact owned files using apply_patch. Prior agy delegates were stopped before implementation due quota/routing; check existing files but don't revert user changes. No secrets/private data/live requests/other tasks/commits/push. Report concise results and tests. Parent integrates."
