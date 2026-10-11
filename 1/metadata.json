@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4MCJWXBVJ1BJDD1KHSKFD4B",
+  "session_id": "ses_ed7629601ffezImob7A2yQfAvM",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-11T02:27:36.247042Z",
+  "branch": "ws5-pdf-provider-fix",
+  "checkpoints_count": 1,
+  "save_step_count": 1,
+  "files_touched": [],
+  "agent": "OpenCode",
+  "model": "gpt-6.1-sol",
+  "turn_id": "bdf0cccd5799",
+  "checkpoint_transcript_start": 11,
+  "transcript_lines_at_start": 11,
+  "compact_transcript_start": 11,
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  },
+  "session_metrics": {
+    "turn_count": 1
+  }
+}
