@@ -198,7 +198,7 @@ export const BLOCK_SPECS: { readonly [K in PaletteBlockKind]: BlockSpec & { kind
   raw: {
     kind: "raw",
     label: "Raw",
-    description: "Brings in Excel, CSV, Research JSON or SQLite data as one unified stream.",
+    description: "Brings in Excel, CSV, PDF, Research JSON or SQLite data as one unified stream.",
     group: "source",
     hasInnerWorkplace: false,
     params: [
@@ -227,10 +227,10 @@ export const BLOCK_SPECS: { readonly [K in PaletteBlockKind]: BlockSpec & { kind
       },
       {
         key: "file",
-        label: "Excel, CSV or Research JSON file",
+        label: "Excel, CSV, PDF or Research JSON file",
         type: "file",
-        accept: [".xlsx", ".csv", ".json"],
-        help: "Research JSON keeps original evidence and provenance. Save old .xls files as .xlsx or .csv first.",
+        accept: [".xlsx", ".csv", ".pdf", ".json"],
+        help: "PDF preview/run uses local OCR and sends extracted text to the configured default AI. AI interpretations need review. Research JSON preserves provenance. Save old .xls files as .xlsx or .csv first.",
         visibleWhen: { key: "source", equals: "excel" },
       },
       {

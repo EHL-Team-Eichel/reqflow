@@ -7,7 +7,7 @@ import { cellText, listRows, type Cell, type Table, type TableRow } from "./tabl
 export type RawDataset =
   "customer_feedback" | "equipment_data" | "sales_volume" | "customer_study" | "other";
 
-const DATASET_KIND: Record<RawDataset, SourceKind> = {
+export const DATASET_KIND: Record<RawDataset, SourceKind> = {
   customer_feedback: "customer_feedback",
   equipment_data: "equipment_data",
   sales_volume: "sales_volume",

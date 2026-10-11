@@ -2,9 +2,11 @@ import { emptyPipelineData, parseBlockParams, PipelineData, type FileRef } from 
 import { defineBlock } from "@reqflow/engine";
 import { readDatabase } from "./database";
 import { usageFindings } from "./findings";
+import { isPdfCandidate, isPdfMagic, readPdf } from "./pdf";
 import { readSpreadsheet } from "./read";
 import { tableToRecords, type RawDataset } from "./records";
 import { isResearchJsonFile, parseResearchJson } from "./research-json";
+import { structurePdf } from "./structure";
 import { toTable } from "./table";
 
 /** Mirrors BLOCK_SPECS.raw.params (validated by parseBlockParams before use). */
@@ -36,7 +38,9 @@ export const rawBlock = defineBlock({
 
     if (p.source === "excel") {
       if (!p.file)
-        throw new Error("Choose an Excel or CSV file (or Research JSON) in the block's parameters");
+        throw new Error(
+          "Choose an Excel or CSV file, PDF or Research JSON in the block's parameters",
+        );
       const file = await ctx.files.get(p.file.fileId);
       if (isResearchJsonFile(file)) {
         ctx.signal.throwIfAborted();
@@ -59,6 +63,67 @@ export const rawBlock = defineBlock({
           `Imported Research JSON: ${out.sources.length} source(s), ${out.records.length} record(s), ` +
             `${out.findings.length} finding(s), ${out.themes.length} theme(s), ${out.requirements.length} requirement(s).`,
         );
+        return { status: "ok", outputs: { out } };
+      }
+      if (isPdfCandidate(file.name, file.mimeType, file.bytes)) {
+        if (!isPdfMagic(file.bytes)) {
+          throw new Error(`"${file.name}" is not a valid PDF file.`);
+        }
+        const isMockProvider = ctx.settings?.llm?.provider === "mock";
+        if (!ctx.llm || isMockProvider) {
+          throw new Error(
+            `PDF structuring is not supported with offline mock. Configure a live AI provider (Anthropic, OpenAI, or Google) in Settings to structure PDF documents rather than inventing evidence.`,
+          );
+        }
+        ctx.signal.throwIfAborted();
+        ctx.progress?.(0, "Reading PDF text and running local OCR");
+        const read = await readPdf(file.name, file.bytes, {
+          signal: ctx.signal,
+          log: (msg) => ctx.log(msg),
+        });
+        notes.push(...read.notes);
+        if (p.sheet.trim()) notes.push("The Excel sheet selector is ignored for PDFs.");
+
+        key = file.id;
+        title = file.name;
+        uri = file.id;
+
+        const structured = await structurePdf(read.pages, ctx.llm, {
+          key,
+          title,
+          uri,
+          dataset: p.dataset,
+          scope: ctx.scope,
+          retrievedAt: new Date().toISOString(),
+          signal: ctx.signal,
+          log: (msg) => ctx.log(msg),
+          progress: (fraction) => ctx.progress?.(fraction, "Structuring PDF with configured AI"),
+        });
+        notes.push(...structured.notes);
+
+        const out = PipelineData.parse({
+          ...emptyPipelineData(),
+          sources: [structured.source],
+          records: structured.records,
+          findings: [],
+        });
+
+        for (const note of notes) ctx.log(note);
+        ctx.log(
+          `Ingested PDF using model ${structured.modelId}: ${read.pages.length} page(s), ${structured.records.length} record(s).`,
+        );
+
+        const actor = { type: "ai", component: "raw", model: structured.modelId } as const;
+        const run = ctx.runId.startsWith("run_") ? { runId: ctx.runId, blockId: ctx.blockId } : {};
+        await ctx.audit.record({
+          actor,
+          action: "source.ingested",
+          entityType: "source",
+          entityId: structured.source.id,
+          ...run,
+        });
+        ctx.progress?.(1, "PDF extraction complete");
+
         return { status: "ok", outputs: { out } };
       }
       const read = await readSpreadsheet(file.name, file.bytes, p.sheet);

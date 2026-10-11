@@ -17,6 +17,7 @@ import { decodeText, detectDelimiter, parseCsv } from "./csv";
 import { assertReadOnlyQuery } from "./database";
 import { categoryFor } from "./findings";
 import { guessLanguage, normalizeLanguage } from "./language";
+import { readPdf } from "./pdf";
 import { rawBlock } from "./raw";
 import { toTable } from "./table";
 
@@ -359,14 +360,16 @@ describe("Raw block on the shapes of BMW's exports (synthetic stand-ins)", () =>
     expect(log).toMatch(/China: no sales in any period/);
   });
 
-  it("refuses PDFs with a clear message", async () => {
+  it("refuses PDFs in offline mock mode with clear instruction to configure real AI", async () => {
     const pdf: StoredFile = {
       id: "file_pdf",
       name: "options.PDF",
       mimeType: "application/pdf",
       bytes: new TextEncoder().encode("%PDF-1.7 ..."),
     };
-    await expect(ingest(pdf, {})).rejects.toThrow(/is a PDF.*PDFs aren't supported yet/);
+    await expect(ingest(pdf, {})).rejects.toThrow(
+      /PDF structuring is not supported with offline mock/,
+    );
   });
 });
 
@@ -516,7 +519,29 @@ describe.skipIf(!hasBmw(BMW.sales))("BMW sales volumes (data/raw)", () => {
 });
 
 describe.skipIf(!hasBmw(BMW.options))("BMW option list (data/raw)", () => {
-  it("is refused with a clear message: PDFs aren't read yet", async () => {
-    await expect(ingest(bmwFile(BMW.options), {})).rejects.toThrow(/is a PDF/);
+  it("reads local PDF pages without AI calls or printing document content", async () => {
+    const file = bmwFile(BMW.options);
+    let parsed: Awaited<ReturnType<typeof readPdf>> | undefined;
+    try {
+      parsed = await readPdf(file.name, file.bytes);
+    } catch {
+      // Assertions deliberately expose only booleans, never confidential document text.
+    }
+    check(Boolean(parsed?.pages.length), "PDF has readable pages");
+    check(
+      parsed?.pages.every((page, index) => page.page === index + 1) === true,
+      "PDF page numbers are preserved",
+    );
+    check(
+      parsed?.pages.some((page) => page.text.length > 100) === true,
+      "PDF contains extracted text",
+    );
+  }, 120_000);
+  it("refuses offline PDF structuring without making live AI calls or leaking content", async () => {
+    const file = bmwFile(BMW.options);
+    expect(file.name.toLowerCase()).toMatch(/\.pdf$/);
+    await expect(ingest(file, {})).rejects.toThrow(
+      /PDF structuring is not supported with offline mock/,
+    );
   });
 });
