@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4MKFXRS5QMSE0GR0GYDAYYH",
   "strategy": "manual-commit",
   "branch": "fix/gemini-max-items",
-  "checkpoints_count": 5,
+  "checkpoints_count": 6,
   "files_touched": [
     "packages/blocks/src/ai-splitter/ai-splitter.test.ts",
     "packages/blocks/src/ai-splitter/priority.ts"
@@ -35,6 +35,13 @@
       "transcript": "/3/full.jsonl",
       "compact_transcript": "/3/transcript.jsonl",
       "content_hash": "/3/content_hash.txt",
+      "prompt": ""
+    },
+    {
+      "metadata": "/4/metadata.json",
+      "transcript": "/4/full.jsonl",
+      "compact_transcript": "/4/transcript.jsonl",
+      "content_hash": "/4/content_hash.txt",
       "prompt": ""
     }
   ],
