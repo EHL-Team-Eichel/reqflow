@@ -393,3 +393,7 @@ what would you fix when i tell you this: fix the challenge prompt
 ---
 
 do it, then commit push and merge with main
+
+---
+
+Look at the github and smerge all of the open branches except for the old ones from Alex that i told you about before
