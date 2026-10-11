@@ -646,8 +646,8 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 ## WS5 — Raw block (BMW data ingestion)
 
-**Status:** review · **Owner:** Claude Code (lead session) · **Branch:** `main`
-**Depends on:** nothing left; next real step needs BMW's files.
+**Status:** in progress · **Owner:** OpenCode · **Branch:** `ws5-pdf-ingestion`
+**Assigned scope:** verify feedback/study XLSX ingestion and add PDF OCR plus configured-model structured extraction; narrow file-selector/main wiring included. Existing Research JSON is unchanged. Other checklist items are not assigned.
 
 **Tasks**
 
@@ -673,6 +673,7 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 **Log**
 
+- 2026-10-11: Human assigned Raw support for feedback and customer-study XLSX plus PDF extraction to structured pipeline JSON using the configured AI model. Started from latest main; Entire already tracks OpenCode. Verification uses synthetic data, no confidential content in logs or delegated prompts. Need the original PDF path for private-file verification; attachment text is not a local PDF input. No automatic follow-on tasks.
 - 2026-10-10 night: Raw block built and verified: `npx vitest run packages/blocks` (23 tests on the
   samples, incl. SQLite) and `npm run smoke` (imports the samples, previews them over IPC, drives a
   SQLite Raw block through the UI and opens its data in the HIL report). Column synonyms are
