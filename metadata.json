@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4MVMF4JD9EYTXDDREX8BX4F",
   "strategy": "manual-commit",
   "branch": "ws6-ai-providers",
-  "checkpoints_count": 3,
+  "checkpoints_count": 4,
   "files_touched": [
     "apps/desktop/src/main/index.ts",
     "apps/desktop/src/main/preview.test.ts",
@@ -52,6 +52,13 @@
       "compact_transcript": "/1/transcript.jsonl",
       "content_hash": "/1/content_hash.txt",
       "prompt": "/1/prompt.txt"
+    },
+    {
+      "metadata": "/2/metadata.json",
+      "transcript": "/2/full.jsonl",
+      "compact_transcript": "/2/transcript.jsonl",
+      "content_hash": "/2/content_hash.txt",
+      "prompt": "/2/prompt.txt"
     }
   ],
   "token_usage": {
