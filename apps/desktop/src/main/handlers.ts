@@ -59,8 +59,8 @@ import {
   type LocalFileStore,
 } from "@reqflow/db";
 import { BlockRegistry, WorkflowExecutor } from "@reqflow/engine";
-import { createLlmClient, createMastraLlmClient, createSetupClient } from "@reqflow/llm";
-import { createAgentServices, testSetup, type AgentDeps } from "./agents";
+import { createLlmClient, createMastraLlmClient } from "@reqflow/llm";
+import { createAgentServices, directDefaultLlm, testSetup, type AgentDeps } from "./agents";
 import { ReqflowError } from "./dispatch";
 import { previewBlock } from "./preview";
 import { SecretsStore } from "./secrets";
@@ -206,21 +206,7 @@ export function createHandlers(deps: HandlerDeps): ReqflowHandlers {
   // The Add to Car agents call it directly: adaptive thinking and effort need the Messages API.
   const directLlm = async (settings: Settings): Promise<LlmClient> => {
     if (deps.llm) return deps.llm;
-    if (settings.llm.provider === "mock") return createLlmClient(settings.llm);
-    return createSetupClient(
-      {
-        id: "default-ai",
-        name: "Default AI",
-        baseUrl: "",
-        provider: settings.llm.provider === "google" ? "gemini" : settings.llm.provider,
-        model: settings.llm.model,
-        fastModel: settings.llm.fastModel,
-        temperature: settings.llm.temperature,
-        effort: "medium",
-        maxParallel: 4,
-      },
-      { apiKey: await defaultAiKey(settings), fetch: deps.fetch },
-    );
+    return directDefaultLlm(settings, await defaultAiKey(settings), deps.fetch);
   };
   const agentDeps: AgentDeps = {
     defaultLlm: directLlm,

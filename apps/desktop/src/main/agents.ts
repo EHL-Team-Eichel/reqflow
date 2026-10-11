@@ -11,7 +11,13 @@ import {
   type WriterRole,
 } from "@reqflow/core";
 import type { SetupTestResult } from "@reqflow/core/ipc";
-import { createJudgeClient, createSetupClient, Limiter, llmDecisionClient } from "@reqflow/llm";
+import {
+  createJudgeClient,
+  createLlmClient,
+  createSetupClient,
+  Limiter,
+  llmDecisionClient,
+} from "@reqflow/llm";
 
 export interface AgentDeps {
   /** The default AI (Settings → AI) with its key; throws a readable error when it can't be used. */
@@ -24,6 +30,32 @@ export interface AgentDeps {
 /** The default AI has no effort setting of its own: writing roles think at this level. */
 const DEFAULT_AI_EFFORT: ReasoningEffort = "medium";
 const DEFAULT_AI_PARALLEL = 4;
+
+/**
+ * The default AI as the agents call it: straight to the provider's API, so adaptive thinking and
+ * effort apply (blocks may wrap the same settings differently, e.g. in a Mastra Agent).
+ */
+export function directDefaultLlm(
+  settings: Settings,
+  apiKey: string | undefined,
+  fetch?: typeof globalThis.fetch,
+): LlmClient {
+  if (settings.llm.provider === "mock") return createLlmClient(settings.llm);
+  return createSetupClient(
+    {
+      id: "default-ai",
+      name: "Default AI",
+      baseUrl: "",
+      provider: settings.llm.provider === "google" ? "gemini" : settings.llm.provider,
+      model: settings.llm.model,
+      fastModel: settings.llm.fastModel,
+      temperature: settings.llm.temperature,
+      effort: DEFAULT_AI_EFFORT,
+      maxParallel: DEFAULT_AI_PARALLEL,
+    },
+    { apiKey, fetch },
+  );
+}
 
 function defaultInfo(settings: Settings): AgentModel {
   return {

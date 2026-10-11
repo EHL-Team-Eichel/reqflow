@@ -1,7 +1,7 @@
 import { DEFAULT_SETTINGS, type ApiSetup, type LlmClient, type Settings } from "@reqflow/core";
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
-import { createAgentServices, testSetup, type AgentDeps } from "./agents";
+import { createAgentServices, directDefaultLlm, testSetup, type AgentDeps } from "./agents";
 
 const claude: ApiSetup = {
   id: "claude",
@@ -190,5 +190,32 @@ describe("testing an API setup", () => {
     });
     expect((await testSetup(settings(), "missing", deps())).ok).toBe(false);
     expect((await testSetup(settings(), "claude", deps())).message).toMatch(/no API key/);
+  });
+});
+
+describe("the default AI for agents", () => {
+  it("calls each default provider's own API directly", async () => {
+    const urls: string[] = [];
+    const fetch = vi.fn(async (url: string | URL | Request) => {
+      urls.push(String(url));
+      return new Response("{}", { status: 401 });
+    }) as unknown as typeof globalThis.fetch;
+    for (const provider of ["anthropic", "openai", "google"] as const) {
+      const s = { ...DEFAULT_SETTINGS, llm: { ...DEFAULT_SETTINGS.llm, provider } };
+      await expect(
+        directDefaultLlm(s, "test-key", fetch).generateText({ prompt: "Hi" }),
+      ).rejects.toThrow(/401/);
+    }
+    expect(urls.map((u) => new URL(u).host)).toEqual([
+      "api.anthropic.com",
+      "api.openai.com",
+      "generativelanguage.googleapis.com",
+    ]);
+  });
+
+  it("needs no key offline", async () => {
+    const s = { ...DEFAULT_SETTINGS, llm: { ...DEFAULT_SETTINGS.llm, provider: "mock" as const } };
+    const { model } = await directDefaultLlm(s, undefined).generateText({ prompt: "Hi" });
+    expect(model).toMatch(/^mock/);
   });
 });
