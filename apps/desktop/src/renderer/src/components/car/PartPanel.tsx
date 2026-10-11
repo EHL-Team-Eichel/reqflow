@@ -23,6 +23,7 @@ interface Props {
   emptyHint: string;
   onSelect: (partId: string | null) => void;
   onWhy: (id: string) => void;
+  onSaved: () => Promise<void>;
 }
 
 /** Right-hand side of the Car tab: the selected part and its requirements, or the part index. */
@@ -192,6 +193,7 @@ function PartDetail({
   onSelect,
   availableParts,
   onWhy,
+  onSaved,
 }: Props & { partId: string }) {
   const [opened, setOpened] = useState<ClassifiedRequirement | null>(null);
   const part = PARTS_BY_ID.get(partId);
@@ -262,6 +264,7 @@ function PartDetail({
           key={opened.requirement.id}
           item={opened}
           onClose={() => setOpened(null)}
+          onSaved={onSaved}
         />
       )}
     </div>

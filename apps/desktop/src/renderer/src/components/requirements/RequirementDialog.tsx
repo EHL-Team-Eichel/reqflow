@@ -6,18 +6,24 @@ import type { ClassifiedRequirement } from "../car/classify";
 import { loadRequirementDetail, type DetailState } from "./detail-loader";
 import { MStripe } from "@/components/ui/MStripe";
 import { RequirementOriginReport } from "./RequirementOriginReport";
+import { RequirementReview } from "./RequirementReview";
+import { AuditTimeline } from "../audit/AuditTimeline";
 
 /** Native modal traps focus, handles Escape, and restores focus to the compact requirement card. */
 export function RequirementDialog({
   item,
   onClose,
+  onSaved,
 }: {
   item: ClassifiedRequirement;
   onClose: () => void;
+  onSaved?: () => Promise<void>;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [state, setState] = useState<DetailState>({ status: "loading" });
   const [attempt, setAttempt] = useState(0);
+  const [view, setView] = useState<"report" | "review" | "history">("report");
+  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     const element = dialog.current;
@@ -26,8 +32,18 @@ export function RequirementDialog({
     return () => {
       element?.close();
       if (trigger instanceof HTMLElement && trigger.isConnected) trigger.focus();
+      else {
+        // Changing priority can move the card to another group and replace its DOM node.
+        const card = document.querySelector<HTMLElement>(
+          `[data-requirement-id="${CSS.escape(item.requirement.id)}"]`,
+        );
+        const fallback = document.querySelector<HTMLElement>(
+          '[data-testid="requirement-browser-reload"], [data-testid="car-requirements-tab"]',
+        );
+        (card ?? fallback)?.focus();
+      }
     };
-  }, []);
+  }, [item.requirement.id]);
 
   useEffect(
     () => loadRequirementDetail(item.requirement.id, api.requirements.get, setState),
@@ -79,6 +95,46 @@ export function RequirementDialog({
             <XIcon className="size-5" />
           </button>
         </header>
+        <nav
+          aria-label="Requirement views"
+          className="flex shrink-0 flex-wrap gap-2 border-b border-line px-5 py-2"
+        >
+          {(
+            [
+              ["report", "Workflow & sources"],
+              ["review", "Review & edit"],
+              ["history", "History"],
+            ] as const
+          ).map(([value, label]) => (
+            <Button
+              key={value}
+              size="sm"
+              variant={view === value ? "secondary" : "ghost"}
+              aria-pressed={view === value}
+              data-testid={`car-requirement-${value}-tab`}
+              onClick={() => setView(value)}
+            >
+              {label}
+            </Button>
+          ))}
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={state.status === "loading"}
+            onClick={() => {
+              setNotice(null);
+              setAttempt((n) => n + 1);
+            }}
+            data-testid="car-requirement-reload"
+          >
+            Reload details
+          </Button>
+        </nav>
+        {notice && (
+          <p role="status" className="shrink-0 px-5 py-2 text-xs text-muted">
+            {notice}
+          </p>
+        )}
         <div className="min-h-0 flex-1" aria-busy={state.status === "loading"}>
           {state.status === "loading" && (
             <p role="status" className="p-5 text-sm text-muted">
@@ -93,7 +149,49 @@ export function RequirementDialog({
               </Button>
             </div>
           )}
-          {state.status === "ready" && <RequirementOriginReport detail={state.detail} />}
+          {state.status === "ready" &&
+            (view === "report" ? (
+              <RequirementOriginReport detail={state.detail} />
+            ) : view === "review" ? (
+              <div className="h-full overflow-auto p-5">
+                <RequirementReview
+                  requirement={state.detail.requirement}
+                  onSaved={async (saved) => {
+                    setState((current) =>
+                      current.status === "ready"
+                        ? {
+                            status: "ready",
+                            detail: {
+                              ...current.detail,
+                              requirement: saved,
+                              versions: [
+                                ...current.detail.versions.filter(
+                                  (version) => version.version !== saved.version,
+                                ),
+                                saved,
+                              ],
+                            },
+                          }
+                        : current,
+                    );
+                    setNotice(
+                      `Version ${saved.version} saved with your rationale. Workflow execution is unchanged.`,
+                    );
+                    try {
+                      await onSaved?.();
+                    } catch {
+                      setNotice(
+                        `Version ${saved.version} saved, but the Car list could not refresh. Reload the list.`,
+                      );
+                    }
+                  }}
+                />
+              </div>
+            ) : (
+              <div className="h-full overflow-auto p-5">
+                <AuditTimeline requirementId={r.id} refreshKey={r.version} />
+              </div>
+            ))}
         </div>
       </div>
     </dialog>
