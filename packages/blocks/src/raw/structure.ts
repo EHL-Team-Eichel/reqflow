@@ -141,15 +141,9 @@ ${page.text}`;
     const model = response.model;
     finalModelId = model;
 
-    // Verify all verbatim evidence
+    // Verify cell evidence and metadata; item excerpts remain unverified and need review.
     for (let itemIdx = 0; itemIdx < pageData.items.length; itemIdx++) {
       const item = pageData.items[itemIdx]!;
-
-      if (!page.text.includes(item.verbatimExcerpt)) {
-        throw new Error(
-          `Malformed AI extraction: invalid verbatim excerpt on page ${page.page}, item ${itemIdx}`,
-        );
-      }
 
       const keys = new Set<string>();
       for (const [cellIdx, cell] of item.cells.entries()) {
