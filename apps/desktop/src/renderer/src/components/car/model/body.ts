@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { BMW_REFERENCE } from "./reference";
+import { BMW_REFERENCE, WINDSCREEN_BASE_X } from "./reference";
 
 /**
  * The car body as one smooth parametric surface, cut into panels.
@@ -83,9 +83,12 @@ export const beltLine = profile([
 
 /** Side view: the bottom line (front apron → sills → rear apron). */
 export const bottomLine = profile([
-  [2.2, 0.34],
-  [2.14, 0.26],
+  // A level apron keeps the central intake above a continuous lower bumper edge.
+  // Repeated heights also give the rounded nose a horizontal profile tangent.
+  [2.2, 0.205],
+  [2.14, 0.205],
   [1.96, 0.205],
+  [1.82, 0.205],
   [1.0, 0.165],
   [-1.0, 0.165],
   [-2.0, 0.22],
@@ -201,14 +204,15 @@ function stationXs(): number[] {
     const mix = 0.55 * s + 0.45 * u;
     xs.push(G60.rearX + G60.length * mix);
   }
-  // Panel edges follow stations, so the quarter pane would only shrink in whole-station steps
-  // (about 11% each). Put a station on the support's rear edge so the pane ends exactly there.
-  const edge = REAR_WINDOW_SUPPORT_X - REAR_WINDOW_SUPPORT_HALF_WIDTH;
-  let nearest = 0;
-  xs.forEach((x, i) => {
-    if (Math.abs(x - edge) < Math.abs(xs[nearest]! - edge)) nearest = i;
-  });
-  xs[nearest] = edge;
+  // Panel edges follow stations. Pin the quarter-pane support and the bonnet/glass join
+  // instead of rounding them to whole-station steps (about 11% of the quarter pane).
+  for (const edge of [REAR_WINDOW_SUPPORT_X - REAR_WINDOW_SUPPORT_HALF_WIDTH, WINDSCREEN_BASE_X]) {
+    let nearest = 0;
+    xs.forEach((x, i) => {
+      if (Math.abs(x - edge) < Math.abs(xs[nearest]! - edge)) nearest = i;
+    });
+    xs[nearest] = edge;
+  }
   return xs;
 }
 
@@ -462,7 +466,7 @@ export function inWheelArch(q: Pick<Quad, "x" | "y" | "z" | "seg">): boolean {
 }
 
 /** Side window outline: front edge follows the A-pillar, rear edge the C-pillar, gap = B-pillar. */
-const windowFront = (y: number) => 0.8 - (y - 1.0) * 1.82 - 0.085;
+const windowFront = (y: number) => 0.8 - (y - 1.0) * 1.82 - 0.055;
 // The return at the foot of the C-pillar is BMW's characteristic Hofmeister kink.
 const windowRear = (y: number) =>
   y < 1.12 ? lerp(-1.48, -1.66, smoothstep(1.05, 1.12, y)) : -1.66 + (y - 1.12) * 1.08;
@@ -481,7 +485,13 @@ function inSideWindow(q: Quad): boolean {
   );
 }
 
-const windscreenHalfWidth = (x: number) => lerp(0.65, 0.855, smoothstep(-0.075, 0.79, x));
+const WINDSCREEN_TOP_X = -0.1;
+/** Painted A-pillar margin, widened 50% from the previous 20 mm frame. */
+export const A_PILLAR_WIDTH = 0.03;
+const windscreenHalfWidth = (x: number) =>
+  lerp(0.69, 0.875, smoothstep(WINDSCREEN_TOP_X, WINDSCREEN_BASE_X, x));
+const windscreenBase = (q: Pick<Quad, "x" | "z">) =>
+  WINDSCREEN_BASE_X - 0.075 * (Math.abs(q.z) / windscreenHalfWidth(q.x)) ** 4;
 
 /** Broad, tapered front glass with gently bowed top and cowl edges. */
 function inWindscreen(q: Quad): boolean {
@@ -489,7 +499,7 @@ function inWindscreen(q: Quad): boolean {
   const width = windscreenHalfWidth(q.x);
   const edge = az / width;
   return (
-    q.seg >= 5 && az < width && q.x > -0.075 + 0.04 * edge ** 2 && q.x < 0.805 - 0.075 * edge ** 4
+    q.seg >= 5 && az < width && q.x > WINDSCREEN_TOP_X + 0.04 * edge ** 2 && q.x < windscreenBase(q)
   );
 }
 
@@ -497,7 +507,14 @@ function inWindscreen(q: Quad): boolean {
 function inAPillar(q: Quad): boolean {
   const az = Math.abs(q.z);
   const width = windscreenHalfWidth(q.x);
-  return q.seg >= 5 && q.x > -0.075 && q.x < 0.805 && az >= width && az < width + 0.055;
+  // Glazing is assigned first. Include the short roof return at its upper corners so
+  // the slimmer frame stays continuous instead of joining front and side glass there.
+  return (
+    q.seg >= 5 &&
+    q.x > WINDSCREEN_TOP_X - 0.04 &&
+    q.x < WINDSCREEN_BASE_X &&
+    az < width + A_PILLAR_WIDTH
+  );
 }
 
 /**
@@ -528,7 +545,8 @@ export function bodyPanel(q: Quad): string | null {
   }
 
   // Top of the car: bonnet, windscreen, roof, rear window, boot lid.
-  if (q.x > 0.86) return "hood";
+  // Share the bowed glass edge with the bonnet: no separate recessed cowl strip at the join.
+  if (q.x >= windscreenBase(q)) return "hood";
   if (q.x < -1.97) return "trunk_lid";
   const belt = beltLine(q.x);
   const sideGlass = q.seg === 5 || q.seg === 6;
@@ -599,7 +617,11 @@ export function smoothPanelEdges(grid: BodyGrid, assign: (q: Quad) => string | n
       ];
       const i = Math.floor(v / RING);
       const j = v % RING;
-      if (original[v * 3]! > -0.1 && original[v * 3]! < 0.85 && segmentOf(j) >= 5) {
+      if (
+        original[v * 3]! > WINDSCREEN_TOP_X - 0.025 &&
+        original[v * 3]! < 0.85 &&
+        segmentOf(j) >= 5
+      ) {
         // Relax the thin glass/pillar boundaries along their original cross-section,
         // never across adjacent vertices. This preserves both station and ring order
         // instead of folding narrow triangles or leaving rejected, jagged edge steps.
@@ -612,6 +634,9 @@ export function smoothPanelEdges(grid: BodyGrid, assign: (q: Quad) => string | n
         const before = original[vid(Math.max(0, i - 1), j) * 3]!;
         const after = original[vid(Math.min(STATIONS - 1, i + 1), j) * 3]!;
         point[0] = Math.max(x - 0.45 * (x - before), Math.min(x + 0.45 * (after - x), point[0]));
+        // The flared lower glass corners sit almost upright; keep their station fixed so
+        // relaxing the cowl boundary cannot tip a tiny triangle backwards into the side.
+        if (x > 0.5 && Math.abs(z) > 0.82) point[0] = x;
         for (const col of [(j + RING - 1) % RING, (j + 1) % RING]) {
           const neighbor = vid(i, col) * 3;
           const ey = original[neighbor + 1]! - y;

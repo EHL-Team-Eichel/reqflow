@@ -295,6 +295,10 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 **Windscreen slice:** review (implemented and verified) · **Owner:** OpenCode · **Branch:** `ws3-car-view-animation`
 **Option provenance slice:** done (main integration verified; PR #23) · **Owner:** OpenCode · **Branch:** `integrate/car-option-provenance`
 **Default-preview slice:** review (orbit optimization verified; full-smoke failures below) · **Owner:** OpenCode · **Branch:** `ws3-m4-default-preview` (isolated from latest main)
+**Zoom slice:** review (implemented and verified) · **Owner:** OpenCode · **Branch:** `ws3-smooth-car-zoom` (isolated worktree)
+**Bonnet / A-pillar refinement:** review (implemented and verified) · **Owner:** OpenCode · **Branch:** `ws3-compact-requirements`
+**Front-apron slice:** review (implemented and verified) · **Owner:** OpenCode · **Branch:** `ws3-compact-requirements`
+**Option provenance slice:** review (implemented; shared verification limits below) · **Owner:** OpenCode · **Branch:** `ws3-compact-requirements`
 **Depends on:** nothing to start: build on `@reqflow/core/fixtures` (5 requirements, findings, sources,
 audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 serves them.
 
@@ -344,6 +348,60 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - 2026-10-11: Human requested merging option provenance to main and launching an example. Integrated in a clean worktree, isolating `6f1f036` with its Entire trailer from unrelated geometry and all concurrent unstaged work. Latest main `a86eec3` merged without source conflicts. Combined root typecheck, all 2,499 tests (6 skipped), native macOS smoke (80 screenshots), formatting and diff checks pass; reviewed the Car option report screenshot. PR #23 publishes with a merge commit, not squash. Prepared an ignored interactive Electron example for the post-merge launch: synthetic rear-seat feedback → inner-workplace HIL → Add to Car, mock AI, isolated database and outbound requests disabled. No private data, credentials, provider calls, backend contract edits or generated Entire-plugin changes included.
 - 2026-10-11: Claimed Car option provenance: open each compact option into a HIL-style report with the exact originating run/block, shared lineage steps/data tables and a read-only saved build-workflow visualizer. Preserve concurrent model/Entire work; scope is WS3 renderer/tests only, with no core, backend or editor-state changes.
 - 2026-10-11: Car option provenance implemented in `components/requirements/`, with only compact-card copy changed in `car/PartPanel.tsx`. Opening an option now shows the exact creation-audited Add to Car block and run version, current requirement/cited evidence, saved ranked inputs plus shared context, upstream HIL/splitter data, and a navigable historical workflow/inner-workplace canvas. Reuses HIL step nodes, layout basis, data tables and read-only splitter analysis; never replaces the editor draft, resumes a run or writes routing/requirement decisions. Missing/ambiguous/invalid origins and saved-output failures are explicit, retries supported, stale replies ignored. Native isolated synthetic probe passes after source/graph edits and a newer run: original evidence/labels retained, nested lineage/workplaces, light/dark, opening at 1024×640, Escape/focus return and unchanged requirements/workflow; explicit Reset passes once data is ready. Six `out/smoke/car-origin-*` screenshots reviewed. Root typecheck/build, 42 requirement tests, changed-file formatting and diff checks pass. Full suite initially passed 2,353 tests (5 skipped, two workers/30s timeout); latest rerun has six concurrent geometry assertion failures in `car/model/body.test.ts` and `sideWindow.test.ts`, untouched by this slice. Standard macOS smoke generated 70 screenshots but fails five existing Reset readiness assertions; no new report/renderer failures. WS1/WS0 follow-up: wait for loaded Car requirements before Reset and promote the historical-option/step-data/nested-workplace scenarios into shared smoke. No dependencies, core/backend/editor edits, provider calls or private BMW data. Human authorized committing/pushing only this slice, preserving concurrent model/converter/Entire changes.
+- [x] Smooth wheel/trackpad zoom with frame-rate-independent easing, bounded distance and interruption regressions.
+
+**Log**
+
+- 2026-10-11: Claimed the requested smooth-zoom slice from latest main in an isolated worktree.
+  Replace immediate wheel/trackpad dolly steps with eased distance changes; preserve camera presets,
+  dragging, idle orbit, picking and reduced motion. WS3 renderer/tests and this handoff only;
+  verify before committing and pushing the focused branch.
+
+- 2026-10-11: Smooth zoom complete: bounded wheel/line/page and trackpad-pinch normalization,
+  exponential log-distance easing, immediate direction reversal, distance limits without overscroll
+  backlog, cancellation on drag/preset and live reduced-motion snapping. Native touch/middle-drag,
+  idle orbit, interior flight, hover picking and marker rendering remain with existing controls.
+  Added 29 colocated regressions. `npm run typecheck && npm test`: 2,336 passed, 5 skipped;
+  `npm run smoke`: PASS, 70 screenshots. Isolated synthetic Electron probe: 17 checks pass for
+  real wheel input, multi-frame easing/no double zoom, pinch/reversal, interruption, limits,
+  reduced motion and remount cleanup; five light/dark/interior screenshots reviewed under
+  `apps/desktop/out/smoke/zoom-probe/`. Changed-file Prettier and `git diff --check` pass.
+  No contracts, main-process, geometry, dependencies or real BMW data changed. Generated local
+  OpenCode adapter/backup excluded from the focused commit. WS1/WS0 follow-up: promote native
+  wheel/pinch, interruption and reduced-motion checks into shared `main/smoke.ts`.
+- [ ] Merge Car option provenance report: exact originating run/block, HIL-style lineage and saved step data, read-only build-workflow/inner-workplace visualizer (implemented locally; verification below).
+
+**Log**
+
+- 2026-10-11: Claimed Car option provenance: open each compact option into a HIL-style report with the exact originating run/block, shared lineage steps/data tables and a read-only saved build-workflow visualizer. Preserve concurrent model/Entire work; scope is WS3 renderer/tests only, with no core, backend or editor-state changes.
+- 2026-10-11: Car option provenance implemented in `components/requirements/`, with only compact-card copy changed in `car/PartPanel.tsx`. Opening an option now shows the exact creation-audited Add to Car block and run version, current requirement/cited evidence, saved ranked inputs plus shared context, upstream HIL/splitter data, and a navigable historical workflow/inner-workplace canvas. Reuses HIL step nodes, layout basis, data tables and read-only splitter analysis; never replaces the editor draft, resumes a run or writes routing/requirement decisions. Missing/ambiguous/invalid origins and saved-output failures are explicit, retries supported, stale replies ignored. Native isolated synthetic probe passes after source/graph edits and a newer run: original evidence/labels retained, nested lineage/workplaces, light/dark, opening at 1024×640, Escape/focus return and unchanged requirements/workflow; explicit Reset passes once data is ready. Six `out/smoke/car-origin-*` screenshots reviewed. Root typecheck/build, 42 requirement tests, changed-file formatting and diff checks pass. Full suite initially passed 2,353 tests (5 skipped, two workers/30s timeout); latest rerun has six concurrent geometry assertion failures in `car/model/body.test.ts` and `sideWindow.test.ts`, untouched by this slice. Standard macOS smoke generated 70 screenshots but fails five existing Reset readiness assertions; no new report/renderer failures. WS1/WS0 follow-up: wait for loaded Car requirements before Reset and promote the historical-option/step-data/nested-workplace scenarios into shared smoke. No dependencies, core/backend/editor edits, provider calls or private BMW data. Human authorized committing/pushing only this slice, preserving concurrent model/converter/Entire changes.
+
+- 2026-10-11: A-pillars widened by 50% as requested: the shared painted frame margin is now 30 mm instead of 20 mm, symmetrically on both sides. Preserved the rearward bonnet high point, continuous glass join and enlarged windscreen. Verified only these three geometry/test files in an isolated snapshot of `c413ccd`: root typecheck, 2,314 tests (5 skipped; two workers after the overloaded 120-second run timed out), full formatting and ten focused geometry regressions pass. The native probe passes seven front/side/top, selection, light/dark and interior/return captures (`out/smoke/pillars-wider-*`, reviewed). Full macOS smoke produces 70 screenshots with exactly the six pre-existing Car-reset failures already reproduced on the base commits; no new smoke failures. Human authorized commit/push on `ws3-compact-requirements`; include only the geometry, tests and these handoff hunks, leaving converter, provenance and Entire work untouched. Synthetic data only.
+
+- 2026-10-11: Human requested both A-pillars 50% wider and a push. Increase the painted frame margin from 20 to 30 mm, retaining the new bonnet peak, smooth join and enlarged windscreen. Verify and publish only this geometry/test/handoff slice; leave concurrent converter, provenance and Entire changes untouched.
+
+- 2026-10-11: Bonnet/windscreen refinement complete: the bonnet rises continuously to the shared bowed glass edge, with its highest vertex on that join about 28 cm behind the old crest. Pinned the centre join at x = 0.8, removed the recessed cowl strip, and narrowed both A-pillars while retaining a continuous roof return around the upper glass corners. Glass area grows from 1.4994 to 1.5735 m² (~5%); lower-corner relaxation keeps near-upright triangles facing outwards. Ten windscreen regressions cover the new peak/join, no dip, increased area, slimmer supports, symmetry, connectivity and non-folded triangles. Verified root typecheck, 2,310 tests (5 skipped), full formatting and macOS smoke (PASS, 70 screenshots). Isolated synthetic native probe passed front/side/top, selection, light/dark and interior/return (seven `bonnet-refinement-*` screenshots reviewed). Changes are limited to WS3 geometry/tests and this handoff; catalog, interior, review and animations preserved. No credentials or private BMW files used; generated Entire plugin/backup changes left untouched.
+
+- 2026-10-11: Claimed the requested bonnet/windscreen refinement: move the bonnet high point rearward to the glass base, remove the cowl dip, and narrow both A-pillars to enlarge the windscreen. Scope: shared procedural car geometry, colocated regressions and this WS3 handoff; preserve catalog, interior, selection and animations.
+
+- 2026-10-11: Front apron now stays at 0.205 m through the rounded nose instead of rising
+  0.135 m under the intake. Kept the complete central intake, both outer air curtains,
+  sill/rear apron, part ids and selection. Four regressions cover the level profile and
+  rendered grid, smooth join, full intake clearance and unchanged rear heights. Root
+  typecheck and 2,314 tests pass (5 skipped; bounded to four workers after an overloaded
+  unrestricted run timed out). MacOS smoke passes all 70 screenshots on the sequential
+  rerun; reviewed front-quarter, side and dark views. Commit only the apron/profile,
+  its new tests and these handoff entries; preserve concurrent bonnet/windscreen edits.
+
+- 2026-10-11: Final isolated front-apron commit `8f310d2` passes typecheck and all 2,311
+  tests (5 skipped), without the concurrent bonnet changes. Reviewed its front-quarter,
+  side and dark renders. Isolated smoke generates 70 screenshots with six Car-reset
+  failures; the unchanged parent `8cb210d` reproduces the same six failures. No reset,
+  renderer-selection, main-process or unrelated model changes are included in this slice.
+
+- 2026-10-11: Claimed level front-apron refinement: remove the lower bumper's upward rise
+  beneath the air intake, preserve rounded nose corners and projected intake details, and
+  leave concurrent bonnet/windscreen and Entire-hook edits untouched. Verify and push.
 
 - 2026-10-10: Widened the front glass into a tapered M5-inspired outline, roughly 1.7 m across the base and 1.3 m at the roof, with bowed corners and slender, continuous A-pillars. Shifted the side-window front edge slightly forwards and constrained front-glazing edge relaxation to preserve station/ring order, preventing narrow-panel folds without changing the rear-edge smoothing. Kept all car parts, body proportions, interior and reversible flight. Added 7 regressions for width/taper, front coverage, rounded lower corners, pillar separation, symmetry, connected glazing and non-folded triangles. Verified `npm run typecheck && npm test` (266 passed, 25 skipped), `npm run smoke` (PASS, 29 screenshots), changed-file Prettier and `git diff --check`; reviewed front-quarter/top, light/dark and interior screenshots. The isolated native animation probe also passed outward/return, interrupted reversal, badge tracking, cabin selection and live reduced motion (8 screenshots). Source changes are limited to `model/body.ts`, its colocated tests and this WS3 handoff; ready for integration alongside the concurrent model refinements.
 - 2026-10-11: Human explicitly chose **Grey-line fade**, not pieces flying away. Restore the assembled faint-outline interior from `f95ba3d`, retaining the reversible 850 ms timeline/reduced-motion handling introduced by `5accfdf`. This supersedes the earlier flight preference. Scope: WS3 renderer/tests and this handoff only; latest main is the base and the shared checkout's uncommitted changes stay untouched. Preserve this preference in future merges; do not reintroduce exploded/disappearing exterior geometry without explicit human approval.
