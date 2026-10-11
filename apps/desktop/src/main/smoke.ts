@@ -47,7 +47,6 @@ type InvokeMethod<N extends keyof ReqflowHandlers, M extends keyof ReqflowHandle
 export const SMOKE_ROUTES = ["/dataflow", "/car", "/settings"] as const;
 const SETTINGS_SECTIONS = [
   "app",
-  "model",
   "model-switcher",
   "parameters",
   "ai",
@@ -1691,6 +1690,10 @@ export async function runSmoke(
 
   // 4. Settings: every section, then dark mode across pages.
   await go("/settings");
+  check(
+    (await count('[data-testid="settings-section-model"]')) === 0,
+    "settings: duplicate Model section is still present",
+  );
   for (const id of SETTINGS_SECTIONS) {
     check(await click(`[data-testid="settings-section-${id}"]`), `settings: no section ${id}`);
     await delay(300);
@@ -1815,13 +1818,21 @@ export async function runSmoke(
     'window.reqflowBridge.invoke("reqflow:requirements.list")',
   );
   for (const powertrain of CarPowertrain.options) {
+    const sketchPowertrain =
+      powertrain === "hydrogen" ? "h2" : powertrain === "fuel" ? "gasoline" : powertrain;
     await go("/settings");
-    check(await click('[data-testid="settings-section-model"]'), "settings: no model section");
-    check(await click(`[data-testid="model-${powertrain}"]`), `settings: no ${powertrain} model`);
+    check(
+      await click('[data-testid="settings-section-model-switcher"]'),
+      "settings: no model switcher section",
+    );
+    check(
+      await click(`[data-testid="powertrain-${sketchPowertrain}"]`),
+      `settings: no ${powertrain} powertrain`,
+    );
     await delay(700);
     check(
       await js<boolean>(
-        `document.querySelector('[data-testid="model-${powertrain}"]')?.getAttribute("aria-pressed") === "true"`,
+        `document.querySelector('[data-testid="powertrain-${sketchPowertrain}"]')?.getAttribute("aria-checked") === "true"`,
       ),
       `settings: ${powertrain} not selected`,
     );
@@ -1844,7 +1855,7 @@ export async function runSmoke(
     await delay(900);
     check(
       await js<boolean>(
-        `document.querySelector('[data-testid="car-viewer"]')?.getAttribute("data-powertrain") === ${JSON.stringify(powertrain === "hydrogen" ? "h2" : powertrain === "fuel" ? "gasoline" : powertrain)}`,
+        `document.querySelector('[data-testid="car-viewer"]')?.getAttribute("data-powertrain") === ${JSON.stringify(sketchPowertrain)}`,
       ),
       `car: ${powertrain} did not survive reload`,
     );
@@ -1891,13 +1902,15 @@ export async function runSmoke(
     );
   }
   await go("/settings");
-  check(await click('[data-testid="settings-section-model"]'), "settings: no model reset section");
-  check(await click('[data-testid="model-electric"]'), "settings: cannot restore default model");
-  await delay(700);
   check(
     await click('[data-testid="settings-section-model-switcher"]'),
     "settings: open catalog switcher",
   );
+  check(
+    await click('[data-testid="powertrain-electric"]'),
+    "settings: cannot restore default powertrain",
+  );
+  await delay(700);
   const catalogIds = await js<string[]>(
     `[...document.querySelectorAll('[data-testid^="model-card-"]')].map(card => card.dataset.testid.slice('model-card-'.length))`,
   );
