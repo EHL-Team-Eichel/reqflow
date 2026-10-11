@@ -68,7 +68,7 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 ## WS0 — Lead / integrator
 
-**Status:** review (ready branches verified; Analytics WIP excluded by human) · **Owner:** OpenCode (remaining-branch integration) · **Branch:** `integrate/ready-2026-10-11`
+**Status:** review (Analytics integration verified; PR #19 ready to merge) · **Owner:** OpenCode (Analytics integration) · **Branch:** `analytics-and-timeline`
 
 **Tasks**
 
@@ -81,6 +81,8 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 **Log**
 
+- 2026-10-11: Human requested merging the completed Analytics branch into main and launching ReqFlow locally. Integrated latest main into `analytics-and-timeline` for merge-commit PR #19; the only conflict was the product block table, resolved by keeping both PDF ingestion and Analytics. Verified `npm run typecheck`, `npm run format:check`, `npm test -- --maxWorkers=2 --testTimeout=30000` (2,562 passed, 6 skipped), and native macOS `npm run smoke` (82 screenshots). Default test timeouts and the initial two-minute smoke command expired under concurrent machine load; retries passed without code changes. Inspected Analytics overview, timeline, topics, source comparison, flow, quality and the preserved grey-line Car interior. Synthetic-only verification; no BMW values, live providers or credentials used. The separate `reqflow/` checkout has uncommitted Car work and is left untouched; launch will use the merged main in this clean integration checkout. Human authorized replacing the existing app instance. Windows/Linux remain unverified.
+- 2026-10-11: OpenCode is creating a synthetic 100-row F70 feedback workbook and block-by-block test guide. Inspected only the supplied workbook's sheet/header/counts; no BMW cell values used. New fixture paths only; preserve concurrent PDF-ingestion work.
 - 2026-10-11: Publishable snapshot including the latest Car class/feature adaptation passes `npm run check` (2,307 tests, 5 skipped) and native macOS smoke (70 screenshots). Inspected final M5 baseline, catalog selection/restoration, compact details and light/dark views. All ready remote branches are included; only the four old experiment branches and human-excluded Analytics WIP stay out. No live providers, credentials or BMW files used in verification; Windows/Linux remain unverified.
 - 2026-10-11: Final remote refresh found Car follow-up `db64757` (class-aware features and M5 baseline) and newly published `analytics-and-timeline`. Car follow-up is included. Analytics is not buildable: five engine modules are missing and its chart tabs are placeholders. Human explicitly chose to publish ready branches and leave Analytics to its author. Ready integration is isolated at `integrate/ready-2026-10-11`; the attempted Analytics merge remains on `integrate/2026-10-11`, not on main. Final exclusions are the four old engine/judging experiments plus Analytics WIP.
 - 2026-10-11: Final corrected integration verification: `npm run check` passed (2,298 tests, 5 skipped); `npm run smoke` passed on macOS with 70 screenshots. Inspected catalog selection/restoration, four powertrain views, compact details and light/dark screenshots. Ready to promote to main; no excluded experiment history included.
@@ -259,6 +261,7 @@ bottom of your own list. Scope and file ownership: [WORKSTREAMS.md](WORKSTREAMS.
 
 **Status:** in progress (four-choice model switcher) · **Owner:** Codex (model switcher subtask) · **Branch:** `ws3-compact-requirements`
 **Animation slice:** review (implemented and verified) · **Owner:** OpenCode · **Branch:** `ws3-car-view-animation` (isolated worktree)
+**Grey-line transition slice:** done (implemented and verified) · **Owner:** OpenCode · **Branch:** `ws3-grey-line-transition` (isolated from latest main)
 **Windscreen slice:** review (implemented and verified) · **Owner:** OpenCode · **Branch:** `ws3-car-view-animation`
 **Depends on:** nothing to start: build on `@reqflow/core/fixtures` (5 requirements, findings, sources,
 audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 serves them.
@@ -287,6 +290,9 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 **Log**
 
 - 2026-10-10: Widened the front glass into a tapered M5-inspired outline, roughly 1.7 m across the base and 1.3 m at the roof, with bowed corners and slender, continuous A-pillars. Shifted the side-window front edge slightly forwards and constrained front-glazing edge relaxation to preserve station/ring order, preventing narrow-panel folds without changing the rear-edge smoothing. Kept all car parts, body proportions, interior and reversible flight. Added 7 regressions for width/taper, front coverage, rounded lower corners, pillar separation, symmetry, connected glazing and non-folded triangles. Verified `npm run typecheck && npm test` (266 passed, 25 skipped), `npm run smoke` (PASS, 29 screenshots), changed-file Prettier and `git diff --check`; reviewed front-quarter/top, light/dark and interior screenshots. The isolated native animation probe also passed outward/return, interrupted reversal, badge tracking, cabin selection and live reduced motion (8 screenshots). Source changes are limited to `model/body.ts`, its colocated tests and this WS3 handoff; ready for integration alongside the concurrent model refinements.
+- 2026-10-11: Human explicitly chose **Grey-line fade**, not pieces flying away. Restore the assembled faint-outline interior from `f95ba3d`, retaining the reversible 850 ms timeline/reduced-motion handling introduced by `5accfdf`. This supersedes the earlier flight preference. Scope: WS3 renderer/tests and this handoff only; latest main is the base and the shared checkout's uncommitted changes stay untouched. Preserve this preference in future merges; do not reintroduce exploded/disappearing exterior geometry without explicit human approval.
+- 2026-10-11: Grey-line restoration verified: exterior silhouettes fade before fills become transparent (avoiding solid-ink back-face artifacts), exterior edges remain at 0.14 opacity and character lines retain their original 0.08 baseline; cabin and badge anchors stay assembled. Added Car-specific `AGENTS.md` to protect the human's choice and 59 focused timing/style/geometry regressions (light/dark, four powertrains, rapid reversal, reduced motion, ghost picking and shader stability). Root typecheck, 2,338 tests (5 skipped), formatting and diff checks pass with two workers/20-second test timeout. Native synthetic probe passes animation, return/reversal, live reduced motion, all powertrains, badge selection and a real canvas pick through the ghost shell; fresh midpoint/endpoint screenshots inspected. Shared macOS smoke creates 70 screenshots but has six Reset readiness failures, also reproduced on unchanged main `c3f02d2` in a separate clean worktree. WS1/WS0 follow-up: wait for the Car requirement list/Reset enabled state instead of the fixed delay in `main/smoke.ts`; no Reset behavior changed here. All verification is synthetic/offline; concurrent source edits and generated Entire-plugin changes are excluded from this commit. Windows/Linux unverified.
+- 2026-10-11: Committed grey-line preference/implementation as `399bc8a`, with its Entire checkpoint and original-look/timeline provenance in the commit. Merged latest main `16f2f09` (PDF-ingestion PR #18) without conflicts or Car changes from other workstreams. Combined verification passes root typecheck, 2,363 tests (6 skipped), formatting and clean native macOS smoke (71 screenshots in `out/smoke/grey-line-final/`). The preceding default-output smoke passed every functional check but hit one intermittent ResizeObserver console notification; the final clean run is fully green. No Reset fix, private data or credentials included. Publish with merge commits, never squash, to preserve this provenance and the human-approved preference.
 
 - 2026-10-10: Claimed wider, M5-inspired front glazing with slimmer A-pillars. Replace the narrow fixed-width windscreen mask with a tapered, rounded outline spanning more of the front cabin surface; preserve the current body silhouette, interior, parts and reversible flight. The latest concurrent shape branch retains the same front-glass classification, so keep this patch focused and independently integrable rather than overwriting its model changes.
 
@@ -646,8 +652,8 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 ## WS5 — Raw block (BMW data ingestion)
 
-**Status:** review · **Owner:** Claude Code (lead session) · **Branch:** `main`
-**Depends on:** nothing left; next real step needs BMW's files.
+**Status:** done (human-assigned PDF/XLSX slice) · **Owner:** OpenCode · **Branch:** `ws5-pdf-ingestion` · **Merged:** PR #18
+**Assigned scope:** verify feedback/study XLSX ingestion and add PDF OCR plus configured-model structured extraction; narrow file-selector/main wiring included. Existing Research JSON is unchanged. Other checklist items are not assigned.
 
 **Tasks**
 
@@ -662,8 +668,7 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 - [x] Database source: read-only SQLite, one SELECT only; other databases fail with a clear message.
 - [x] BMW's data in `data/raw/`: feedback, studies and sales read correctly (shapes in the log);
       tests on the real files run locally when they're present (`raw.test.ts`, "BMW …" suites).
-- [ ] F70 option list (PDF): needs a PDF table reader (e.g. pdfjs) in the Raw block, or BMW's
-      list as Excel. Refused with a clear message until then.
+- [x] F70 option list (PDF): local PDF.js/Tesseract OCR plus configured-default-model structured extraction merged in PR #18 and verified.
 - [ ] Customer study findings: per question, how the F70 scores against the other models in the
       same market (deterministic, like the take-rate findings), with the study rows as evidence.
 - [ ] If BMW's headers can't be matched automatically: add an optional column-mapping param
@@ -673,6 +678,10 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 **Log**
 
+- 2026-10-11: PR #18 merged into latest main with merge history and Entire checkpoints preserved. The concurrent default-AI client change was already on main; synchronization changed no tested code. Assigned slice complete; no additional WS5 items started. Other agents' untracked synthetic files remain untouched and excluded from this PR. Live-provider extraction, Windows/Linux and the broader packaged Car-reset smoke are explicit verification limits, not claimed successes.
+- 2026-10-11: Assigned slice implemented: PDF upload, spatial embedded-text parsing, bundled local English/German OCR, strict configured-default-model JSON extraction, original page evidence and structured item records with page/model/OCR metadata, explicit AI review status and audited ingestion. Rejects invented excerpts/cell values/title/availability, malformed schemas, duplicate fields and resource overflow; cancellation/cleanup tested. Existing XLSX feedback/study layouts and Research JSON preserved. Narrow shared Raw selector, lazy main preview wiring and unpacked OCR runtime included. Independent Codex review finding corrected with regressions; agy delegates hit quota after initial implementation, parent completed integration.
+- 2026-10-11: Verification: `VITEST_MAX_WORKERS=4 npm run check` passes (119 files, 2,340 tests, formatting/typechecks). Unbounded gate hit two Car test timeouts. Native smoke passed 71 screenshots; repeated default smoke retains Car-reset failures from persistent synthetic state, but final clean-state smoke (`npm exec --workspace @reqflow/desktop -- electron . --smoke=out/smoke/ws5-clean`) passes; PDF upload/preview screenshots inspected. Unsigned macOS package builds and its real ASAR PDF/OCR checks pass; full packaged smoke still fails unrelated Car-reset assertions (and one run had ResizeObserver). No Car changes made. Local BMW XLSX and option-list PDF parsing tested through boolean-only private suites; no live AI calls, keys or private excerpts logged. Windows/Linux and live-provider extraction remain unverified. To use: Raw -> File upload -> dataset -> PDF -> explicit Preview/Start with non-mock default AI in Settings. No additional tasks authorized; stop after this slice.
+- 2026-10-11: Human assigned Raw support for feedback and customer-study XLSX plus PDF extraction to structured pipeline JSON using the configured AI model. Started from latest main; Entire already tracks OpenCode. Verification uses synthetic data, no confidential content in logs or delegated prompts. Need the original PDF path for private-file verification; attachment text is not a local PDF input. No automatic follow-on tasks.
 - 2026-10-10 night: Raw block built and verified: `npx vitest run packages/blocks` (23 tests on the
   samples, incl. SQLite) and `npm run smoke` (imports the samples, previews them over IPC, drives a
   SQLite Raw block through the UI and opens its data in the HIL report). Column synonyms are

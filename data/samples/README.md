@@ -16,5 +16,11 @@ might look like, including the awkward parts the Raw block has to handle:
 How columns are recognised (English and German names): `packages/blocks/src/raw/columns.ts`.
 
 BMW's real files stay in `data/raw/` (gitignored). When they're there, `npm test` also runs the
-"BMW …" suites in `packages/blocks/src/raw/raw.test.ts` (structure checks only) and `npm run smoke`
-previews them in the app. To try them by hand: `npm run dev`, add a Raw block, choose the file.
+"BMW …" suites in `packages/blocks/src/raw/raw.test.ts` (structure checks only). Native smoke uses
+synthetic documents only. To try originals by hand: `npm run dev`, add a Raw block, choose the file.
+
+`raw-pdf-fixture.ts` generates embedded-text and image-only PDFs for tests/native smoke. They exercise
+actual local PDF parsing and English/German OCR without shipping confidential files. Structuring tests
+use explicitly synthetic LLM adapters, not live providers. Real PDF preview/run requires the default AI
+configured in Settings, sends extracted text to that provider, and retains original page evidence plus
+AI-derived JSON items requiring review. The Excel sheet selector does not apply to PDFs.

@@ -29,7 +29,7 @@ export async function readSpreadsheet(
   }
   if (isPdf(bytes) || /\.pdf$/i.test(name)) {
     throw new Error(
-      `"${name}" is a PDF. The Raw block reads tables from Excel (.xlsx) or CSV files; PDFs aren't supported yet.`,
+      `readSpreadsheet called on PDF "${name}". This is an internal error; PDFs must be routed through readPdf.`,
     );
   }
   if (isZip(bytes)) {
