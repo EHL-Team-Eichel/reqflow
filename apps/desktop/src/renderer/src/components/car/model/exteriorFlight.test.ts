@@ -177,6 +177,7 @@ describe("ExteriorFlight", () => {
       background: new THREE.Color("white"),
       ink: new THREE.Color("black"),
       brand: new THREE.Color("blue"),
+      selection: new THREE.Color("lightblue"),
     };
     const style = createPieceStyle(piece, palette);
     try {

@@ -8,10 +8,36 @@ describe("buildCar", () => {
   const car = buildCar();
 
   it("has a clickable mesh and a badge anchor for every part in the catalog", () => {
+    expect(CAR_PARTS).toHaveLength(71);
     const modelled = new Set(car.pieces.map((p) => p.partId).filter(Boolean));
     const missing = CAR_PARTS.map((p) => p.id).filter((id) => !modelled.has(id));
     expect(missing).toEqual([]);
     for (const part of CAR_PARTS) expect(car.anchors.has(part.id)).toBe(true);
+  });
+
+  it("gives detailed drive units separate meshes instead of duplicating an assembly label", () => {
+    const ids = [
+      "motor",
+      "rear_motor",
+      "transmission",
+      "battery_pack",
+      "inverter",
+      "cooling_system",
+      "drive_shafts",
+      "differential",
+    ];
+    const meshes = ids.map((id) => car.pieces.find((p) => p.partId === id)!.mesh);
+    expect(new Set(meshes).size).toBe(ids.length);
+    const front = meshes[0]!;
+    const rear = meshes[1]!;
+    expect(front.position.x).toBe(G60.frontAxleX);
+    expect(rear.position.x).toBe(G60.rearAxleX);
+    for (const id of ids) {
+      expect(car.pieces.filter((p) => p.partId === id).every((p) => p.layer === "interior")).toBe(
+        true,
+      );
+      expect(car.anchors.has(id)).toBe(true);
+    }
   });
 
   it("only uses part ids from the catalog", () => {
@@ -45,6 +71,116 @@ describe("buildCar", () => {
     for (const { mesh } of car.pieces) {
       const pos = mesh.geometry.getAttribute("position").array;
       expect(Array.from(pos).some((v) => Number.isNaN(v))).toBe(false);
+    }
+  });
+
+  it("mounts four tyres on the arch centres, inside the body width and on the ground", () => {
+    const tyres = car.pieces.filter((p) => p.kind === "tyre");
+    expect(tyres).toHaveLength(4);
+    const mounts = new Set<string>();
+    for (const { mesh } of tyres) {
+      const { x, y, z } = mesh.position;
+      expect([G60.frontAxleX, G60.rearAxleX]).toContain(x);
+      expect(y).toBe(G60.tyreRadius);
+      expect(Math.abs(z)).toBe(G60.track / 2);
+      mounts.add(`${x}:${Math.sign(z)}`);
+      const bounds = new THREE.Box3().setFromObject(mesh);
+      expect(bounds.min.y).toBeCloseTo(0, 3);
+      expect(Math.max(Math.abs(bounds.min.z), Math.abs(bounds.max.z))).toBeLessThan(G60.width / 2);
+      expect(bounds.getSize(new THREE.Vector3()).z).toBeCloseTo(G60.tyreWidth, 2);
+      // The tyre envelope clears the arch rather than being detached beside the car.
+      expect(bounds.max.y).toBeLessThan(G60.tyreRadius + G60.archRadius);
+    }
+    expect(mounts.size).toBe(4);
+    expect(G60.frontAxleX - G60.rearAxleX).toBeCloseTo(G60.wheelbase, 5);
+  });
+
+  it("preserves both front seat assemblies, all three rear places and the LHD cockpit", () => {
+    const front = car.pieces.filter(
+      (p) =>
+        ["front_seats", "driver_seat", "passenger_seat", "headrests"].includes(p.partId ?? "") &&
+        Math.abs(p.mesh.position.z) === 0.38,
+    );
+    const rear = car.pieces.filter(
+      (p) =>
+        [
+          "rear_seats",
+          "rear_left_seat",
+          "rear_center_seat",
+          "rear_right_seat",
+          "headrests",
+        ].includes(p.partId ?? "") && [-0.45, 0, 0.45].includes(p.mesh.position.z),
+    );
+    expect(front).toHaveLength(6); // cushions, backrests and headrests
+    expect(rear).toHaveLength(9);
+    for (const z of [-0.38, 0.38])
+      expect(front.filter((p) => p.mesh.position.z === z)).toHaveLength(3);
+    for (const z of [-0.45, 0, 0.45])
+      expect(rear.filter((p) => p.mesh.position.z === z)).toHaveLength(3);
+    const driver = front.find((p) => p.mesh.userData.seatPosition === "driver")!.mesh;
+    const passenger = front.find((p) => p.mesh.userData.seatPosition === "front_passenger")!.mesh;
+    expect(driver.position.z).toBeLessThan(0);
+    expect(passenger.position.z).toBeGreaterThan(0);
+    const steering = car.pieces.find((p) => p.partId === "steering_wheel")!.mesh;
+    expect(steering.position.z).toBe(driver.position.z);
+    expect(steering.position.x).toBeGreaterThan(driver.position.x);
+    expect([...front, ...rear].every((p) => p.layer === "interior")).toBe(true);
+  });
+
+  it("draws smooth, mirrored reference strokes without long jumps across missing surfaces", () => {
+    expect(car.sketchLines).toHaveLength(10);
+    const a = new THREE.Vector3();
+    const b = new THREE.Vector3();
+    for (let i = 0; i < 5; i++) {
+      const left = car.sketchLines[i]!.getAttribute("position");
+      const right = car.sketchLines[i + 5]!.getAttribute("position");
+      expect(left.count).toBeGreaterThan(100);
+      expect(left.count).toBe(right.count);
+      for (let k = 0; k < left.count; k++) {
+        expect(left.getX(k)).toBeCloseTo(right.getX(k), 4);
+        // The independently triangulated panels can differ slightly at a seam.
+        // Keep mirrored strokes within the 3 mm surface lift used by the sketch.
+        a.fromBufferAttribute(left, k);
+        b.fromBufferAttribute(right, k);
+        b.z = -b.z;
+        expect(a.distanceTo(b)).toBeLessThan(0.003);
+      }
+      for (let k = 0; k < left.count; k += 2) {
+        a.fromBufferAttribute(left, k);
+        b.fromBufferAttribute(left, k + 1);
+        expect(a.distanceTo(b)).toBeLessThan(0.12);
+      }
+    }
+  });
+
+  it("carries the shoulder crease across both doors and lifts the lower contour into the rear arch", () => {
+    for (const side of [-1, 1]) {
+      const line = (feature: string) =>
+        car.sketchLines
+          .find(
+            (geometry) =>
+              geometry.userData.feature === feature &&
+              Math.sign(geometry.getAttribute("position").getZ(0)) === side,
+          )!
+          .getAttribute("position");
+      const shoulder = line("shoulder");
+      const nearestY = (
+        positions: THREE.BufferAttribute | THREE.InterleavedBufferAttribute,
+        x: number,
+      ) => {
+        let nearest = 0;
+        for (let i = 1; i < positions.count; i++)
+          if (Math.abs(positions.getX(i) - x) < Math.abs(positions.getX(nearest) - x)) nearest = i;
+        expect(Math.abs(positions.getX(nearest) - x)).toBeLessThan(0.025);
+        return positions.getY(nearest);
+      };
+      // Both door centres and their seam retain the continuous crease beneath the handles.
+      for (const x of [0.6, -0.1, -0.8]) {
+        expect(nearestY(shoulder, x)).toBeGreaterThan(0.88);
+        expect(nearestY(shoulder, x)).toBeLessThan(0.98);
+      }
+      const lower = line("door_scallop");
+      expect(nearestY(lower, -1) - nearestY(lower, 0.5)).toBeGreaterThan(0.1);
     }
   });
 
@@ -82,12 +218,53 @@ describe("buildCar", () => {
 
   it("keeps rear seat headrests inside the sloping cabin", () => {
     const vertex = new THREE.Vector3();
-    for (const { mesh } of car.pieces.filter((p) => p.partId === "rear_seats")) {
+    for (const { mesh } of car.pieces.filter(
+      (p) =>
+        [
+          "rear_seats",
+          "rear_left_seat",
+          "rear_center_seat",
+          "rear_right_seat",
+          "headrests",
+        ].includes(p.partId ?? "") && p.mesh.position.x < -0.7,
+    )) {
       const pos = mesh.geometry.getAttribute("position");
       for (let k = 0; k < pos.count; k++) {
         vertex.fromBufferAttribute(pos, k).applyMatrix4(mesh.matrixWorld);
         expect(vertex.y).toBeLessThan(topLine(vertex.x) - 0.03);
       }
+    }
+  });
+
+  it("keeps the detailed trunk selectable and its lip fitted to the rear deck", () => {
+    const detail = (name: string) =>
+      car.pieces.filter((p) => p.mesh.geometry.userData.detail === name);
+    for (const name of [
+      "plate_recess",
+      "plate_surround",
+      "rear_roundel",
+      "trunk_handle",
+      "trunk_lip",
+    ]) {
+      const pieces = detail(name);
+      expect(pieces).toHaveLength(1);
+      expect(pieces[0]!.partId).toBe("trunk_lid");
+      expect(pieces[0]!.layer).toBe("exterior");
+    }
+    expect(detail("rear_led")).toHaveLength(4);
+    expect(detail("rear_reflector")).toHaveLength(2);
+    expect(detail("parking_sensor")).toHaveLength(4);
+    expect(detail("diffuser_rib")).toHaveLength(5);
+    const lid = car.pieces.find((p) => p.partId === "trunk_lid" && p.kind === "paint")!.mesh;
+    expect(lid.geometry.boundingBox!.min.y).toBeLessThan(0.8);
+    const targets = car.pieces.filter((p) => p.kind === "paint").map((p) => p.mesh);
+    const raycaster = new THREE.Raycaster();
+    const lip = detail("trunk_lip")[0]!.mesh.geometry.getAttribute("position");
+    for (let i = 0; i < lip.count; i++) {
+      raycaster.set(new THREE.Vector3(lip.getX(i), 3, lip.getZ(i)), new THREE.Vector3(0, -1, 0));
+      const surface = raycaster.intersectObjects(targets, false)[0];
+      expect(surface).toBeDefined();
+      expect(lip.getY(i) - surface!.point.y).toBeCloseTo(0.017, 4);
     }
   });
 

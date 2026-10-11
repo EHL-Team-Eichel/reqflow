@@ -3,9 +3,20 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { cx } from "@/lib/cx";
 import { label } from "./classify";
+import { partTag } from "./partTags";
+import { markerPresentation } from "./markerMenu";
+import { trackIdleOrbit } from "./idleOrbit";
 import { buildCar, type CarPiece } from "./model/buildCar";
+import { buildVehicleModel } from "./models/builder";
+import { getVehicleModelById } from "./models/registry";
+import type { PowertrainType } from "./models/types";
 import { G60 } from "./model/body";
 import { ExteriorFlight, type CarView } from "./model/exteriorFlight";
+import {
+  exteriorBadgeTargets,
+  isPieceVisible,
+  visibleExteriorBadgePoint,
+} from "./model/visibility";
 import {
   applyState,
   createOutlineMaterial,
@@ -31,19 +42,23 @@ const PRESETS: Record<
 };
 
 interface Props {
-  /** Requirements per part id (only parts with ≥ 1 are badged and tinted). */
+  powertrain: PowertrainType;
+  /** Requirement counts displayed on labeled markers. */
   counts: ReadonlyMap<string, number>;
+  /** All parts in the active menu class, including parts without requirements. */
+  markerParts: readonly string[];
   selected: string | null;
   view: CarView;
   preset: CameraPreset;
   /** Bumped to move the camera to `preset` again. */
   presetNonce: number;
   onSelect: (partId: string | null) => void;
+  modelId?: string;
 }
 
 /**
  * The 3D car: drag to orbit, scroll to zoom, right-drag to pan. Hover shows the part's name, a click
- * selects it. Parts with requirements carry a badge with the count; badges are clickable too.
+ * selects it. The active menu class shows clickable labels/counts, or blue dots above eight parts.
  */
 export function CarViewer(props: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -59,6 +74,7 @@ export function CarViewer(props: Props) {
   const [hovered, setHovered] = useState<string | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
   const [anchors, setAnchors] = useState<ReadonlyMap<string, THREE.Vector3>>(new Map());
+  const [exteriorParts, setExteriorParts] = useState<ReadonlySet<string>>(new Set());
 
   useEffect(() => {
     const host = hostRef.current;
@@ -78,19 +94,32 @@ export function CarViewer(props: Props) {
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(32, 1, 0.05, 100);
-    camera.position.set(...PRESETS.front.position);
+    camera.position.set(...PRESETS[propsRef.current.preset].position);
     const controls = new OrbitControls(camera, renderer.domElement);
-    controls.target.set(...PRESETS.front.target);
+    controls.target.set(...PRESETS[propsRef.current.preset].target);
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
     controls.minDistance = 2.2;
     controls.maxDistance = 16;
     controls.maxPolarAngle = Math.PI * 0.495;
+    controls.autoRotateSpeed = 0.8;
     controls.update();
+    const idleOrbit = trackIdleOrbit(window);
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
-    const car = buildCar();
+    const activeModel = props.modelId ? getVehicleModelById(props.modelId) : undefined;
+    const car = activeModel
+      ? buildVehicleModel(activeModel, props.powertrain)
+      : buildCar(props.powertrain);
     scene.add(car.root);
     setAnchors(car.anchors);
+    const exteriorTargets = exteriorBadgeTargets(car.pieces, car.anchors);
+    const exteriorPartsForModel = new Set(exteriorTargets.keys());
+    setExteriorParts(exteriorPartsForModel);
+    const exteriorSurfaces = car.pieces
+      .filter((piece) => isPieceVisible(piece, "exterior"))
+      .map((piece) => piece.mesh);
+    const badgeRaycaster = new THREE.Raycaster();
     const bounds = new THREE.Box3().setFromObject(car.root);
     const corners: THREE.Vector3[] = [];
     for (const x of [bounds.min.x, bounds.max.x]) {
@@ -118,7 +147,6 @@ export function CarViewer(props: Props) {
     };
 
     const viewFlight = new ExteriorFlight(car, propsRef.current.view);
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
     let palette: SketchPalette = readPalette();
     const outline = createOutlineMaterial(palette.ink, 1.4);
@@ -172,28 +200,41 @@ export function CarViewer(props: Props) {
         outlines.set(piece, hull);
       }
     }
-    const sketchMat = new THREE.LineBasicMaterial({
-      color: palette.ink,
-      transparent: true,
-      opacity: 0.35,
+    const sketchStyles = car.sketchLines.map((geometry) => {
+      const opacity = (geometry.userData.inkOpacity as number | undefined) ?? 0.35;
+      const material = new THREE.LineBasicMaterial({
+        color: palette.ink,
+        transparent: true,
+        opacity,
+      });
+      scene.add(new THREE.LineSegments(geometry, material));
+      return { material, opacity };
     });
-    for (const geo of car.sketchLines) scene.add(new THREE.LineSegments(geo, sketchMat));
 
     let hoveredPart: string | null = null;
     let dirty = true;
     let needsPick = false;
 
     const restyle = () => {
-      const { counts, selected } = propsRef.current;
+      const { counts, selected, view } = propsRef.current;
+      if (view === "exterior" && hoveredPart && !exteriorPartsForModel.has(hoveredPart)) {
+        hoveredPart = null;
+        setHovered(null);
+      }
       scene.background = palette.background;
       outline.uniforms.color!.value.copy(palette.ink);
-      sketchMat.color.copy(palette.ink);
-      // These continuous character lines span several panels. Hide them as panels separate.
-      sketchMat.opacity = 0.35 * (1 - THREE.MathUtils.smoothstep(viewFlight.progress, 0, 0.25));
+      for (const { material, opacity } of sketchStyles) {
+        material.color.copy(palette.ink);
+        material.opacity = opacity * (1 - THREE.MathUtils.smoothstep(viewFlight.progress, 0, 0.25));
+      }
       host.dataset.viewProgress = viewFlight.progress.toFixed(3);
       host.dataset.viewAnimating = String(viewFlight.active);
       pickable.length = 0;
       for (const piece of car.pieces) {
+        const visibility = viewFlight.pieces.get(piece)?.opacity ?? 1;
+        piece.mesh.visible =
+          visibility > 0 &&
+          (piece.layer !== "interior" || viewFlight.progress > 0 || isPieceVisible(piece, view));
         const state: PartState =
           piece.partId && piece.partId === selected
             ? "selected"
@@ -202,13 +243,19 @@ export function CarViewer(props: Props) {
               : piece.partId && (counts.get(piece.partId) ?? 0) > 0
                 ? "hasRequirements"
                 : "idle";
-        const visibility = viewFlight.pieces.get(piece)?.opacity ?? 1;
         const canPick = applyState(piece, styles.get(piece)!, state, visibility, palette);
         const hull = outlines.get(piece);
         if (hull) hull.visible = visibility === 1;
-        if (canPick && (piece.layer === "interior" || viewFlight.progress === 0))
+        // Non-interactive surfaces (wheel-well shields) must still block clicks behind them.
+        if (
+          piece.mesh.visible &&
+          visibility === 1 &&
+          (piece.layer === "interior" || viewFlight.progress === 0) &&
+          (canPick || piece.partId === null)
+        )
           pickable.push(piece.mesh);
       }
+      needsPick = true;
       dirty = true;
     };
 
@@ -325,12 +372,16 @@ export function CarViewer(props: Props) {
     // Render loop: only draws when something changed.
     const v = new THREE.Vector3();
     let frame = 0;
+    let lastFrame = performance.now();
     const loop = () => {
       frame = requestAnimationFrame(loop);
       if (viewFlight.update(performance.now())) {
         restyle();
         needsPick = true;
       }
+      const now = performance.now();
+      const delta = Math.min((now - lastFrame) / 1000, 0.1);
+      lastFrame = now;
       if (flight) {
         const t = Math.min(1, (performance.now() - flight.t0) / 650);
         const e = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
@@ -339,7 +390,10 @@ export function CarViewer(props: Props) {
         if (t >= 1) flight = null;
         dirty = true;
       }
-      if (controls.update()) {
+      controls.autoRotate = !flight && !reducedMotion.matches && idleOrbit.shouldRotate();
+      host.dataset.autoRotating = String(controls.autoRotate);
+      if (controls.autoRotate) activePreset = null;
+      if (controls.update(delta)) {
         dirty = true;
         needsPick = true;
       }
@@ -361,8 +415,20 @@ export function CarViewer(props: Props) {
       // Badges follow their anchors.
       const { clientWidth: w, clientHeight: h } = host;
       for (const [partId, badge] of badgeRefs.current) {
-        const anchor = car.anchors.get(partId);
-        if (!anchor) continue;
+        const anchor =
+          propsRef.current.view === "exterior"
+            ? visibleExteriorBadgePoint(
+                partId,
+                exteriorTargets.get(partId) ?? [],
+                camera,
+                exteriorSurfaces,
+                badgeRaycaster,
+              )
+            : car.anchors.get(partId);
+        if (!anchor) {
+          badge.style.visibility = "hidden";
+          continue;
+        }
         const partFlight = viewFlight.badges.get(partId);
         v.copy(anchor);
         if (partFlight) v.addScaledVector(partFlight.offset, partFlight.amount);
@@ -372,7 +438,7 @@ export function CarViewer(props: Props) {
           opacity > 0 && v.z > -1 && v.z < 1 && Math.abs(v.x) < 1.05 && Math.abs(v.y) < 1.05;
         badge.style.visibility = visible ? "visible" : "hidden";
         badge.style.opacity = String(opacity);
-        badge.style.pointerEvents = partFlight && viewFlight.progress > 0 ? "none" : "auto";
+        badge.style.pointerEvents = partFlight?.amount && viewFlight.progress > 0 ? "none" : "auto";
         badge.style.transform = `translate(${((v.x + 1) / 2) * w}px, ${((1 - v.y) / 2) * h}px) translate(-50%, -50%)`;
       }
     };
@@ -380,6 +446,7 @@ export function CarViewer(props: Props) {
 
     return () => {
       cancelAnimationFrame(frame);
+      idleOrbit.dispose();
       ro.disconnect();
       onTheme.disconnect();
       reducedMotion.removeEventListener("change", onMotionPreference);
@@ -399,17 +466,17 @@ export function CarViewer(props: Props) {
         s.lines.dispose();
       }
       outline.dispose();
-      sketchMat.dispose();
+      for (const { material } of sketchStyles) material.dispose();
       renderer.dispose();
       renderer.domElement.remove();
       apiRef.current = null;
     };
-  }, []);
+  }, [props.modelId, props.powertrain]);
 
   // React to selection and counts without rebuilding the scene or restarting a flight.
   useEffect(() => {
     apiRef.current?.restyle();
-  }, [props.counts, props.selected]);
+  }, [props.counts, props.selected, props.markerParts]);
 
   useEffect(() => {
     apiRef.current?.setView(props.view);
@@ -430,31 +497,49 @@ export function CarViewer(props: Props) {
     );
   }
 
-  const badged = [...props.counts.entries()].filter(([id, n]) => n > 0 && anchors.has(id));
+  const eligibleMarkers = new Set(
+    [...anchors.keys()].filter((id) => props.view === "interior" || exteriorParts.has(id)),
+  );
+  const markers = markerPresentation(props.markerParts, eligibleMarkers);
   return (
     <div ref={hostRef} className="relative h-full w-full overflow-hidden" data-testid="car-viewer">
-      {badged.map(([partId, n]) => (
-        <button
-          key={partId}
-          type="button"
-          ref={(el) => {
-            if (el) badgeRefs.current.set(partId, el);
-            else badgeRefs.current.delete(partId);
-          }}
-          onClick={() => props.onSelect(partId)}
-          data-testid={`car-badge-${partId}`}
-          title={`${label(partId)}: ${n} requirement${n === 1 ? "" : "s"}`}
-          className={cx(
-            "absolute top-0 left-0 grid h-6 min-w-6 place-items-center rounded-full border px-1.5 text-xs font-semibold shadow-sm transition-colors",
-            props.selected === partId
-              ? "border-brand bg-brand-fill text-white"
-              : "border-line bg-panel text-ink hover:border-brand",
-          )}
-          style={{ visibility: "hidden" }}
-        >
-          {n}
-        </button>
-      ))}
+      {markers.partIds.map((partId) => {
+        const n = props.counts.get(partId) ?? 0;
+        return (
+          <button
+            key={partId}
+            type="button"
+            ref={(el) => {
+              if (el) badgeRefs.current.set(partId, el);
+              else badgeRefs.current.delete(partId);
+            }}
+            onClick={() => props.onSelect(partId)}
+            data-testid={`car-badge-${partId}`}
+            data-marker-mode={markers.compact ? "dot" : "label"}
+            title={`${partTag(partId)}: ${n} requirement${n === 1 ? "" : "s"}`}
+            aria-label={`Review ${label(partId)}: ${n} requirement${n === 1 ? "" : "s"}`}
+            aria-pressed={props.selected === partId}
+            className={cx(
+              "absolute top-0 left-0 flex items-center justify-center rounded-full border shadow-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand",
+              markers.compact
+                ? "size-2.5 border-white bg-brand-fill hover:scale-150"
+                : "h-6 gap-1.5 px-2 text-[11px] font-medium whitespace-nowrap",
+              !markers.compact &&
+                (props.selected === partId
+                  ? "border-brand bg-brand-fill text-white"
+                  : "border-brand bg-panel text-ink hover:bg-brand-soft"),
+            )}
+            style={{ visibility: "hidden" }}
+          >
+            {!markers.compact && (
+              <>
+                <span>{partTag(partId)}</span>
+                <span className="text-[10px] opacity-70">{n}</span>
+              </>
+            )}
+          </button>
+        );
+      })}
       <div
         ref={tooltipRef}
         className={cx(
@@ -462,7 +547,7 @@ export function CarViewer(props: Props) {
           hovered ? "opacity-100" : "opacity-0",
         )}
       >
-        {hovered ? label(hovered) : ""}
+        {hovered ? partTag(hovered) : ""}
       </div>
     </div>
   );
