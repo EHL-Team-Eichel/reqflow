@@ -48,14 +48,7 @@ export interface AnalyticsRow {
 }
 
 export type ColumnRole =
-  | "country"
-  | "time"
-  | "id"
-  | "text"
-  | "category"
-  | "number"
-  | "year_series"
-  | "other";
+  "country" | "time" | "id" | "text" | "category" | "number" | "year_series" | "other";
 
 export interface ColumnProfile {
   name: string;

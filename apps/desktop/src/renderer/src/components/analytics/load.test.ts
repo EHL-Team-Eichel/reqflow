@@ -3,6 +3,7 @@ import {
   createBlock,
   DEFAULT_SETTINGS,
   emptyPipelineData,
+  type PipelineData,
   type WorkflowGraph,
   type WorkflowRun,
 } from "@reqflow/core";
@@ -59,8 +60,9 @@ describe("analytics input loading", () => {
 
   it("reads the saved outputs of a run, never a fresh preview", async () => {
     const run = { id: "run-1" } as WorkflowRun;
-    const blockOutput = vi.fn(async (_run: string, block: string) =>
-      block === "raw-a" ? { out: a } : block === "hil-1" ? { out: b } : {},
+    const blockOutput = vi.fn(
+      async (_run: string, block: string): Promise<Record<string, PipelineData>> =>
+        block === "raw-a" ? { out: a } : block === "hil-1" ? { out: b } : {},
     );
     const preview = vi.fn();
     const inputs = await loadInputs(planInputs(graph(), [], analytics.id), {

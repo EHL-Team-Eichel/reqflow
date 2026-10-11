@@ -36,7 +36,13 @@ export function sequentialColor(t: number): string {
   return `var(--color-viz-seq-${step})`;
 }
 
-/** Text drawn on a sequential cell: the token flips with the ramp in dark mode. */
+/**
+ * Text drawn on a sequential cell. Decided by the step the colour actually uses (not by `t`), so
+ * light ink only sits on the three darkest steps, where it clears 4.5:1; the token flips with the
+ * ramp in dark mode.
+ */
 export function sequentialInk(t: number): string {
-  return t > 0.55 ? "var(--color-viz-seq-ink-high)" : "var(--color-ink)";
+  const clamped = Math.max(0, Math.min(1, Number.isFinite(t) ? t : 0));
+  const step = Math.round(clamped * (SEQUENTIAL_STEPS - 1));
+  return step >= 4 ? "var(--color-viz-seq-ink-high)" : "var(--color-ink)";
 }

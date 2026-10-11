@@ -63,7 +63,9 @@ export function ChartCard({
       <div className="min-h-0 flex-1 px-4 pt-2 pb-3">
         {showTable && table ? <DataTable table={table} /> : children}
       </div>
-      {footnote && <div className="border-t border-line px-4 py-2 text-xs text-muted">{footnote}</div>}
+      {footnote && (
+        <div className="border-t border-line px-4 py-2 text-xs text-muted">{footnote}</div>
+      )}
     </section>
   );
 }
