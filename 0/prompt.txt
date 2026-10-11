@@ -244,3 +244,7 @@ commit and push every change i have locally and then merge all the branches exce
 ---
 
 I have some new changes. See if the add to car is now fully functionable
+
+---
+
+fix whats wrong with the ai splitter. when splitting into categories of car components you should be able to select to which depth (just differentiate between exterior and interior vs dinstignuish between seats and steering wheel). The number of outputs is than automatically adjustet
