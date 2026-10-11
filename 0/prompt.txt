@@ -389,3 +389,7 @@ do 1,2(only gemini fix), 5
 ---
 
 what would you fix when i tell you this: fix the challenge prompt
+
+---
+
+do it, then commit push and merge with main
