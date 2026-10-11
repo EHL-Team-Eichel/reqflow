@@ -255,3 +255,7 @@ keep working
   - Redo the item 11 search yourself in main-audit: `rg -n 'TODO|FIXME|XXX|not built|notBuilt|not_implemented|coming soon|later:|placeholder' apps packages -g '!**/node_modules/**' -g '!**/*.test.*' -g '!**/research/**'`.
   - If you want this audit on Opus, it has to wait for the quota reset (about 157h).
 </agent-message>
+
+---
+
+do 7-13
