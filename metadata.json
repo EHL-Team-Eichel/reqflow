@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4N2KAS9J5BCNSMC8YVBD7BR",
   "strategy": "manual-commit",
   "branch": "docs-judging-guide",
-  "checkpoints_count": 6,
+  "checkpoints_count": 8,
   "files_touched": [
     "docs/STATUS.md"
   ],
@@ -21,6 +21,13 @@
       "compact_transcript": "/1/transcript.jsonl",
       "content_hash": "/1/content_hash.txt",
       "prompt": "/1/prompt.txt"
+    },
+    {
+      "metadata": "/2/metadata.json",
+      "transcript": "/2/full.jsonl",
+      "compact_transcript": "/2/transcript.jsonl",
+      "content_hash": "/2/content_hash.txt",
+      "prompt": "/2/prompt.txt"
     }
   ],
   "token_usage": {
@@ -28,7 +35,7 @@
     "cache_creation_tokens": 55105,
     "cache_read_tokens": 13386147,
     "output_tokens": 31481,
-    "api_call_count": 52,
+    "api_call_count": 53,
     "subagent_tokens": {
       "input_tokens": 0,
       "cache_creation_tokens": 0,
