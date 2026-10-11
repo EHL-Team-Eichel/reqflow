@@ -907,7 +907,13 @@ export const fixtureWorkflow: Workflow = withSplitterWorkplaces<Workflow>({
       kind: "ai_splitter",
       label: "Rank by priority",
       position: { x: 640, y: 300 },
-      params: { splitBy: "priority", branches: RANKS, instruction: "", model: "default" },
+      params: {
+        splitBy: "priority",
+        partDepth: "areas",
+        branches: RANKS,
+        instruction: "",
+        model: "default",
+      },
     },
     {
       id: "hil-pm",
