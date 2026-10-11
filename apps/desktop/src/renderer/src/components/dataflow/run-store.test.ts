@@ -282,7 +282,7 @@ describe("explicit HIL review and resume", () => {
     expect(store.getState().error).toMatch(/current paused HIL/);
   });
 
-  it("does not turn one confirmation into multiple required reviews", async () => {
+  it("records one approval on a multi-reviewer gate and explains that it stays paused", async () => {
     const { store, resume } = setupPaused();
     store.setState({
       run: {
@@ -293,9 +293,16 @@ describe("explicit HIL review and resume", () => {
         },
       },
     });
+    // The backend keeps the run paused until a second, different reviewer approves.
+    resume.mockResolvedValueOnce(store.getState().run!);
     await store.getState().resume(paused.id, hil.id, true);
-    expect(resume).not.toHaveBeenCalled();
-    expect(store.getState().error).toMatch(/multiple reviewers/);
+    expect(resume).toHaveBeenCalledWith(paused.id);
+    expect(store.getState()).toMatchObject({
+      error: null,
+      busy: false,
+      run: { status: "waiting_for_review" },
+    });
+    expect(store.getState().notice).toMatch(/needs 2 approvals from different reviewers/);
   });
 
   it("keeps the current gate paused after a resume failure so the human can retry", async () => {

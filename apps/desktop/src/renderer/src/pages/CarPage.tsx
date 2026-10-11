@@ -10,6 +10,10 @@ import { useState, useMemo } from "react";
 import { CarViewer, type CameraPreset, type CarView } from "@/components/car/CarViewer";
 import { PartPanel } from "@/components/car/PartPanel";
 import { useCarRequirements } from "@/components/car/useCarRequirements";
+import type { ClassifiedRequirement } from "@/components/car/classify";
+import { RequirementBrowser } from "@/components/requirements/RequirementBrowser";
+import { RequirementDialog } from "@/components/requirements/RequirementDialog";
+import { AuditTimeline } from "@/components/audit/AuditTimeline";
 import { ReasoningDialog } from "@/components/reasoning/ReasoningDialog";
 import {
   initialMarkerMenu,
@@ -54,6 +58,8 @@ export function CarPage() {
   const [presetNonce, setPresetNonce] = useState(0);
   const data = useCarRequirements();
   const reset = useReset(data.reload);
+  const [sideView, setSideView] = useState<"parts" | "requirements" | "audit">("parts");
+  const [opened, setOpened] = useState<ClassifiedRequirement | null>(null);
 
   const [whyReqId, setWhyReqId] = useState<string | null>(null);
   const markerParts = selected ? [selected] : menuPartIds(markerMenu.active, subclasses);
@@ -82,6 +88,14 @@ export function CarPage() {
         />
       )}
       <h1 className="sr-only">Car</h1>
+      {opened && (
+        <RequirementDialog
+          key={opened.requirement.id}
+          item={opened}
+          onClose={() => setOpened(null)}
+          onSaved={data.reload}
+        />
+      )}
       <Panel
         title={
           <span className="flex items-center gap-2.5">
@@ -178,57 +192,104 @@ export function CarPage() {
         className="w-[26rem] shrink-0"
         testId="car-side"
       >
-        {reset.asking && (
-          <div
-            role="alertdialog"
-            aria-label="Remove all requirements"
-            data-testid="car-reset-confirm"
-            className="m-3 rounded-lg border border-danger/40 bg-danger-soft p-3 text-sm"
+        <div className="flex h-full min-h-0 flex-col">
+          <nav
+            aria-label="Car review views"
+            className="flex shrink-0 gap-1 border-b border-line px-3 py-2"
           >
-            <p className="text-ink">
-              Remove all {data.total} requirement{data.total === 1 ? "" : "s"} from the car?
-            </p>
-            <p className="mt-1 text-xs text-muted">
-              Their history stays in the audit trail, and their IDs won't be given out again.
-            </p>
-            <div className="mt-3 flex justify-end gap-2">
-              <Button size="sm" variant="ghost" onClick={reset.cancel} disabled={reset.busy}>
-                Cancel
-              </Button>
+            {(
+              [
+                ["parts", "Parts"],
+                ["requirements", "Requirements"],
+                ["audit", "Audit"],
+              ] as const
+            ).map(([value, label]) => (
               <Button
+                key={value}
                 size="sm"
-                variant="danger"
-                data-testid="car-reset-confirm-button"
-                onClick={() => void reset.confirm()}
-                disabled={reset.busy}
+                variant={sideView === value ? "secondary" : "ghost"}
+                aria-pressed={sideView === value}
+                data-testid={`car-${value}-tab`}
+                onClick={() => setSideView(value)}
               >
-                {reset.busy ? "Removing…" : "Remove all"}
+                {label}
               </Button>
+            ))}
+          </nav>
+          {reset.asking && (
+            <div
+              role="alertdialog"
+              aria-label="Remove all requirements"
+              data-testid="car-reset-confirm"
+              className="m-3 rounded-lg border border-danger/40 bg-danger-soft p-3 text-sm"
+            >
+              <p className="text-ink">
+                Remove all {data.total} requirement{data.total === 1 ? "" : "s"} from the car?
+              </p>
+              <p className="mt-1 text-xs text-muted">
+                Their history stays in the audit trail, and their IDs won't be given out again.
+              </p>
+              <div className="mt-3 flex justify-end gap-2">
+                <Button size="sm" variant="ghost" onClick={reset.cancel} disabled={reset.busy}>
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  variant="danger"
+                  data-testid="car-reset-confirm-button"
+                  onClick={() => void reset.confirm()}
+                  disabled={reset.busy}
+                >
+                  {reset.busy ? "Removing…" : "Remove all"}
+                </Button>
+              </div>
             </div>
+          )}
+          {reset.message && (
+            <p
+              role={reset.failed ? "alert" : "status"}
+              data-testid="car-reset-message"
+              className={`px-4 pt-3 text-xs ${reset.failed ? "text-danger" : "text-muted"}`}
+            >
+              {reset.message}
+            </p>
+          )}
+          <div className="min-h-0 flex-1">
+            {sideView === "requirements" ? (
+              <RequirementBrowser
+                requirements={data.requirements}
+                loading={data.loading}
+                error={data.error}
+                onReload={data.reload}
+                onOpen={setOpened}
+              />
+            ) : sideView === "audit" ? (
+              <div className="h-full overflow-auto p-3">
+                <AuditTimeline
+                  refreshKey={data.requirements.reduce(
+                    (sum, requirement) => sum + requirement.version,
+                    0,
+                  )}
+                />
+              </div>
+            ) : (
+              <PartPanel
+                selected={selected}
+                availableParts={availableParts}
+                subclasses={subclasses}
+                markerMenu={markerMenu}
+                onMenuToggle={onMenuToggle}
+                byPart={data.byPart}
+                counts={data.counts}
+                total={data.total}
+                emptyHint={emptyHint}
+                onSelect={setSelected}
+                onWhy={setWhyReqId}
+                onSaved={data.reload}
+              />
+            )}
           </div>
-        )}
-        {reset.message && (
-          <p
-            role={reset.failed ? "alert" : "status"}
-            data-testid="car-reset-message"
-            className={`px-4 pt-3 text-xs ${reset.failed ? "text-danger" : "text-muted"}`}
-          >
-            {reset.message}
-          </p>
-        )}
-        <PartPanel
-          selected={selected}
-          availableParts={availableParts}
-          subclasses={subclasses}
-          markerMenu={markerMenu}
-          onMenuToggle={onMenuToggle}
-          byPart={data.byPart}
-          counts={data.counts}
-          total={data.total}
-          emptyHint={emptyHint}
-          onSelect={setSelected}
-          onWhy={setWhyReqId}
-        />
+        </div>
       </Panel>
     </div>
   );
