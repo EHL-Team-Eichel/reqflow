@@ -1,5 +1,6 @@
 import type { LlmClient, ProductScope, Source, SourceRecord } from "@reqflow/core";
 import { z } from "zod";
+import { pdfAiFailureReason } from "./ai-error";
 import { guessLanguage } from "./language";
 import type { PdfPageResult } from "./pdf";
 import { DATASET_KIND, shortHash, type RawDataset } from "./records";
@@ -12,7 +13,7 @@ export const StructuredCellSchema = z.strictObject({
 
 export const StructuredItemSchema = z.strictObject({
   title: z.string().trim().min(1).max(300),
-  section: z.string().trim().max(200).optional(),
+  section: z.string().trim().max(200).nullish(),
   itemType: z.enum([
     "section",
     "table_row",
@@ -23,10 +24,10 @@ export const StructuredItemSchema = z.strictObject({
     "other",
   ]),
   verbatimExcerpt: z.string().trim().min(1).max(2000),
-  availability: z.enum(["standard", "optional", "unavailable", "unknown"]).optional(),
-  availabilityEvidence: z.string().min(1).max(1000).optional(),
+  availability: z.enum(["standard", "optional", "unavailable", "unknown"]).nullish(),
+  availabilityEvidence: z.string().min(1).max(1000).nullish(),
   cells: z.array(StructuredCellSchema).max(50),
-  uncertainties: z.array(z.string().trim().max(500)).max(20).optional(),
+  uncertainties: z.array(z.string().trim().max(500)).max(20).nullish(),
 });
 
 export const PageStructureSchema = z.strictObject({
@@ -61,7 +62,8 @@ For each item, classify availability as standard, optional, unavailable, or unkn
 Title and section must be verbatim strings from this page, not translated or invented labels.
 Known availability requires availabilityEvidence quoting its explicit status or table symbol on this page.
 Use unknown if table alignment or applicability is ambiguous; never infer availability from a package name.
-Every field and table cell MUST be a string, and every field requires exact verbatim evidence from the page.
+Every table cell key, value and evidence MUST be a string backed by exact verbatim evidence from the page.
+Use null for absent section or availabilityEvidence, unknown for uncertain availability, and [] for no uncertainties.
 Cell values MUST occur verbatim within their evidence; preserve original units, punctuation and symbols.
 Preserve conflicting facts and inconsistencies as recorded in the text; note any ambiguity in uncertainties.
 Do NOT infer vehicle model applicability or unverified relationships.
@@ -123,10 +125,10 @@ ${page.text}`;
         maxTokens: 16000,
         signal: options.signal,
       });
-    } catch {
+    } catch (error) {
       options.signal?.throwIfAborted();
       throw new Error(
-        `PDF AI extraction failed on page ${page.page}. Check the configured default AI and credentials; no partial data was published.`,
+        `PDF AI extraction failed on page ${page.page}. ${pdfAiFailureReason(error)}; no partial data was published.`,
       );
     }
     options.signal?.throwIfAborted();

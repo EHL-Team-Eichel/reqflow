@@ -11,6 +11,7 @@ import {
 import type { BlockPreview } from "@reqflow/core/ipc";
 import { NO_AGENT_SERVICES, type BlockContext, type BlockRegistry } from "@reqflow/engine";
 import { z } from "zod";
+import { pdfAiFailureReason } from "../../../../packages/blocks/src/raw/ai-error";
 import { ReqflowError } from "./dispatch";
 
 const Request = z.object({
@@ -29,10 +30,10 @@ export interface PreviewBlockDeps {
 }
 
 export class AiPreviewError extends Error {
-  constructor(
-    message = "AI provider failed to generate a preview response. Check your AI settings and credentials.",
-  ) {
-    super(message);
+  constructor(error?: unknown) {
+    super(`AI provider failed to generate a preview response. ${pdfAiFailureReason(error)}.`, {
+      cause: error,
+    });
     this.name = "AiPreviewError";
   }
 }
@@ -42,15 +43,15 @@ function safePreviewLlm(client: LlmClient): LlmClient {
     async generateText(options) {
       try {
         return await client.generateText(options);
-      } catch (_err) {
-        throw new AiPreviewError();
+      } catch (error) {
+        throw new AiPreviewError(error);
       }
     },
     async generateObject(options) {
       try {
         return await client.generateObject(options);
-      } catch (_err) {
-        throw new AiPreviewError();
+      } catch (error) {
+        throw new AiPreviewError(error);
       }
     },
   };
@@ -124,8 +125,7 @@ export async function previewBlock(
   } catch (err) {
     let message = err instanceof Error ? err.message : String(err);
     if (
-      err instanceof AiPreviewError ||
-      (err instanceof Error && err.name === "AiPreviewError") ||
+      !(err instanceof AiPreviewError) &&
       /(\{"error"|api[_-]?key|bearer\s+[a-z0-9_-]+)/i.test(message)
     ) {
       message =
