@@ -18,22 +18,23 @@ import {
   type SplitterParams,
 } from "./protocol";
 
-/** Evidence claims need an available ID and verbatim quotation; unmeasured judgement is an assumption. */
-function validateNote(note: string, entry: PromptItem, factor: ScoreFactor): void {
-  if (/^(Assumption:|MOCK assumption:)/i.test(note)) return;
+/**
+ * Evidence claims need an available ID and verbatim quotation; unmeasured judgement is an
+ * assumption. Returns why a note can't count as evidence, or null when it can.
+ */
+function noteProblem(note: string, entry: PromptItem, factor: ScoreFactor): string | null {
+  if (/^(Assumption:|MOCK assumption:)/i.test(note)) return null;
   const match = /^Evidence:\s*(src_\S+|rec_\S+)\s*\|\s*("(?:[^"\\]|\\.)*")\s*\|\s*\S.+$/i.exec(
     note,
   );
   if (!match)
-    throw new Error(
-      `Provisional ${entry.id} factor ${factor} note must identify Assumption: or Evidence: ID | "verbatim excerpt" | judgement`,
-    );
+    return `Provisional ${entry.id} factor ${factor} note must identify Assumption: or Evidence: ID | "verbatim excerpt" | judgement`;
   const id = match[1]!;
   let excerpt: string;
   try {
     excerpt = JSON.parse(match[2]!) as string;
   } catch {
-    throw new Error(`Provisional ${entry.id} factor ${factor} evidence quote must be JSON-quoted`);
+    return `Provisional ${entry.id} factor ${factor} evidence quote must be JSON-quoted`;
   }
   const records = [
     ...entry.context.records,
@@ -53,11 +54,9 @@ function validateNote(note: string, entry: PromptItem, factor: ScoreFactor): voi
         .map((ref) => ref.excerpt),
     ),
   ];
-  if (!excerpt.trim() || !texts.some((text) => text.includes(excerpt))) {
-    throw new Error(
-      `Provisional ${entry.id} factor ${factor} cites unknown evidence or a non-verbatim excerpt`,
-    );
-  }
+  if (!excerpt.trim() || !texts.some((text) => text.includes(excerpt)))
+    return `Provisional ${entry.id} factor ${factor} cites unknown evidence or a non-verbatim excerpt`;
+  return null;
 }
 
 /** Named bands only. Contiguous upper bands may coarsen omitted lower bands, always with a log. */
@@ -164,9 +163,6 @@ export async function routePriority(
         object.scores,
         batch.map((item) => item.id),
       );
-      for (const entry of batch)
-        for (const factor of ScoreFactor.options)
-          validateNote(scores.get(entry.id)!.factors[factor].note, entry, factor);
       return { scores, model };
     };
     let answer;
@@ -182,6 +178,13 @@ export async function routePriority(
     const { scores, model } = answer;
     for (const entry of batch) {
       const score = scores.get(entry.id)!;
+      // A note that can't be verified is never kept as evidence: its factor counts as an
+      // assumption (routing scores are provisional judgement anyway), and the log says so.
+      // Requiring 6 verbatim quotes per item made one imperfect quote fail whole runs.
+      for (const factor of ScoreFactor.options) {
+        const problem = noteProblem(score.factors[factor].note, entry, factor);
+        if (problem) ctx.log(`${problem}; counted as an unverified assumption, not evidence.`);
+      }
       const values = Object.fromEntries(
         ScoreFactor.options.map((factor) => [factor, score.factors[factor].value]),
       ) as Record<ScoreFactor, number>;
