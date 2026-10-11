@@ -1,0 +1,42 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4MGWEJ1FFZZDMHC6PH600QZ",
+  "session_id": "ses_ed7811970ffezGeWSls4NNsrmU",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-11T03:42:50.575591Z",
+  "branch": "fix/gemini-max-items",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "packages/blocks/src/ai-splitter/ai-splitter.ts",
+    "packages/blocks/src/ai-splitter/raw-analysis.test.ts",
+    "packages/blocks/src/ai-splitter/raw-analysis.ts"
+  ],
+  "agent": "OpenCode",
+  "model": "gpt-6.1-sol",
+  "turn_id": "d13e99a84a93",
+  "checkpoint_transcript_start": 31,
+  "transcript_lines_at_start": 31,
+  "compact_transcript_start": 31,
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  },
+  "session_metrics": {
+    "turn_count": 1
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-11T03:42:50.554136Z",
+    "agent_lines": 0,
+    "agent_removed": 0,
+    "human_added": 184,
+    "human_modified": 105,
+    "human_removed": 0,
+    "total_committed": 184,
+    "total_lines_changed": 289,
+    "agent_percentage": 0,
+    "metric_version": 2
+  }
+}
