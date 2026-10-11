@@ -66,7 +66,7 @@ renderer (React, sandboxed)  ──api.x.y(…)──▶  preload (allow-list)  
 
 ## The building blocks (`packages/core/src/blocks.ts`)
 
-A workflow is a tree of **workplaces**. Each workplace holds blocks and edges. Seven kinds of block
+A workflow is a tree of **workplaces**. Each workplace holds blocks and edges. Eight kinds of block
 are in the palette, defined once in `BLOCK_SPECS` (label, description, group, params, ports, whether
 it has an inner workplace):
 
@@ -79,6 +79,7 @@ it has an inner workplace):
 | AI Splitter | 1 in · 2–10 outputs                   | yes             | customer priority, car parts, custom or legacy routing, branches, model         |
 | HIL         | 1 in · 1 out                          | no              | reviewer, instructions, approvals, edits                                        |
 | Add to Car  | one in **per priority** + context ins | no              | priorities, contexts (Auto / Sales volumes), max. requirements, vehicle, market |
+| Analytics   | one in **per named input** · 1 out    | no              | inputs (1–8, named), country/time column overrides, timeline buckets, phrases   |
 
 - **Ports** come from `blockPorts(block)`. They can depend on params (the splitter's `branches`, Add to
   Car's `priorities` → `in-0` "1. Priority" … and `contexts` → `ctx-0` "Context 1 · Auto" …), and port
@@ -214,6 +215,31 @@ Double-clicking a HIL block (or its report icon) opens `components/dataflow/repo
   incoming edges carried). Otherwise it says nothing has arrived yet; there is no demo data.
 - At run time the HIL block (`packages/blocks/src/hil/hil.ts`) pauses the run until the review is done
   and then passes the data on unchanged; edits go through the requirement API (audited).
+
+## Analytics block and view
+
+The Analytics block (`analytics`, group `insight`) counts what its inputs carry, **by rules only**:
+no model call anywhere. At run time it logs what each input carried and passes all inputs on,
+merged (`packages/blocks/src/analytics/`). The charts are computed in the renderer
+(`components/analytics/`), so filters and comparisons answer instantly:
+
+- **Loading** (`load.ts`): per input port, the saved `runs.blockOutput` of every block wired into it
+  when a run contains the block; before a run, a direct source (Raw, Research without a sub-flow)
+  is read with `blocks.preview`, and an input behind a transforming block says it needs a run.
+- **Dataset** (`engine/dataset.ts`): column roles are detected **per source file** from header
+  names and values (country, time, person ID, sentiment/feedback type, classifications, year
+  columns such as `volume_2030` as a series with plan years) or taken from the block's params, and
+  every detection is written to `notes`. Countries normalise to ISO codes (`countries.ts`), times
+  parse to UTC buckets (`time.ts`), topics come from an English/German keyword lexicon
+  (`topics.ts`), sentiment from the data's own classification column or a word list with negation
+  (`sentiment.ts`), phrase queries match whole words with `*` and `|` (`text.ts`).
+- **Counting** (`engine/aggregate.ts`): records and distinct people per key, time series, cross
+  tabs, phrase stats, two-proportion z-tests for comparisons (marked only when p < 0.05 with
+  enough records), and Sankey flow data.
+- **View** (`AnalyticsView.tsx`): opens full screen from the block's chart button or a
+  double-click; tabs Overview, Countries, Timeline, What people say, Topics & sentiment, Compare
+  sources, Flow and Data quality, one filter bar for all of them. Charts are hand-written SVG in
+  the BMW M colorway (`--color-viz-*` tokens, CVD-checked in light and dark), each with a table view.
 
 ## AI Splitter: raw analysis and review
 

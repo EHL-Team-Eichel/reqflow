@@ -874,6 +874,32 @@ audit events), then switch to `api.requirements.*` / `api.audit.list` as WS1 ser
 
 **Log**
 
+## WS9 — Analytics & timeline
+
+**Status:** review · **Owner:** Claude Code (Alexander) · **Branch:** `analytics-and-timeline`
+**Paths:** `apps/desktop/src/renderer/src/components/analytics/`, `packages/blocks/src/analytics/`;
+contract: the `analytics` kind, `analyticsInputs`, `TimeGranularity` and group `insight` in
+`packages/core/src/blocks.ts` (requested by the human).
+
+**Tasks**
+
+- [x] Analytics block: 1–8 named inputs (default one, "Add input" on the block), pass-through
+      output, params for country/time column overrides, timeline buckets, tracked phrases.
+- [x] Full-screen view with eight tabs; rules only, no AI; BMW M chart palette (CVD-validated).
+- [x] Compare data sources (inputs, source files, countries, classification columns) with
+      two-proportion z-tests; Sankey flow charts; timeline that fills in once data has dates.
+- [x] Template "Compare feedback sources"; native smoke scenario with synthetic data only.
+- [ ] Persist the computed analytics with the run (today they're recomputed from saved outputs).
+- [ ] Try on BMW's real exports locally (structure only in transcripts) and tune the topic lexicon.
+
+**Log**
+
+- 2026-10-11: Built on `analytics-and-timeline` (Haiku subagents wrote the country/time, text and
+  sentiment modules and the chart components; lead integrated, wrote dataset/counting/view/tabs).
+  Column roles are detected per source file, so sources that name their country column
+  differently both count. Verify: `npm run check` (2,500+ tests) and `npm run smoke` (screens
+  `analytics-*`, light and dark). Synthetic data only; no BMW values in tests, logs or transcripts.
+
 <!--
 Template for your section (replace the "open" line, keep log entries newest-first):
 
